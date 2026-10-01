@@ -8,6 +8,7 @@
   "fresh_chance_min": 0.2,
   "fresh_chance_max": 0.85,
   "juvenile_chance": 0.3,
+  "adult_variants": { "white_tailed_deer": { "buck": 0.4 } },
   "clue_weights": {
     "white_tailed_deer": { "scent": 3, "track": 3, "sound": 1, "sign": 2, "sight": 1 },
     "hare": { "scent": 1, "track": 3, "sound": 1, "sign": 2, "sight": 2 },

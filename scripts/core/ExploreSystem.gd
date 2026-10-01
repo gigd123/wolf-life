@@ -74,6 +74,13 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	# 逆風時氣味可判斷新鮮度；側風、順風時聞不出來。其他線索都看得出新舊。
 	var fresh_known: bool = clue != "scent" or wind == "headwind"
 	var life_stage: String = "juvenile" if RNGService.chance(float(cfg.get("juvenile_chance", 0.3))) else "adult"
+	# 成體的變體（例如白尾鹿雄鹿），狩獵深度不同。
+	if life_stage == "adult":
+		var variants: Dictionary = cfg.get("adult_variants", {}).get(source, {})
+		for variant in variants.keys():
+			if RNGService.chance(float(variants[variant])):
+				life_stage = variant
+				break
 	return {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
 		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage}
 

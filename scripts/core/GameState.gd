@@ -301,13 +301,13 @@ func action_track() -> Dictionary:
 		var worst := HuntSystem.main_negative_factor(info["factors"])
 		var reason: String = "" if worst.is_empty() else "reason." + str(worst["key"]).trim_prefix("factor.").replace(".", "_")
 		return {"success": false, "reason_key": reason}
-	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true)}
+	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true, str(d.get("location", "")))}
 
 # 直接目擊獵物：不用追蹤，直接進入狩獵（從潛近開始）。
 func action_hunt_sighted() -> HuntSystem:
 	var d: Dictionary = current_discovery
 	current_discovery = {}
-	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true)
+	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false, str(d.get("location", "")))
 
 # 採集探索到的採集物。
 func action_gather_discovered() -> String:
@@ -401,25 +401,29 @@ func action_sleep() -> void:
 	SaveSystem.save_game()
 	state_changed.emit()
 
-# from_tracking：經由追蹤或直接目擊找到獵物時，已經掌握位置，跳過發現階段並累積感知經驗。
-func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false) -> HuntSystem:
-	var animal_data: Dictionary = GameData.animals.get(animal_id, {})
-	var size: String = animal_data.get("size", "medium")
-	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
-	var cost: int = int(costs.get("hunt_small", 2)) if size == "small" else int(costs.get("hunt_medium", 3))
-	GameTime.advance_turns(cost)
+# 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
+# from_tracking：經由追蹤找到獵物時累積一次感知經驗。terrain：遭遇時的地形，空字串則隨機取區域的地形。
+func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
+		terrain: String = "") -> HuntSystem:
+	GameTime.advance_turns(HuntSystem.depth_turns(HuntSystem.depth_of(animal_id, life_stage)))
 	# 深夜對狼有利：獵物警覺降低。
 	var detection_mod: float = 0.0
 	if GameTime.current_period() == "night":
 		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
 	if prey_dir < 0:
 		prey_dir = RNGService.randi_range(0, 3)
-	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir)
+	if terrain == "":
+		terrain = _random_terrain(current_region)
+	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain)
 	if from_tracking:
 		hunt.experience.append("perception")
-		if hunt.stage == HuntSystem.Stage.DISCOVER:
-			hunt.stage = HuntSystem.Stage.STALK
 	return hunt
+
+func _random_terrain(region_id: String) -> String:
+	var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+	if terrains.is_empty():
+		return ""
+	return terrains[RNGService.randi_range(0, terrains.size() - 1)]
 
 # 狩獵中花費額外回合（例如繞到下風處）。
 func spend_hunt_turns(turns: int) -> void:
@@ -429,12 +433,19 @@ func spend_hunt_turns(turns: int) -> void:
 	_check_death()
 
 # 狩獵結束（成功或失敗）：同步風向、結算各階段累積的經驗。
+# 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
 	grant_experience(hunt.experience)
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
 	else:
+		if hunt.fled and wolf.alive:
+			var prey_dir: int = RNGService.randi_range(0, 3)
+			current_discovery = {"kind": "clue", "source_kind": "prey", "source": hunt.animal_id,
+				"clue": "track", "location": _random_terrain(current_region), "fresh": true, "fresh_known": true,
+				"wind": HuntSystem.relative_wind(wind_dir, prey_dir), "prey_dir": prey_dir,
+				"life_stage": hunt.life_stage, "fled": true}
 		wolf.clamp_stats()
 		_check_death()
 		state_changed.emit()
@@ -542,6 +553,8 @@ func debug_animal_ids() -> Array:
 
 # 強制觸發遭遇：獵物回傳與「尋找獵物蹤跡」相同格式的結果，競爭動物直接發出遭遇訊號。
 func debug_force_encounter(animal_id: String, life_stage: String) -> Dictionary:
+	if not GameData.animals.get(animal_id, {}).has(life_stage):
+		life_stage = "adult"
 	var role: String = str(GameData.animals.get(animal_id, {}).get("type", ""))
 	if role == "competitor":
 		encounter_triggered.emit({"encountered": true, "animal_id": animal_id, "life_stage": life_stage})

@@ -397,7 +397,7 @@ func _build_debug_overlay() -> void:
 		animal_pick.set_item_metadata(animal_pick.item_count - 1, animal_id)
 	enc_row.add_child(animal_pick)
 	var stage_pick := OptionButton.new()
-	for stage in ["adult", "juvenile"]:
+	for stage in ["adult", "juvenile", "buck"]:
 		stage_pick.add_item(tr("debug.life_stage." + stage))
 		stage_pick.set_item_metadata(stage_pick.item_count - 1, stage)
 	enc_row.add_child(stage_pick)
@@ -638,12 +638,12 @@ func _discovery_text(d: Dictionary) -> String:
 				.replace("{feature}", tr("feature." + str(d["feature_id"])))
 	if d.get("source_kind", "") == "gather":
 		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
-	var animal: String = tr("animal." + str(d["source"]))
-	if d.get("life_stage", "adult") == "juvenile":
-		animal = tr("explore.juvenile") + animal
+	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
 	var fresh: String = ""
 	if d.get("fresh_known", true):
 		fresh = tr("explore.fresh") if d.get("fresh", false) else tr("explore.stale")
+	if d.get("fled", false):
+		return tr("explore.fled").replace("{animal}", _prey_name(d["source"], d.get("life_stage", "adult"))).replace("{location}", location)
 	var clue: String = str(d.get("clue", "track"))
 	var text: String = tr("explore.clue." + clue).replace("{location}", location).replace("{animal}", animal) \
 		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + str(GameData.discovery.get("signs", {}).get(d["source"], "browse"))))
@@ -737,39 +737,48 @@ func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> v
 	current_hunt = GameState.start_hunt(animal_id, life_stage, prey_dir)
 	_render_hunt_stage()
 
+# 依 HuntSystem.options() 畫出目前階段的選項；階段說明下方是觀察到的獵物狀態與搏鬥進度。
+var hunt_notes: Array[String] = []
+
 func _render_hunt_stage() -> void:
 	if current_hunt == null:
 		hunt_overlay.visible = false
 		return
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
-	var animal_name: String = tr("animal." + current_hunt.animal_id)
+	var animal_name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
 	hunt_sprite.texture = PixelArt.make_animal_sprite(current_hunt.animal_id, Vector2i(72, 48), _animal_scale(current_hunt.life_stage))
-	var wind_text: String = tr("factor.wind." + current_hunt.wind_state())
-	match current_hunt.stage:
-		HuntSystem.Stage.DISCOVER:
-			hunt_message.text = tr("hunt.stage.discover").replace("{animal}", animal_name) + "　" + wind_text
-			_add_hunt_choice(tr("hunt.action.observe"), current_hunt.chance_discover(), func(): _resolve_stage(current_hunt.do_discover()))
-		HuntSystem.Stage.STALK:
-			hunt_message.text = tr("hunt.stage.stalk").replace("{animal}", animal_name) + "　" + wind_text
-			for approach in ["low", "downwind", "wait"]:
-				var key: String = "hunt.action.low_approach" if approach == "low" else "hunt.action." + approach
-				_add_hunt_choice(tr(key), current_hunt.chance_stalk(approach), func(): _resolve_stage(current_hunt.do_stalk(approach)))
-		HuntSystem.Stage.CHASE:
-			hunt_message.text = tr("hunt.stage.chase").replace("{animal}", animal_name)
-			for tactic in ["sprint", "flank", "drive"]:
-				_add_hunt_choice(tr("hunt.action." + tactic), current_hunt.chance_chase(tactic), func(): _resolve_stage(current_hunt.do_chase(tactic)))
-		HuntSystem.Stage.FIGHT:
-			hunt_message.text = tr("hunt.stage.fight").replace("{animal}", animal_name)
-			for move in ["bite_throat", "bite_leg", "pin"]:
-				_add_hunt_choice(tr("hunt.action." + move), current_hunt.chance_fight(move), func():
-					Audio.play_bite()
-					_resolve_stage(current_hunt.do_fight(move))
-				)
+	var header: String = tr("hunt.stage." + current_hunt.stage_name()).replace("{animal}", animal_name)
+	var context: Array[String] = [tr("factor.wind." + current_hunt.wind_state())]
+	if current_hunt.terrain != "":
+		context.append(tr("explore.location." + current_hunt.terrain))
+	header += "　" + "・".join(context)
+	if current_hunt.stage == HuntSystem.Stage.FIGHT:
+		var wounds: int = int(current_hunt.fight_state.get("wounds", 0))
+		if wounds > 0:
+			header += "\n" + tr("hunt.fight.wounds").replace("{n}", str(wounds))
+	if not hunt_notes.is_empty():
+		header += "\n" + "　".join(hunt_notes)
+	hunt_message.text = header
+	for opt in current_hunt.options():
+		var id: String = opt["id"]
+		_add_hunt_choice(tr(opt["label_key"]), opt, func():
+			if current_hunt.stage == HuntSystem.Stage.FIGHT:
+				Audio.play_bite()
+			_resolve_stage(current_hunt.choose(id))
+		)
 	_add_hunt_choice(tr("ui.give_up"), {}, func():
 		current_hunt.give_up()
 		_finish_hunt()
 	)
+
+func _prey_name(animal_id: String, life_stage: String) -> String:
+	var key: String = "prey_name.%s.%s" % [animal_id, life_stage]
+	if tr(key) != key:
+		return tr(key)
+	if life_stage == "juvenile":
+		return tr("explore.juvenile") + tr("animal." + animal_id)
+	return tr("animal." + animal_id)
 
 # info 是 HuntSystem.chance_* 的結果：按鈕顯示成功率，下方列出關鍵因素。
 func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> void:
@@ -805,16 +814,26 @@ func _format_factors(factors: Array) -> String:
 
 func _resolve_stage(stage_result: Dictionary) -> void:
 	GameState.spend_hunt_turns(int(stage_result.get("turns", 0)))
-	var animal_name: String = tr("animal." + current_hunt.animal_id)
+	var animal_name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
+	if stage_result.has("prey_state"):
+		hunt_notes.clear()
+		for key in stage_result["prey_state"]:
+			hunt_notes.append(tr(key))
+		_log(tr("hunt.observe.success") + " " + "　".join(hunt_notes))
+		stage_result["text_key"] = ""
+	if float(stage_result.get("damage", 0.0)) > 0.0:
+		_log(tr("log.counter_damage").replace("{n}", str(int(stage_result["damage"]))))
 	if stage_result.get("wind_shifted", false):
 		_log(tr("log.wind_shifted").replace("{wind}", tr("factor.wind." + current_hunt.wind_state())))
 	var text_key: String = stage_result.get("text_key", "")
 	if text_key != "":
-		_log(tr(text_key))
+		_log(tr(text_key).replace("{animal}", animal_name))
 	var reason_key: String = stage_result.get("reason_key", "")
 	if reason_key != "":
 		_log(tr(reason_key).replace("{animal}", animal_name))
-	if current_hunt.stage == HuntSystem.Stage.DONE:
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_finish_hunt()
+	elif current_hunt.stage == HuntSystem.Stage.DONE:
 		_finish_hunt()
 	else:
 		_render_hunt_stage()
@@ -823,14 +842,19 @@ func _finish_hunt() -> void:
 	var succeeded: bool = current_hunt.result == HuntSystem.Result.SUCCESS
 	GameState.finish_hunt(current_hunt)
 	if succeeded:
-		_log(tr("hunt.result.success").replace("{animal}", tr("animal." + current_hunt.animal_id)))
+		_log(tr("hunt.result.success").replace("{animal}", _prey_name(current_hunt.animal_id, current_hunt.life_stage)))
 	else:
 		_log(tr("hunt.result.fail"))
 	hunt_overlay.visible = false
 	current_hunt = null
+	hunt_notes.clear()
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	# 獵物逃走：留下可再追的足跡
+	if GameState.current_discovery.get("fled", false):
+		_show_discovery(GameState.current_discovery)
 
 # --- Competitor encounters ---
 

@@ -89,31 +89,73 @@ debug.jump_stage,跳到{stage}
 debug.trigger,觸發
 debug.life_stage.adult,成體
 debug.life_stage.juvenile,幼體
-hunt.stage.discover,發現階段：你注意到一隻{animal}
 hunt.stage.stalk,潛近階段：小心接近{animal}
 hunt.stage.chase,追擊階段：{animal}察覺到你了
 hunt.stage.fight,搏鬥階段：你撲向了{animal}
-hunt.action.observe,觀察並選定目標
-hunt.action.low_approach,伏低前進（省體力 命中普通）
-hunt.action.downwind,繞到下風處（較耗體力 可能多花回合）
-hunt.action.wait,等待時機（中等體力 命中中等）
-hunt.action.sprint,衝刺（最耗體力 這回合命中最高）
-hunt.action.flank,繞到側面（中等體力 小幅提升搏鬥勝算）
-hunt.action.drive,驅趕到不利地形（省體力 這回合較難成功 但大幅提升搏鬥勝算）
-hunt.action.bite_throat,咬喉（靠技巧 反擊風險最高）
-hunt.action.pin,壓制（靠力量）
-hunt.action.bite_leg,撲咬後腿（平衡安全 反擊風險最低）
-hunt.discover.success,你成功掌握了獵物的位置
-hunt.discover.fail,獵物先一步警覺離開了
 hunt.stalk.success,你悄悄縮短了距離
 hunt.stalk.fail,獵物發現了你 逃走了
 hunt.chase.success,你追上了獵物
 hunt.chase.fail,獵物甩開了你
 hunt.fight.success,你成功制伏了獵物
-hunt.fight.fail,獵物掙脫逃走了
 hunt.fight.counter,獵物反擊 你受了傷
 hunt.result.success,狩獵成功
 hunt.result.fail,這次狩獵失敗了
+hunt.stage.observe,觀察階段：遠處有一隻{animal}
+hunt.stage.pounce,{animal}就在附近
+hunt.option.pounce,撲抓（一次判定）
+hunt.option.creep_pounce,靠近一點再撲（多 1 回合 較穩）
+hunt.option.observe,觀察（看感知 獵物可能察覺）
+hunt.option.skip_observe,不觀察 直接潛近
+hunt.option.direct,正面接近（最快 容易被發現）
+hunt.option.downwind,繞到下風處（看技巧 追擊起點較近）
+hunt.option.wait,伏低等待（幾乎不耗體力）
+hunt.option.upstream,繞到上游（耗體力 從側面接近）
+hunt.option.ambush,伏擊（在獵物路徑上等待）
+hunt.option.edge_strike,從林中突襲（成功時追擊起點很近）
+hunt.option.sprint,全力衝刺（耗大量體力 看速度）
+hunt.option.follow,保持跟隨（省體力 搏鬥稍有利）
+hunt.option.flank,切側翼（看技巧 成功後搏鬥位置有利）
+hunt.option.drive_forest,驅趕向密林（成功後獵物速度下降）
+hunt.option.drive_stream,逼向溪流（成功後獵物速度大降）
+hunt.option.drive_logs,逼向倒木區（成功後獵物難以脫身）
+hunt.option.bite_leg,咬後腿（安全 需要多回合）
+hunt.option.bite_throat,直取咽喉（一擊制伏 失敗易被反擊）
+hunt.option.dodge,閃避等待破綻（看技巧 降低下次被反擊）
+hunt.pounce.success,你一撲就抓住了{animal}
+hunt.pounce.fail,{animal}閃開了
+hunt.observe.success,你仔細觀察了牠：
+hunt.observe.fail,{animal}好像察覺到什麼 變得更警覺了
+hunt.chase.catch,你追上並制伏了{animal}
+hunt.fight.escape,{animal}掙脫逃走了
+hunt.fight.hit_bite_leg,你咬住了{animal}的後腿
+hunt.fight.hit_dodge,你閃過攻擊 看到了破綻
+hunt.fight.miss,這一擊沒有得手
+hunt.fight.wounds,牠受了傷（{n}）
+factor.terrain.stream,溪流旁
+factor.terrain.dense_forest,密林
+factor.terrain.forest_edge,林緣
+factor.terrain.clearing,空地
+factor.terrain.fallen_logs,倒木區
+factor.observed,已觀察過
+factor.skilled,技巧純熟
+factor.unskilled,技巧不足
+factor.close_start,起點很近
+factor.prey_wounded,牠受了傷
+factor.opening,找到破綻
+reason.terrain_clearing,空地上沒有掩護
+reason.terrain_dense_forest,樹林擋住了你的衝刺
+reason.unskilled,你的技巧還不夠
+prey_state.alert,牠非常警覺
+prey_state.calm,牠在專心吃東西
+prey_state.strong,精力充沛
+prey_state.tired,看起來有點累
+prey_state.dangerous,鹿角很大 正面攻擊很危險
+prey_name.white_tailed_deer.adult,白尾鹿母鹿
+prey_name.white_tailed_deer.buck,白尾鹿雄鹿
+prey_name.white_tailed_deer.juvenile,小鹿
+explore.fled,{animal}往{location}逃了 留下新鮮的足跡
+log.counter_damage,你受到 {n} 點傷害
+debug.life_stage.buck,雄鹿
 factor.wind.headwind,逆風
 factor.wind.crosswind,側風
 factor.wind.tailwind,順風
