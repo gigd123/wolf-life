@@ -156,6 +156,31 @@ prey_name.white_tailed_deer.juvenile,小鹿
 explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
+action.return_to_carcass,回到獵物殘骸
+feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
+feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
+feeding.eat,吃一段（+{v}）
+feeding.leave,離開（留下殘骸）
+log.feeding_ate,你吃了一段 飽食度 +{v}
+log.feeding_done,你把獵物吃完了
+log.feeding_left,你離開了 剩下的殘骸還留在原地
+log.carcass_gone,殘骸已經不見了 可能被搶走或腐壞了
+scavenger.bear.arrive,一頭灰熊被氣味吸引過來了
+scavenger.bear.returning,你回來時 一頭灰熊正在吃你的獵物
+scavenger.fox.arrive,一隻狐狸偷偷靠近想分一口
+scavenger.fox.returning,你回來時 一隻狐狸正在偷吃
+scavenger.guard,守住獵物（勝算 {n}%）
+scavenger.grab,叼走一部分
+scavenger.abandon,直接放棄
+scavenger.guard_warning,守住獵物風險極高 輸了可能重傷甚至死亡
+scavenger.drive,驅趕
+scavenger.ignore,不理會（少一段）
+scavenger.result.guard_win,你守住了獵物 灰熊悻悻離開
+scavenger.result.guard_lose,灰熊重重拍倒了你 你失去了獵物（傷害 {n}）
+scavenger.result.grab,你叼走一大塊肉 迅速撤退
+scavenger.result.abandon,你放棄了獵物 退到安全的地方
+scavenger.result.drive,你把狐狸趕走了
+scavenger.result.ignore,狐狸叼走了一塊肉
 explore.injured,受傷的
 hunt.option.search,找出牠（看感知 失敗就失去目標）
 hunt.option.harass,騷擾逼牠逃跑（看技巧 可能被反擊）

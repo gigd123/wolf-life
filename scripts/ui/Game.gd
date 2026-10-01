@@ -2,7 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
-const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
+const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass"]
 const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
 
@@ -543,6 +543,14 @@ func _on_action_button(action_id: String) -> void:
 			_log(tr("log.short_rest"))
 		"rest_until":
 			_show_rest_overlay()
+		"return_to_carcass":
+			var res := GameState.action_return_to_carcass()
+			if res.get("gone", false) or res.is_empty():
+				_log(tr("log.carcass_gone"))
+			elif res.get("event", "") != "":
+				_show_scavenger(res["event"], true)
+			else:
+				_show_feeding()
 		"sleep":
 			GameState.action_sleep()
 			_log(tr("log.slept"))
@@ -666,6 +674,80 @@ func _discovery_sprite(d: Dictionary) -> Texture2D:
 	var img: Image = load(path).get_image()
 	img.resize(img.get_width() * 3, img.get_height() * 3, Image.INTERPOLATE_NEAREST)
 	return ImageTexture.create_from_image(img)
+
+# --- 分段進食與搶食 ---
+
+func _feeding_prey_name() -> String:
+	return _prey_name(str(GameState.current_feeding.get("animal_id", "")), str(GameState.current_feeding.get("life_stage", "adult")))
+
+func _show_feeding() -> void:
+	var f: Dictionary = GameState.current_feeding
+	if f.is_empty():
+		encounter_overlay.visible = false
+		return
+	var value: int = int(round(float(f["segment_value"])))
+	encounter_message.text = tr("feeding.status").replace("{animal}", _feeding_prey_name()) \
+		.replace("{n}", str(f["segments_left"])).replace("{v}", str(value))
+	var chances := GameState.scavenge_chances()
+	encounter_detail.text = tr("feeding.risk").replace("{bear}", str(int(round(float(chances["bear"]) * 100.0)))) \
+		.replace("{fox}", str(int(round(float(chances["fox"]) * 100.0))))
+	encounter_sprite.texture = PixelArt.make_animal_sprite(str(f["animal_id"]), Vector2i(72, 48), _animal_scale(str(f["life_stage"])))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("feeding.eat").replace("{v}", str(value)), _on_feed)
+	_add_encounter_button(tr("feeding.leave"), func():
+		GameState.leave_feeding()
+		_log(tr("log.feeding_left"))
+		encounter_overlay.visible = false
+	)
+	encounter_overlay.visible = true
+
+func _on_feed() -> void:
+	var res := GameState.feed_once()
+	if res.is_empty():
+		encounter_overlay.visible = false
+		if GameState.wolf != null and not GameState.wolf.alive:
+			_on_wolf_died(GameState.wolf.death_cause)
+		return
+	_log(tr("log.feeding_ate").replace("{v}", str(int(round(float(res["gain"]))))))
+	if res.get("event", "") != "":
+		_show_scavenger(res["event"], false)
+	elif GameState.is_feeding():
+		_show_feeding()
+	else:
+		_log(tr("log.feeding_done"))
+		encounter_overlay.visible = false
+
+# 灰熊或狐狸來搶食。returning：回到殘骸時撞見。
+func _show_scavenger(event: String, returning: bool) -> void:
+	var key: String = "scavenger.%s.%s" % [event, "returning" if returning else "arrive"]
+	encounter_message.text = tr(key)
+	_log(tr(key))
+	encounter_detail.text = ""
+	encounter_sprite.texture = PixelArt.make_animal_sprite("grizzly_bear" if event == "bear" else "red_fox", Vector2i(72, 48), 1.0)
+	_clear_children(encounter_buttons_box)
+	if event == "bear":
+		_add_encounter_button(tr("scavenger.guard").replace("{n}", str(int(round(GameState.guard_win_chance() * 100.0)))),
+			_on_scavenger_choice.bind("bear", "guard"))
+		_add_encounter_button(tr("scavenger.grab"), _on_scavenger_choice.bind("bear", "grab"))
+		_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
+		encounter_detail.text = tr("scavenger.guard_warning")
+	else:
+		_add_encounter_button(tr("scavenger.drive"), _on_scavenger_choice.bind("fox", "drive"))
+		_add_encounter_button(tr("scavenger.ignore"), _on_scavenger_choice.bind("fox", "ignore"))
+	encounter_overlay.visible = true
+
+func _on_scavenger_choice(event: String, choice: String) -> void:
+	var res := GameState.resolve_scavenger(event, choice)
+	_log(tr("scavenger.result." + str(res.get("outcome", choice))).replace("{n}", str(int(res.get("damage", 0)))))
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		encounter_overlay.visible = false
+		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	if GameState.is_feeding():
+		_show_feeding()
+	else:
+		encounter_overlay.visible = false
 
 # --- 區域資訊 ---
 
@@ -875,6 +957,9 @@ func _finish_hunt() -> void:
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	if GameState.is_feeding():
+		_show_feeding()
 		return
 	# 獵物逃走：留下可再追的足跡
 	if GameState.current_discovery.get("fled", false):

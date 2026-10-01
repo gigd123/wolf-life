@@ -102,6 +102,10 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
 
+# 分段進食的段數（0 表示一次吃完）。見 balance.json 的 "feeding"。
+static func feeding_segments(p_animal_id: String, p_life_stage: String) -> int:
+	return int(GameData.balance.get("feeding", {}).get("segments", {}).get(p_animal_id, {}).get(p_life_stage, 0))
+
 static func depth_turns(p_depth: String) -> int:
 	return int(GameData.balance.get("hunt", {}).get("depth_turns", {}).get(p_depth, 2))
 
@@ -607,7 +611,9 @@ func _kill(text_key: String) -> Dictionary:
 	_gain("strength")
 	stage = Stage.DONE
 	result = Result.SUCCESS
-	# 進食回復固定為獵物的 hunger_value；分段進食在 1.5 第 6 步處理。
+	# 大型獵物分段吃（GameState 開始進食），小型獵物當場吃完。
+	if feeding_segments(animal_id, life_stage) > 1:
+		return {"success": true, "text_key": text_key, "feeding": true}
 	wolf.hunger += prey_hunger_value
 	return {"success": true, "text_key": text_key, "hunger_gain": prey_hunger_value}
 

@@ -120,6 +120,18 @@
       }
     }
   },
+  "feeding": {
+    "_comment": "分段進食與搶食（SPEC「狩獵後續事件」）。沒列在 segments 的獵物一次吃完。",
+    "segments": {
+      "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 }
+    },
+    "eat_turns": 1,
+    "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,
+    "fox_chance": 0.12,
+    "carcass_days": 2, "carcass_loss_per_period": 0.15,
+    "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2,
+    "guard": { "base": 0.25, "divisor": 250, "min": 0.03, "max": 0.4, "damage_min": 20, "damage_max": 45, "heavy_damage": 25, "win_stamina": 20 }
+  },
   "growth": {
     "subadult_gain": { "speed": 0.6, "strength": 0.6, "skill": 0.5, "perception": 0.5 },
     "adult_gain_before_peak": { "speed": 0.15, "strength": 0.15, "skill": 0.15, "perception": 0.15 },

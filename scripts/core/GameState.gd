@@ -24,6 +24,10 @@ var wind_dir: int = 0
 var region_knowledge: Dictionary = {}
 # 目前探索到、還沒處理的發現（見 ExploreSystem）。
 var current_discovery: Dictionary = {}
+# 分段進食：目前正在吃的獵物 {animal_id, life_stage, segments_left, segment_value, turns_stayed, terrain}。
+var current_feeding: Dictionary = {}
+# 吃不完留下的殘骸：[{region_id, terrain, animal_id, life_stage, segments_left, segment_value, day}]，最多留 2 天。
+var carcasses: Array = []
 
 var life_log: Dictionary = {}
 
@@ -38,6 +42,8 @@ func new_game(start_den: String) -> void:
 	wind_dir = RNGService.randi_range(0, 3)
 	region_knowledge = {start_den: {"visited": true, "features": []}}
 	current_discovery = {}
+	current_feeding = {}
+	carcasses = []
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -66,6 +72,7 @@ func _on_period_changed(_period_index: int) -> void:
 	var balance: Dictionary = GameData.balance
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
 	wolf.clamp_stats()
+	_decay_carcasses()
 	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
@@ -209,6 +216,8 @@ func available_actions() -> Array[String]:
 		actions.append("gather")
 	if current_region == den_region or found_sleep_spot_here:
 		actions.append("sleep")
+	if carcass_index_here() >= 0:
+		actions.append("return_to_carcass")
 	return actions
 
 func adjacent_regions() -> Array:
@@ -443,6 +452,8 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	grant_experience(hunt.experience)
 	_record_hunt(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
+		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
+			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
 	else:
 		if hunt.fled and wolf.alive:
@@ -462,6 +473,157 @@ func _record_hunt(hunt: HuntSystem) -> void:
 		life_log["hunt_successes"] = int(life_log.get("hunt_successes", 0)) + 1
 	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP and hunt.gave_up_stage == HuntSystem.Stage.CHASE:
 		life_log["chase_give_ups"] = int(life_log.get("chase_give_ups", 0)) + 1
+
+# --- 分段進食與搶食（SPEC「狩獵後續事件」） ---
+
+func _feeding_cfg() -> Dictionary:
+	return GameData.balance.get("feeding", {})
+
+func start_feeding(animal_id: String, life_stage: String, terrain: String) -> void:
+	var segments: int = HuntSystem.feeding_segments(animal_id, life_stage)
+	var total: float = float(GameData.animals.get(animal_id, {}).get(life_stage, {}).get("hunger_value", 0))
+	current_feeding = {"animal_id": animal_id, "life_stage": life_stage, "segments_left": segments,
+		"segment_value": total / max(1, segments), "turns_stayed": 0, "terrain": terrain}
+
+func is_feeding() -> bool:
+	return not current_feeding.is_empty()
+
+# 下一段吃完後，灰熊／狐狸來搶食的機率：每多停留 1 回合上升，深夜與密林更高。
+func scavenge_chances() -> Dictionary:
+	var cfg := _feeding_cfg()
+	var bear: float = float(cfg.get("bear_base", 0.1)) + float(cfg.get("bear_per_turn", 0.1)) * int(current_feeding.get("turns_stayed", 0))
+	if GameTime.current_period() == "night":
+		bear += float(cfg.get("night_bonus", 0.05))
+	if current_feeding.get("terrain", "") == "dense_forest":
+		bear += float(cfg.get("dense_forest_bonus", 0.05))
+	return {"bear": clamp(bear, 0.0, 0.95), "fox": float(cfg.get("fox_chance", 0.12))}
+
+# 吃一段：1 回合、飽食度 + 一段。之後判定搶食事件。回傳 {"gain", "event": "bear"|"fox"|""}。
+func feed_once() -> Dictionary:
+	if not is_feeding():
+		return {}
+	var chances := scavenge_chances()
+	GameTime.advance_turns(int(_feeding_cfg().get("eat_turns", 1)))
+	if not wolf.alive:
+		current_feeding = {}
+		return {}
+	var gain: float = float(current_feeding["segment_value"])
+	wolf.hunger += gain
+	wolf.clamp_stats()
+	current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
+	var event: String = ""
+	if int(current_feeding["segments_left"]) > 0:
+		if RNGService.chance(float(chances["bear"])):
+			event = "bear"
+		elif RNGService.chance(float(chances["fox"])):
+			event = "fox"
+	else:
+		current_feeding = {}
+	state_changed.emit()
+	return {"gain": gain, "event": event}
+
+# 離開：吃不完的部分留成殘骸。
+func leave_feeding() -> void:
+	if is_feeding() and int(current_feeding["segments_left"]) > 0:
+		carcasses.append({"region_id": current_region, "terrain": current_feeding["terrain"],
+			"animal_id": current_feeding["animal_id"], "life_stage": current_feeding["life_stage"],
+			"segments_left": current_feeding["segments_left"], "segment_value": current_feeding["segment_value"],
+			"day": int(life_log.get("days_lived", 1))})
+	current_feeding = {}
+	state_changed.emit()
+
+# 灰熊搶食：guard 守住（打鬥，風險極高）、grab 叼走一部分（多一段後撤退）、abandon 放棄。
+# 狐狸偷食：drive 驅趕、ignore 不理（少一段）。
+func resolve_scavenger(event: String, choice: String) -> Dictionary:
+	var cfg := _feeding_cfg()
+	var result := {"outcome": choice}
+	if event == "fox":
+		if choice == "ignore":
+			current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+			if int(current_feeding["segments_left"]) <= 0:
+				current_feeding = {}
+		state_changed.emit()
+		return result
+	match choice:
+		"guard":
+			var g: Dictionary = cfg.get("guard", {})
+			if RNGService.chance(guard_win_chance()):
+				wolf.stamina -= float(g.get("win_stamina", 20))
+				grant_experience(["strength", "skill"])
+				result["outcome"] = "guard_win"
+			else:
+				var dmg: float = float(RNGService.randi_range(int(g.get("damage_min", 20)), int(g.get("damage_max", 45))))
+				wolf.health -= dmg
+				if dmg >= float(g.get("heavy_damage", 25)):
+					var b: Dictionary = GameData.balance
+					wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(b.get("heavy_injury_days_min", 3)), int(b.get("heavy_injury_days_max", 5))),
+						"speed" if RNGService.chance(0.5) else "strength")
+				else:
+					wolf.apply_injury(Wolf.Injury.LIGHT, 2)
+				result["outcome"] = "guard_lose"
+				result["damage"] = dmg
+				current_feeding = {}
+		"grab":
+			wolf.hunger += float(current_feeding.get("segment_value", 0))
+			current_feeding = {}
+		_:
+			current_feeding = {}
+	wolf.clamp_stats()
+	_check_death()
+	state_changed.emit()
+	return result
+
+func guard_win_chance() -> float:
+	var g: Dictionary = _feeding_cfg().get("guard", {})
+	var power: float = float(GameData.animals.get("grizzly_bear", {}).get("adult", {}).get("power", 95))
+	return clamp(float(g.get("base", 0.25)) + (wolf.effective_strength() + wolf.effective_skill() - power) / float(g.get("divisor", 250)),
+		float(g.get("min", 0.03)), float(g.get("max", 0.4)))
+
+func carcass_index_here() -> int:
+	for i in carcasses.size():
+		if carcasses[i]["region_id"] == current_region:
+			return i
+	return -1
+
+# 回到殘骸：1 回合；可能撞見正在吃的狐狸或灰熊。回傳 {"event": ...}，沒有殘骸時回傳空字典。
+func action_return_to_carcass() -> Dictionary:
+	var idx := carcass_index_here()
+	if idx < 0:
+		return {}
+	var cfg := _feeding_cfg()
+	GameTime.advance_turns(int(cfg.get("return_turns", 1)))
+	if not wolf.alive:
+		return {}
+	# 回程途中殘骸也可能被搶走或腐壞
+	idx = carcass_index_here()
+	if idx < 0:
+		state_changed.emit()
+		return {"gone": true}
+	var c: Dictionary = carcasses[idx]
+	carcasses.remove_at(idx)
+	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
+		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"]}
+	var event: String = ""
+	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1))):
+		event = "bear"
+	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
+		event = "fox"
+	state_changed.emit()
+	return {"event": event}
+
+# 每個時段：殘骸有 15% 機率被搶走或腐壞，超過 2 天一定消失。
+func _decay_carcasses() -> void:
+	var cfg := _feeding_cfg()
+	var today: int = int(life_log.get("days_lived", 1))
+	var kept: Array = []
+	for c in carcasses:
+		if today - int(c["day"]) > int(cfg.get("carcass_days", 2)):
+			continue
+		if RNGService.chance(float(cfg.get("carcass_loss_per_period", 0.15))):
+			continue
+		kept.append(c)
+	carcasses = kept
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})
@@ -586,6 +748,7 @@ func to_dict() -> Dictionary:
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
 		"region_knowledge": region_knowledge,
+		"carcasses": carcasses,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -608,6 +771,8 @@ func load_from_dict(data: Dictionary) -> void:
 	wind_dir = int(data.get("wind_dir", 0))
 	region_knowledge = data.get("region_knowledge", {den_region: {"visited": true, "features": []}})
 	current_discovery = {}
+	current_feeding = {}
+	carcasses = data.get("carcasses", [])
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))
