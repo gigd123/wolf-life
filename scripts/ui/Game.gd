@@ -122,7 +122,7 @@ func _build_ui() -> void:
 		col.add_child(l)
 		var bar := ProgressBar.new()
 		bar.min_value = 0
-		bar.max_value = 100
+		bar.max_value = float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else 100.0
 		bar.custom_minimum_size = Vector2(0, 12)
 		bar.show_percentage = false
 		col.add_child(bar)
@@ -332,7 +332,7 @@ func _build_debug_overlay() -> void:
 		row.add_child(l)
 		var spin := SpinBox.new()
 		spin.min_value = 0
-		spin.max_value = 100 if key != "age_years" else 20
+		spin.max_value = 20 if key == "age_years" else (float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else 100)
 		spin.step = 0.1 if key == "age_years" else 1
 		spin.custom_minimum_size = Vector2(90, 0)
 		row.add_child(spin)

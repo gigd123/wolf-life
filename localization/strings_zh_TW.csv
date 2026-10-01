@@ -60,6 +60,7 @@ item.blueberries,藍莓
 item.mushroom,蘑菇
 item.beehive,蜂巢
 log.starving,飢餓正在侵蝕你的身體
+log.hungry,長期吃不飽 身體漸漸變差
 log.season_changed,季節變換了
 log.moved,你移動到了{region}
 log.poisoned,你中毒了

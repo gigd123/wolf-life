@@ -32,14 +32,15 @@ var prey_speed: float
 var prey_counter_attack: float
 var prey_hunger_value: float
 
-func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String) -> void:
+# detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
+func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mod: float = 0.0) -> void:
 	wolf = p_wolf
 	animal_id = p_animal_id
 	life_stage = p_life_stage
 	var animal_data: Dictionary = GameData.animals.get(animal_id, {})
 	size = animal_data.get("size", "medium")
 	var stats: Dictionary = animal_data.get(life_stage, {})
-	prey_detection = float(stats.get("detection", 40))
+	prey_detection = float(stats.get("detection", 40)) + detection_mod
 	prey_stamina = float(stats.get("stamina", 40))
 	prey_speed = float(stats.get("speed", 40))
 	prey_counter_attack = float(stats.get("counter_attack", 0))
@@ -56,7 +57,7 @@ func _roll(success_chance: float) -> bool:
 func do_discover() -> Dictionary:
 	var t: Dictionary = _tuning()
 	var chance_value: float = float(t.get("discover_base", 0.6)) \
-		+ (wolf.skill - prey_detection) / float(t.get("discover_skill_divisor", 140))
+		+ (wolf.effective_skill() - prey_detection) / float(t.get("discover_skill_divisor", 140))
 	if _roll(chance_value):
 		stage = Stage.STALK
 		return {"success": true, "text_key": "hunt.discover.success"}
@@ -69,7 +70,7 @@ func do_stalk(approach: String) -> Dictionary:
 	var bonus_table: Dictionary = t.get("stalk_approach_bonus", {})
 	var stamina_table: Dictionary = t.get("stalk_approach_stamina", {})
 	var chance_value: float = float(t.get("stalk_base", 0.58)) \
-		+ (wolf.skill - prey_detection) / float(t.get("stalk_skill_divisor", 110)) \
+		+ (wolf.effective_skill() - prey_detection) / float(t.get("stalk_skill_divisor", 110)) \
 		+ float(bonus_table.get(approach, 0.0))
 	wolf.stamina -= float(stamina_table.get(approach, 5))
 	if _roll(chance_value):
@@ -90,7 +91,7 @@ func do_chase(tactic: String) -> Dictionary:
 	var base_key: String = "chase_base_small" if size == "small" else "chase_base"
 	var divisor_key: String = "chase_speed_divisor_small" if size == "small" else "chase_speed_divisor"
 	var chance_value: float = float(t.get(base_key, 0.58)) \
-		+ (wolf.speed - prey_speed) / float(t.get(divisor_key, 110)) \
+		+ (wolf.effective_speed() - prey_speed) / float(t.get(divisor_key, 110)) \
 		+ float(bonus_table.get(tactic, 0.0))
 	wolf.stamina -= float(stamina_table.get(tactic, 10))
 	if wolf.stamina <= 0.0:
@@ -107,17 +108,17 @@ func do_fight(move: String) -> Dictionary:
 	var t: Dictionary = _tuning()
 	var weight_table: Dictionary = t.get("fight_move_strength_weight", {})
 	var mod_table: Dictionary = t.get("fight_move_success_mod", {})
-	var hunger_table: Dictionary = t.get("fight_move_hunger_mult", {})
 	var counter_table: Dictionary = t.get("fight_move_counter_mult", {})
 	var strength_weight: float = float(weight_table.get(move, 1.0))
-	var power: float = wolf.strength * strength_weight + wolf.skill * (2.0 - strength_weight)
+	var power: float = wolf.effective_strength() * strength_weight + wolf.effective_skill() * (2.0 - strength_weight)
 	var chance_value: float = float(t.get("fight_base", 0.58)) \
 		+ (power - 40.0 - prey_counter_attack) / float(t.get("fight_power_divisor", 130)) \
 		+ fight_bonus_from_chase + float(mod_table.get(move, 0.0))
 	stage = Stage.DONE
 	if _roll(chance_value):
 		result = Result.SUCCESS
-		var hunger_gain: float = prey_hunger_value * float(hunger_table.get(move, 1.0))
+		# 進食回復固定為獵物的 hunger_value；分段進食在 1.5 第 6 步處理。
+		var hunger_gain: float = prey_hunger_value
 		wolf.hunger += hunger_gain
 		return {"success": true, "text_key": "hunt.fight.success", "hunger_gain": hunger_gain}
 	result = Result.PREY_FLED

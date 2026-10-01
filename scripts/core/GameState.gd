@@ -15,6 +15,8 @@ var den_region: String = ""
 var current_region: String = ""
 var found_sleep_spot_here: bool = false
 var rng_seed: int = 0
+# 區域資源消耗：{region_id: {animal_id: 出現率倍率}}，沒有紀錄就是 1。
+var region_depletion: Dictionary = {}
 
 var life_log: Dictionary = {}
 
@@ -25,6 +27,7 @@ func new_game(start_den: String) -> void:
 	den_region = start_den
 	current_region = start_den
 	found_sleep_spot_here = false
+	region_depletion = {}
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -52,11 +55,6 @@ func _on_period_changed(_period_index: int) -> void:
 		return
 	var balance: Dictionary = GameData.balance
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
-	if wolf.hunger <= 0.0:
-		wolf.hunger = 0.0
-		wolf.health -= float(balance.get("hunger_zero_health_loss_per_period", 5))
-		wolf.health_value -= float(balance.get("hunger_zero_health_value_loss_per_period", 1))
-		log_message.emit(tr("log.starving"))
 	wolf.clamp_stats()
 	_check_death()
 	found_sleep_spot_here = false
@@ -64,6 +62,8 @@ func _on_period_changed(_period_index: int) -> void:
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
 	_process_daily_recovery()
+	_apply_daily_hunger_penalty()
+	_recover_region_depletion()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
 
@@ -109,9 +109,45 @@ func _process_daily_recovery() -> void:
 	if wolf.injury_days_remaining > 0:
 		wolf.injury_days_remaining -= 1
 		if wolf.injury_days_remaining <= 0:
-			wolf.injury = Wolf.Injury.NONE
+			wolf.clear_injury()
 	wolf.clamp_stats()
 	_check_death()
+
+# 三段式飢餓懲罰，每天結算一次（以換日當下的飽食度判定）。段數累進：歸零時也算「低於 10」。
+func _apply_daily_hunger_penalty() -> void:
+	if wolf == null or not wolf.alive:
+		return
+	var p: Dictionary = GameData.balance.get("hunger_penalties", {})
+	if wolf.hunger < float(p.get("severe_threshold", 10)):
+		wolf.health_value -= float(p.get("severe_health_value_loss_per_day", 3))
+		log_message.emit(tr("log.starving"))
+	elif wolf.hunger < float(p.get("low_threshold", 30)):
+		wolf.health_value -= float(p.get("low_health_value_loss_per_day", 1))
+		log_message.emit(tr("log.hungry"))
+	if wolf.hunger <= 0.0:
+		wolf.health -= float(p.get("zero_health_loss_per_day", 10))
+	wolf.clamp_stats()
+	_check_death()
+
+func _recover_region_depletion() -> void:
+	var recovery: float = float(GameData.balance.get("region_depletion", {}).get("recovery_per_day", 0.05))
+	for region_id in region_depletion.keys():
+		var table: Dictionary = region_depletion[region_id]
+		for animal_id in table.keys():
+			table[animal_id] = min(1.0, float(table[animal_id]) + recovery)
+
+func _deplete_region(region_id: String, animal_id: String) -> void:
+	var cfg: Dictionary = GameData.balance.get("region_depletion", {})
+	var table: Dictionary = region_depletion.get(region_id, {})
+	var current: float = float(table.get(animal_id, 1.0))
+	table[animal_id] = max(float(cfg.get("min_mult", 0.2)), current - float(cfg.get("per_hunt", 0.2)))
+	region_depletion[region_id] = table
+
+# 短暫休息與快轉只能把體力回到上限 rest_stamina_cap，只有睡覺能回滿；已經超過上限就不變。
+func _rest_stamina(amount: float) -> void:
+	var cap: float = float(GameData.balance.get("rest_stamina_cap", 80))
+	if wolf.stamina < cap:
+		wolf.stamina = min(cap, wolf.stamina + amount)
 
 func _maybe_elder_death_check() -> void:
 	if wolf == null or wolf.life_stage() != Wolf.LifeStage.ELDER:
@@ -179,7 +215,8 @@ func action_move(target_region: String) -> void:
 func action_find_tracks() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_tracks", 1)))
-	var result := EncounterSystem.find_tracks(current_region, GameTime.current_season())
+	var result := EncounterSystem.find_tracks(current_region, GameTime.current_season(),
+		GameTime.current_period(), region_depletion.get(current_region, {}))
 	state_changed.emit()
 	return result
 
@@ -221,7 +258,7 @@ func action_find_sleep_spot() -> bool:
 func action_short_rest() -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("short_rest", 2)))
-	wolf.stamina += float(GameData.balance.get("short_rest_stamina", 15))
+	_rest_stamina(float(GameData.balance.get("short_rest_stamina", 15)))
 	wolf.clamp_stats()
 	state_changed.emit()
 
@@ -237,7 +274,7 @@ func action_rest_until(target_period: String) -> bool:
 			break
 		GameTime.advance_turns(1)
 		if wolf.alive:
-			wolf.stamina += stamina_per_turn
+			_rest_stamina(stamina_per_turn)
 			wolf.clamp_stats()
 	state_changed.emit()
 	return wolf.alive
@@ -261,12 +298,17 @@ func start_hunt(animal_id: String, life_stage: String) -> HuntSystem:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	var cost: int = int(costs.get("hunt_small", 2)) if size == "small" else int(costs.get("hunt_medium", 3))
 	GameTime.advance_turns(cost)
-	return HuntSystem.new(wolf, animal_id, life_stage)
+	# 深夜對狼有利：獵物警覺降低。
+	var detection_mod: float = 0.0
+	if GameTime.current_period() == "night":
+		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
+	return HuntSystem.new(wolf, animal_id, life_stage, detection_mod)
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})
 	prey_count[animal_id] = int(prey_count.get(animal_id, 0)) + 1
 	life_log["prey_count"] = prey_count
+	_deplete_region(current_region, animal_id)
 	var current_rank: int = _prey_rank(str(life_log.get("biggest_prey", "")), str(life_log.get("biggest_prey_stage", "adult")))
 	var new_rank: int = _prey_rank(animal_id, life_stage)
 	if new_rank > current_rank:
@@ -290,7 +332,7 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(stage, {})
 	var power: float = float(stats.get("power", 60))
 	if choice == "fight":
-		var win_chance: float = clamp(0.5 + (wolf.strength + wolf.skill - power) / 200.0, 0.05, 0.7)
+		var win_chance: float = clamp(0.5 + (wolf.effective_strength() + wolf.effective_skill() - power) / 200.0, 0.05, 0.7)
 		if RNGService.chance(win_chance):
 			wolf.stamina -= 15
 			_apply_growth()
@@ -298,7 +340,12 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 			return {"outcome": "win"}
 		var dmg: float = float(RNGService.randi_range(15, 35))
 		wolf.health -= dmg
-		wolf.apply_injury(Wolf.Injury.HEAVY if dmg >= 25.0 else Wolf.Injury.LIGHT, 4 if dmg >= 25.0 else 2)
+		if dmg >= 25.0:
+			var b: Dictionary = GameData.balance
+			var days := RNGService.randi_range(int(b.get("heavy_injury_days_min", 3)), int(b.get("heavy_injury_days_max", 5)))
+			wolf.apply_injury(Wolf.Injury.HEAVY, days, "speed" if RNGService.chance(0.5) else "strength")
+		else:
+			wolf.apply_injury(Wolf.Injury.LIGHT, 2)
 		wolf.clamp_stats()
 		_check_death()
 		return {"outcome": "lose", "damage": dmg}
@@ -375,6 +422,7 @@ func to_dict() -> Dictionary:
 		"current_region": current_region,
 		"found_sleep_spot_here": found_sleep_spot_here,
 		"rng_seed": rng_seed,
+		"region_depletion": region_depletion,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -393,6 +441,7 @@ func load_from_dict(data: Dictionary) -> void:
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})
+	region_depletion = data.get("region_depletion", {})
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))

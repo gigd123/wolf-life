@@ -20,6 +20,7 @@ var age_years: float = 0.6667
 
 var injury: int = Injury.NONE
 var injury_days_remaining: int = 0
+var injury_stat: String = "" # 重傷影響的能力："speed" 或 "strength"
 var poison_days_remaining: int = 0
 
 var alive: bool = true
@@ -46,20 +47,55 @@ func clamp_stats() -> void:
 	speed = clamp(speed, smin, smax)
 	strength = clamp(strength, smin, smax)
 	skill = clamp(skill, smin, smax)
-	hunger = clamp(hunger, smin, smax)
+	hunger = clamp(hunger, smin, float(GameData.balance.get("hunger_max", smax)))
 	health_value = clamp(health_value, smin, smax)
 
-func apply_injury(severity: int, days: int) -> void:
+func apply_injury(severity: int, days: int, stat: String = "") -> void:
 	if severity >= injury:
+		if severity == Injury.HEAVY and (injury != Injury.HEAVY or injury_stat == ""):
+			injury_stat = stat
 		injury = severity
 		injury_days_remaining = max(injury_days_remaining, days)
+
+func clear_injury() -> void:
+	injury = Injury.NONE
+	injury_days_remaining = 0
+	injury_stat = ""
+
+# 判定用的實際能力值：基礎值再乘上飢餓、吃太撐、重傷的修正。畫面上的素質條顯示基礎值。
+func effective_speed() -> float:
+	var b: Dictionary = GameData.balance
+	var mult := _hunger_stat_mult() * _injury_mult("speed")
+	if hunger > float(b.get("overfed_threshold", 120)):
+		mult *= float(b.get("overfed_speed_mult", 0.9))
+	return speed * mult
+
+func effective_strength() -> float:
+	return strength * _hunger_stat_mult() * _injury_mult("strength")
+
+func effective_skill() -> float:
+	return skill * _hunger_stat_mult()
+
+func is_overfed() -> bool:
+	return hunger > float(GameData.balance.get("overfed_threshold", 120))
+
+func _hunger_stat_mult() -> float:
+	var p: Dictionary = GameData.balance.get("hunger_penalties", {})
+	if hunger < float(p.get("severe_threshold", 10)):
+		return float(p.get("severe_stat_mult", 0.9))
+	return 1.0
+
+func _injury_mult(stat: String) -> float:
+	if injury == Injury.HEAVY and injury_stat == stat:
+		return float(GameData.balance.get("heavy_injury_stat_mult", 0.8))
+	return 1.0
 
 func to_dict() -> Dictionary:
 	return {
 		"health": health, "stamina": stamina, "speed": speed,
 		"strength": strength, "skill": skill,
 		"hunger": hunger, "health_value": health_value, "age_years": age_years,
-		"injury": injury, "injury_days_remaining": injury_days_remaining,
+		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat,
 		"poison_days_remaining": poison_days_remaining,
 		"alive": alive, "death_cause": death_cause,
 	}
@@ -76,6 +112,7 @@ static func from_dict(data: Dictionary) -> Wolf:
 	w.age_years = float(data.get("age_years", 0.6667))
 	w.injury = int(data.get("injury", Injury.NONE))
 	w.injury_days_remaining = int(data.get("injury_days_remaining", 0))
+	w.injury_stat = str(data.get("injury_stat", ""))
 	w.poison_days_remaining = int(data.get("poison_days_remaining", 0))
 	w.alive = bool(data.get("alive", true))
 	w.death_cause = str(data.get("death_cause", ""))

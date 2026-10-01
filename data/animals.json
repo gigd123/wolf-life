@@ -3,22 +3,24 @@
     "type": "prey",
     "size": "medium",
     "name_key": "animal.white_tailed_deer",
-    "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "hunger_value": 45 },
-    "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 10, "hunger_value": 70 }
+    "period_activity": { "dawn": 2.0, "day": 0.5, "dusk": 2.0 },
+    "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "hunger_value": 40 },
+    "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 10, "hunger_value": 75 }
   },
   "hare": {
     "type": "prey",
     "size": "small",
     "name_key": "animal.hare",
-    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 15 },
-    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 25 }
+    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 7 },
+    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 12 }
   },
   "red_fox": {
     "type": "prey",
     "size": "small",
     "name_key": "animal.red_fox",
-    "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "hunger_value": 12 },
-    "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "hunger_value": 20 }
+    "period_activity": { "night": 1.5 },
+    "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "hunger_value": 11 },
+    "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "hunger_value": 18 }
   },
   "grizzly_bear": {
     "type": "competitor",
