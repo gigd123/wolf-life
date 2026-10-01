@@ -4,6 +4,7 @@ const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_sou
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill"]
 const ACTION_ORDER := ["find_tracks", "gather", "find_sleep_spot", "short_rest", "sleep"]
 const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
+const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
 var region_buttons: Dictionary = {}
@@ -51,15 +52,16 @@ func _build_ui() -> void:
 	bg.anchor_bottom = 1.0
 	add_child(bg)
 
-	var scroll := ScrollContainer.new()
-	scroll.anchor_right = 1.0
-	scroll.anchor_bottom = 1.0
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
-
+	# 整個畫面固定在視窗內（640×360），不用外層捲動，行動紀錄才會一直看得到。
 	var root_vbox := VBoxContainer.new()
-	root_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(root_vbox)
+	root_vbox.anchor_right = 1.0
+	root_vbox.anchor_bottom = 1.0
+	root_vbox.offset_left = 4
+	root_vbox.offset_top = 2
+	root_vbox.offset_right = -4
+	root_vbox.offset_bottom = -4
+	root_vbox.add_theme_constant_override("separation", 2)
+	add_child(root_vbox)
 
 	var header_box := HBoxContainer.new()
 	root_vbox.add_child(header_box)
@@ -72,13 +74,20 @@ func _build_ui() -> void:
 	header_box.add_child(wolf_portrait)
 
 	var header_text_box := VBoxContainer.new()
+	header_text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_text_box.add_theme_constant_override("separation", 0)
 	header_box.add_child(header_text_box)
 
+	var top_row := HBoxContainer.new()
+	header_text_box.add_child(top_row)
+
 	top_label = Label.new()
-	header_text_box.add_child(top_label)
+	top_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_label.clip_text = true
+	top_row.add_child(top_label)
 
 	var status_row := HBoxContainer.new()
-	header_text_box.add_child(status_row)
+	top_row.add_child(status_row)
 	for kind in STATUS_ICON_KINDS:
 		var icon_rect := TextureRect.new()
 		icon_rect.texture = PixelArt.make_status_icon(kind, Vector2i(16, 16))
@@ -89,17 +98,29 @@ func _build_ui() -> void:
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
 
+	var debug_btn := Button.new()
+	debug_btn.text = tr("ui.debug")
+	debug_btn.pressed.connect(_toggle_debug)
+	top_row.add_child(debug_btn)
+
+	var save_quit_btn := Button.new()
+	save_quit_btn.text = tr("ui.save_and_exit")
+	save_quit_btn.pressed.connect(_on_save_and_exit)
+	top_row.add_child(save_quit_btn)
+
 	var stats_box := HBoxContainer.new()
-	root_vbox.add_child(stats_box)
+	header_text_box.add_child(stats_box)
 	for key in STAT_KEYS:
 		var col := VBoxContainer.new()
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.add_theme_constant_override("separation", 0)
 		var l := Label.new()
 		l.text = tr("stat." + key)
 		col.add_child(l)
 		var bar := ProgressBar.new()
 		bar.min_value = 0
 		bar.max_value = 100
-		bar.custom_minimum_size = Vector2(90, 16)
+		bar.custom_minimum_size = Vector2(0, 12)
 		bar.show_percentage = false
 		col.add_child(bar)
 		stats_box.add_child(col)
@@ -128,9 +149,15 @@ func _build_ui() -> void:
 		map_grid.add_child(btn)
 		region_buttons[region_id] = btn
 
+	# 行動按鈕之後會變多，放在自己的捲動區，不會把行動紀錄擠出畫面。
+	var action_scroll := ScrollContainer.new()
+	action_scroll.custom_minimum_size = Vector2(220, 0)
+	action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	middle.add_child(action_scroll)
 	var action_panel := VBoxContainer.new()
-	action_panel.custom_minimum_size = Vector2(220, 0)
-	middle.add_child(action_panel)
+	action_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_panel.add_theme_constant_override("separation", 2)
+	action_scroll.add_child(action_panel)
 	var action_title := Label.new()
 	action_title.text = tr("ui.actions")
 	action_panel.add_child(action_title)
@@ -142,20 +169,18 @@ func _build_ui() -> void:
 		action_panel.add_child(btn)
 		action_buttons[action_id] = btn
 
-	var debug_btn := Button.new()
-	debug_btn.text = tr("ui.debug")
-	debug_btn.custom_minimum_size = Vector2(0, 22)
-	debug_btn.pressed.connect(_toggle_debug)
-	action_panel.add_child(debug_btn)
-
-	var save_quit_btn := Button.new()
-	save_quit_btn.text = tr("ui.save_and_exit")
-	save_quit_btn.custom_minimum_size = Vector2(0, 22)
-	save_quit_btn.pressed.connect(_on_save_and_exit)
-	action_panel.add_child(save_quit_btn)
-
 	log_box = RichTextLabel.new()
-	log_box.custom_minimum_size = Vector2(0, 100)
+	# 高度取整數行，避免最上面一行只露出半截。
+	var log_style := StyleBoxFlat.new()
+	log_style.bg_color = Color(0, 0, 0, 0.25)
+	log_style.content_margin_left = 4
+	log_style.content_margin_right = 4
+	log_style.content_margin_top = 2
+	log_style.content_margin_bottom = 2
+	log_box.add_theme_stylebox_override("normal", log_style)
+	var log_font := log_box.get_theme_font("normal_font")
+	var log_line_h := log_font.get_height(log_box.get_theme_font_size("normal_font_size")) + log_box.get_theme_constant("line_separation")
+	log_box.custom_minimum_size = Vector2(0, log_line_h * LOG_VISIBLE_LINES + 4)
 	log_box.scroll_following = true
 	log_box.bbcode_enabled = false
 	root_vbox.add_child(log_box)
