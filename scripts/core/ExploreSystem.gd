@@ -23,8 +23,12 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var location: String = terrains[RNGService.randi_range(0, terrains.size() - 1)]
 	var known_features: Array = ctx.get("known_features", [])
 
+	var mults := feature_prey_mults(known_features)
+	var knowledge_mults: Dictionary = ctx.get("prey_knowledge", {})
+	for animal_id in knowledge_mults.keys():
+		mults[animal_id] = float(mults.get(animal_id, 1.0)) * float(knowledge_mults[animal_id])
 	var prey := EncounterSystem.prey_weights(region_id, ctx["season"], ctx["period"],
-		ctx.get("depletion", {}), feature_prey_mults(known_features))
+		ctx.get("depletion", {}), mults)
 	var weights: Dictionary = prey["weights"]
 	var ratio: float = 0.0
 	if float(prey["base_total"]) > 0.0:
@@ -112,7 +116,8 @@ static func can_track(discovery: Dictionary) -> bool:
 		return false
 	return discovery.get("fresh", false) or not discovery.get("fresh_known", true)
 
-static func track_chance(discovery: Dictionary, perception: float) -> Dictionary:
+# knowledge_bonus：「確定」的獵物出沒知識帶來的追蹤加成。
+static func track_chance(discovery: Dictionary, perception: float, knowledge_bonus: float = 0.0) -> Dictionary:
 	var t: Dictionary = _cfg().get("track", {})
 	var stats: Dictionary = GameData.animals.get(discovery["source"], {}).get(discovery.get("life_stage", "adult"), {})
 	var detection: float = float(stats.get("detection", 40))
@@ -127,4 +132,32 @@ static func track_chance(discovery: Dictionary, perception: float) -> Dictionary
 	factors.append({"key": "factor.wind." + wind, "good": w >= 0.0, "weight": absf(w)})
 	if not discovery.get("fresh_known", true):
 		factors.append({"key": "factor.fresh_unknown", "good": false, "weight": 0.0, "info": true})
-	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w), "factors": factors}
+	if knowledge_bonus > 0.0:
+		factors.append({"key": "factor.knowledge", "good": true, "weight": knowledge_bonus})
+	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w + knowledge_bonus), "factors": factors}
+
+# 「確定」的知識：預估此時此地探索發現某種獵物（線索或目擊）的機率，給畫面顯示。
+static func estimate_prey_chance(ctx: Dictionary, animal_id: String) -> float:
+	var cfg := _cfg()
+	var region: Dictionary = EncounterSystem.region_data(ctx["region_id"])
+	var mults := feature_prey_mults(ctx.get("known_features", []))
+	var knowledge_mults: Dictionary = ctx.get("prey_knowledge", {})
+	for a in knowledge_mults.keys():
+		mults[a] = float(mults.get(a, 1.0)) * float(knowledge_mults[a])
+	var prey := EncounterSystem.prey_weights(ctx["region_id"], ctx["season"], ctx["period"], ctx.get("depletion", {}), mults)
+	var weights: Dictionary = prey["weights"]
+	var ratio: float = float(prey["adjusted_total"]) / max(0.001, float(prey["base_total"]))
+	var nothing: float = float(cfg.get("nothing_chance_min", 0.08)) + (float(cfg.get("nothing_chance_max", 0.15)) - float(cfg.get("nothing_chance_min", 0.08))) * clamp(1.0 - ratio, 0.0, 1.0)
+	var total: float = 0.0
+	for a in weights.keys():
+		total += float(weights[a])
+	for item in EncounterSystem.gather_weights(ctx["region_id"], ctx["season"]).values():
+		total += float(item) * float(cfg.get("gather_source_weight_mult", 0.5))
+	if total <= 0.0:
+		return 0.0
+	var unknown_features: int = 0
+	for f in region.get("secondary_features", []):
+		if not ctx.get("known_features", []).has(f):
+			unknown_features += 1
+	var feature: float = float(cfg.get("feature_chance", 0.12)) if unknown_features > 0 else 0.0
+	return (1.0 - nothing) * (1.0 - feature) * float(weights.get(animal_id, 0.0)) / total

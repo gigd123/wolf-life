@@ -166,6 +166,30 @@ explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
 action.return_to_carcass,回到獵物殘骸
+ui.knowledge,知識
+ui.knowledge.title,這隻狼知道的事
+ui.knowledge.empty,還沒有累積任何知識
+ui.note,記下
+knowledge.level.1,【似乎】
+knowledge.level.2,【通常】
+knowledge.level.3,【確定】
+knowledge.prey,{period}的{region}常有{animal}
+knowledge.danger,{season}季的{region}有{animal}出沒
+knowledge.weakness,{prey}被{option}時比較容易得手
+knowledge.overhunt,在{region}連續獵{animal} 牠們會離開好幾天
+knowledge.feature,{region}有{feature}
+knowledge.option.drive_forest,驅趕向密林
+knowledge.option.drive_stream,逼向溪流
+knowledge.option.drive_logs,逼向倒木區
+knowledge.option.flank,切側翼
+knowledge.option.follow,長距離跟隨
+log.knowledge_learned,你學到：
+log.identified,你認出來了 那是{animal}
+log.danger_warning,你記得：
+explore.known,{period}的{location} 你知道{animal}會來
+animal_unknown.grizzly_bear,未知的大型掠食者
+animal_unknown.stranger_wolf,陌生的狼
+factor.knowledge,你知道這件事
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
 feeding.eat,吃一段（+{v}）

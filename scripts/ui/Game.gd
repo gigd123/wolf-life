@@ -48,6 +48,7 @@ func _ready() -> void:
 	GameState.wolf_died.connect(_on_wolf_died)
 	GameState.encounter_triggered.connect(_on_encounter_triggered)
 	GameState.growth_applied.connect(func(): Audio.play_level_up())
+	GameState.knowledge_learned.connect(func(entry): _log(tr("log.knowledge_learned") + _knowledge_text(entry)))
 	_refresh()
 	Audio.play_bgm()
 	Audio.play_howl()
@@ -149,6 +150,10 @@ func _build_ui() -> void:
 	region_info_btn.text = tr("ui.region_info")
 	region_info_btn.pressed.connect(_show_region_info)
 	map_title_row.add_child(region_info_btn)
+	var knowledge_btn := Button.new()
+	knowledge_btn.text = tr("ui.knowledge")
+	knowledge_btn.pressed.connect(_show_knowledge)
+	map_title_row.add_child(knowledge_btn)
 	var map_center := CenterContainer.new()
 	map_panel.add_child(map_center)
 	var map_grid := GridContainer.new()
@@ -494,12 +499,15 @@ func _refresh() -> void:
 		var marker: String = " ★" if region_id == GameState.den_region else ""
 		var here: String = (" [" + tr("ui.here") + "]") if is_current else ""
 		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
-		btn.text = tr("region." + region_id) + marker + unknown + here
+		var danger: String = " ⚠" if not GameState.known_dangers(region_id, GameTime.current_season()).is_empty() else ""
+		btn.text = tr("region." + region_id) + marker + unknown + danger + here
 
 	var available: Array[String] = GameState.available_actions()
 	for action_id in action_buttons.keys():
 		var btn: Button = action_buttons[action_id]
 		btn.visible = available.has(action_id)
+	# 「確定」的獵物出沒知識：探索按鈕直接顯示此時此地最可能發現的獵物機率
+	action_buttons["explore"].text = tr("action.explore") + _explore_hint()
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
 
@@ -523,6 +531,8 @@ func _clear_children(node: Node) -> void:
 func _on_region_button(region_id: String) -> void:
 	if region_id == GameState.current_region:
 		return
+	for entry in GameState.known_dangers(region_id, GameTime.current_season()):
+		_log(tr("log.danger_warning") + _knowledge_text(entry))
 	GameState.action_move(region_id)
 
 # --- Actions ---
@@ -611,6 +621,11 @@ func _show_discovery(d: Dictionary) -> void:
 			var info := GameState.track_chance()
 			_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
+	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false):
+		_add_encounter_button(tr("ui.note"), func():
+			GameState.note_discovery()
+			encounter_overlay.visible = false
+		)
 	_add_encounter_button(tr("ui.keep_exploring"), func(): _show_discovery(GameState.action_explore()))
 	_add_encounter_button(tr("ui.leave"), func():
 		GameState.clear_discovery()
@@ -654,6 +669,11 @@ func _discovery_text(d: Dictionary) -> String:
 	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
 	if d.get("injured", false):
 		animal = tr("explore.injured") + animal
+	# 已經「確定」的事件壓縮成一行，不重新演出完整文字。
+	if (d.get("fresh", false) or d.get("clue", "") == "sight") and GameState.is_confirmed({"type": "prey", "animal": d["source"],
+			"region": GameState.current_region, "period": GameTime.current_period()}):
+		return tr("explore.known").replace("{period}", tr("period." + GameTime.current_period())) \
+			.replace("{location}", tr("explore.location." + str(d.get("location", "")))).replace("{animal}", tr("animal." + str(d["source"])))
 	var fresh: String = ""
 	if d.get("fresh_known", true):
 		fresh = tr("explore.fresh") if d.get("fresh", false) else tr("explore.stale")
@@ -780,6 +800,56 @@ func _build_region_info_overlay() -> void:
 	root.add_child(close_btn)
 
 # 已知的特徵顯示名稱，未知的以「？」表示；沒去過的區域連主要地形都是「？」。
+# --- 知識 ---
+
+func _source_name(source: String) -> String:
+	return tr("animal." + source) if GameState.is_identified(source) else tr("animal_unknown." + source)
+
+func _knowledge_text(entry: Dictionary) -> String:
+	var level: String = tr("knowledge.level.%d" % GameState.knowledge_level(entry))
+	var text: String = tr("knowledge." + str(entry["type"]))
+	text = text.replace("{animal}", _source_name(str(entry.get("animal", ""))))
+	text = text.replace("{region}", tr("region." + str(entry.get("region", ""))))
+	text = text.replace("{period}", tr("period." + str(entry.get("period", ""))))
+	text = text.replace("{season}", tr("season." + str(entry.get("season", ""))))
+	text = text.replace("{prey}", _prey_name(str(entry.get("animal", "")), str(entry.get("life_stage", "adult"))))
+	text = text.replace("{option}", tr("knowledge.option." + str(entry.get("option", ""))))
+	return level + text
+
+func _explore_hint() -> String:
+	var ctx := {"region_id": GameState.current_region, "season": GameTime.current_season(), "period": GameTime.current_period(),
+		"depletion": GameState.region_depletion.get(GameState.current_region, {}),
+		"known_features": GameState.known_features(GameState.current_region),
+		"prey_knowledge": GameState.prey_knowledge_mults(GameState.current_region, GameTime.current_period())}
+	var best: String = ""
+	var best_chance: float = 0.0
+	for animal_id in ctx["prey_knowledge"].keys():
+		var c := ExploreSystem.estimate_prey_chance(ctx, animal_id)
+		if c > best_chance:
+			best = animal_id
+			best_chance = c
+	if best == "":
+		return ""
+	return "（%s %d%%）" % [tr("animal." + best), int(round(best_chance * 100.0))]
+
+func _show_knowledge() -> void:
+	var lines: Array[String] = [tr("ui.knowledge.title")]
+	var order := ["prey", "danger", "weakness", "overhunt"]
+	var entries: Array = GameState.knowledge.values()
+	entries.sort_custom(func(a, b):
+		if a["type"] != b["type"]:
+			return order.find(a["type"]) < order.find(b["type"])
+		return int(a["count"]) > int(b["count"]))
+	for entry in entries:
+		lines.append(_knowledge_text(entry))
+	for region_id in REGION_ORDER:
+		for f in GameState.known_features(region_id):
+			lines.append(tr("knowledge.feature").replace("{region}", tr("region." + region_id)).replace("{feature}", tr("feature." + str(f))))
+	if lines.size() == 1:
+		lines.append(tr("ui.knowledge.empty"))
+	region_info_text.text = "\n".join(lines)
+	region_info_overlay.visible = true
+
 func _show_region_info() -> void:
 	var unknown: String = tr("ui.unknown")
 	var lines: Array[String] = [tr("ui.region_info")]

@@ -9,6 +9,7 @@ signal log_message(text: String)
 signal wolf_died(cause: String)
 signal encounter_triggered(data: Dictionary)
 signal growth_applied
+signal knowledge_learned(entry: Dictionary)
 
 var wolf: Wolf
 var den_region: String = ""
@@ -27,6 +28,12 @@ var region_knowledge: Dictionary = {}
 var current_discovery: Dictionary = {}
 # 分段進食：目前正在吃的獵物 {animal_id, life_stage, segments_left, segment_value, turns_stayed, terrain}。
 var current_feeding: Dictionary = {}
+# 這隻狼的知識（SPEC「知識系統」）：{key: {"type", ...參數, "count"}}，count 1／2／3 = 似乎／通常／確定。
+# type：prey（獵物出沒：animal, region, period）、danger（危險：animal, region, season）、
+# weakness（獵物弱點：animal, life_stage, option）、overhunt（過度狩獵：animal, region）。
+var knowledge: Dictionary = {}
+# 已辨識的線索來源（白尾鹿、野兔、狐狸一開始就認得；灰熊、陌生灰狼要親眼見過）。
+var identified: Array = []
 # 吃不完留下的殘骸：[{region_id, terrain, animal_id, life_stage, segments_left, segment_value, day}]，最多留 2 天。
 var carcasses: Array = []
 
@@ -45,6 +52,8 @@ func new_game(start_den: String) -> void:
 	current_discovery = {}
 	current_feeding = {}
 	carcasses = []
+	knowledge = {}
+	identified = GameData.knowledge.get("identified_at_start", []).duplicate()
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -172,6 +181,9 @@ func _deplete_region(region_id: String, animal_id: String) -> void:
 	var current: float = float(table.get(animal_id, 1.0))
 	table[animal_id] = max(float(cfg.get("min_mult", 0.2)), current - float(cfg.get("per_hunt", 0.2)))
 	region_depletion[region_id] = table
+	# 狼自己造成的改變也是知識：資源掉到門檻以下時學到「連續狩獵，牠們會離開」。
+	if current > float(GameData.knowledge.get("overhunt_threshold", 0.6)) and float(table[animal_id]) <= float(GameData.knowledge.get("overhunt_threshold", 0.6)):
+		learn({"type": "overhunt", "animal": animal_id, "region": region_id})
 
 # 短暫休息與快轉只能把體力回到上限 rest_stamina_cap，只有睡覺能回滿；已經超過上限就不變。
 func _rest_stamina(amount: float) -> void:
@@ -276,6 +288,7 @@ func action_explore() -> Dictionary:
 		"depletion": region_depletion.get(current_region, {}),
 		"wind_dir": wind_dir,
 		"known_features": known_features(current_region),
+		"prey_knowledge": prey_knowledge_mults(current_region, GameTime.current_period()),
 	})
 	match current_discovery.get("kind", ""):
 		"feature":
@@ -284,11 +297,21 @@ func action_explore() -> Dictionary:
 			region_knowledge[current_region] = knowledge
 		"clue":
 			grant_experience(["perception"], float(GameData.discovery.get("explore_perception_mult", 0.15)))
+			# 新鮮線索與直接目擊自動累積「獵物出沒」知識；陳舊線索要玩家選「記下」。
+			if current_discovery.get("source_kind", "") == "prey" and (current_discovery.get("fresh", false) or not current_discovery.get("fresh_known", true)):
+				_learn_prey_sighting(current_discovery["source"])
 	state_changed.emit()
 	return current_discovery
 
 func track_chance() -> Dictionary:
-	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception())
+	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception(), _track_knowledge_bonus(current_discovery))
+
+func _track_knowledge_bonus(d: Dictionary) -> float:
+	if d.get("source_kind", "") != "prey":
+		return 0.0
+	if is_confirmed({"type": "prey", "animal": d["source"], "region": current_region, "period": GameTime.current_period()}):
+		return float(GameData.knowledge.get("prey_confirmed_track_bonus", 0.1))
+	return 0.0
 
 # 追蹤目前的線索：成功時回傳 {"success": true, "hunt": HuntSystem}，狩獵直接從潛近開始。
 func action_track() -> Dictionary:
@@ -296,7 +319,7 @@ func action_track() -> Dictionary:
 	current_discovery = {}
 	if not ExploreSystem.can_track(d):
 		return {"success": false}
-	var info := ExploreSystem.track_chance(d, wolf.effective_perception())
+	var info := ExploreSystem.track_chance(d, wolf.effective_perception(), _track_knowledge_bonus(d))
 	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
 	if not wolf.alive:
 		return {"success": false}
@@ -333,6 +356,86 @@ func action_gather_discovered() -> String:
 
 func clear_discovery() -> void:
 	current_discovery = {}
+
+# 記下陳舊線索。
+func note_discovery() -> bool:
+	var d: Dictionary = current_discovery
+	current_discovery = {}
+	if d.get("source_kind", "") != "prey":
+		return false
+	_learn_prey_sighting(d["source"])
+	state_changed.emit()
+	return true
+
+# --- 知識系統 ---
+
+static func knowledge_key(entry: Dictionary) -> String:
+	match entry["type"]:
+		"prey": return "prey|%s|%s|%s" % [entry["animal"], entry["region"], entry["period"]]
+		"danger": return "danger|%s|%s|%s" % [entry["animal"], entry["region"], entry["season"]]
+		"weakness": return "weakness|%s|%s|%s" % [entry["animal"], entry["life_stage"], entry["option"]]
+		"overhunt": return "overhunt|%s|%s" % [entry["animal"], entry["region"]]
+	return ""
+
+# 累積一次。回傳新的次數。
+func learn(entry: Dictionary) -> int:
+	var key := knowledge_key(entry)
+	if key == "":
+		return 0
+	var existing: Dictionary = knowledge.get(key, entry.duplicate())
+	existing["count"] = int(existing.get("count", 0)) + 1
+	knowledge[key] = existing
+	if existing["count"] <= int(GameData.knowledge.get("confirm_count", 3)):
+		knowledge_learned.emit(existing)
+	return existing["count"]
+
+func knowledge_level(entry: Dictionary) -> int:
+	var count: int = int(knowledge.get(knowledge_key(entry), {}).get("count", 0))
+	return min(count, int(GameData.knowledge.get("confirm_count", 3)))
+
+func is_confirmed(entry: Dictionary) -> bool:
+	return knowledge_level(entry) >= int(GameData.knowledge.get("confirm_count", 3))
+
+func _learn_prey_sighting(animal_id: String) -> void:
+	learn({"type": "prey", "animal": animal_id, "region": current_region, "period": GameTime.current_period()})
+
+# 確定的獵物出沒知識：此時此地該獵物的出現權重倍率。
+func prey_knowledge_mults(region_id: String, period: String) -> Dictionary:
+	var mults: Dictionary = {}
+	for animal_id in GameData.animals.keys():
+		if is_confirmed({"type": "prey", "animal": animal_id, "region": region_id, "period": period}):
+			mults[animal_id] = float(GameData.knowledge.get("prey_confirmed_weight_mult", 1.2))
+	return mults
+
+func is_identified(source: String) -> bool:
+	return identified.has(source) or GameData.knowledge.get("identified_at_start", []).has(source)
+
+# 親眼見過才辨識。辨識後同類線索與舊的知識紀錄一律改用已辨識的文字（文字在畫面層依 identified 決定）。
+func identify(source: String) -> void:
+	if not identified.has(source):
+		identified.append(source)
+		log_message.emit(tr("log.identified").replace("{animal}", tr("animal." + source)))
+
+# 這一季在某區域是否知道有危險（例如灰熊出沒）。
+func known_dangers(region_id: String, season: String) -> Array:
+	var list: Array = []
+	for entry in knowledge.values():
+		if entry["type"] == "danger" and entry["region"] == region_id and entry["season"] == season:
+			list.append(entry)
+	return list
+
+func _learn_danger(animal_id: String) -> void:
+	learn({"type": "danger", "animal": animal_id, "region": current_region, "season": GameTime.current_season()})
+
+# 獵物弱點：對某種獵物某個追擊選項的加成。
+func weakness_bonuses(animal_id: String, life_stage: String) -> Dictionary:
+	var bonuses: Dictionary = {}
+	var per: float = float(GameData.knowledge.get("weakness_bonus_per_level", 0.04))
+	for option in GameData.knowledge.get("weakness_options", []):
+		var level := knowledge_level({"type": "weakness", "animal": animal_id, "life_stage": life_stage, "option": option})
+		if level > 0:
+			bonuses[option] = per * level
+	return bonuses
 
 func action_gather() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -459,6 +562,7 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	if terrain == "":
 		terrain = _random_terrain(current_region)
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
+	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	if from_tracking:
 		hunt.experience.append("perception")
 	return hunt
@@ -499,6 +603,9 @@ func finish_hunt(hunt: HuntSystem) -> void:
 
 # 狩獵紀錄（之後的狩獵傾向與一生回顧使用）：次數、成功、追擊中途放棄。
 func _record_hunt(hunt: HuntSystem) -> void:
+	for option in hunt.successful_options:
+		if GameData.knowledge.get("weakness_options", []).has(option):
+			learn({"type": "weakness", "animal": hunt.animal_id, "life_stage": hunt.life_stage, "option": option})
 	life_log["hunt_attempts"] = int(life_log.get("hunt_attempts", 0)) + 1
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		life_log["hunt_successes"] = int(life_log.get("hunt_successes", 0)) + 1
@@ -569,6 +676,9 @@ func leave_feeding() -> void:
 func resolve_scavenger(event: String, choice: String) -> Dictionary:
 	var cfg := _feeding_cfg()
 	var result := {"outcome": choice}
+	if event == "bear":
+		identify("grizzly_bear")
+		_learn_danger("grizzly_bear")
 	if event == "fox":
 		if choice == "ignore":
 			current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
@@ -679,6 +789,8 @@ func _prey_rank(animal_id: String, life_stage: String) -> int:
 
 func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dictionary:
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
+	identify(animal_id)
+	_learn_danger(animal_id)
 	var stage: String = encounter.get("life_stage", "adult")
 	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(stage, {})
 	var power: float = float(stats.get("power", 60))
@@ -780,6 +892,8 @@ func to_dict() -> Dictionary:
 		"wind_dir": wind_dir,
 		"region_knowledge": region_knowledge,
 		"carcasses": carcasses,
+		"knowledge": knowledge,
+		"identified": identified,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -804,6 +918,8 @@ func load_from_dict(data: Dictionary) -> void:
 	current_discovery = {}
 	current_feeding = {}
 	carcasses = data.get("carcasses", [])
+	knowledge = data.get("knowledge", {})
+	identified = data.get("identified", GameData.knowledge.get("identified_at_start", []).duplicate())
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))

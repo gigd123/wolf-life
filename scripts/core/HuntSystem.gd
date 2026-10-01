@@ -66,6 +66,8 @@ var chase_round: int = 0 # 已經追了幾回合
 var prey_stamina_max: float
 var prey_stamina_cur: float
 var gave_up_stage: int = -1 # 放棄時所在的階段（記錄狩獵傾向）
+var knowledge_bonus: Dictionary = {} # 獵物弱點知識：{option_id: 加成}
+var successful_options: Array[String] = [] # 這次狩獵成功過的選項（累積獵物弱點知識）
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
 # p_terrain：遭遇時所在的地形（探索的地點特徵）。
@@ -306,7 +308,10 @@ func _chase_option(id: String) -> Dictionary:
 		factors.append({"key": "factor.tired", "good": false, "weight": exhausted})
 	_add_common_factors(factors)
 	_add_turns_factor(factors, int(opt.get("turns", 0)))
-	var value: float = base + diff + t + chase_bonus + float(opt.get("bonus", 0.0)) - exhausted
+	var known: float = float(knowledge_bonus.get(id, 0.0))
+	if known > 0.0:
+		factors.append({"key": "factor.knowledge", "good": true, "weight": known})
+	var value: float = base + diff + t + chase_bonus + known + float(opt.get("bonus", 0.0)) - exhausted
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0)),
 		"prey_drain": float(opt.get("prey_drain", 15))}
@@ -566,6 +571,7 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	prey_stamina_cur = max(0.0, prey_stamina_cur - float(opt.get("prey_drain", 15)))
 	if _roll(float(opt["chance"])):
 		_gain("speed")
+		successful_options.append(str(opt["id"]))
 		if depth == "full":
 			stage = Stage.FIGHT
 			fight_state["chase_bonus"] = float(opt.get("fight_bonus", 0.0))

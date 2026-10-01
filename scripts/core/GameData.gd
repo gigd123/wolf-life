@@ -8,12 +8,14 @@ var balance: Dictionary = {}
 var animals: Dictionary = {}
 var regions_root: Dictionary = {}
 var discovery: Dictionary = {}
+var knowledge: Dictionary = {}
 
 func _ready() -> void:
 	balance = _load_json("res://data/balance.json")
 	animals = _load_json("res://data/animals.json")
 	regions_root = _load_json("res://data/regions.json")
 	discovery = _load_json("res://data/discovery.json")
+	knowledge = _load_json("res://data/knowledge.json")
 
 func regions() -> Dictionary:
 	return regions_root.get("regions", {})
