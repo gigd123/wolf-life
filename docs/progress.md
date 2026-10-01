@@ -61,6 +61,7 @@ Phase 1 收尾：尚未開始（下一步：修行動結果文字顯示不完整
 - **背景對應**：規格寫 `bg_forest_east` 等，實際檔名依地形命名。使用者同意以下對應，實作時用資料檔對應，不改檔名：東部＝`bg_stream_valley`、北部＝`bg_deep_forest`、南部＝`bg_forest_edge_meadow`、西部＝`bg_fallen_log_slope`。
 - **文件路徑**：`SPEC.md`、`DESIGN.md`、`ecology-reference.md`、`progress.md` 都放在 `docs/`，`CLAUDE.md` 文件表已同步。
 - **`docs/ecology-reference.md`**：已補上。內容為生態參考，不是實作規格；與 `SPEC.md` 的 1.5 範圍沒有衝突。其中可直接支撐 1.5 的依據：飽餐－耐餓、追 2～3 回合後放棄、獵物站定、野兔躲藏難抓、深夜對狼有利、狐狸洞可作為探索發現。
+- **雲端開發環境**：雲端 session 已驗證可用，SessionStart hook 自動安裝 Godot 4.7.2，`tools/godot_check.sh` 通過。第一個雲端任務：Phase 1 收尾的文字顯示 bug。
 
 ## 1.6 預留
 - 狩獵的搏鬥階段之後要改用戰鬥規則：目前搏鬥在 `HuntSystem.do_fight()`，灰熊打鬥在 `GameState.resolve_competitor_encounter()`。1.5 修改這兩處時，要把勝負判定集中成可替換的函式。
