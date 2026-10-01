@@ -2,7 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
-const ACTION_ORDER := ["find_tracks", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
+const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
 const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
 
@@ -22,6 +22,10 @@ var encounter_overlay: Panel
 var encounter_message: Label
 var encounter_sprite: TextureRect
 var encounter_buttons_box: HBoxContainer
+var encounter_detail: Label
+
+var region_info_overlay: Panel
+var region_info_text: RichTextLabel
 
 var hunt_overlay: Panel
 var hunt_message: Label
@@ -136,9 +140,15 @@ func _build_ui() -> void:
 	var map_panel := VBoxContainer.new()
 	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	middle.add_child(map_panel)
+	var map_title_row := HBoxContainer.new()
+	map_panel.add_child(map_title_row)
 	var map_title := Label.new()
 	map_title.text = tr("ui.region_map")
-	map_panel.add_child(map_title)
+	map_title_row.add_child(map_title)
+	var region_info_btn := Button.new()
+	region_info_btn.text = tr("ui.region_info")
+	region_info_btn.pressed.connect(_show_region_info)
+	map_title_row.add_child(region_info_btn)
 	var map_center := CenterContainer.new()
 	map_panel.add_child(map_center)
 	var map_grid := GridContainer.new()
@@ -198,6 +208,7 @@ func _build_ui() -> void:
 	_build_encounter_overlay()
 	_build_hunt_overlay()
 	_build_rest_overlay()
+	_build_region_info_overlay()
 	_build_debug_overlay()
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
@@ -234,6 +245,11 @@ func _build_encounter_overlay() -> void:
 	encounter_buttons_box = HBoxContainer.new()
 	encounter_buttons_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(encounter_buttons_box)
+	encounter_detail = Label.new()
+	encounter_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	encounter_detail.add_theme_font_size_override("font_size", 12)
+	encounter_detail.modulate = Color(0.8, 0.85, 0.8)
+	box.add_child(encounter_detail)
 
 func _build_hunt_overlay() -> void:
 	hunt_overlay = Panel.new()
@@ -477,7 +493,8 @@ func _refresh() -> void:
 		btn.disabled = not is_adjacent or is_current
 		var marker: String = " ★" if region_id == GameState.den_region else ""
 		var here: String = (" [" + tr("ui.here") + "]") if is_current else ""
-		btn.text = tr("region." + region_id) + marker + here
+		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
+		btn.text = tr("region." + region_id) + marker + unknown + here
 
 	var available: Array[String] = GameState.available_actions()
 	for action_id in action_buttons.keys():
@@ -510,12 +527,8 @@ func _on_region_button(region_id: String) -> void:
 
 func _on_action_button(action_id: String) -> void:
 	match action_id:
-		"find_tracks":
-			var result := GameState.action_find_tracks()
-			if result.get("found", false):
-				_show_find_result(result)
-			else:
-				_log(tr("log.find_tracks.fail"))
+		"explore":
+			_show_discovery(GameState.action_explore())
 		"gather":
 			var result := GameState.action_gather()
 			if result.get("found", false):
@@ -554,6 +567,147 @@ func _on_rest_until(period: String) -> void:
 func _animal_scale(life_stage: String) -> float:
 	return 0.7 if life_stage == "juvenile" else 1.0
 
+# --- 探索 ---
+
+const CLUE_ICON_FOR := {"scent": "scent", "track": "track", "sound": "sound", "sign": "track", "sight": "sight"}
+
+func _show_discovery(d: Dictionary) -> void:
+	if d.is_empty() or GameState.wolf == null or not GameState.wolf.alive:
+		return
+	var text := _discovery_text(d)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.texture = _discovery_sprite(d)
+	_clear_children(encounter_buttons_box)
+	if d.get("kind", "") == "clue":
+		if d.get("source_kind", "") == "gather":
+			_add_encounter_button(tr("ui.gather_here"), func():
+				var item: String = GameState.action_gather_discovered()
+				encounter_overlay.visible = false
+				if item != "":
+					_log(tr("log.gather.success").replace("{item}", tr("item." + item)))
+			)
+		elif d.get("clue", "") == "sight":
+			_add_encounter_button(tr("ui.hunt"), func():
+				encounter_overlay.visible = false
+				current_hunt = GameState.action_hunt_sighted()
+				_render_hunt_stage()
+			)
+		elif ExploreSystem.can_track(d):
+			var info := GameState.track_chance()
+			_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+			encounter_detail.text = _format_factors(info["factors"])
+	_add_encounter_button(tr("ui.keep_exploring"), func(): _show_discovery(GameState.action_explore()))
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.clear_discovery()
+		encounter_overlay.visible = false
+	)
+	encounter_overlay.visible = true
+
+func _on_track() -> void:
+	var animal_name: String = tr("animal." + str(GameState.current_discovery.get("source", "")))
+	var result := GameState.action_track()
+	encounter_overlay.visible = false
+	if result.get("success", false):
+		_log(tr("log.track.success").replace("{animal}", animal_name))
+		current_hunt = result["hunt"]
+		_render_hunt_stage()
+	else:
+		_log(tr("log.track.fail"))
+		var reason: String = result.get("reason_key", "")
+		if reason != "":
+			_log(tr(reason).replace("{animal}", animal_name))
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+
+func _add_encounter_button(label: String, callback: Callable) -> void:
+	var btn := Button.new()
+	btn.text = label
+	btn.pressed.connect(callback)
+	encounter_buttons_box.add_child(btn)
+
+func _discovery_text(d: Dictionary) -> String:
+	var location: String = tr("explore.location." + str(d.get("location", "")))
+	match d.get("kind", ""):
+		"nothing":
+			return tr("explore.nothing").replace("{location}", location) \
+				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))
+		"feature":
+			return tr("explore.feature").replace("{location}", location) \
+				.replace("{feature}", tr("feature." + str(d["feature_id"])))
+	if d.get("source_kind", "") == "gather":
+		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
+	var animal: String = tr("animal." + str(d["source"]))
+	if d.get("life_stage", "adult") == "juvenile":
+		animal = tr("explore.juvenile") + animal
+	var fresh: String = ""
+	if d.get("fresh_known", true):
+		fresh = tr("explore.fresh") if d.get("fresh", false) else tr("explore.stale")
+	var clue: String = str(d.get("clue", "track"))
+	var text: String = tr("explore.clue." + clue).replace("{location}", location).replace("{animal}", animal) \
+		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + str(GameData.discovery.get("signs", {}).get(d["source"], "browse"))))
+	if not d.get("fresh_known", true):
+		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
+	return text
+
+func _discovery_sprite(d: Dictionary) -> Texture2D:
+	if d.get("kind", "") == "clue" and d.get("clue", "") == "sight" and d.get("source_kind", "") == "prey":
+		return PixelArt.make_animal_sprite(d["source"], Vector2i(72, 48), _animal_scale(d.get("life_stage", "adult")))
+	var icon: String = "sight"
+	match d.get("kind", ""):
+		"nothing": icon = "unknown"
+		"clue": icon = CLUE_ICON_FOR.get(d.get("clue", "track"), "track")
+	var path: String = str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon)
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	var img: Image = load(path).get_image()
+	img.resize(img.get_width() * 3, img.get_height() * 3, Image.INTERPOLATE_NEAREST)
+	return ImageTexture.create_from_image(img)
+
+# --- 區域資訊 ---
+
+func _build_region_info_overlay() -> void:
+	region_info_overlay = Panel.new()
+	region_info_overlay.visible = false
+	region_info_overlay.anchor_right = 1.0
+	region_info_overlay.anchor_bottom = 1.0
+	region_info_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	add_child(region_info_overlay)
+	var root := VBoxContainer.new()
+	root.anchor_right = 1.0
+	root.anchor_bottom = 1.0
+	root.offset_left = 12
+	root.offset_top = 8
+	root.offset_right = -12
+	root.offset_bottom = -8
+	region_info_overlay.add_child(root)
+	region_info_text = RichTextLabel.new()
+	region_info_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(region_info_text)
+	var close_btn := Button.new()
+	close_btn.text = tr("debug.close")
+	close_btn.pressed.connect(func(): region_info_overlay.visible = false)
+	root.add_child(close_btn)
+
+# 已知的特徵顯示名稱，未知的以「？」表示；沒去過的區域連主要地形都是「？」。
+func _show_region_info() -> void:
+	var unknown: String = tr("ui.unknown")
+	var lines: Array[String] = [tr("ui.region_info")]
+	for region_id in REGION_ORDER:
+		var data: Dictionary = EncounterSystem.region_data(region_id)
+		var visited: bool = GameState.is_region_visited(region_id)
+		var main: String = tr("region_main." + str(data.get("main_feature", ""))) if visited else unknown
+		var known: Array = GameState.known_features(region_id)
+		var parts: Array[String] = []
+		for f in data.get("secondary_features", []):
+			parts.append(tr("feature." + str(f)) if known.has(f) else unknown)
+		lines.append("")
+		lines.append(tr("region." + region_id) + "：" + main)
+		lines.append("　" + tr("ui.region_info.features") + "：" + "、".join(parts))
+	region_info_text.text = "\n".join(lines)
+	region_info_overlay.visible = true
+
 func _show_find_result(result: Dictionary) -> void:
 	var animal_id: String = result["animal_id"]
 	var life_stage: String = result["life_stage"]
@@ -561,6 +715,7 @@ func _show_find_result(result: Dictionary) -> void:
 	var wind_text: String = tr("factor.wind." + str(result.get("wind", "crosswind")))
 	_log(tr("log.find_tracks.success") + " " + tr("animal." + animal_id) + "（" + wind_text + "）")
 	encounter_message.text = tr("log.find_tracks.success") + "\n" + tr("animal." + animal_id) + "　" + wind_text
+	encounter_detail.text = ""
 	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
 	_clear_children(encounter_buttons_box)
 	var hunt_btn := Button.new()
@@ -684,6 +839,7 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 	var life_stage: String = encounter.get("life_stage", "adult")
 	_log(tr("encounter.competitor").replace("{animal}", tr("animal." + animal_id)))
 	encounter_message.text = tr("encounter.competitor").replace("{animal}", tr("animal." + animal_id))
+	encounter_detail.text = ""
 	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
 	_clear_children(encounter_buttons_box)
 	var fight_btn := Button.new()

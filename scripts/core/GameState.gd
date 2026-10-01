@@ -19,6 +19,11 @@ var rng_seed: int = 0
 var region_depletion: Dictionary = {}
 # 全域風向（0～3，風從哪個方位吹來）。不做羅盤，遭遇時換算成逆風／側風／順風。
 var wind_dir: int = 0
+# 區域知識：{region_id: {"visited": bool, "features": [已發現的次要特徵]}}。
+# 開局只認得巢穴所在區域的樣貌；第一次進入其他區域時揭露主要地形。
+var region_knowledge: Dictionary = {}
+# 目前探索到、還沒處理的發現（見 ExploreSystem）。
+var current_discovery: Dictionary = {}
 
 var life_log: Dictionary = {}
 
@@ -31,6 +36,8 @@ func new_game(start_den: String) -> void:
 	found_sleep_spot_here = false
 	region_depletion = {}
 	wind_dir = RNGService.randi_range(0, 3)
+	region_knowledge = {start_den: {"visited": true, "features": []}}
+	current_discovery = {}
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -196,7 +203,7 @@ func _die(cause: String) -> void:
 # --- Player actions ---
 
 func available_actions() -> Array[String]:
-	var actions: Array[String] = ["find_tracks", "find_sleep_spot", "short_rest", "rest_until"]
+	var actions: Array[String] = ["explore", "find_sleep_spot", "short_rest", "rest_until"]
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	if not region.get("gather_weights", {}).is_empty():
 		actions.append("gather")
@@ -218,6 +225,13 @@ func action_move(target_region: String) -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("move_region", 1)))
 	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
+	if not is_region_visited(target_region):
+		var knowledge: Dictionary = region_knowledge.get(target_region, {"features": []})
+		knowledge["visited"] = true
+		region_knowledge[target_region] = knowledge
+		var main: String = str(EncounterSystem.region_data(target_region).get("main_feature", ""))
+		log_message.emit(tr("log.region_first_visit").replace("{region}", tr("region." + target_region))
+			.replace("{main}", tr("region_main." + main)))
 	var terrain_cost: float = float(EncounterSystem.region_data(target_region).get("terrain_stamina_modifier", 0))
 	wolf.stamina -= terrain_cost
 	wolf.clamp_stats()
@@ -228,15 +242,88 @@ func action_move(target_region: String) -> void:
 			encounter_triggered.emit(encounter)
 	state_changed.emit()
 
-func action_find_tracks() -> Dictionary:
+# --- 探索（取代「尋找獵物蹤跡」） ---
+
+func is_region_visited(region_id: String) -> bool:
+	return bool(region_knowledge.get(region_id, {}).get("visited", false))
+
+func known_features(region_id: String) -> Array:
+	return region_knowledge.get(region_id, {}).get("features", [])
+
+func _feature_known_here(flag: String) -> bool:
+	var all_features: Dictionary = GameData.region_features()
+	for f in known_features(current_region):
+		if all_features.get(f, {}).has(flag):
+			return true
+	return false
+
+func action_explore() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
-	GameTime.advance_turns(int(costs.get("find_tracks", 1)))
-	var result := EncounterSystem.find_tracks(current_region, GameTime.current_season(),
-		GameTime.current_period(), region_depletion.get(current_region, {}), wind_dir, wolf.effective_perception())
-	if result.get("found", false):
-		grant_experience(["perception"], float(GameData.balance.get("growth", {}).get("find_tracks_perception_mult", 0.5)))
+	GameTime.advance_turns(int(costs.get("explore", 1)))
+	if not wolf.alive:
+		return {}
+	current_discovery = ExploreSystem.generate({
+		"region_id": current_region,
+		"season": GameTime.current_season(),
+		"period": GameTime.current_period(),
+		"depletion": region_depletion.get(current_region, {}),
+		"wind_dir": wind_dir,
+		"known_features": known_features(current_region),
+	})
+	match current_discovery.get("kind", ""):
+		"feature":
+			var knowledge: Dictionary = region_knowledge.get(current_region, {"visited": true, "features": []})
+			knowledge["features"].append(current_discovery["feature_id"])
+			region_knowledge[current_region] = knowledge
+		"clue":
+			grant_experience(["perception"], float(GameData.discovery.get("explore_perception_mult", 0.15)))
 	state_changed.emit()
-	return result
+	return current_discovery
+
+func track_chance() -> Dictionary:
+	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception())
+
+# 追蹤目前的線索：成功時回傳 {"success": true, "hunt": HuntSystem}，狩獵直接從潛近開始。
+func action_track() -> Dictionary:
+	var d: Dictionary = current_discovery
+	current_discovery = {}
+	if not ExploreSystem.can_track(d):
+		return {"success": false}
+	var info := ExploreSystem.track_chance(d, wolf.effective_perception())
+	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
+	if not wolf.alive:
+		return {"success": false}
+	if not d.get("fresh", false):
+		state_changed.emit()
+		return {"success": false, "reason_key": "reason.stale"}
+	if not RNGService.chance(float(info["chance"])):
+		state_changed.emit()
+		var worst := HuntSystem.main_negative_factor(info["factors"])
+		var reason: String = "" if worst.is_empty() else "reason." + str(worst["key"]).trim_prefix("factor.").replace(".", "_")
+		return {"success": false, "reason_key": reason}
+	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true)}
+
+# 直接目擊獵物：不用追蹤，直接進入狩獵（從潛近開始）。
+func action_hunt_sighted() -> HuntSystem:
+	var d: Dictionary = current_discovery
+	current_discovery = {}
+	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true)
+
+# 採集探索到的採集物。
+func action_gather_discovered() -> String:
+	var d: Dictionary = current_discovery
+	current_discovery = {}
+	if d.get("source_kind", "") != "gather":
+		return ""
+	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	GameTime.advance_turns(int(costs.get("gather", 1)))
+	if wolf.alive:
+		_apply_gather_effect(d["source"])
+	state_changed.emit()
+	return d["source"]
+
+func clear_discovery() -> void:
+	current_discovery = {}
 
 func action_gather() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -267,7 +354,8 @@ func _apply_gather_effect(item_id: String) -> void:
 func action_find_sleep_spot() -> bool:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_sleep_spot", 1)))
-	var found := EncounterSystem.find_sleep_spot(current_region)
+	# 已發現好睡處的區域一定找得到。
+	var found := _feature_known_here("sleep_spot") or EncounterSystem.find_sleep_spot(current_region)
 	if found:
 		found_sleep_spot_here = true
 	state_changed.emit()
@@ -276,7 +364,10 @@ func action_find_sleep_spot() -> bool:
 func action_short_rest() -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("short_rest", 2)))
-	_rest_stamina(float(GameData.balance.get("short_rest_stamina", 15)))
+	var bonus: float = 0.0
+	for f in known_features(current_region):
+		bonus += float(GameData.region_features().get(f, {}).get("short_rest_stamina_bonus", 0))
+	_rest_stamina(float(GameData.balance.get("short_rest_stamina", 15)) + bonus)
 	wolf.clamp_stats()
 	state_changed.emit()
 
@@ -310,7 +401,8 @@ func action_sleep() -> void:
 	SaveSystem.save_game()
 	state_changed.emit()
 
-func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> HuntSystem:
+# from_tracking：經由追蹤或直接目擊找到獵物時，已經掌握位置，跳過發現階段並累積感知經驗。
+func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false) -> HuntSystem:
 	var animal_data: Dictionary = GameData.animals.get(animal_id, {})
 	var size: String = animal_data.get("size", "medium")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -322,7 +414,12 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> Hu
 		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
 	if prey_dir < 0:
 		prey_dir = RNGService.randi_range(0, 3)
-	return HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir)
+	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir)
+	if from_tracking:
+		hunt.experience.append("perception")
+		if hunt.stage == HuntSystem.Stage.DISCOVER:
+			hunt.stage = HuntSystem.Stage.STALK
+	return hunt
 
 # 狩獵中花費額外回合（例如繞到下風處）。
 func spend_hunt_turns(turns: int) -> void:
@@ -462,6 +559,7 @@ func to_dict() -> Dictionary:
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
+		"region_knowledge": region_knowledge,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -482,6 +580,8 @@ func load_from_dict(data: Dictionary) -> void:
 	life_log = data.get("life_log", {})
 	region_depletion = data.get("region_depletion", {})
 	wind_dir = int(data.get("wind_dir", 0))
+	region_knowledge = data.get("region_knowledge", {den_region: {"visited": true, "features": []}})
+	current_discovery = {}
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))

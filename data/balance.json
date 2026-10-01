@@ -21,12 +21,8 @@
   "heavy_injury_days_max": 5,
   "heavy_injury_stat_mult": 0.8,
   "rest_stamina_cap": 80,
-  "find_tracks_base_chance": 0.6,
-  "find_tracks_max_chance": 0.9,
   "night_prey_detection_mod": -10,
   "wind_change_chance_per_period": 0.15,
-  "find_tracks_wind_mult": { "headwind": 1.2, "crosswind": 1.0, "tailwind": 0.8 },
-  "find_tracks_perception_divisor": 200,
   "factor_display": { "base_count": 2, "extra_count_perception": 55 },
   "region_depletion": { "per_hunt": 0.2, "recovery_per_day": 0.05, "min_mult": 0.2 },
   "den_sleep_health": 30,
@@ -42,7 +38,7 @@
   "elder_death_age_factor": 0.01,
   "elder_death_health_value_factor": 0.0005,
   "action_turn_costs": {
-    "find_tracks": 1,
+    "explore": 1,
     "find_sleep_spot": 1,
     "short_rest": 2,
     "sleep": 3,
@@ -84,7 +80,6 @@
   "growth": {
     "subadult_gain": { "speed": 0.6, "strength": 0.6, "skill": 0.5, "perception": 0.5 },
     "adult_gain_before_peak": { "speed": 0.15, "strength": 0.15, "skill": 0.15, "perception": 0.15 },
-    "find_tracks_perception_mult": 0.15,
     "peak_age": 4.0,
     "elder_decay_per_season": { "speed": 1.0, "strength": 0.5, "skill": 0.0 }
   },

@@ -1,8 +1,17 @@
 {
   "start_map": "forest",
+  "features": {
+    "good_sleep_spot": { "sleep_spot": true },
+    "game_trail": { "prey_mult": { "white_tailed_deer": 1.3 } },
+    "fox_den": { "prey_mult": { "red_fox": 1.5 } },
+    "hidden_pool": { "short_rest_stamina_bonus": 5 }
+  },
   "regions": {
     "forest_east": {
       "name_key": "region.forest_east",
+      "terrains": ["stream", "forest_edge"],
+      "main_feature": "stream_valley",
+      "secondary_features": ["game_trail", "good_sleep_spot"],
       "adjacent": ["forest_north", "forest_south"],
       "can_den": true,
       "terrain_stamina_modifier": 0,
@@ -23,6 +32,9 @@
     },
     "forest_north": {
       "name_key": "region.forest_north",
+      "terrains": ["dense_forest", "stream"],
+      "main_feature": "deep_forest",
+      "secondary_features": ["good_sleep_spot", "hidden_pool"],
       "adjacent": ["forest_east", "forest_west"],
       "can_den": true,
       "terrain_stamina_modifier": 3,
@@ -41,6 +53,9 @@
     },
     "forest_south": {
       "name_key": "region.forest_south",
+      "terrains": ["forest_edge", "clearing"],
+      "main_feature": "forest_edge_meadow",
+      "secondary_features": ["fox_den", "game_trail"],
       "adjacent": ["forest_east", "forest_west"],
       "can_den": true,
       "terrain_stamina_modifier": 0,
@@ -61,6 +76,9 @@
     },
     "forest_west": {
       "name_key": "region.forest_west",
+      "terrains": ["dense_forest", "fallen_logs"],
+      "main_feature": "fallen_log_slope",
+      "secondary_features": ["good_sleep_spot", "hidden_pool"],
       "adjacent": ["forest_north", "forest_south"],
       "can_den": true,
       "terrain_stamina_modifier": 0,

@@ -46,10 +46,10 @@ ui.ignore,不理會
 ui.fight,戰鬥
 ui.retreat,撤退
 ui.give_up,放棄
-action.find_tracks,尋找獵物蹤跡
 action.gather,採集
 action.find_sleep_spot,找尋睡覺的地方
 action.short_rest,短暫休息
+action.explore,探索
 action.rest_until,休息到…
 action.sleep,睡覺
 animal.white_tailed_deer,白尾鹿
@@ -66,7 +66,6 @@ log.season_changed,季節變換了
 log.moved,你移動到了{region}
 log.poisoned,你中毒了
 log.stung,你被螫傷了
-log.find_tracks.fail,沒有找到任何蹤跡
 log.find_tracks.success,發現了蹤跡
 log.gather.success,採集到了{item}
 log.gather.fail,這裡沒有可採集的東西
@@ -141,6 +140,49 @@ reason.hungry,飢餓讓你使不上力
 reason.overfed,吃得太撐 跑不動
 reason.injured,傷勢拖累了你
 log.wind_shifted,風向轉了 現在是{wind}
+log.track.success,你循著線索找到了{animal}
+log.track.fail,你跟丟了線索
+log.region_first_visit,第一次來到{region}：{main}
+reason.stale,線索太舊了 {animal}早就離開了
+reason.faint_trail,線索太模糊 你分辨不出方向
+factor.sharp_nose,感知敏銳
+factor.faint_trail,線索模糊
+factor.fresh_unknown,不確定新不新鮮
+ui.track,追蹤
+ui.keep_exploring,繼續探索
+ui.leave,離開
+ui.gather_here,採集
+ui.region_info,區域資訊
+ui.region_info.features,特徵
+ui.unknown,？
+explore.location.stream,溪流旁
+explore.location.dense_forest,密林裡
+explore.location.forest_edge,林緣
+explore.location.clearing,空地上
+explore.location.fallen_logs,倒木區
+explore.clue.scent,{location} 你聞到{fresh}{animal}的氣味
+explore.clue.track,{location} 你發現{fresh}{animal}足跡
+explore.clue.sound,{location} 你聽見{animal}的動靜
+explore.clue.sign,{location} 你發現{fresh}{sign} 是{animal}留下的
+explore.clue.sight,{location} 你看見一隻{animal}
+explore.gather,{location} 你發現了{item}
+explore.nothing,{location} 什麼也沒發現 這裡最近沒有{animal}來過
+explore.feature,{location} 你發現了{feature}
+explore.fresh,新鮮的
+explore.stale,陳舊的
+explore.fresh_unknown,（{wind} 聞不出新不新鮮）
+explore.juvenile,小
+explore.sign.browse,啃食痕跡
+explore.sign.droppings,糞便
+explore.sign.scratch,抓痕
+feature.good_sleep_spot,一處好睡處
+feature.game_trail,獵物常走的小徑
+feature.fox_den,狐狸洞穴
+feature.hidden_pool,隱蔽的水潭
+region_main.stream_valley,一條溪流從山區流進林緣
+region_main.deep_forest,樹林茂密 溪水從林間穿過
+region_main.forest_edge_meadow,樹林在這裡漸漸稀疏 外面是開闊的空地
+region_main.fallen_log_slope,最深的老林 坡上到處是倒木
 encounter.competitor,你遇到了一隻{animal}
 encounter.result.win,你擊退了對方
 encounter.result.lose,你受傷了
