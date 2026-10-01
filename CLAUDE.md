@@ -44,10 +44,9 @@
 
 ## 美術素材
 
-- Phase 1.5 佔位素材位置：`assets/art/phase1.5/`；根目錄 `arts/` 另有一套，使用哪一套見 `SPEC.md` 的「美術素材」，每項都有 `_1x.png` 與 `_4x.png`，透明背景（背景圖除外）。
+- 原始交付檔在根目錄 `arts/`（`files/wolf_assets/` 為主、`phase1.5_art/` 補充，兩套混用），每項都有 `_1x.png` 與 `_4x.png`，透明背景（背景圖除外）。程式只讀 `assets/art/` 的 1x 檔案，對應關係在 `data/art.json`，說明見 `assets/README.md`。
 - 像素圖的貼圖過濾要設為 Nearest，避免模糊。
-- 灰狼一格約 48×32 像素；背景為 320×180，下方約三分之一是地面。
-- 背景檔名對應區域識別名稱：`bg_forest_east`、`bg_forest_north`、`bg_forest_south`、`bg_forest_west`。
+- 灰狼與動物 spritesheet 每格 48×32 像素；區域背景 640×360（`assets/art/backgrounds/regions/`，含北部冬季），地形背景 320×180（`assets/art/backgrounds/terrain/`，狩獵與遭遇畫面使用）。
 - 時段光線（清晨、黃昏、深夜）用程式調色，暴雨用粒子效果，不需要另外的圖。
 - 目前是佔位素材，之後換正式素材時會維持相同的檔名和尺寸。
 

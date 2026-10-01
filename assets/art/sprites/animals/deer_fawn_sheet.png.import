@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi765lxlul15u"
-path="res://.godot/imported/wolf_spritesheet.png-5aab0b0876459e96506f862a8af95e04.ctex"
+uid="uid://d3wqh4vxe746"
+path="res://.godot/imported/deer_fawn_sheet.png-f974c12f7dfa7c76c96001db8f578182.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/wolf_spritesheet.png"
-dest_files=["res://.godot/imported/wolf_spritesheet.png-5aab0b0876459e96506f862a8af95e04.ctex"]
+source_file="res://assets/art/sprites/animals/deer_fawn_sheet.png"
+dest_files=["res://.godot/imported/deer_fawn_sheet.png-f974c12f7dfa7c76c96001db8f578182.ctex"]
 
 [params]
 

@@ -39,10 +39,18 @@ func _ready() -> void:
 	sprite.custom_minimum_size = Vector2(96, 64)
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var frame_atlas := AtlasTexture.new()
-	frame_atlas.atlas = load("res://assets/sprites/wolf_spritesheet.png")
-	frame_atlas.region = Rect2(0, 0, 48, 32)
-	sprite.texture = frame_atlas
+	# 灰狼 spritesheet「倒下」那一列的最後一格
+	var sheet_path: String = str(GameData.art.get("wolf", {}).get("sheet", ""))
+	var down_row: int = int(GameData.art.get("wolf", {}).get("rows", {}).get("down", 3))
+	var sheet: Texture2D = ArtLibrary.texture(sheet_path)
+	if sheet != null:
+		var fs := ArtLibrary.frame_size()
+		var frame_atlas := AtlasTexture.new()
+		frame_atlas.atlas = sheet
+		frame_atlas.region = Rect2(fs.x * 3, fs.y * down_row, fs.x, fs.y)
+		sprite.texture = frame_atlas
+	else:
+		sprite.texture = PixelArt.make_animal_sprite("gray_wolf")
 	sprite.modulate = Color(0.8, 0.8, 0.8, 0.9)
 	sprite_center.add_child(sprite)
 

@@ -15,12 +15,14 @@ var top_label: Label
 var wolf_portrait: AnimatedIcon
 var last_rendered_season: String = ""
 
-const WOLF_SHEET_PATH := "res://assets/sprites/wolf_spritesheet.png"
-const WOLF_FRAME_SIZE := Vector2i(48, 32)
+var region_bg: TextureRect
+var encounter_bg: TextureRect
+var hunt_bg: TextureRect
+var hunt_wolf_sprite: AnimatedIcon
 
 var encounter_overlay: Panel
 var encounter_message: Label
-var encounter_sprite: TextureRect
+var encounter_sprite: AnimatedIcon
 var encounter_buttons_box: HBoxContainer
 var encounter_detail: Label
 
@@ -29,7 +31,7 @@ var region_info_text: RichTextLabel
 
 var hunt_overlay: Panel
 var hunt_message: Label
-var hunt_sprite: TextureRect
+var hunt_sprite: AnimatedIcon
 var hunt_buttons_box: VBoxContainer
 var current_hunt: HuntSystem = null
 
@@ -61,6 +63,15 @@ func _build_ui() -> void:
 	bg.anchor_right = 1.0
 	bg.anchor_bottom = 1.0
 	add_child(bg)
+	# 區域背景（依季節換圖、依時段調色），上面蓋一層暗色讓文字好讀
+	region_bg = _make_background_rect()
+	add_child(region_bg)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, float(GameData.art.get("background_dim", 0.45)))
+	dim.anchor_right = 1.0
+	dim.anchor_bottom = 1.0
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dim)
 
 	# 整個畫面固定在視窗內（640×360），不用外層捲動，行動紀錄才會一直看得到。
 	var root_vbox := VBoxContainer.new()
@@ -80,7 +91,8 @@ func _build_ui() -> void:
 	wolf_portrait.custom_minimum_size = Vector2(96, 64)
 	wolf_portrait.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	wolf_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	wolf_portrait.setup(load(WOLF_SHEET_PATH), WOLF_FRAME_SIZE, 0, 4, 5.0)
+	if not ArtLibrary.setup_wolf(wolf_portrait, "idle"):
+		wolf_portrait.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 	header_box.add_child(wolf_portrait)
 
 	var header_text_box := VBoxContainer.new()
@@ -100,7 +112,8 @@ func _build_ui() -> void:
 	top_row.add_child(status_row)
 	for kind in STATUS_ICON_KINDS:
 		var icon_rect := TextureRect.new()
-		icon_rect.texture = PixelArt.make_status_icon(kind, Vector2i(16, 16))
+		var status_tex: Texture2D = ArtLibrary.icon("status." + kind)
+		icon_rect.texture = status_tex if status_tex != null else PixelArt.make_status_icon(kind, Vector2i(16, 16))
 		icon_rect.custom_minimum_size = Vector2(20, 20)
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -219,6 +232,54 @@ func _build_ui() -> void:
 	_build_rain()
 	_build_debug_overlay()
 
+# --- 美術（data/art.json；找不到圖時退回 PixelArt 程式生成的佔位圖） ---
+
+func _make_background_rect(overlay: bool = false) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.anchor_right = 1.0
+	rect.anchor_bottom = 1.0
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if overlay:
+		# 選單底下的地形背景調暗，文字才看得清楚
+		var d: float = 1.0 - float(GameData.art.get("overlay_background_dim", 0.4))
+		rect.self_modulate = Color(d, d, d, 1.0)
+	return rect
+
+# fit_height > 0：縮放到固定高度（狩獵畫面，排版穩定）；0：用原始像素大小顯示
+# （遭遇畫面；遠處的灰熊就會比較小，像素比例也和主畫面的狼一致）。
+func _make_creature_icon(fit_height: int = 0) -> AnimatedIcon:
+	var icon := AnimatedIcon.new()
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if fit_height > 0:
+		icon.custom_minimum_size = Vector2(fit_height * 1.8, fit_height)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	else:
+		icon.custom_minimum_size = Vector2(48, 32)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	return icon
+
+func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle") -> void:
+	if not ArtLibrary.setup_animal(icon, animal_id, life_stage, action):
+		var fallback_id: String = "gray_wolf" if animal_id == "stranger_wolf" else animal_id
+		icon.show_static(PixelArt.make_animal_sprite(fallback_id, Vector2i(72, 48), _animal_scale(life_stage)))
+
+func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
+	if pose == "walk":
+		if ArtLibrary.setup_wolf(icon, "walk", 8.0):
+			return
+	var tex: Texture2D = ArtLibrary.wolf_pose(pose)
+	if tex != null:
+		icon.show_static(tex)
+	elif not ArtLibrary.setup_wolf(icon, "idle"):
+		icon.show_static(PixelArt.make_animal_sprite("gray_wolf"))
+
+func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
+	rect.texture = ArtLibrary.terrain_background(terrain) if terrain != "" else null
+
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
 func _overlay_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -232,6 +293,8 @@ func _build_encounter_overlay() -> void:
 	encounter_overlay.anchor_right = 1.0
 	encounter_overlay.anchor_bottom = 1.0
 	add_child(encounter_overlay)
+	encounter_bg = _make_background_rect(true)
+	encounter_overlay.add_child(encounter_bg)
 	var center := CenterContainer.new()
 	center.anchor_right = 1.0
 	center.anchor_bottom = 1.0
@@ -241,10 +304,7 @@ func _build_encounter_overlay() -> void:
 	center.add_child(box)
 	var sprite_center := CenterContainer.new()
 	box.add_child(sprite_center)
-	encounter_sprite = TextureRect.new()
-	encounter_sprite.custom_minimum_size = Vector2(72, 48)
-	encounter_sprite.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-	encounter_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	encounter_sprite = _make_creature_icon()
 	sprite_center.add_child(encounter_sprite)
 	encounter_message = Label.new()
 	encounter_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -266,6 +326,8 @@ func _build_hunt_overlay() -> void:
 	hunt_overlay.anchor_right = 1.0
 	hunt_overlay.anchor_bottom = 1.0
 	add_child(hunt_overlay)
+	hunt_bg = _make_background_rect(true)
+	hunt_overlay.add_child(hunt_bg)
 	var center := CenterContainer.new()
 	center.anchor_right = 1.0
 	center.anchor_bottom = 1.0
@@ -275,11 +337,14 @@ func _build_hunt_overlay() -> void:
 	center.add_child(box)
 	var sprite_center := CenterContainer.new()
 	box.add_child(sprite_center)
-	hunt_sprite = TextureRect.new()
-	hunt_sprite.custom_minimum_size = Vector2(72, 48)
-	hunt_sprite.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-	hunt_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite_center.add_child(hunt_sprite)
+	# 左邊是狼（依階段換姿勢），右邊是獵物
+	var sprite_row := HBoxContainer.new()
+	sprite_row.add_theme_constant_override("separation", 24)
+	sprite_center.add_child(sprite_row)
+	hunt_wolf_sprite = _make_creature_icon(40)
+	sprite_row.add_child(hunt_wolf_sprite)
+	hunt_sprite = _make_creature_icon(40)
+	sprite_row.add_child(hunt_sprite)
 	hunt_message = Label.new()
 	hunt_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hunt_message.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -525,6 +590,8 @@ func _refresh() -> void:
 	if not tendency.is_empty():
 		top_label.text += "   |   " + tr("tendency." + str(tendency["type"]))
 	rain.emitting = GameState.weather == "storm"
+	region_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
+	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period())
 	_process_events.call_deferred()
 	stats_bars["health"].value = w.health
 	stats_bars["stamina"].value = w.stamina
@@ -660,7 +727,8 @@ func _show_discovery(d: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.texture = _discovery_sprite(d)
+	_show_discovery_sprite(d)
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
 		_add_threat_options(d)
@@ -785,27 +853,28 @@ func _discovery_text(d: Dictionary) -> String:
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
 	return text
 
-func _discovery_sprite(d: Dictionary) -> Texture2D:
-	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
-		var icon_key: String = "claw" if d.get("clue", "") == "claw" else ("scent" if str(d.get("clue", "")).ends_with("scent") else ("sight" if d.get("clue", "") == "sight" else "track"))
-		var tpath: String = str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon_key)
-		if ResourceLoader.exists(tpath):
-			var timg: Image = load(tpath).get_image()
-			timg.resize(timg.get_width() * 3, timg.get_height() * 3, Image.INTERPOLATE_NEAREST)
-			return ImageTexture.create_from_image(timg)
-		return null
-	if d.get("kind", "") == "clue" and d.get("clue", "") == "sight" and d.get("source_kind", "") == "prey":
-		return PixelArt.make_animal_sprite(d["source"], Vector2i(72, 48), _animal_scale(d.get("life_stage", "adult")))
-	var icon: String = "sight"
-	match d.get("kind", ""):
-		"nothing": icon = "unknown"
-		"clue": icon = CLUE_ICON_FOR.get(d.get("clue", "track"), "track")
-	var path: String = str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon)
-	if path == "" or not ResourceLoader.exists(path):
-		return null
-	var img: Image = load(path).get_image()
-	img.resize(img.get_width() * 3, img.get_height() * 3, Image.INTERPOLATE_NEAREST)
-	return ImageTexture.create_from_image(img)
+# 發現畫面的圖：目擊到的動物用動物圖，採集物用物品圖示，其他用線索圖示。
+func _show_discovery_sprite(d: Dictionary) -> void:
+	var kind: String = d.get("kind", "")
+	var source_kind: String = d.get("source_kind", "")
+	if kind == "clue" and d.get("clue", "") == "sight" and source_kind == "prey":
+		_set_creature(encounter_sprite, d["source"], d.get("life_stage", "adult"))
+		return
+	if kind == "clue" and source_kind == "gather":
+		var item_tex: Texture2D = ArtLibrary.icon("item." + str(d["source"]))
+		if item_tex != null:
+			encounter_sprite.show_static(item_tex)
+			return
+	var icon_key: String = "sight"
+	if kind == "nothing":
+		icon_key = "unknown"
+	elif kind == "clue":
+		var clue: String = str(d.get("clue", "track"))
+		if source_kind == "threat":
+			icon_key = "claw" if clue == "claw" else ("scent" if clue.ends_with("scent") else ("sight" if clue == "sight" else "track"))
+		else:
+			icon_key = CLUE_ICON_FOR.get(clue, "track")
+	encounter_sprite.show_static(ArtLibrary.texture(str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon_key)))
 
 # --- 分段進食與搶食 ---
 
@@ -823,7 +892,8 @@ func _show_feeding() -> void:
 	var chances := GameState.scavenge_chances()
 	encounter_detail.text = tr("feeding.risk").replace("{bear}", str(int(round(float(chances["bear"]) * 100.0)))) \
 		.replace("{fox}", str(int(round(float(chances["fox"]) * 100.0))))
-	encounter_sprite.texture = PixelArt.make_animal_sprite(str(f["animal_id"]), Vector2i(72, 48), _animal_scale(str(f["life_stage"])))
+	_set_wolf_pose(encounter_sprite, "eat")
+	_set_terrain_bg(encounter_bg, str(f.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("feeding.eat").replace("{v}", str(value)), _on_feed)
 	_add_encounter_button(tr("feeding.leave"), func():
@@ -858,7 +928,10 @@ func _show_scavenger(event: String, returning: bool) -> void:
 	encounter_message.text = tr(key)
 	_log(tr(key))
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite("grizzly_bear" if event == "bear" else "red_fox", Vector2i(72, 48), 1.0)
+	if event == "bear":
+		_set_creature(encounter_sprite, "grizzly_bear", "adult" if bear_known else "distant", "move")
+	else:
+		_set_creature(encounter_sprite, "red_fox", "adult", "move")
 	_clear_children(encounter_buttons_box)
 	if event == "bear":
 		# 辨識前不能守住（第一次遇到灰熊不該就被打死）
@@ -934,7 +1007,7 @@ func _process_events() -> void:
 			_log(tr("event.howl.%d" % max(1, GameState.knowledge_level(entry))).replace("{region}", tr("region." + str(event["region"]))))
 		"driven_off":
 			var to: String = GameState.apply_drive_off()
-			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "gray_wolf")
+			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "stranger_wolf")
 		"prey_nearby":
 			_show_prey_nearby(event)
 			return
@@ -947,7 +1020,8 @@ func _show_event_message(text: String, sprite_id: String) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite(sprite_id, Vector2i(72, 48), 1.0)
+	_set_creature(encounter_sprite, sprite_id, "adult")
+	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("ui.continue"), func():
 		encounter_overlay.visible = false
@@ -963,7 +1037,8 @@ func _show_prey_nearby(event: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite(str(event["animal_id"]), Vector2i(72, 48), _animal_scale(str(event["life_stage"])))
+	_set_creature(encounter_sprite, str(event["animal_id"]), str(event["life_stage"]), "move")
+	_set_terrain_bg(encounter_bg, str(event.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("hunt.option.pounce"), func():
 		encounter_overlay.visible = false
@@ -985,7 +1060,8 @@ func _show_bear_passing(event: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite("grizzly_bear", Vector2i(72, 48), 1.0)
+	_set_creature(encounter_sprite, "grizzly_bear", "adult", "move")
+	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("event.bear_passing.hide").replace("{n}", str(int(round(GameState.bear_hide_chance() * 100.0)))), func():
 		var res := GameState.resolve_bear_passing(event, "hide")
@@ -1136,7 +1212,8 @@ func _show_find_result(result: Dictionary) -> void:
 	_log(tr("log.find_tracks.success") + " " + tr("animal." + animal_id) + "（" + wind_text + "）")
 	encounter_message.text = tr("log.find_tracks.success") + "\n" + tr("animal." + animal_id) + "　" + wind_text
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
+	_set_creature(encounter_sprite, animal_id, life_stage)
+	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	var hunt_btn := Button.new()
 	hunt_btn.text = tr("ui.hunt")
@@ -1167,7 +1244,15 @@ func _render_hunt_stage() -> void:
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
 	var animal_name: String = _hunt_prey_name()
-	hunt_sprite.texture = PixelArt.make_animal_sprite(current_hunt.animal_id, Vector2i(72, 48), _animal_scale(current_hunt.life_stage))
+	# 追擊時獵物在跑；狼的姿勢依階段：觀察、潛近伏低，追擊奔跑，撲抓、搏鬥撲擊
+	var prey_action: String = "move" if current_hunt.stage == HuntSystem.Stage.CHASE else "idle"
+	_set_creature(hunt_sprite, current_hunt.animal_id, current_hunt.life_stage, prey_action)
+	var pose: String = "stalk"
+	match current_hunt.stage:
+		HuntSystem.Stage.CHASE: pose = "walk"
+		HuntSystem.Stage.FIGHT, HuntSystem.Stage.POUNCE: pose = "pounce"
+	_set_wolf_pose(hunt_wolf_sprite, pose)
+	_set_terrain_bg(hunt_bg, current_hunt.terrain)
 	var header: String = tr("hunt.stage." + current_hunt.stage_name()).replace("{animal}", animal_name)
 	var context: Array[String] = [tr("factor.wind." + current_hunt.wind_state())]
 	if current_hunt.terrain != "":
@@ -1318,7 +1403,8 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		return
 	encounter_message.text = text
 	encounter_detail.text = tr("encounter.fight_warning")
-	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
+	_set_creature(encounter_sprite, animal_id, life_stage, "attack" if encounter.get("direct", false) else "idle")
+	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("encounter.fight_option").replace("{n}", str(int(round(GameState.bear_fight_chance(encounter) * 100.0)))),
 		func(): _resolve_encounter("fight", encounter))
@@ -1338,7 +1424,8 @@ func _show_distant(encounter: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id if animal_id == "grizzly_bear" else "gray_wolf", Vector2i(72, 48), 0.6)
+	_set_creature(encounter_sprite, animal_id, "distant")
+	_set_terrain_bg(encounter_bg, location)
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("encounter.observe"), func():
 		GameState.action_observe_distant(encounter)

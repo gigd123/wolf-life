@@ -30,5 +30,5 @@
     "stranger_wolf": { "region_weights": { "forest_north": 3, "forest_west": 2, "forest_south": 2, "forest_east": 1 }, "weight_mult": 0.3, "clues": { "wolf_track": 2, "similar_scent": 2, "sight": 0.5 } }
   },
   "avoid_mult": 0.3,
-  "clue_icon_path": "res://arts/phase1.5_art/clue_{type}_1x.png"
+  "clue_icon_path": "res://assets/art/icons/clue_{type}.png"
 }

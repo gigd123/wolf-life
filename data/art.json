@@ -1,0 +1,73 @@
+{
+  "_comment": "美術對應表。原始交付檔在 arts/（files/wolf_assets 為主、phase1.5_art 補充），程式只讀 assets/art/。sheet 是 48×32 一格的 spritesheet，rows 是動作所在的列；single 是單張圖。",
+  "frame_size": [48, 32],
+  "animals": {
+    "white_tailed_deer": {
+      "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png" },
+      "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png" },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/deer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "hare": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/hare_adult_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/hare_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "red_fox": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/fox_adult_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/fox_kit_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "grizzly_bear": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
+      "distant": { "single": "res://assets/art/sprites/animals/bear_distant.png" }
+    },
+    "stranger_wolf": {
+      "adult": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png" },
+      "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png" }
+    }
+  },
+  "wolf": {
+    "sheet": "res://assets/art/sprites/wolf/wolf_sheet.png",
+    "rows": { "idle": 0, "walk": 1, "howl": 2, "down": 3 },
+    "poses": {
+      "stalk": "res://assets/art/sprites/wolf/wolf_stalk.png",
+      "pounce": "res://assets/art/sprites/wolf/wolf_pounce.png",
+      "eat": "res://assets/art/sprites/wolf/wolf_eat.png",
+      "sleep": "res://assets/art/sprites/wolf/wolf_sleep.png"
+    }
+  },
+  "region_backgrounds": {
+    "forest_east": "res://assets/art/backgrounds/regions/forest_east.png",
+    "forest_north": "res://assets/art/backgrounds/regions/forest_north.png",
+    "forest_north@winter": "res://assets/art/backgrounds/regions/forest_north_winter.png",
+    "forest_south": "res://assets/art/backgrounds/regions/forest_south.png",
+    "forest_west": "res://assets/art/backgrounds/regions/forest_west.png"
+  },
+  "terrain_backgrounds": {
+    "stream": "res://assets/art/backgrounds/terrain/stream.png",
+    "dense_forest": "res://assets/art/backgrounds/terrain/dense_forest.png",
+    "forest_edge": "res://assets/art/backgrounds/terrain/forest_edge.png",
+    "clearing": "res://assets/art/backgrounds/terrain/forest_edge.png",
+    "fallen_logs": "res://assets/art/backgrounds/terrain/fallen_logs.png"
+  },
+  "icons": {
+    "status.injury": "res://assets/art/icons/status_injury.png",
+    "status.poison": "res://assets/art/icons/status_poison.png",
+    "status.hunger": "res://assets/art/icons/status_hunger.png",
+    "item.berries": "res://assets/art/icons/berry.png",
+    "item.blueberries": "res://assets/art/icons/berry.png",
+    "item.mushroom": "res://assets/art/icons/mushroom.png",
+    "item.beehive": "res://assets/art/icons/honeycomb.png",
+    "den_marker": "res://assets/art/icons/den_marker.png",
+    "wind": "res://assets/art/icons/wind.png"
+  },
+  "_period_tint_comment": "時段光線（CLAUDE.md：用程式調色，不另外出圖）：乘在背景上的顏色。",
+  "period_tint": {
+    "dawn": [1.0, 0.88, 0.8],
+    "day": [1.0, 1.0, 1.0],
+    "dusk": [1.0, 0.75, 0.6],
+    "night": [0.45, 0.5, 0.75],
+    "predawn": [0.55, 0.6, 0.8]
+  },
+  "background_dim": 0.45,
+  "overlay_background_dim": 0.4
+}

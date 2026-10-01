@@ -11,6 +11,7 @@ var discovery: Dictionary = {}
 var knowledge: Dictionary = {}
 var events: Dictionary = {}
 var tendency: Dictionary = {}
+var art: Dictionary = {}
 
 func _ready() -> void:
 	balance = _load_json("res://data/balance.json")
@@ -20,6 +21,7 @@ func _ready() -> void:
 	knowledge = _load_json("res://data/knowledge.json")
 	events = _load_json("res://data/events.json")
 	tendency = _load_json("res://data/tendency.json")
+	art = _load_json("res://data/art.json")
 
 func regions() -> Dictionary:
 	return regions_root.get("regions", {})
