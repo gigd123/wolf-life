@@ -44,7 +44,7 @@
 
 ## 美術素材
 
-- Phase 1.5 佔位素材位置：`assets/art/phase1.5/`；根目錄 `美術/` 另有一套，使用哪一套見 `SPEC.md` 的「美術素材」，每項都有 `_1x.png` 與 `_4x.png`，透明背景（背景圖除外）。
+- Phase 1.5 佔位素材位置：`assets/art/phase1.5/`；根目錄 `arts/` 另有一套，使用哪一套見 `SPEC.md` 的「美術素材」，每項都有 `_1x.png` 與 `_4x.png`，透明背景（背景圖除外）。
 - 像素圖的貼圖過濾要設為 Nearest，避免模糊。
 - 灰狼一格約 48×32 像素；背景為 320×180，下方約三分之一是地面。
 - 背景檔名對應區域識別名稱：`bg_forest_east`、`bg_forest_north`、`bg_forest_south`、`bg_forest_west`。

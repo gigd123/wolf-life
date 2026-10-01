@@ -55,9 +55,9 @@ Phase 1 收尾：尚未開始（下一步：修行動結果文字顯示不完整
 ## 待確認
 - **文件路徑**：`CLAUDE.md` 的文件表寫 `SPEC.md`、`DESIGN.md`，實際放在 `docs/`。已把表格路徑改成 `docs/`，`progress.md` 也放在 `docs/`。
 - **`ecology-reference.md` 不存在**：`CLAUDE.md` 有列，但專案裡找不到。目前先不讀。
-- **1.5 美術位置**：規格寫 `assets/art/phase1.5/`，實際檔案在 `美術/phase1.5_art/`（44 個檔，1x／4x 成對），尚未推上 GitHub。打算在美術接入的步驟搬到 `assets/art/phase1.5/`。
+- **1.5 美術位置**：規格寫 `assets/art/phase1.5/`，實際檔案在 `arts/phase1.5_art/`（44 個檔，1x／4x 成對），尚未推上 GitHub。打算在美術接入的步驟搬到 `assets/art/phase1.5/`。
 - **背景檔名**：規格寫 `bg_forest_east` 等，實際檔名是依地形命名：`bg_stream_valley`、`bg_deep_forest`、`bg_forest_edge_meadow`、`bg_fallen_log_slope`。暫定依「區域地形配置」對應：東部＝`bg_stream_valley`、北部＝`bg_deep_forest`、南部＝`bg_forest_edge_meadow`、西部＝`bg_fallen_log_slope`，實作時用資料檔對應，不改檔名。
-- **兩套美術擇一**：`美術/phase1.5_art/` 或 `美術/files/`（forest 背景 640×360、`wolf_assets/` 分層背景），由使用者在本機比較後決定；未決定前先用 phase1.5 那套。
+- **兩套美術擇一**：`arts/phase1.5_art/` 或 `arts/files/`（forest 背景 640×360、`wolf_assets/` 分層背景），由使用者在本機比較後決定；未決定前先用 phase1.5 那套。
 - **狼的尺寸**：`CLAUDE.md` 寫一格約 48×32，`wolf_stalk_1x.png` 實際是 58×20（伏低姿勢）。目前判斷是姿勢不同，不影響。
 
 ## 1.6 預留
