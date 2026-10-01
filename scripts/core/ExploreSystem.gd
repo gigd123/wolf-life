@@ -9,7 +9,8 @@ extends RefCounted
 # - "clue"：獵物或採集物的線索，可追蹤、狩獵或採集
 # - "feature"：發現區域的次要特徵（好睡處、獵物小徑等），寫入區域知識
 # - "nothing"：什麼都沒發現，但附帶一點資訊（哪種動物最近沒來過）
-# 之後的步驟會加入灰熊、陌生灰狼的線索與知識修正，來源清單由資料決定。
+# 灰熊與陌生灰狼（threat）的前置線索：爪痕、危險氣味、翻倒的木頭、狼的腳印、相似氣味，
+# 以及遠距目擊。權重依區域與季節（灰熊冬眠時沒有線索），文字依是否已辨識而不同。
 
 static func _cfg() -> Dictionary:
 	return GameData.discovery
@@ -55,9 +56,19 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var gather := EncounterSystem.gather_weights(region_id, ctx["season"])
 	for item_id in gather.keys():
 		sources[item_id] = float(gather[item_id]) * float(cfg.get("gather_source_weight_mult", 0.5))
+	var threats := threat_weights(region_id, ctx["season"])
+	for threat_id in threats.keys():
+		sources[threat_id] = threats[threat_id]
 	if sources.is_empty():
 		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights)}
 	var source: String = RNGService.weighted_pick(sources)
+
+	if threats.has(source):
+		var t_cfg: Dictionary = cfg.get("threat_sources", {}).get(source, {})
+		var t_clue: String = RNGService.weighted_pick(t_cfg.get("clues", {"sight": 1}))
+		var t_fresh: bool = t_clue == "sight" or RNGService.chance(float(cfg.get("fresh_chance_base", 0.55)))
+		return {"kind": "clue", "source_kind": "threat", "source": source, "clue": t_clue, "location": location,
+			"fresh": t_fresh, "fresh_known": true, "wind": "crosswind", "prey_dir": RNGService.randi_range(0, 3), "life_stage": "adult"}
 
 	if gather.has(source):
 		return {"kind": "clue", "source_kind": "gather", "source": source, "clue": "sight",
@@ -91,6 +102,22 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage,
 		"injured": injured}
 
+# 灰熊依區域的競爭動物季節權重，陌生灰狼依固定的區域權重。
+static func threat_weights(region_id: String, season: String) -> Dictionary:
+	var result: Dictionary = {}
+	var threat_cfg: Dictionary = _cfg().get("threat_sources", {})
+	for threat_id in threat_cfg.keys():
+		var t: Dictionary = threat_cfg[threat_id]
+		var w: float = 0.0
+		if t.has("weight_from"):
+			var table: Dictionary = EncounterSystem.region_data(region_id).get(t["weight_from"], {}).get(threat_id, {})
+			w = float(table.get(season, 0))
+		else:
+			w = float(t.get("region_weights", {}).get(region_id, 0))
+		if w > 0.0:
+			result[threat_id] = w * float(t.get("weight_mult", 0.3))
+	return result
+
 static func _least_likely(weights: Dictionary) -> String:
 	var best: String = ""
 	for animal_id in weights.keys():
@@ -110,7 +137,7 @@ static func feature_prey_mults(known_features: Array) -> Dictionary:
 
 # 追蹤：感知判定，受風向影響。只有獵物線索可以追蹤；看得出是陳舊的線索不能追蹤。
 static func can_track(discovery: Dictionary) -> bool:
-	if discovery.get("kind", "") != "clue" or discovery.get("source_kind", "") != "prey":
+	if discovery.get("kind", "") != "clue" or not ["prey", "threat"].has(discovery.get("source_kind", "")):
 		return false
 	if discovery.get("clue", "") == "sight":
 		return false

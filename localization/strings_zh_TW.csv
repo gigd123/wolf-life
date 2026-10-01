@@ -165,6 +165,8 @@ prey_name.white_tailed_deer.juvenile,小鹿
 explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
+debug.event.bear_distant,灰熊遠距目擊
+debug.event.stranger_distant,陌生灰狼遠距觀察
 action.return_to_carcass,回到獵物殘骸
 ui.knowledge,知識
 ui.knowledge.title,這隻狼知道的事
@@ -190,6 +192,42 @@ explore.known,{period}的{location} 你知道{animal}會來
 animal_unknown.grizzly_bear,未知的大型掠食者
 animal_unknown.stranger_wolf,陌生的狼
 factor.knowledge,你知道這件事
+ui.avoid,避開
+log.avoided,你避開了線索的方向 這個時段在這一帶比較不會撞見牠
+knowledge.stranger,{region}有{animal}的蹤跡
+explore.threat,{location} {clue}
+explore.threat_fresh,（還很新）
+explore.threat_stale,（已經有點舊了）
+explore.threat_track_warning,追蹤可能會遇上牠
+clue.grizzly_bear.claw.unknown,樹上有一組巨大銳利的爪痕
+clue.grizzly_bear.claw.known,灰熊留下的爪痕 附近可能是牠的活動範圍
+clue.grizzly_bear.danger_scent.unknown,一股陌生而危險的氣味
+clue.grizzly_bear.danger_scent.known,灰熊的氣味
+clue.grizzly_bear.flipped_log.unknown,一截沉重的倒木被翻了過來
+clue.grizzly_bear.flipped_log.known,灰熊翻找食物的痕跡
+clue.grizzly_bear.sight.unknown,遠處有一頭陌生的大型動物在翻找食物
+clue.grizzly_bear.sight.known,遠處有一頭灰熊 牠沒有發現你
+clue.stranger_wolf.wolf_track.unknown,一個和自己體型相近 但不是家人的腳印
+clue.stranger_wolf.wolf_track.known,陌生灰狼的腳印
+clue.stranger_wolf.similar_scent.unknown,和家人相似 但完全陌生的氣味
+clue.stranger_wolf.similar_scent.known,陌生灰狼的氣味
+clue.stranger_wolf.sight.unknown,遠處有一隻和你很像的狼走過
+clue.stranger_wolf.sight.known,遠處有那隻陌生的灰狼
+animal.stranger_wolf,陌生灰狼
+encounter.far_away,遠處
+encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食物 牠沒有發現你
+encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過 牠沒有注意到你
+encounter.observe,觀察（1 回合）
+encounter.observed.grizzly_bear,你屏住氣息看清楚了 那是一頭灰熊 巨大的爪子和肩上的隆起讓人不敢靠近
+encounter.observed.stranger_wolf,你遠遠看著牠 那是一隻和你一樣獨自生活的成年灰狼
+encounter.mother,一頭帶著幼熊的母熊擋在前面 牠非常激動
+encounter.direct,{animal}沒有示威 直接衝了過來 你受了 {n} 點傷
+encounter.fight_option,戰鬥（勝算 {n}%）
+encounter.flee_option,逃跑（{n}%）
+encounter.fight_warning,單獨對上成年灰熊極度不利
+encounter.result.flee,你拚命跑開 甩掉了牠
+encounter.result.flee_hurt,你逃開了 但被牠抓傷（傷害 {n}）
+scavenger.bear_unknown,遠處出現一頭陌生的大型動物 正朝你的獵物走來
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
 feeding.eat,吃一段（+{v}）

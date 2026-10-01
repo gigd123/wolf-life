@@ -34,6 +34,8 @@ var current_feeding: Dictionary = {}
 var knowledge: Dictionary = {}
 # 已辨識的線索來源（白尾鹿、野兔、狐狸一開始就認得；灰熊、陌生灰狼要親眼見過）。
 var identified: Array = []
+# 避開灰熊線索：{region_id, until}，until 是絕對時段編號（見 _abs_period），期間該區域的灰熊遭遇機率降低。
+var avoid_bear: Dictionary = {}
 # 吃不完留下的殘骸：[{region_id, terrain, animal_id, life_stage, segments_left, segment_value, day}]，最多留 2 天。
 var carcasses: Array = []
 
@@ -54,6 +56,7 @@ func new_game(start_den: String) -> void:
 	carcasses = []
 	knowledge = {}
 	identified = GameData.knowledge.get("identified_at_start", []).duplicate()
+	avoid_bear = {}
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -257,8 +260,8 @@ func action_move(target_region: String) -> void:
 	_check_death()
 	if wolf.alive:
 		var encounter := EncounterSystem.roll_competitor(current_region, GameTime.current_season())
-		if encounter.get("encountered", false):
-			encounter_triggered.emit(encounter)
+		if encounter.get("encountered", false) and RNGService.chance(threat_mult()):
+			encounter_triggered.emit(prepare_bear_encounter(encounter))
 	state_changed.emit()
 
 # --- 探索（取代「尋找獵物蹤跡」） ---
@@ -326,6 +329,13 @@ func action_track() -> Dictionary:
 	if not d.get("fresh", false):
 		state_changed.emit()
 		return {"success": false, "reason_key": "reason.stale"}
+	if d.get("source_kind", "") == "threat":
+		# 追蹤灰熊或陌生灰狼的足跡：成功就遇上牠（辨識前一律是遠距目擊）。
+		if not RNGService.chance(float(info["chance"])):
+			state_changed.emit()
+			return {"success": false, "reason_key": ""}
+		state_changed.emit()
+		return {"success": true, "encounter": prepare_threat_sighting(d["source"], str(d.get("location", "")))}
 	if not RNGService.chance(float(info["chance"])):
 		state_changed.emit()
 		var worst := HuntSystem.main_negative_factor(info["factors"])
@@ -361,11 +371,103 @@ func clear_discovery() -> void:
 func note_discovery() -> bool:
 	var d: Dictionary = current_discovery
 	current_discovery = {}
-	if d.get("source_kind", "") != "prey":
-		return false
-	_learn_prey_sighting(d["source"])
+	match d.get("source_kind", ""):
+		"prey":
+			_learn_prey_sighting(d["source"])
+		"threat":
+			_learn_threat(d["source"])
+		_:
+			return false
 	state_changed.emit()
 	return true
+
+# --- 灰熊與陌生灰狼（SPEC「世界探索與未知線索」、DESIGN.md「灰熊行為」） ---
+
+func _bear_cfg() -> Dictionary:
+	return GameData.balance.get("bear_encounter", {})
+
+func _abs_period() -> int:
+	return int(life_log.get("days_lived", 1)) * GameTime.PERIODS.size() + GameTime.period_index
+
+# 避開灰熊線索：這個時段內，此區域的灰熊遭遇機率降低。
+func action_avoid() -> void:
+	avoid_bear = {"region_id": current_region, "until": _abs_period()}
+	current_discovery = {}
+	state_changed.emit()
+
+func threat_mult() -> float:
+	if avoid_bear.get("region_id", "") == current_region and int(avoid_bear.get("until", -1)) >= _abs_period():
+		return float(GameData.discovery.get("avoid_mult", 0.3))
+	return 1.0
+
+func _learn_threat(source: String) -> void:
+	if source == "grizzly_bear":
+		_learn_danger(source)
+	else:
+		learn({"type": "stranger", "animal": source, "region": current_region})
+
+# 辨識前的灰熊遭遇一律是遠距目擊；辨識後依 DESIGN.md：春季可能是母熊帶幼熊，
+# 對次成年與老年的狼有機率不示威、直接攻擊（立刻受傷，接著選戰鬥或逃跑）。
+func prepare_bear_encounter(encounter: Dictionary) -> Dictionary:
+	var e := encounter.duplicate()
+	var animal_id: String = e.get("animal_id", "grizzly_bear")
+	if not is_identified(animal_id):
+		e["distant"] = true
+		return e
+	var cfg := _bear_cfg()
+	if GameTime.current_season() == "spring" and e.get("life_stage", "adult") == "adult" \
+			and RNGService.chance(float(cfg.get("mother_chance_spring", 0.4))):
+		e["mother"] = true
+	var direct: float = 0.0
+	if wolf.life_stage() != Wolf.LifeStage.ADULT:
+		direct = float(cfg.get("direct_attack_chance", 0.25))
+	if e.get("mother", false):
+		direct = max(direct, float(cfg.get("direct_attack_chance", 0.25))) * float(cfg.get("mother_direct_mult", 2.0))
+	if RNGService.chance(direct):
+		var dmg: float = float(RNGService.randi_range(int(cfg.get("direct_damage_min", 10)), int(cfg.get("direct_damage_max", 25))))
+		wolf.health -= dmg
+		wolf.clamp_stats()
+		e["direct"] = true
+		e["damage"] = dmg
+		_check_death()
+		state_changed.emit()
+	return e
+
+# 遠距目擊灰熊或陌生灰狼（追蹤線索、或目擊線索）。
+func prepare_threat_sighting(source: String, location: String) -> Dictionary:
+	if source == "grizzly_bear":
+		var e := prepare_bear_encounter({"encountered": true, "animal_id": source, "life_stage": "adult"})
+		e["location"] = location
+		return e
+	return {"encountered": true, "animal_id": source, "life_stage": "adult", "distant": true, "location": location}
+
+# 遠距觀察：1 回合，建立辨識、累積知識與感知經驗。牠沒有發現狼，雙方沒有互動。
+func action_observe_distant(encounter: Dictionary) -> void:
+	GameTime.advance_turns(int(_bear_cfg().get("observe_turns", 1)))
+	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
+	identify(animal_id)
+	_learn_threat(animal_id)
+	grant_experience(["perception"])
+	state_changed.emit()
+
+# 只是看見、沒有觀察就離開：灰熊也算見過（建立辨識），之後的遭遇才套用一般規則。
+func leave_distant(encounter: Dictionary) -> void:
+	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
+	if animal_id == "grizzly_bear":
+		identify(animal_id)
+
+func bear_fight_chance(encounter: Dictionary) -> float:
+	var cfg: Dictionary = _bear_cfg().get("fight", {})
+	var stats: Dictionary = GameData.animals.get(encounter.get("animal_id", "grizzly_bear"), {}).get(encounter.get("life_stage", "adult"), {})
+	var power: float = float(stats.get("power", 95))
+	if encounter.get("mother", false):
+		power += float(_bear_cfg().get("mother_power_bonus", 15))
+	return clamp(float(cfg.get("base", 0.25)) + (wolf.effective_strength() + wolf.effective_skill() - power) / float(cfg.get("divisor", 250)),
+		float(cfg.get("min", 0.03)), float(cfg.get("max", 0.4)))
+
+func bear_flee_chance() -> float:
+	var cfg: Dictionary = _bear_cfg().get("flee", {})
+	return HuntSystem.clamp_chance(float(cfg.get("base", 0.6)) + (wolf.effective_speed() - 40.0) / float(cfg.get("speed_divisor", 150)))
 
 # --- 知識系統 ---
 
@@ -375,6 +477,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"danger": return "danger|%s|%s|%s" % [entry["animal"], entry["region"], entry["season"]]
 		"weakness": return "weakness|%s|%s|%s" % [entry["animal"], entry["life_stage"], entry["option"]]
 		"overhunt": return "overhunt|%s|%s" % [entry["animal"], entry["region"]]
+		"stranger": return "stranger|%s|%s" % [entry["animal"], entry["region"]]
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -530,7 +633,7 @@ func action_sleep() -> Dictionary:
 	if not wolf.alive:
 		return {}
 	var encounter: Dictionary = {}
-	if RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0))):
+	if RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0)) * threat_mult()):
 		encounter = EncounterSystem.roll_competitor(current_region, GameTime.current_season(), true)
 	var mult: float = float(cfg.get("recovery", {}).get(quality, 0.4))
 	if encounter.get("encountered", false):
@@ -543,7 +646,7 @@ func action_sleep() -> Dictionary:
 	SaveSystem.save_game()
 	state_changed.emit()
 	if encounter.get("encountered", false):
-		encounter_triggered.emit(encounter)
+		encounter_triggered.emit(prepare_bear_encounter(encounter))
 	return {"quality": quality, "interrupted": encounter.get("encountered", false)}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
@@ -652,7 +755,7 @@ func feed_once() -> Dictionary:
 	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
 	var event: String = ""
 	if int(current_feeding["segments_left"]) > 0:
-		if RNGService.chance(float(chances["bear"])):
+		if RNGService.chance(float(chances["bear"]) * threat_mult()):
 			event = "bear"
 		elif RNGService.chance(float(chances["fox"])):
 			event = "fox"
@@ -746,7 +849,7 @@ func action_return_to_carcass() -> Dictionary:
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
 		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"]}
 	var event: String = ""
-	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1))):
+	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult()):
 		event = "bear"
 	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
 		event = "fox"
@@ -791,19 +894,29 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
 	identify(animal_id)
 	_learn_danger(animal_id)
-	var stage: String = encounter.get("life_stage", "adult")
-	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(stage, {})
-	var power: float = float(stats.get("power", 60))
+	var cfg := _bear_cfg()
+	if choice == "flee":
+		# 被直接攻擊後逃跑：看速度，失敗會再受傷。
+		var flee: Dictionary = cfg.get("flee", {})
+		wolf.stamina -= float(flee.get("stamina", 15))
+		if RNGService.chance(bear_flee_chance()):
+			wolf.clamp_stats()
+			return {"outcome": "flee"}
+		var hit: float = float(RNGService.randi_range(int(flee.get("fail_damage_min", 10)), int(flee.get("fail_damage_max", 20))))
+		wolf.health -= hit
+		wolf.clamp_stats()
+		_check_death()
+		return {"outcome": "flee_hurt", "damage": hit}
 	if choice == "fight":
-		var win_chance: float = clamp(0.5 + (wolf.effective_strength() + wolf.effective_skill() - power) / 200.0, 0.05, 0.7)
-		if RNGService.chance(win_chance):
-			wolf.stamina -= 15
+		# 單狼對成年灰熊極度不利（DESIGN.md「灰熊行為」）。
+		if RNGService.chance(bear_fight_chance(encounter)):
+			wolf.stamina -= float(cfg.get("win_stamina", 15))
 			grant_experience(["strength", "skill"])
 			wolf.clamp_stats()
 			return {"outcome": "win"}
-		var dmg: float = float(RNGService.randi_range(15, 35))
+		var dmg: float = float(RNGService.randi_range(int(cfg.get("lose_damage_min", 20)), int(cfg.get("lose_damage_max", 45))))
 		wolf.health -= dmg
-		if dmg >= 25.0:
+		if dmg >= float(cfg.get("heavy_damage", 25)):
 			var b: Dictionary = GameData.balance
 			var days := RNGService.randi_range(int(b.get("heavy_injury_days_min", 3)), int(b.get("heavy_injury_days_max", 5)))
 			wolf.apply_injury(Wolf.Injury.HEAVY, days, "speed" if RNGService.chance(0.5) else "strength")
@@ -812,7 +925,7 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 		wolf.clamp_stats()
 		_check_death()
 		return {"outcome": "lose", "damage": dmg}
-	wolf.stamina -= 5
+	wolf.stamina -= float(cfg.get("retreat_stamina", 5))
 	wolf.clamp_stats()
 	return {"outcome": choice}
 
@@ -875,7 +988,7 @@ func debug_force_encounter(animal_id: String, life_stage: String) -> Dictionary:
 		life_stage = "adult"
 	var role: String = str(GameData.animals.get(animal_id, {}).get("type", ""))
 	if role == "competitor":
-		encounter_triggered.emit({"encountered": true, "animal_id": animal_id, "life_stage": life_stage})
+		encounter_triggered.emit(prepare_bear_encounter({"encountered": true, "animal_id": animal_id, "life_stage": life_stage}))
 		return {}
 	return {"found": true, "animal_id": animal_id, "life_stage": life_stage}
 

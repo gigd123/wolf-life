@@ -411,6 +411,17 @@ func _build_debug_overlay() -> void:
 			str(animal_pick.get_item_metadata(animal_pick.selected)),
 			str(stage_pick.get_item_metadata(stage_pick.selected)))
 	)
+	# 1.5 新事件（其餘在各自步驟完成後再接上）
+	var event_row := HBoxContainer.new()
+	right.add_child(event_row)
+	_debug_button(event_row, tr("debug.event.bear_distant"), func():
+		debug_overlay.visible = false
+		_show_distant({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "distant": true})
+	)
+	_debug_button(event_row, tr("debug.event.stranger_distant"), func():
+		debug_overlay.visible = false
+		_show_distant({"encountered": true, "animal_id": "stranger_wolf", "life_stage": "adult", "distant": true})
+	)
 
 func _debug_section_label(key: String) -> Label:
 	var l := Label.new()
@@ -603,7 +614,9 @@ func _show_discovery(d: Dictionary) -> void:
 	encounter_detail.text = ""
 	encounter_sprite.texture = _discovery_sprite(d)
 	_clear_children(encounter_buttons_box)
-	if d.get("kind", "") == "clue":
+	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
+		_add_threat_options(d)
+	elif d.get("kind", "") == "clue":
 		if d.get("source_kind", "") == "gather":
 			_add_encounter_button(tr("ui.gather_here"), func():
 				var item: String = GameState.action_gather_discovered()
@@ -621,7 +634,7 @@ func _show_discovery(d: Dictionary) -> void:
 			var info := GameState.track_chance()
 			_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
-	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false):
+	if d.get("kind", "") == "clue" and (d.get("source_kind", "") == "threat" or (d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false))):
 		_add_encounter_button(tr("ui.note"), func():
 			GameState.note_discovery()
 			encounter_overlay.visible = false
@@ -633,11 +646,41 @@ func _show_discovery(d: Dictionary) -> void:
 	)
 	encounter_overlay.visible = true
 
+# 灰熊、陌生灰狼的線索：目擊時可觀察（辨識前）或避開；足跡等線索可追蹤（新鮮時）、避開（灰熊）或記下。
+func _add_threat_options(d: Dictionary) -> void:
+	var source: String = str(d["source"])
+	if d.get("clue", "") == "sight":
+		if source == "grizzly_bear" and GameState.is_identified(source):
+			_add_encounter_button(tr("ui.avoid"), _on_avoid)
+		else:
+			_add_encounter_button(tr("encounter.observe"), func():
+				var e := GameState.prepare_threat_sighting(source, str(d.get("location", "")))
+				GameState.clear_discovery()
+				GameState.action_observe_distant(e)
+				_log(tr("encounter.observed." + source))
+				encounter_overlay.visible = false
+				_refresh()
+			)
+		return
+	if ExploreSystem.can_track(d):
+		var info := GameState.track_chance()
+		_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+		encounter_detail.text = tr("explore.threat_track_warning")
+	if source == "grizzly_bear":
+		_add_encounter_button(tr("ui.avoid"), _on_avoid)
+
+func _on_avoid() -> void:
+	GameState.action_avoid()
+	_log(tr("log.avoided"))
+	encounter_overlay.visible = false
+
 func _on_track() -> void:
 	var animal_name: String = tr("animal." + str(GameState.current_discovery.get("source", "")))
 	var result := GameState.action_track()
 	encounter_overlay.visible = false
-	if result.get("success", false):
+	if result.get("success", false) and result.has("encounter"):
+		_on_encounter_triggered(result["encounter"])
+	elif result.get("success", false):
 		_log(tr("log.track.success").replace("{animal}", animal_name))
 		current_hunt = result["hunt"]
 		_render_hunt_stage()
@@ -664,6 +707,14 @@ func _discovery_text(d: Dictionary) -> String:
 		"feature":
 			return tr("explore.feature").replace("{location}", location) \
 				.replace("{feature}", tr("feature." + str(d["feature_id"])))
+	if d.get("source_kind", "") == "threat":
+		var source: String = str(d["source"])
+		var state: String = "known" if GameState.is_identified(source) else "unknown"
+		var clue_text: String = tr("clue.%s.%s.%s" % [source, d.get("clue", "sight"), state])
+		var fresh_text: String = ""
+		if d.get("clue", "") != "sight":
+			fresh_text = tr("explore.threat_fresh") if d.get("fresh", false) else tr("explore.threat_stale")
+		return tr("explore.threat").replace("{location}", location).replace("{clue}", clue_text) + fresh_text
 	if d.get("source_kind", "") == "gather":
 		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
 	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
@@ -687,6 +738,14 @@ func _discovery_text(d: Dictionary) -> String:
 	return text
 
 func _discovery_sprite(d: Dictionary) -> Texture2D:
+	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
+		var icon_key: String = "claw" if d.get("clue", "") == "claw" else ("scent" if str(d.get("clue", "")).ends_with("scent") else ("sight" if d.get("clue", "") == "sight" else "track"))
+		var tpath: String = str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon_key)
+		if ResourceLoader.exists(tpath):
+			var timg: Image = load(tpath).get_image()
+			timg.resize(timg.get_width() * 3, timg.get_height() * 3, Image.INTERPOLATE_NEAREST)
+			return ImageTexture.create_from_image(timg)
+		return null
 	if d.get("kind", "") == "clue" and d.get("clue", "") == "sight" and d.get("source_kind", "") == "prey":
 		return PixelArt.make_animal_sprite(d["source"], Vector2i(72, 48), _animal_scale(d.get("life_stage", "adult")))
 	var icon: String = "sight"
@@ -744,18 +803,23 @@ func _on_feed() -> void:
 
 # 灰熊或狐狸來搶食。returning：回到殘骸時撞見。
 func _show_scavenger(event: String, returning: bool) -> void:
+	var bear_known: bool = event != "bear" or GameState.is_identified("grizzly_bear")
 	var key: String = "scavenger.%s.%s" % [event, "returning" if returning else "arrive"]
+	if not bear_known:
+		key = "scavenger.bear_unknown"
 	encounter_message.text = tr(key)
 	_log(tr(key))
 	encounter_detail.text = ""
 	encounter_sprite.texture = PixelArt.make_animal_sprite("grizzly_bear" if event == "bear" else "red_fox", Vector2i(72, 48), 1.0)
 	_clear_children(encounter_buttons_box)
 	if event == "bear":
-		_add_encounter_button(tr("scavenger.guard").replace("{n}", str(int(round(GameState.guard_win_chance() * 100.0)))),
-			_on_scavenger_choice.bind("bear", "guard"))
+		# 辨識前不能守住（第一次遇到灰熊不該就被打死）
+		if bear_known:
+			_add_encounter_button(tr("scavenger.guard").replace("{n}", str(int(round(GameState.guard_win_chance() * 100.0)))),
+				_on_scavenger_choice.bind("bear", "guard"))
 		_add_encounter_button(tr("scavenger.grab"), _on_scavenger_choice.bind("bear", "grab"))
 		_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
-		encounter_detail.text = tr("scavenger.guard_warning")
+		encounter_detail.text = tr("scavenger.guard_warning") if bear_known else ""
 	else:
 		_add_encounter_button(tr("scavenger.drive"), _on_scavenger_choice.bind("fox", "drive"))
 		_add_encounter_button(tr("scavenger.ignore"), _on_scavenger_choice.bind("fox", "ignore"))
@@ -1042,22 +1106,59 @@ func _finish_hunt() -> void:
 
 # --- Competitor encounters ---
 
+# 灰熊遭遇。辨識前一律是遠距目擊（_show_distant）；之後可能是母熊帶幼熊，或直接衝過來攻擊。
 func _on_encounter_triggered(encounter: Dictionary) -> void:
+	if encounter.get("distant", false):
+		_show_distant(encounter)
+		return
 	var animal_id: String = encounter.get("animal_id", "")
 	var life_stage: String = encounter.get("life_stage", "adult")
-	_log(tr("encounter.competitor").replace("{animal}", tr("animal." + animal_id)))
-	encounter_message.text = tr("encounter.competitor").replace("{animal}", tr("animal." + animal_id))
-	encounter_detail.text = ""
+	var key: String = "encounter.competitor"
+	if encounter.get("mother", false):
+		key = "encounter.mother"
+	if encounter.get("direct", false):
+		key = "encounter.direct"
+	var text: String = tr(key).replace("{animal}", tr("animal." + animal_id)).replace("{n}", str(int(encounter.get("damage", 0))))
+	_log(text)
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	encounter_message.text = text
+	encounter_detail.text = tr("encounter.fight_warning")
 	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
 	_clear_children(encounter_buttons_box)
-	var fight_btn := Button.new()
-	fight_btn.text = tr("ui.fight")
-	fight_btn.pressed.connect(func(): _resolve_encounter("fight", encounter))
-	encounter_buttons_box.add_child(fight_btn)
-	var retreat_btn := Button.new()
-	retreat_btn.text = tr("ui.retreat")
-	retreat_btn.pressed.connect(func(): _resolve_encounter("retreat", encounter))
-	encounter_buttons_box.add_child(retreat_btn)
+	_add_encounter_button(tr("encounter.fight_option").replace("{n}", str(int(round(GameState.bear_fight_chance(encounter) * 100.0)))),
+		func(): _resolve_encounter("fight", encounter))
+	if encounter.get("direct", false):
+		_add_encounter_button(tr("encounter.flee_option").replace("{n}", str(int(round(GameState.bear_flee_chance() * 100.0)))),
+			func(): _resolve_encounter("flee", encounter))
+	else:
+		_add_encounter_button(tr("ui.retreat"), func(): _resolve_encounter("retreat", encounter))
+	encounter_overlay.visible = true
+
+# 遠距目擊：灰熊或陌生灰狼在遠處，沒有發現狼。可以觀察（建立辨識、累積知識）或離開。
+func _show_distant(encounter: Dictionary) -> void:
+	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
+	var location: String = str(encounter.get("location", ""))
+	var where: String = tr("explore.location." + location) if location != "" else tr("encounter.far_away")
+	var text: String = tr("encounter.distant." + animal_id).replace("{location}", where).replace("{animal}", _source_name(animal_id))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id if animal_id == "grizzly_bear" else "gray_wolf", Vector2i(72, 48), 0.6)
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("encounter.observe"), func():
+		GameState.action_observe_distant(encounter)
+		_log(tr("encounter.observed." + animal_id))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.leave_distant(encounter)
+		encounter_overlay.visible = false
+		_refresh()
+	)
 	encounter_overlay.visible = true
 
 func _resolve_encounter(choice: String, encounter: Dictionary) -> void:
@@ -1070,6 +1171,10 @@ func _resolve_encounter(choice: String, encounter: Dictionary) -> void:
 			_log(tr("encounter.result.lose").replace("{animal}", tr("animal." + animal_id)))
 		"retreat":
 			_log(tr("encounter.result.retreat"))
+		"flee":
+			_log(tr("encounter.result.flee"))
+		"flee_hurt":
+			_log(tr("encounter.result.flee_hurt").replace("{n}", str(int(result.get("damage", 0)))))
 	encounter_overlay.visible = false
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:

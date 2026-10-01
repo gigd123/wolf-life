@@ -25,6 +25,16 @@
   "wind_change_chance_per_period": 0.15,
   "factor_display": { "base_count": 2, "extra_count_perception": 55 },
   "region_depletion": { "per_hunt": 0.2, "recovery_per_day": 0.05, "min_mult": 0.2 },
+  "bear_encounter": {
+    "_comment": "灰熊遭遇（DESIGN.md「灰熊行為」）：辨識前一律遠距目擊；辨識後才可能直接攻擊與打鬥。",
+    "fight": { "base": 0.25, "divisor": 250, "min": 0.03, "max": 0.4 },
+    "lose_damage_min": 20, "lose_damage_max": 45, "heavy_damage": 25, "win_stamina": 15,
+    "direct_attack_chance": 0.25, "direct_damage_min": 10, "direct_damage_max": 25,
+    "mother_chance_spring": 0.4, "mother_direct_mult": 2.0, "mother_power_bonus": 15,
+    "flee": { "base": 0.6, "speed_divisor": 150, "fail_damage_min": 10, "fail_damage_max": 20, "stamina": 15 },
+    "retreat_stamina": 5,
+    "observe_turns": 1
+  },
   "sleep": {
     "_comment": "野外過夜（SPEC「野外過夜與回巢」）：回復 = 缺少的血量與體力 × 倍率。",
     "recovery": { "den": 1.0, "good": 0.9, "normal": 0.7, "rough": 0.4 },
