@@ -1,0 +1,35 @@
+{
+  "_comment": "主動事件（SPEC「主動事件」「暴雨」）。每天最多 max_per_day 次。數值為 Phase 1.5 初始值。",
+  "max_per_day": 2,
+  "howl": {
+    "night_chance": 0.35,
+    "drive_off_periods": 4,
+    "drive_off_chance": 0.5,
+    "drive_off_damage_min": 5,
+    "drive_off_damage_max": 12
+  },
+  "prey_nearby": {
+    "rest_chance": 0.15,
+    "animals": { "hare": 3, "white_tailed_deer": 1 },
+    "life_stage": { "hare": "adult", "white_tailed_deer": "juvenile" }
+  },
+  "bear_passing": {
+    "sleep_chance": 0.08,
+    "hide_base": 0.7,
+    "hide_divisor": 200
+  },
+  "storm": {
+    "period_chance": 0.05,
+    "after_rain_periods": 1,
+    "scent_mult": 0.2,
+    "stale_track_mult": 0.0,
+    "track_penalty": 0.2,
+    "stalk_bonus": 0.1,
+    "detection_mod": -10,
+    "wind_shift_chance": 0.5,
+    "stamina_drain_per_period": 5,
+    "exposed_sleep_mult": 0.7,
+    "after_track_mult": 2.0,
+    "after_fresh_bonus": 0.2
+  }
+}

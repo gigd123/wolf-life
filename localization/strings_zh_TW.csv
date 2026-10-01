@@ -167,6 +167,34 @@ log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
 debug.event.bear_distant,灰熊遠距目擊
 debug.event.stranger_distant,陌生灰狼遠距觀察
+debug.event.storm,暴雨
+debug.event.howl,狼嚎
+debug.event.driven_off,被驅趕
+debug.event.prey_nearby,獵物靠近
+debug.event.bear_passing,灰熊路過
+debug.event.bear_scavenge,灰熊搶食
+ui.continue,繼續
+weather.storm,暴雨
+weather.after_rain,雨停
+event.storm,下起了暴雨 雨聲蓋過了一切 氣味和舊足跡都被沖散了
+event.rain_stopped,雨停了 泥地上的新足跡特別清楚
+event.howl.1,深夜 遠方傳來狼嚎 似乎有其他狼
+event.howl.2,深夜 狼嚎又從{region}的方向傳來
+event.howl.3,深夜 熟悉的狼嚎 {region}是那隻狼的範圍
+event.driven_off,一隻陌生的灰狼出現了 對你齜牙低吼 把你趕出了牠的範圍 你被迫逃到{region}
+event.prey_nearby,你伏低休息時 一隻{animal}慢慢靠近 沒有發現你
+event.bear_passing,一頭灰熊從你休息的地方旁邊經過
+event.bear_passing.hide,保持不動躲藏（{n}%）
+event.bear_passing.leave,立刻離開（失去這次休息）
+event.bear_passing.hidden,你一動也不動 灰熊沒有發現你 慢慢走遠了
+event.bear_passing.spotted,灰熊停下腳步 轉頭看見了你
+event.bear_passing.left,你悄悄離開 這一覺算是白睡了
+knowledge.territory.1,似乎有其他狼在附近
+knowledge.territory.2,常聽見狼嚎從{region}傳來
+knowledge.territory.3,{region}是其他狼的範圍 待太久會被趕走
+factor.storm_cover,雨聲掩護
+factor.storm_scent,雨水沖散氣味
+reason.storm_scent,雨水沖散了氣味 你跟丟了
 action.return_to_carcass,回到獵物殘骸
 ui.knowledge,知識
 ui.knowledge.title,這隻狼知道的事

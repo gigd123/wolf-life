@@ -34,6 +34,16 @@ var current_feeding: Dictionary = {}
 var knowledge: Dictionary = {}
 # 已辨識的線索來源（白尾鹿、野兔、狐狸一開始就認得；灰熊、陌生灰狼要親眼見過）。
 var identified: Array = []
+# --- 主動事件（SPEC「主動事件」）---
+# 事件先放進佇列，畫面層在目前的行動結束後依序處理（避免在狩獵途中被打斷）。
+var pending_events: Array = []
+var events_today: int = 0
+# 陌生灰狼的範圍（開新狼時決定）；在範圍內連續停留的時段數。
+var stranger_territory: String = ""
+var territory_periods: int = 0
+# 天氣："clear"、"storm"（暴雨）、"after_rain"（雨停後）；weather_until 是結束的絕對時段編號。
+var weather: String = "clear"
+var weather_until: int = -1
 # 避開灰熊線索：{region_id, until}，until 是絕對時段編號（見 _abs_period），期間該區域的灰熊遭遇機率降低。
 var avoid_bear: Dictionary = {}
 # 吃不完留下的殘骸：[{region_id, terrain, animal_id, life_stage, segments_left, segment_value, day}]，最多留 2 天。
@@ -57,6 +67,13 @@ func new_game(start_den: String) -> void:
 	knowledge = {}
 	identified = GameData.knowledge.get("identified_at_start", []).duplicate()
 	avoid_bear = {}
+	pending_events = []
+	events_today = 0
+	territory_periods = 0
+	weather = "clear"
+	weather_until = -1
+	var territory_weights: Dictionary = GameData.discovery.get("threat_sources", {}).get("stranger_wolf", {}).get("region_weights", {})
+	stranger_territory = RNGService.weighted_pick(territory_weights) if not territory_weights.is_empty() else ""
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -86,6 +103,9 @@ func _on_period_changed(_period_index: int) -> void:
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
 	wolf.clamp_stats()
 	_decay_carcasses()
+	_update_weather()
+	_maybe_howl()
+	_update_territory()
 	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
@@ -93,6 +113,7 @@ func _on_period_changed(_period_index: int) -> void:
 
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
+	events_today = 0
 	_process_daily_recovery()
 	_apply_daily_hunger_penalty()
 	_recover_region_depletion()
@@ -292,6 +313,7 @@ func action_explore() -> Dictionary:
 		"wind_dir": wind_dir,
 		"known_features": known_features(current_region),
 		"prey_knowledge": prey_knowledge_mults(current_region, GameTime.current_period()),
+		"weather": weather,
 	})
 	match current_discovery.get("kind", ""):
 		"feature":
@@ -307,8 +329,13 @@ func action_explore() -> Dictionary:
 	return current_discovery
 
 func track_chance() -> Dictionary:
-	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception(), _track_knowledge_bonus(current_discovery))
+	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty())
 
+# 暴雨中氣味被沖散、容易跟丟。
+func _track_weather_penalty() -> float:
+	return float(_storm_cfg().get("track_penalty", 0.2)) if weather == "storm" else 0.0
+
+# 確定的獵物出沒知識帶來的追蹤加成。
 func _track_knowledge_bonus(d: Dictionary) -> float:
 	if d.get("source_kind", "") != "prey":
 		return 0.0
@@ -322,7 +349,7 @@ func action_track() -> Dictionary:
 	current_discovery = {}
 	if not ExploreSystem.can_track(d):
 		return {"success": false}
-	var info := ExploreSystem.track_chance(d, wolf.effective_perception(), _track_knowledge_bonus(d))
+	var info := ExploreSystem.track_chance(d, wolf.effective_perception(), _track_knowledge_bonus(d), _track_weather_penalty())
 	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
 	if not wolf.alive:
 		return {"success": false}
@@ -478,6 +505,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"weakness": return "weakness|%s|%s|%s" % [entry["animal"], entry["life_stage"], entry["option"]]
 		"overhunt": return "overhunt|%s|%s" % [entry["animal"], entry["region"]]
 		"stranger": return "stranger|%s|%s" % [entry["animal"], entry["region"]]
+		"territory": return "territory|%s|%s" % [entry["animal"], entry["region"]]
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -604,6 +632,7 @@ func action_short_rest() -> void:
 		bonus += float(GameData.region_features().get(f, {}).get("short_rest_stamina_bonus", 0))
 	_rest_stamina(float(GameData.balance.get("short_rest_stamina", 15)) + bonus)
 	wolf.clamp_stats()
+	_maybe_prey_nearby()
 	state_changed.emit()
 
 # 快轉：一回合一回合休息到指定時段開始，途中照常結算時段與每日變化；狼死亡就停止。
@@ -620,6 +649,8 @@ func action_rest_until(target_period: String) -> bool:
 		if wolf.alive:
 			_rest_stamina(stamina_per_turn)
 			wolf.clamp_stats()
+	if wolf.alive:
+		_maybe_prey_nearby()
 	state_changed.emit()
 	return wolf.alive
 
@@ -638,10 +669,18 @@ func action_sleep() -> Dictionary:
 	var mult: float = float(cfg.get("recovery", {}).get(quality, 0.4))
 	if encounter.get("encountered", false):
 		mult *= float(cfg.get("interrupted_mult", 0.5))
+	# 暴雨中，沒有遮蔽的睡處回復再降低。
+	if weather == "storm" and ["normal", "rough"].has(quality):
+		mult *= float(_storm_cfg().get("exposed_sleep_mult", 0.7))
 	var smax: float = float(GameData.balance.get("stat_max", 100))
+	var before_health: float = wolf.health
+	var before_stamina: float = wolf.stamina
 	wolf.health += (smax - wolf.health) * mult
 	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
+	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
+	if not encounter.get("encountered", false) and quality != "rough":
+		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
 	sleep_spot_here = ""
 	SaveSystem.save_game()
 	state_changed.emit()
@@ -660,12 +699,15 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	var detection_mod: float = 0.0
 	if GameTime.current_period() == "night":
 		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
+	if weather == "storm":
+		detection_mod += float(_storm_cfg().get("detection_mod", -10))
 	if prey_dir < 0:
 		prey_dir = RNGService.randi_range(0, 3)
 	if terrain == "":
 		terrain = _random_terrain(current_region)
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
+	hunt.storm = weather == "storm"
 	if from_tracking:
 		hunt.experience.append("perception")
 	return hunt
@@ -703,6 +745,138 @@ func finish_hunt(hunt: HuntSystem) -> void:
 		wolf.clamp_stats()
 		_check_death()
 		state_changed.emit()
+
+# --- 主動事件 ---
+
+func _events_cfg() -> Dictionary:
+	return GameData.events
+
+func _storm_cfg() -> Dictionary:
+	return GameData.events.get("storm", {})
+
+func _can_trigger_event() -> bool:
+	return wolf != null and wolf.alive and events_today < int(_events_cfg().get("max_per_day", 2))
+
+func _queue_event(event: Dictionary) -> void:
+	events_today += 1
+	pending_events.append(event)
+
+func pop_event() -> Dictionary:
+	if pending_events.is_empty():
+		return {}
+	return pending_events.pop_front()
+
+# 暴雨：隨機一個時段；雨停後 1 個時段足跡特別清楚。暴雨中每個時段體力額外消耗，風向每時段都會變。
+func _update_weather() -> void:
+	var cfg := _storm_cfg()
+	var now := _abs_period()
+	match weather:
+		"storm":
+			if now > weather_until:
+				weather = "after_rain"
+				weather_until = now + int(cfg.get("after_rain_periods", 1)) - 1
+				pending_events.append({"type": "rain_stopped"})
+			else:
+				wolf.stamina -= float(cfg.get("stamina_drain_per_period", 5))
+				wind_dir = RNGService.randi_range(0, 3)
+		"after_rain":
+			if now > weather_until:
+				weather = "clear"
+	if weather == "clear" and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05))):
+		start_storm()
+
+func start_storm() -> void:
+	weather = "storm"
+	weather_until = _abs_period()
+	# 已發現但未追蹤的足跡被雨沖掉
+	if current_discovery.get("clue", "") == "track":
+		current_discovery = {}
+	_queue_event({"type": "storm"})
+
+# 遠方狼嚎：深夜隨機。逐步累積成「這一帶是其他狼的範圍」。
+func _maybe_howl() -> void:
+	if GameTime.current_period() != "night" or stranger_territory == "" or not _can_trigger_event():
+		return
+	if RNGService.chance(float(_events_cfg().get("howl", {}).get("night_chance", 0.35))):
+		trigger_howl()
+
+func trigger_howl() -> void:
+	learn({"type": "territory", "animal": "stranger_wolf", "region": stranger_territory})
+	_queue_event({"type": "howl", "region": stranger_territory})
+
+# 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
+func _update_territory() -> void:
+	if current_region != stranger_territory:
+		territory_periods = 0
+		return
+	territory_periods += 1
+	var cfg: Dictionary = _events_cfg().get("howl", {})
+	if territory_periods >= int(cfg.get("drive_off_periods", 4)) and _can_trigger_event() \
+			and RNGService.chance(float(cfg.get("drive_off_chance", 0.5))):
+		territory_periods = 0
+		_queue_event({"type": "driven_off"})
+
+# 實際執行被驅趕（畫面層處理事件時呼叫）。回傳被趕到的區域。
+func apply_drive_off() -> String:
+	var cfg: Dictionary = _events_cfg().get("howl", {})
+	wolf.health -= float(RNGService.randi_range(int(cfg.get("drive_off_damage_min", 5)), int(cfg.get("drive_off_damage_max", 12))))
+	wolf.apply_injury(Wolf.Injury.LIGHT, 2)
+	identify("stranger_wolf")
+	learn({"type": "territory", "animal": "stranger_wolf", "region": current_region})
+	var kept: Array = []
+	for c in carcasses:
+		if c["region_id"] != current_region:
+			kept.append(c)
+	carcasses = kept
+	current_feeding = {}
+	current_discovery = {}
+	var targets: Array = adjacent_regions()
+	if not targets.is_empty():
+		current_region = targets[RNGService.randi_range(0, targets.size() - 1)]
+		sleep_spot_here = ""
+		if not is_region_visited(current_region):
+			var knowledge_entry: Dictionary = region_knowledge.get(current_region, {"features": []})
+			knowledge_entry["visited"] = true
+			region_knowledge[current_region] = knowledge_entry
+	wolf.clamp_stats()
+	_check_death()
+	state_changed.emit()
+	return current_region
+
+# 獵物靠近：短暫休息或伏低（快轉）時，野兔或幼鹿走近，可以直接撲抓（簡易狩獵）。
+func _maybe_prey_nearby() -> void:
+	var cfg: Dictionary = _events_cfg().get("prey_nearby", {})
+	if not _can_trigger_event() or not RNGService.chance(float(cfg.get("rest_chance", 0.15))):
+		return
+	var animal: String = RNGService.weighted_pick(cfg.get("animals", {"hare": 1}))
+	_queue_event({"type": "prey_nearby", "animal_id": animal,
+		"life_stage": str(cfg.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
+
+func hunt_nearby_prey(event: Dictionary) -> HuntSystem:
+	return start_hunt(event["animal_id"], event["life_stage"], -1, false, str(event.get("terrain", "")))
+
+# 灰熊路過：在巢穴或睡處休息時。保持不動（看技巧）或立刻離開（失去這次休息的回復）。
+func _maybe_bear_passing(gained_health: float, gained_stamina: float) -> void:
+	var weights: Dictionary = EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {})
+	if float(weights.get(GameTime.current_season(), 0)) <= 0.0 or not _can_trigger_event():
+		return
+	if RNGService.chance(float(_events_cfg().get("bear_passing", {}).get("sleep_chance", 0.08)) * threat_mult()):
+		_queue_event({"type": "bear_passing", "health": gained_health, "stamina": gained_stamina})
+
+func bear_hide_chance() -> float:
+	var cfg: Dictionary = _events_cfg().get("bear_passing", {})
+	return HuntSystem.clamp_chance(float(cfg.get("hide_base", 0.7)) + (wolf.effective_skill() - 40.0) / float(cfg.get("hide_divisor", 200)))
+
+func resolve_bear_passing(event: Dictionary, choice: String) -> Dictionary:
+	if choice == "hide":
+		if RNGService.chance(bear_hide_chance()):
+			return {"outcome": "hidden"}
+		return {"outcome": "spotted", "encounter": prepare_bear_encounter({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult"})}
+	wolf.health -= float(event.get("health", 0))
+	wolf.stamina -= float(event.get("stamina", 0))
+	wolf.clamp_stats()
+	state_changed.emit()
+	return {"outcome": "left"}
 
 # 狩獵紀錄（之後的狩獵傾向與一生回顧使用）：次數、成功、追擊中途放棄。
 func _record_hunt(hunt: HuntSystem) -> void:
@@ -1007,6 +1181,11 @@ func to_dict() -> Dictionary:
 		"carcasses": carcasses,
 		"knowledge": knowledge,
 		"identified": identified,
+		"stranger_territory": stranger_territory,
+		"territory_periods": territory_periods,
+		"weather": weather,
+		"weather_until": weather_until,
+		"events_today": events_today,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -1033,6 +1212,12 @@ func load_from_dict(data: Dictionary) -> void:
 	carcasses = data.get("carcasses", [])
 	knowledge = data.get("knowledge", {})
 	identified = data.get("identified", GameData.knowledge.get("identified_at_start", []).duplicate())
+	stranger_territory = str(data.get("stranger_territory", "forest_north"))
+	territory_periods = int(data.get("territory_periods", 0))
+	weather = str(data.get("weather", "clear"))
+	weather_until = int(data.get("weather_until", -1))
+	events_today = int(data.get("events_today", 0))
+	pending_events = []
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))

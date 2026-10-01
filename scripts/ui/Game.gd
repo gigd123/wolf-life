@@ -36,6 +36,8 @@ var current_hunt: HuntSystem = null
 var rest_overlay: Panel
 var rest_buttons_box: VBoxContainer
 
+var rain: CPUParticles2D
+
 var debug_overlay: Panel
 var debug_spins: Dictionary = {}
 
@@ -214,6 +216,7 @@ func _build_ui() -> void:
 	_build_hunt_overlay()
 	_build_rest_overlay()
 	_build_region_info_overlay()
+	_build_rain()
 	_build_debug_overlay()
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
@@ -422,6 +425,40 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		_show_distant({"encountered": true, "animal_id": "stranger_wolf", "life_stage": "adult", "distant": true})
 	)
+	var event_row2 := HBoxContainer.new()
+	right.add_child(event_row2)
+	_debug_button(event_row2, tr("debug.event.storm"), func():
+		debug_overlay.visible = false
+		GameState.start_storm()
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.howl"), func():
+		debug_overlay.visible = false
+		GameState.trigger_howl()
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.driven_off"), func():
+		debug_overlay.visible = false
+		GameState.pending_events.append({"type": "driven_off"})
+		_refresh()
+	)
+	var event_row3 := HBoxContainer.new()
+	right.add_child(event_row3)
+	_debug_button(event_row3, tr("debug.event.prey_nearby"), func():
+		debug_overlay.visible = false
+		GameState.pending_events.append({"type": "prey_nearby", "animal_id": "hare", "life_stage": "adult", "terrain": ""})
+		_refresh()
+	)
+	_debug_button(event_row3, tr("debug.event.bear_passing"), func():
+		debug_overlay.visible = false
+		GameState.pending_events.append({"type": "bear_passing", "health": 0.0, "stamina": 0.0})
+		_refresh()
+	)
+	_debug_button(event_row3, tr("debug.event.bear_scavenge"), func():
+		debug_overlay.visible = false
+		GameState.start_feeding("white_tailed_deer", "adult", "stream")
+		_show_scavenger("bear", false)
+	)
 
 func _debug_section_label(key: String) -> Label:
 	var l := Label.new()
@@ -471,13 +508,16 @@ func _refresh() -> void:
 	if GameState.wolf == null:
 		return
 	var w: Wolf = GameState.wolf
-	top_label.text = "%s   %s D%d %s   |   %s" % [
+	top_label.text = "%s   %s D%d %s%s   |   %s" % [
 		tr("region." + GameState.current_region),
 		tr("season." + GameTime.current_season()),
 		GameTime.day,
 		tr("period." + GameTime.current_period()),
+		"" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather),
 		tr("stage." + _stage_key(w.life_stage())),
 	]
+	rain.emitting = GameState.weather == "storm"
+	_process_events.call_deferred()
 	stats_bars["health"].value = w.health
 	stats_bars["stamina"].value = w.stamina
 	stats_bars["hunger"].value = w.hunger
@@ -838,6 +878,125 @@ func _on_scavenger_choice(event: String, choice: String) -> void:
 	else:
 		encounter_overlay.visible = false
 
+# --- 主動事件 ---
+
+# 暴雨用粒子效果（CLAUDE.md：暴雨不需要另外的圖）。
+func _build_rain() -> void:
+	rain = CPUParticles2D.new()
+	rain.emitting = false
+	rain.amount = 220
+	rain.lifetime = 1.2
+	rain.position = Vector2(340, -10)
+	rain.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	rain.emission_rect_extents = Vector2(380, 1)
+	rain.direction = Vector2(-0.2, 1)
+	rain.spread = 2.0
+	rain.gravity = Vector2.ZERO
+	rain.initial_velocity_min = 300.0
+	rain.initial_velocity_max = 380.0
+	rain.scale_amount_min = 1.0
+	rain.scale_amount_max = 2.0
+	rain.color = Color(0.7, 0.8, 1.0, 0.55)
+	# 細長的雨絲，沿落下方向對齊
+	var streak := Image.create(1, 6, false, Image.FORMAT_RGBA8)
+	streak.fill(Color(1, 1, 1, 1))
+	rain.texture = ImageTexture.create_from_image(streak)
+	rain.particle_flag_align_y = true
+	rain.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(rain)
+
+func _overlay_busy() -> bool:
+	return current_hunt != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
+		or debug_overlay.visible or region_info_overlay.visible
+
+# 目前的行動結束、沒有其他畫面開著時，依序處理世界主動找上門的事件。
+func _process_events() -> void:
+	if GameState.wolf == null or not GameState.wolf.alive or _overlay_busy():
+		return
+	var event := GameState.pop_event()
+	if event.is_empty():
+		return
+	match event.get("type", ""):
+		"storm":
+			_log(tr("event.storm"))
+		"rain_stopped":
+			_log(tr("event.rain_stopped"))
+		"howl":
+			var entry := {"type": "territory", "animal": "stranger_wolf", "region": event["region"]}
+			_log(tr("event.howl.%d" % max(1, GameState.knowledge_level(entry))).replace("{region}", tr("region." + str(event["region"]))))
+		"driven_off":
+			var to: String = GameState.apply_drive_off()
+			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "gray_wolf")
+		"prey_nearby":
+			_show_prey_nearby(event)
+			return
+		"bear_passing":
+			_show_bear_passing(event)
+			return
+	_refresh()
+
+func _show_event_message(text: String, sprite_id: String) -> void:
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.texture = PixelArt.make_animal_sprite(sprite_id, Vector2i(72, 48), 1.0)
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("ui.continue"), func():
+		encounter_overlay.visible = false
+		_refresh()
+		if GameState.wolf != null and not GameState.wolf.alive:
+			_on_wolf_died(GameState.wolf.death_cause)
+	)
+	encounter_overlay.visible = true
+
+func _show_prey_nearby(event: Dictionary) -> void:
+	var name: String = _prey_name(str(event["animal_id"]), str(event["life_stage"]))
+	var text: String = tr("event.prey_nearby").replace("{animal}", name)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.texture = PixelArt.make_animal_sprite(str(event["animal_id"]), Vector2i(72, 48), _animal_scale(str(event["life_stage"])))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("hunt.option.pounce"), func():
+		encounter_overlay.visible = false
+		current_hunt = GameState.hunt_nearby_prey(event)
+		_render_hunt_stage()
+	)
+	_add_encounter_button(tr("ui.ignore"), func():
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
+func _show_bear_passing(event: Dictionary) -> void:
+	# 辨識前看到的灰熊一律是遠距目擊
+	if not GameState.is_identified("grizzly_bear"):
+		_show_distant({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "distant": true})
+		return
+	var text: String = tr("event.bear_passing")
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.texture = PixelArt.make_animal_sprite("grizzly_bear", Vector2i(72, 48), 1.0)
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("event.bear_passing.hide").replace("{n}", str(int(round(GameState.bear_hide_chance() * 100.0)))), func():
+		var res := GameState.resolve_bear_passing(event, "hide")
+		encounter_overlay.visible = false
+		if res["outcome"] == "hidden":
+			_log(tr("event.bear_passing.hidden"))
+			_refresh()
+		else:
+			_log(tr("event.bear_passing.spotted"))
+			_on_encounter_triggered(res["encounter"])
+	)
+	_add_encounter_button(tr("event.bear_passing.leave"), func():
+		GameState.resolve_bear_passing(event, "leave")
+		_log(tr("event.bear_passing.left"))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
 # --- 區域資訊 ---
 
 func _build_region_info_overlay() -> void:
@@ -872,6 +1031,9 @@ func _source_name(source: String) -> String:
 func _knowledge_text(entry: Dictionary) -> String:
 	var level: String = tr("knowledge.level.%d" % GameState.knowledge_level(entry))
 	var text: String = tr("knowledge." + str(entry["type"]))
+	if entry["type"] == "territory":
+		# 狼嚎的知識逐步成形：似乎有其他狼 → 常從某處傳來 → 這一帶是其他狼的範圍
+		text = tr("knowledge.territory.%d" % GameState.knowledge_level(entry))
 	text = text.replace("{animal}", _source_name(str(entry.get("animal", ""))))
 	text = text.replace("{region}", tr("region." + str(entry.get("region", ""))))
 	text = text.replace("{period}", tr("period." + str(entry.get("period", ""))))

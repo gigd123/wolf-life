@@ -68,6 +68,7 @@ var prey_stamina_cur: float
 var gave_up_stage: int = -1 # 放棄時所在的階段（記錄狩獵傾向）
 var knowledge_bonus: Dictionary = {} # 獵物弱點知識：{option_id: 加成}
 var successful_options: Array[String] = [] # 這次狩獵成功過的選項（累積獵物弱點知識）
+var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風向每個階段都可能改變
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
 # p_terrain：遭遇時所在的地形（探索的地點特徵）。
@@ -159,7 +160,9 @@ func wind_state() -> String:
 	return relative_wind(wind_dir, prey_dir)
 
 func _maybe_shift_wind() -> bool:
-	if RNGService.chance(float(_tuning().get("wind_shift_chance_per_stage", 0.08))):
+	var chance_value: float = float(GameData.events.get("storm", {}).get("wind_shift_chance", 0.5)) if storm \
+		else float(_tuning().get("wind_shift_chance_per_stage", 0.08))
+	if RNGService.chance(chance_value):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
 		return true
 	return false
@@ -263,6 +266,10 @@ func _stalk_option(id: String) -> Dictionary:
 	_add_terrain_factor(factors, t)
 	if stalk_bonus > 0.0:
 		factors.append({"key": "factor.observed", "good": true, "weight": stalk_bonus})
+	if storm:
+		var rain: float = float(GameData.events.get("storm", {}).get("stalk_bonus", 0.1))
+		factors.append({"key": "factor.storm_cover", "good": true, "weight": rain})
+		t += rain
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
 	_add_turns_factor(factors, turns)

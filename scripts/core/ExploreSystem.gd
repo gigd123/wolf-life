@@ -77,15 +77,26 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var prey_dir: int = RNGService.randi_range(0, 3)
 	var wind: String = HuntSystem.relative_wind(int(ctx.get("wind_dir", 0)), prey_dir)
 	var clue_weights: Dictionary = cfg.get("clue_weights", {}).get(source, {"track": 1}).duplicate()
+	var weather: String = str(ctx.get("weather", "clear"))
+	var storm_cfg: Dictionary = GameData.events.get("storm", {})
 	if clue_weights.has("scent"):
 		clue_weights["scent"] = float(clue_weights["scent"]) * float(cfg.get("scent_wind_mult", {}).get(wind, 1.0))
+		if weather == "storm":
+			clue_weights["scent"] = float(clue_weights["scent"]) * float(storm_cfg.get("scent_mult", 0.2))
+	if weather == "after_rain" and clue_weights.has("track"):
+		clue_weights["track"] = float(clue_weights["track"]) * float(storm_cfg.get("after_track_mult", 2.0))
 	var clue: String = RNGService.weighted_pick(clue_weights)
 
 	var fresh: bool = true
 	if not cfg.get("always_fresh_clues", []).has(clue):
 		var activity: Dictionary = GameData.animals.get(source, {}).get("period_activity", {})
 		var fresh_chance: float = float(cfg.get("fresh_chance_base", 0.55)) * float(activity.get(ctx["period"], 1.0))
+		if weather == "after_rain":
+			fresh_chance += float(storm_cfg.get("after_fresh_bonus", 0.2))
 		fresh = RNGService.chance(clamp(fresh_chance, float(cfg.get("fresh_chance_min", 0.2)), float(cfg.get("fresh_chance_max", 0.85))))
+		# 暴雨把舊足跡沖掉：雨中看到的足跡、痕跡都是剛留下的
+		if weather == "storm" and ["track", "sign"].has(clue):
+			fresh = true
 	# 逆風時氣味可判斷新鮮度；側風、順風時聞不出來。其他線索都看得出新舊。
 	var fresh_known: bool = clue != "scent" or wind == "headwind"
 	var life_stage: String = "juvenile" if RNGService.chance(float(cfg.get("juvenile_chance", 0.3))) else "adult"
@@ -144,7 +155,8 @@ static func can_track(discovery: Dictionary) -> bool:
 	return discovery.get("fresh", false) or not discovery.get("fresh_known", true)
 
 # knowledge_bonus：「確定」的獵物出沒知識帶來的追蹤加成。
-static func track_chance(discovery: Dictionary, perception: float, knowledge_bonus: float = 0.0) -> Dictionary:
+# weather_penalty：暴雨中容易跟丟。
+static func track_chance(discovery: Dictionary, perception: float, knowledge_bonus: float = 0.0, weather_penalty: float = 0.0) -> Dictionary:
 	var t: Dictionary = _cfg().get("track", {})
 	var stats: Dictionary = GameData.animals.get(discovery["source"], {}).get(discovery.get("life_stage", "adult"), {})
 	var detection: float = float(stats.get("detection", 40))
@@ -161,7 +173,9 @@ static func track_chance(discovery: Dictionary, perception: float, knowledge_bon
 		factors.append({"key": "factor.fresh_unknown", "good": false, "weight": 0.0, "info": true})
 	if knowledge_bonus > 0.0:
 		factors.append({"key": "factor.knowledge", "good": true, "weight": knowledge_bonus})
-	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w + knowledge_bonus), "factors": factors}
+	if weather_penalty > 0.0:
+		factors.append({"key": "factor.storm_scent", "good": false, "weight": weather_penalty})
+	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w + knowledge_bonus - weather_penalty), "factors": factors}
 
 # 「確定」的知識：預估此時此地探索發現某種獵物（線索或目擊）的機率，給畫面顯示。
 static func estimate_prey_chance(ctx: Dictionary, animal_id: String) -> float:
