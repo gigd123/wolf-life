@@ -15,3 +15,6 @@ export_presets.cfg
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Claude Code 個人設定（含 auto mode 環境描述，不上傳）
+.claude/settings.local.json
