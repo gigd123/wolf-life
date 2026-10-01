@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（實作中）、Phase 1.6（預定，不實作） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
-| `docs/ecology-reference.md`（尚未建立） | 狼的生態資料與系統對應 | 需要生態細節時 |
+| `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/progress.md` | 進度紀錄（由你維護） | 每次開始與結束時 |
 
 `SPEC.md` 與 `DESIGN.md` 衝突時，以 `SPEC.md` 為準；差異列在 `SPEC.md` 的「與 DESIGN.md 的差異」。

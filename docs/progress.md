@@ -53,12 +53,14 @@ Phase 1 收尾：尚未開始（下一步：修行動結果文字顯示不完整
 - （目前沒有）
 
 ## 待確認
-- **文件路徑**：`CLAUDE.md` 的文件表寫 `SPEC.md`、`DESIGN.md`，實際放在 `docs/`。已把表格路徑改成 `docs/`，`progress.md` 也放在 `docs/`。
-- **`ecology-reference.md` 不存在**：`CLAUDE.md` 有列，但專案裡找不到。目前先不讀。
-- **1.5 美術位置**：規格寫 `assets/art/phase1.5/`，實際檔案在 `arts/phase1.5_art/`（44 個檔，1x／4x 成對），尚未推上 GitHub。打算在美術接入的步驟搬到 `assets/art/phase1.5/`。
-- **背景檔名**：規格寫 `bg_forest_east` 等，實際檔名是依地形命名：`bg_stream_valley`、`bg_deep_forest`、`bg_forest_edge_meadow`、`bg_fallen_log_slope`。暫定依「區域地形配置」對應：東部＝`bg_stream_valley`、北部＝`bg_deep_forest`、南部＝`bg_forest_edge_meadow`、西部＝`bg_fallen_log_slope`，實作時用資料檔對應，不改檔名。
+- **1.5 美術位置**：規格寫 `assets/art/phase1.5/`，實際檔案在 `arts/phase1.5_art/`（44 個檔，1x／4x 成對）。打算在美術接入的步驟搬到 `assets/art/phase1.5/`。
 - **兩套美術擇一**：`arts/phase1.5_art/` 或 `arts/files/`（forest 背景 640×360、`wolf_assets/` 分層背景），由使用者在本機比較後決定；未決定前先用 phase1.5 那套。
 - **狼的尺寸**：`CLAUDE.md` 寫一格約 48×32，`wolf_stalk_1x.png` 實際是 58×20（伏低姿勢）。目前判斷是姿勢不同，不影響。
+
+已確認（2026-10-01）：
+- **背景對應**：規格寫 `bg_forest_east` 等，實際檔名依地形命名。使用者同意以下對應，實作時用資料檔對應，不改檔名：東部＝`bg_stream_valley`、北部＝`bg_deep_forest`、南部＝`bg_forest_edge_meadow`、西部＝`bg_fallen_log_slope`。
+- **文件路徑**：`SPEC.md`、`DESIGN.md`、`ecology-reference.md`、`progress.md` 都放在 `docs/`，`CLAUDE.md` 文件表已同步。
+- **`docs/ecology-reference.md`**：已補上。內容為生態參考，不是實作規格；與 `SPEC.md` 的 1.5 範圍沒有衝突。其中可直接支撐 1.5 的依據：飽餐－耐餓、追 2～3 回合後放棄、獵物站定、野兔躲藏難抓、深夜對狼有利、狐狸洞可作為探索發現。
 
 ## 1.6 預留
 - 狩獵的搏鬥階段之後要改用戰鬥規則：目前搏鬥在 `HuntSystem.do_fight()`，灰熊打鬥在 `GameState.resolve_competitor_encounter()`。1.5 修改這兩處時，要把勝負判定集中成可替換的函式。
