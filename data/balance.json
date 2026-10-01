@@ -12,6 +12,7 @@
   "den_sleep_stamina": 60,
   "wild_sleep_multiplier": 0.6,
   "short_rest_stamina": 15,
+  "rest_until_stamina_per_turn": 7.5,
   "poison_duration_min": 2,
   "poison_duration_max": 4,
   "poison_health_value_loss_per_day": 1,

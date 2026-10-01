@@ -36,6 +36,9 @@ ui.region_map,區域地圖
 ui.actions,行動
 ui.debug,除錯選單
 ui.save_and_exit,存檔並離開
+ui.cancel,取消
+ui.rest_until.title,要休息到什麼時候？
+ui.rest_until.option,休息到{period}
 ui.here,目前位置
 ui.hunt,狩獵
 ui.ignore,不理會
@@ -46,6 +49,7 @@ action.find_tracks,尋找獵物蹤跡
 action.gather,採集
 action.find_sleep_spot,找尋睡覺的地方
 action.short_rest,短暫休息
+action.rest_until,休息到…
 action.sleep,睡覺
 animal.white_tailed_deer,白尾鹿
 animal.hare,野兔
@@ -67,6 +71,7 @@ log.gather.fail,這裡沒有可採集的東西
 log.sleep_spot.success,找到了適合睡覺的地方
 log.sleep_spot.fail,沒有找到適合睡覺的地方
 log.short_rest,你稍作休息 恢復了一些體力
+log.rest_until,你休息到了{period}
 log.slept,你睡了一覺
 hunt.stage.discover,發現階段：你注意到一隻{animal}
 hunt.stage.stalk,潛近階段：小心接近{animal}

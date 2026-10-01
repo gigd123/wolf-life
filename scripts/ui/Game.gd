@@ -2,7 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill"]
-const ACTION_ORDER := ["find_tracks", "gather", "find_sleep_spot", "short_rest", "sleep"]
+const ACTION_ORDER := ["find_tracks", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
 const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
 
@@ -28,6 +28,9 @@ var hunt_message: Label
 var hunt_sprite: TextureRect
 var hunt_buttons_box: VBoxContainer
 var current_hunt: HuntSystem = null
+
+var rest_overlay: Panel
+var rest_buttons_box: VBoxContainer
 
 var debug_overlay: Panel
 var debug_spins: Dictionary = {}
@@ -151,7 +154,7 @@ func _build_ui() -> void:
 
 	# 行動按鈕之後會變多，放在自己的捲動區，不會把行動紀錄擠出畫面。
 	var action_scroll := ScrollContainer.new()
-	action_scroll.custom_minimum_size = Vector2(220, 0)
+	action_scroll.custom_minimum_size = Vector2(280, 0)
 	action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	middle.add_child(action_scroll)
 	var action_panel := VBoxContainer.new()
@@ -161,12 +164,19 @@ func _build_ui() -> void:
 	var action_title := Label.new()
 	action_title.text = tr("ui.actions")
 	action_panel.add_child(action_title)
+	var action_grid := GridContainer.new()
+	action_grid.columns = 2
+	action_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_grid.add_theme_constant_override("h_separation", 2)
+	action_grid.add_theme_constant_override("v_separation", 2)
+	action_panel.add_child(action_grid)
 	for action_id in ACTION_ORDER:
 		var btn := Button.new()
 		btn.text = tr("action." + action_id)
 		btn.custom_minimum_size = Vector2(0, 26)
 		btn.pressed.connect(_on_action_button.bind(action_id))
-		action_panel.add_child(btn)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		action_grid.add_child(btn)
 		action_buttons[action_id] = btn
 
 	log_box = RichTextLabel.new()
@@ -187,6 +197,7 @@ func _build_ui() -> void:
 
 	_build_encounter_overlay()
 	_build_hunt_overlay()
+	_build_rest_overlay()
 	_build_debug_overlay()
 
 func _build_encounter_overlay() -> void:
@@ -243,6 +254,30 @@ func _build_hunt_overlay() -> void:
 	box.add_child(hunt_message)
 	hunt_buttons_box = VBoxContainer.new()
 	box.add_child(hunt_buttons_box)
+
+func _build_rest_overlay() -> void:
+	rest_overlay = Panel.new()
+	rest_overlay.visible = false
+	rest_overlay.anchor_right = 1.0
+	rest_overlay.anchor_bottom = 1.0
+	add_child(rest_overlay)
+	var center := CenterContainer.new()
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	rest_overlay.add_child(center)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(220, 0)
+	center.add_child(box)
+	var title := Label.new()
+	title.text = tr("ui.rest_until.title")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	rest_buttons_box = VBoxContainer.new()
+	box.add_child(rest_buttons_box)
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("ui.cancel")
+	cancel_btn.pressed.connect(func(): rest_overlay.visible = false)
+	box.add_child(cancel_btn)
 
 func _build_debug_overlay() -> void:
 	debug_overlay = Panel.new()
@@ -412,9 +447,28 @@ func _on_action_button(action_id: String) -> void:
 		"short_rest":
 			GameState.action_short_rest()
 			_log(tr("log.short_rest"))
+		"rest_until":
+			_show_rest_overlay()
 		"sleep":
 			GameState.action_sleep()
 			_log(tr("log.slept"))
+
+# 依接下來的時段順序列出選項（不含目前時段）。
+func _show_rest_overlay() -> void:
+	_clear_children(rest_buttons_box)
+	var count := GameTime.PERIODS.size()
+	for offset in range(1, count):
+		var period: String = GameTime.PERIODS[(GameTime.period_index + offset) % count]
+		var btn := Button.new()
+		btn.text = tr("ui.rest_until.option").replace("{period}", tr("period." + period))
+		btn.pressed.connect(_on_rest_until.bind(period))
+		rest_buttons_box.add_child(btn)
+	rest_overlay.visible = true
+
+func _on_rest_until(period: String) -> void:
+	rest_overlay.visible = false
+	if GameState.action_rest_until(period):
+		_log(tr("log.rest_until").replace("{period}", tr("period." + period)))
 
 func _animal_scale(life_stage: String) -> float:
 	return 0.7 if life_stage == "juvenile" else 1.0

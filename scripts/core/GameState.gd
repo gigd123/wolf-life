@@ -144,7 +144,7 @@ func _die(cause: String) -> void:
 # --- Player actions ---
 
 func available_actions() -> Array[String]:
-	var actions: Array[String] = ["find_tracks", "find_sleep_spot", "short_rest"]
+	var actions: Array[String] = ["find_tracks", "find_sleep_spot", "short_rest", "rest_until"]
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	if not region.get("gather_weights", {}).is_empty():
 		actions.append("gather")
@@ -224,6 +224,23 @@ func action_short_rest() -> void:
 	wolf.stamina += float(GameData.balance.get("short_rest_stamina", 15))
 	wolf.clamp_stats()
 	state_changed.emit()
+
+# 快轉：一回合一回合休息到指定時段開始，途中照常結算時段與每日變化；狼死亡就停止。
+func action_rest_until(target_period: String) -> bool:
+	var target_index := GameTime.PERIODS.find(target_period)
+	if target_index < 0 or target_index == GameTime.period_index:
+		return false
+	var stamina_per_turn: float = float(GameData.balance.get("rest_until_stamina_per_turn", 7.5))
+	var max_turns := GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD
+	for i in range(max_turns):
+		if not wolf.alive or GameTime.period_index == target_index:
+			break
+		GameTime.advance_turns(1)
+		if wolf.alive:
+			wolf.stamina += stamina_per_turn
+			wolf.clamp_stats()
+	state_changed.emit()
+	return wolf.alive
 
 func action_sleep() -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
