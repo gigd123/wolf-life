@@ -282,56 +282,127 @@ func _build_rest_overlay() -> void:
 func _build_debug_overlay() -> void:
 	debug_overlay = Panel.new()
 	debug_overlay.visible = false
+	# 除錯選單蓋住整個畫面，用不透明底色，避免和底下的遊戲畫面混在一起。
+	var debug_style := StyleBoxFlat.new()
+	debug_style.bg_color = Color(0.06, 0.07, 0.06)
+	debug_overlay.add_theme_stylebox_override("panel", debug_style)
 	debug_overlay.anchor_right = 1.0
 	debug_overlay.anchor_bottom = 1.0
 	add_child(debug_overlay)
-	var vbox := VBoxContainer.new()
-	vbox.position = Vector2(40, 40)
-	debug_overlay.add_child(vbox)
+	var root := VBoxContainer.new()
+	root.anchor_right = 1.0
+	root.anchor_bottom = 1.0
+	root.offset_left = 8
+	root.offset_top = 4
+	root.offset_right = -8
+	root.offset_bottom = -4
+	debug_overlay.add_child(root)
+
+	var title_row := HBoxContainer.new()
+	root.add_child(title_row)
 	var title := Label.new()
 	title.text = tr("ui.debug")
-	vbox.add_child(title)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title)
+	var close_btn := Button.new()
+	close_btn.text = tr("debug.close")
+	close_btn.pressed.connect(_toggle_debug)
+	title_row.add_child(close_btn)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	var columns := HBoxContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 16)
+	scroll.add_child(columns)
+
+	# 左欄：素質
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 2)
+	columns.add_child(left)
+	left.add_child(_debug_section_label("debug.section.stats"))
 	for key in ["health", "stamina", "speed", "strength", "skill", "hunger", "health_value", "age_years"]:
 		var row := HBoxContainer.new()
-		vbox.add_child(row)
+		left.add_child(row)
 		var l := Label.new()
-		l.text = key
-		l.custom_minimum_size = Vector2(100, 0)
+		l.text = tr("debug.age_years") if key == "age_years" else tr("stat." + key)
+		l.custom_minimum_size = Vector2(90, 0)
 		row.add_child(l)
 		var spin := SpinBox.new()
 		spin.min_value = 0
 		spin.max_value = 100 if key != "age_years" else 20
 		spin.step = 0.1 if key == "age_years" else 1
-		spin.custom_minimum_size = Vector2(100, 0)
+		spin.custom_minimum_size = Vector2(90, 0)
 		row.add_child(spin)
 		var apply_btn := Button.new()
-		apply_btn.text = "Set"
+		apply_btn.text = tr("debug.set")
 		apply_btn.pressed.connect(_on_debug_set.bind(key, spin))
 		row.add_child(apply_btn)
 		debug_spins[key] = spin
 
-	var skip_day_btn := Button.new()
-	skip_day_btn.text = "Skip Day"
-	skip_day_btn.pressed.connect(func(): GameState.debug_skip_day())
-	vbox.add_child(skip_day_btn)
-
-	var skip_season_btn := Button.new()
-	skip_season_btn.text = "Skip Season"
-	skip_season_btn.pressed.connect(func(): GameState.debug_skip_to_next_season())
-	vbox.add_child(skip_season_btn)
-
-	var time_mode_btn := Button.new()
-	time_mode_btn.text = "Toggle Time Mode (normal/test)"
-	time_mode_btn.pressed.connect(func():
+	# 右欄：時間、年齡、強制觸發遭遇
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 2)
+	columns.add_child(right)
+	right.add_child(_debug_section_label("debug.section.time"))
+	var time_grid := GridContainer.new()
+	time_grid.columns = 2
+	right.add_child(time_grid)
+	_debug_button(time_grid, tr("debug.skip_day"), func(): GameState.debug_skip_day())
+	_debug_button(time_grid, tr("debug.skip_season"), func(): GameState.debug_skip_to_next_season())
+	_debug_button(time_grid, tr("debug.add_year"), func(): GameState.debug_add_age(1.0); _sync_debug_spins())
+	_debug_button(time_grid, tr("debug.jump_stage").replace("{stage}", tr("stage.adult")),
+		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ADULT); _sync_debug_spins())
+	_debug_button(time_grid, tr("debug.jump_stage").replace("{stage}", tr("stage.elder")),
+		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ELDER); _sync_debug_spins())
+	_debug_button(right, tr("debug.toggle_time_mode"), func():
 		GameTime.time_mode = "test" if GameTime.time_mode == "normal" else "normal"
 		_log("time_mode = " + GameTime.time_mode)
 	)
-	vbox.add_child(time_mode_btn)
 
-	var close_btn := Button.new()
-	close_btn.text = "Close"
-	close_btn.pressed.connect(_toggle_debug)
-	vbox.add_child(close_btn)
+	right.add_child(_debug_section_label("debug.section.encounter"))
+	var enc_row := HBoxContainer.new()
+	right.add_child(enc_row)
+	var animal_pick := OptionButton.new()
+	for animal_id in GameState.debug_animal_ids():
+		animal_pick.add_item(tr("animal." + animal_id))
+		animal_pick.set_item_metadata(animal_pick.item_count - 1, animal_id)
+	enc_row.add_child(animal_pick)
+	var stage_pick := OptionButton.new()
+	for stage in ["adult", "juvenile"]:
+		stage_pick.add_item(tr("debug.life_stage." + stage))
+		stage_pick.set_item_metadata(stage_pick.item_count - 1, stage)
+	enc_row.add_child(stage_pick)
+	_debug_button(enc_row, tr("debug.trigger"), func():
+		_on_debug_force_encounter(
+			str(animal_pick.get_item_metadata(animal_pick.selected)),
+			str(stage_pick.get_item_metadata(stage_pick.selected)))
+	)
+
+func _debug_section_label(key: String) -> Label:
+	var l := Label.new()
+	l.text = tr(key)
+	l.modulate = Color(0.75, 0.85, 0.75)
+	return l
+
+func _debug_button(parent: Node, text: String, callback: Callable) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.pressed.connect(callback)
+	parent.add_child(btn)
+
+func _on_debug_force_encounter(animal_id: String, life_stage: String) -> void:
+	debug_overlay.visible = false
+	var result := GameState.debug_force_encounter(animal_id, life_stage)
+	if result.get("found", false):
+		_show_find_result(result)
+
+func _sync_debug_spins() -> void:
+	for key in debug_spins.keys():
+		debug_spins[key].value = _get_wolf_stat(key)
 
 func _on_debug_set(key: String, spin: SpinBox) -> void:
 	GameState.debug_set_stat(key, spin.value)
@@ -339,8 +410,7 @@ func _on_debug_set(key: String, spin: SpinBox) -> void:
 func _toggle_debug() -> void:
 	debug_overlay.visible = not debug_overlay.visible
 	if debug_overlay.visible:
-		for key in debug_spins.keys():
-			debug_spins[key].value = _get_wolf_stat(key)
+		_sync_debug_spins()
 
 func _get_wolf_stat(key: String) -> float:
 	var w: Wolf = GameState.wolf

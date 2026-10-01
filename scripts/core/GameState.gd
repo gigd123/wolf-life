@@ -337,6 +337,35 @@ func debug_skip_to_next_season() -> void:
 		guard += 1
 	state_changed.emit()
 
+# 跳年齡：以季為單位增加年齡，每季照常套用老年衰退，但不推進遊戲時間。
+func debug_add_age(years: float) -> void:
+	if wolf == null:
+		return
+	var steps := int(round(years / 0.25))
+	for i in range(steps):
+		wolf.age_years += 0.25
+		_apply_elder_decay()
+	log_message.emit(tr("log.debug.age").replace("{age}", "%.2f" % wolf.age_years))
+	state_changed.emit()
+
+func debug_jump_to_stage(stage: int) -> void:
+	if wolf == null or wolf.life_stage() >= stage:
+		return
+	var ages: Dictionary = GameData.balance.get("life_stage_ages", {})
+	var target: float = float(ages.get("subadult_end", 2.0)) if stage == Wolf.LifeStage.ADULT else float(ages.get("adult_end", 6.0))
+	debug_add_age(ceil((target - wolf.age_years) / 0.25 - 0.0001) * 0.25)
+
+func debug_animal_ids() -> Array:
+	return GameData.animals.keys()
+
+# 強制觸發遭遇：獵物回傳與「尋找獵物蹤跡」相同格式的結果，競爭動物直接發出遭遇訊號。
+func debug_force_encounter(animal_id: String, life_stage: String) -> Dictionary:
+	var role: String = str(GameData.animals.get(animal_id, {}).get("type", ""))
+	if role == "competitor":
+		encounter_triggered.emit({"encountered": true, "animal_id": animal_id, "life_stage": life_stage})
+		return {}
+	return {"found": true, "animal_id": animal_id, "life_stage": life_stage}
+
 # --- Persistence ---
 
 func to_dict() -> Dictionary:

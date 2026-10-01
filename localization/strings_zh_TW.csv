@@ -73,6 +73,21 @@ log.sleep_spot.fail,沒有找到適合睡覺的地方
 log.short_rest,你稍作休息 恢復了一些體力
 log.rest_until,你休息到了{period}
 log.slept,你睡了一覺
+log.debug.age,（除錯）年齡調整為 {age} 歲
+debug.age_years,年齡（歲）
+debug.set,設定
+debug.close,關閉
+debug.section.stats,素質
+debug.section.time,時間與年齡
+debug.section.encounter,強制觸發遭遇
+debug.skip_day,跳一天
+debug.skip_season,跳到下一季
+debug.toggle_time_mode,切換時間倍率（正常／測試）
+debug.add_year,年齡 +1 歲
+debug.jump_stage,跳到{stage}
+debug.trigger,觸發
+debug.life_stage.adult,成體
+debug.life_stage.juvenile,幼體
 hunt.stage.discover,發現階段：你注意到一隻{animal}
 hunt.stage.stalk,潛近階段：小心接近{animal}
 hunt.stage.chase,追擊階段：{animal}察覺到你了
