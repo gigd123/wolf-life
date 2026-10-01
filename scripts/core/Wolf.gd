@@ -22,6 +22,7 @@ var age_years: float = 0.6667
 var injury: int = Injury.NONE
 var injury_days_remaining: int = 0
 var injury_stat: String = "" # 重傷影響的能力："speed" 或 "strength"
+var heavy_injury_count: int = 0 # 一生中受過幾次重傷（一生回顧）
 var poison_days_remaining: int = 0
 
 var alive: bool = true
@@ -53,6 +54,8 @@ func clamp_stats() -> void:
 	health_value = clamp(health_value, smin, smax)
 
 func apply_injury(severity: int, days: int, stat: String = "") -> void:
+	if severity == Injury.HEAVY:
+		heavy_injury_count += 1
 	if severity >= injury:
 		if severity == Injury.HEAVY and (injury != Injury.HEAVY or injury_stat == ""):
 			injury_stat = stat
@@ -100,7 +103,7 @@ func to_dict() -> Dictionary:
 		"health": health, "stamina": stamina, "speed": speed,
 		"strength": strength, "skill": skill, "perception": perception,
 		"hunger": hunger, "health_value": health_value, "age_years": age_years,
-		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat,
+		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat, "heavy_injury_count": heavy_injury_count,
 		"poison_days_remaining": poison_days_remaining,
 		"alive": alive, "death_cause": death_cause,
 	}
@@ -119,6 +122,7 @@ static func from_dict(data: Dictionary) -> Wolf:
 	w.injury = int(data.get("injury", Injury.NONE))
 	w.injury_days_remaining = int(data.get("injury_days_remaining", 0))
 	w.injury_stat = str(data.get("injury_stat", ""))
+	w.heavy_injury_count = int(data.get("heavy_injury_count", 0))
 	w.poison_days_remaining = int(data.get("poison_days_remaining", 0))
 	w.alive = bool(data.get("alive", true))
 	w.death_cause = str(data.get("death_cause", ""))

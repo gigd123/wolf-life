@@ -52,6 +52,7 @@ action.short_rest,短暫休息
 action.explore,探索
 action.rest_until,休息到…
 action.sleep,睡覺
+action.move,移動
 animal.white_tailed_deer,白尾鹿
 animal.hare,野兔
 animal.red_fox,狐狸
@@ -173,6 +174,15 @@ debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
 debug.event.bear_scavenge,灰熊搶食
+debug.playtest_stats,試玩紀錄
+stats.title,試玩紀錄（這隻狼）
+stats.dominant,⚠ 選擇率超過 80%
+stats.observe,觀察：{n} 次／可觀察 {total} 次
+stats.give_ups,中途放棄追擊：{n} 次
+stats.nights,過夜：巢穴 {den} 次　野外 {wild} 次
+stats.wind_failures,因風向轉變而失敗：{n} 次
+stats.after_deer_avg,獵到鹿 {n} 次 之後平均 {avg} 天才再狩獵（最近 3 次如下）
+stats.after_deer,　{days} 天：{actions}
 ui.continue,繼續
 weather.storm,暴雨
 weather.after_rain,雨停
@@ -398,6 +408,34 @@ summary.regions_visited,曾經去過 {count} 個區域
 summary.prey_total,總共成功狩獵 {count} 次
 summary.biggest_prey,最大的獵物是 {animal}
 summary.new_life,展開新的一生
+summary.tendency,狩獵方式：{list}
+summary.at_age,（{age} 歲）
+summary.wild_nights,在野外過夜 {count} 次
+summary.scavenged,被搶走獵物 {count} 次
+summary.heavy_injuries,受過重傷 {count} 次
+summary.knowledge,學會了 {count} 件事（確定 {confirmed} 件）
+tendency.stealth,潛伏型
+tendency.pursuit,追獵型
+tendency.assault,強攻型
+tendency.cautious,謹慎型
+tendency_desc.stealth,擅長潛伏的獵手
+tendency_desc.pursuit,擅長長距離追獵的狼
+tendency_desc.assault,勇於正面強攻的狼
+tendency_desc.cautious,謹慎的狼
+bio.early.scavenged,年輕時多次被灰熊搶走獵物
+bio.early.injured,年輕時受過重傷
+bio.early.buck,曾經獨自扳倒雄鹿
+bio.early.wanderer,一生大多在野外過夜
+bio.became,之後成為{desc}
+bio.was,是一隻{desc}
+bio.death,{age} 歲{cause}
+death_bio.starvation,死於飢餓
+death_bio.injury,傷重而死
+death_bio.old_age,老死
+death_bio.unknown,離開了這片森林
+factor.tendency.stealth,潛伏的習慣
+factor.tendency.cautious,謹慎的習慣
+factor.tendency.assault,強攻的習慣
 death.starvation,餓死
 death.injury,傷重不治
 death.old_age,老死

@@ -69,6 +69,9 @@ var gave_up_stage: int = -1 # 放棄時所在的階段（記錄狩獵傾向）
 var knowledge_bonus: Dictionary = {} # 獵物弱點知識：{option_id: 加成}
 var successful_options: Array[String] = [] # 這次狩獵成功過的選項（累積獵物弱點知識）
 var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風向每個階段都可能改變
+var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
+var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
+var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
 # p_terrain：遭遇時所在的地形（探索的地點特徵）。
@@ -100,7 +103,7 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		"simple": stage = Stage.POUNCE
 		"full": stage = Stage.OBSERVE
 		_: stage = Stage.STALK
-	fight_state = {"wounds": 0, "next_bonus": 0.0, "counter_reduction": 0.0, "chase_bonus": 0.0}
+	fight_state = {"wounds": 0, "next_bonus": 0.0, "counter_reduction": 0.0, "chase_bonus": 0.0, "tendency_bonus": 0.0}
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
@@ -249,6 +252,10 @@ func _observe_option() -> Dictionary:
 	_add_alert_factor(factors, diff)
 	var t: float = _terrain_mod("observe")
 	_add_terrain_factor(factors, t)
+	var cautious: float = _tendency_effect("cautious")
+	if cautious > 0.0:
+		factors.append({"key": "factor.tendency.cautious", "good": true, "weight": cautious})
+		t += cautious
 	_add_common_factors(factors)
 	return {"id": "observe", "label_key": "hunt.option.observe", "chance": clamp_chance(float(cfg.get("base", 0.65)) + diff + t),
 		"factors": factors, "turns": 0, "stamina": 0.0}
@@ -270,6 +277,10 @@ func _stalk_option(id: String) -> Dictionary:
 		var rain: float = float(GameData.events.get("storm", {}).get("stalk_bonus", 0.1))
 		factors.append({"key": "factor.storm_cover", "good": true, "weight": rain})
 		t += rain
+	var stealth: float = _tendency_effect("stealth")
+	if stealth > 0.0:
+		factors.append({"key": "factor.tendency.stealth", "good": true, "weight": stealth})
+		t += stealth
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
 	_add_turns_factor(factors, turns)
@@ -309,7 +320,8 @@ func _chase_option(id: String) -> Dictionary:
 	if tiring > 0.01:
 		factors.append({"key": "factor.prey_tiring", "good": true, "weight": tiring})
 	t += tiring - fatigue
-	var cost: float = float(opt.get("stamina", 10))
+	# 追獵型：追擊的體力消耗逐步降低。
+	var cost: float = float(opt.get("stamina", 10)) * (1.0 - _tendency_effect("pursuit"))
 	var exhausted: float = 0.15 if wolf.stamina - cost <= 0.0 else 0.0
 	if exhausted > 0.0:
 		factors.append({"key": "factor.tired", "good": false, "weight": exhausted})
@@ -451,10 +463,14 @@ func prey_state_keys() -> Array:
 # --- 執行（擲骰） ---
 # 回傳 {"success", "text_key", "reason_key", "turns", "wind_shifted", ...}
 
+func _tendency_effect(type: String) -> float:
+	return float(tendency.get("effect", 0.0)) if tendency.get("type", "") == type else 0.0
+
 func choose(id: String) -> Dictionary:
 	var opt := _find_option(id)
 	if opt.is_empty():
 		return {"success": false}
+	decisions.append(stage_name() + "." + id)
 	wolf.stamina -= float(opt.get("stamina", 0.0))
 	var res: Dictionary
 	match stage:
@@ -639,6 +655,7 @@ func _flee(text_key: String, factors: Array, wind_shifted: bool) -> Dictionary:
 	var reason_key: String = ""
 	if wind_shifted and wind_state() == "tailwind":
 		reason_key = "reason.wind_turned"
+		wind_failure = true
 	else:
 		reason_key = reason_from_factor(main_negative_factor(factors))
 	return {"success": false, "text_key": text_key, "reason_key": reason_key, "wind_shifted": wind_shifted}

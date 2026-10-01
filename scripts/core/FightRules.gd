@@ -40,10 +40,14 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var next_bonus: float = float(state.get("next_bonus", 0.0))
 	if next_bonus > 0.0:
 		factors.append({"key": "factor.opening", "good": true, "weight": next_bonus})
+	# 強攻型：搏鬥逐步更有利（規格「搏鬥傷害提高」，這裡的搏鬥沒有傷害值，換算成成功率）。
+	var tendency_bonus: float = float(state.get("tendency_bonus", 0.0))
+	if tendency_bonus > 0.0:
+		factors.append({"key": "factor.tendency.assault", "good": true, "weight": tendency_bonus})
 	var penalty: float = float(state.get("penalty", 0.0))
 	if penalty > 0.0:
 		factors.append({"key": "factor.standing_danger", "good": false, "weight": penalty})
-	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus - penalty
+	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus + tendency_bonus - penalty
 	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
 
 static func counter_chance(prey_counter: float, move: String, state: Dictionary) -> float:

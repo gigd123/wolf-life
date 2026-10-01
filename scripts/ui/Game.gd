@@ -454,6 +454,10 @@ func _build_debug_overlay() -> void:
 		GameState.pending_events.append({"type": "bear_passing", "health": 0.0, "stamina": 0.0})
 		_refresh()
 	)
+	_debug_button(right, tr("debug.playtest_stats"), func():
+		debug_overlay.visible = false
+		_show_playtest_stats()
+	)
 	_debug_button(event_row3, tr("debug.event.bear_scavenge"), func():
 		debug_overlay.visible = false
 		GameState.start_feeding("white_tailed_deer", "adult", "stream")
@@ -516,6 +520,10 @@ func _refresh() -> void:
 		"" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather),
 		tr("stage." + _stage_key(w.life_stage())),
 	]
+	# 只顯示目前的主要狩獵方式（不跳解鎖通知）
+	var tendency: Dictionary = GameState.current_tendency()
+	if not tendency.is_empty():
+		top_label.text += "   |   " + tr("tendency." + str(tendency["type"]))
 	rain.emitting = GameState.weather == "storm"
 	_process_events.call_deferred()
 	stats_bars["health"].value = w.health
@@ -997,6 +1005,44 @@ func _show_bear_passing(event: Dictionary) -> void:
 	)
 	encounter_overlay.visible = true
 
+# --- 試玩紀錄（SPEC「遊戲內自動紀錄」）---
+
+func _show_playtest_stats() -> void:
+	var stats: Dictionary = GameState.life_log.get("stats", {})
+	var counts: Dictionary = stats.get("option_counts", {})
+	var counters: Dictionary = stats.get("counters", {})
+	var lines: Array[String] = [tr("stats.title")]
+	# 每個階段內各選項的選擇率；超過 80% 代表可能是最佳解
+	var by_stage: Dictionary = {}
+	for key in counts.keys():
+		var stage: String = str(key).split(".")[0]
+		by_stage[stage] = int(by_stage.get(stage, 0)) + int(counts[key])
+	var keys: Array = counts.keys()
+	keys.sort()
+	for key in keys:
+		var stage: String = str(key).split(".")[0]
+		var rate: float = float(counts[key]) / max(1, int(by_stage[stage]))
+		var flag: String = "　" + tr("stats.dominant") if rate > 0.8 and int(by_stage[stage]) >= 5 else ""
+		lines.append("%s：%d（%d%%）%s" % [key, int(counts[key]), int(round(rate * 100.0)), flag])
+	var observe_chances: int = int(counters.get("observe_opportunities", 0))
+	lines.append(tr("stats.observe").replace("{n}", str(int(counts.get("observe.observe", 0)))).replace("{total}", str(observe_chances)))
+	lines.append(tr("stats.give_ups").replace("{n}", str(int(GameState.life_log.get("chase_give_ups", 0)))))
+	lines.append(tr("stats.nights").replace("{den}", str(int(stats.get("nights", {}).get("den", 0)))).replace("{wild}", str(int(GameState.life_log.get("wild_nights", 0)))))
+	lines.append(tr("stats.wind_failures").replace("{n}", str(int(counters.get("wind_failures", 0)))))
+	var after: Array = stats.get("after_deer", [])
+	if not after.is_empty():
+		var total_days: int = 0
+		for entry in after:
+			total_days += int(entry["days"])
+		lines.append(tr("stats.after_deer_avg").replace("{n}", str(after.size())).replace("{avg}", "%.1f" % (float(total_days) / after.size())))
+	for entry in after.slice(max(0, after.size() - 3)):
+		var acts: Array[String] = []
+		for a in entry["actions"].keys():
+			acts.append("%s %d" % [tr("action." + str(a)), int(entry["actions"][a])])
+		lines.append(tr("stats.after_deer").replace("{days}", str(int(entry["days"]))).replace("{actions}", "、".join(acts)))
+	region_info_text.text = "\n".join(lines)
+	region_info_overlay.visible = true
+
 # --- 區域資訊 ---
 
 func _build_region_info_overlay() -> void:
@@ -1026,21 +1072,10 @@ func _build_region_info_overlay() -> void:
 # --- 知識 ---
 
 func _source_name(source: String) -> String:
-	return tr("animal." + source) if GameState.is_identified(source) else tr("animal_unknown." + source)
+	return TextFormat.source_name(source)
 
 func _knowledge_text(entry: Dictionary) -> String:
-	var level: String = tr("knowledge.level.%d" % GameState.knowledge_level(entry))
-	var text: String = tr("knowledge." + str(entry["type"]))
-	if entry["type"] == "territory":
-		# 狼嚎的知識逐步成形：似乎有其他狼 → 常從某處傳來 → 這一帶是其他狼的範圍
-		text = tr("knowledge.territory.%d" % GameState.knowledge_level(entry))
-	text = text.replace("{animal}", _source_name(str(entry.get("animal", ""))))
-	text = text.replace("{region}", tr("region." + str(entry.get("region", ""))))
-	text = text.replace("{period}", tr("period." + str(entry.get("period", ""))))
-	text = text.replace("{season}", tr("season." + str(entry.get("season", ""))))
-	text = text.replace("{prey}", _prey_name(str(entry.get("animal", "")), str(entry.get("life_stage", "adult"))))
-	text = text.replace("{option}", tr("knowledge.option." + str(entry.get("option", ""))))
-	return level + text
+	return TextFormat.knowledge_text(entry)
 
 func _explore_hint() -> String:
 	var ctx := {"region_id": GameState.current_region, "season": GameTime.current_season(), "period": GameTime.current_period(),
@@ -1178,12 +1213,7 @@ func _hunt_prey_name() -> String:
 	return (tr("explore.injured") + name) if current_hunt.injured else name
 
 func _prey_name(animal_id: String, life_stage: String) -> String:
-	var key: String = "prey_name.%s.%s" % [animal_id, life_stage]
-	if tr(key) != key:
-		return tr(key)
-	if life_stage == "juvenile":
-		return tr("explore.juvenile") + tr("animal." + animal_id)
-	return tr("animal." + animal_id)
+	return TextFormat.prey_name(animal_id, life_stage)
 
 # info 是 HuntSystem.chance_* 的結果：按鈕顯示成功率，下方列出關鍵因素。
 func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> void:

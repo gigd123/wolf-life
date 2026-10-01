@@ -240,6 +240,7 @@ func _die(cause: String) -> void:
 	wolf.alive = false
 	wolf.death_cause = cause
 	life_log["death_cause"] = cause
+	_write_playtest_log()
 	SaveSystem.save_game()
 	wolf_died.emit(cause)
 
@@ -259,6 +260,7 @@ func adjacent_regions() -> Array:
 	return region.get("adjacent", [])
 
 func action_move(target_region: String) -> void:
+	_record_action("move")
 	if not adjacent_regions().has(target_region):
 		return
 	current_region = target_region
@@ -301,6 +303,7 @@ func _feature_known_here(flag: String) -> bool:
 	return false
 
 func action_explore() -> Dictionary:
+	_record_action("explore")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("explore", 1)))
 	if not wolf.alive:
@@ -418,14 +421,17 @@ func _abs_period() -> int:
 
 # 避開灰熊線索：這個時段內，此區域的灰熊遭遇機率降低。
 func action_avoid() -> void:
+	record_decision("avoid")
 	avoid_bear = {"region_id": current_region, "until": _abs_period()}
 	current_discovery = {}
 	state_changed.emit()
 
+# 灰熊遭遇機率的倍率：避開線索（×0.3）、謹慎型（更早察覺危險）。
 func threat_mult() -> float:
+	var mult: float = 1.0 - tendency_effect("cautious")
 	if avoid_bear.get("region_id", "") == current_region and int(avoid_bear.get("until", -1)) >= _abs_period():
-		return float(GameData.discovery.get("avoid_mult", 0.3))
-	return 1.0
+		mult *= float(GameData.discovery.get("avoid_mult", 0.3))
+	return mult
 
 func _learn_threat(source: String) -> void:
 	if source == "grizzly_bear":
@@ -569,6 +575,7 @@ func weakness_bonuses(animal_id: String, life_stage: String) -> Dictionary:
 	return bonuses
 
 func action_gather() -> Dictionary:
+	_record_action("gather")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("gather", 1)))
 	var result := EncounterSystem.gather(current_region, GameTime.current_season())
@@ -597,6 +604,7 @@ func _apply_gather_effect(item_id: String) -> void:
 # 找睡處：成功時是普通睡處；區域裡有好睡處時有機會找到它，並寫入區域知識（之後不用再找）。
 # 回傳 "good"、"normal" 或 ""（沒找到）。
 func action_find_sleep_spot() -> String:
+	_record_action("find_sleep_spot")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_sleep_spot", 1)))
 	if _feature_known_here("sleep_spot"):
@@ -625,6 +633,7 @@ func sleep_quality() -> String:
 	return "rough"
 
 func action_short_rest() -> void:
+	_record_action("short_rest")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("short_rest", 2)))
 	var bonus: float = 0.0
@@ -637,6 +646,7 @@ func action_short_rest() -> void:
 
 # 快轉：一回合一回合休息到指定時段開始，途中照常結算時段與每日變化；狼死亡就停止。
 func action_rest_until(target_period: String) -> bool:
+	_record_action("rest_until")
 	var target_index := GameTime.PERIODS.find(target_period)
 	if target_index < 0 or target_index == GameTime.period_index:
 		return false
@@ -657,9 +667,14 @@ func action_rest_until(target_period: String) -> bool:
 # 睡覺：可以在任何區域睡，隔天從這裡開始。回復缺少的血量與體力 × 睡處倍率；
 # 野外可能在夜裡被灰熊驚醒（回復減半，接著進入遭遇）。回傳 {"quality", "interrupted"}。
 func action_sleep() -> Dictionary:
+	_record_action("sleep")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	var cfg: Dictionary = GameData.balance.get("sleep", {})
 	var quality := sleep_quality()
+	if quality != "den":
+		life_log["wild_nights"] = int(life_log.get("wild_nights", 0)) + 1
+	else:
+		_stat_inc("nights", "den")
 	GameTime.advance_turns(int(costs.get("sleep", 3)))
 	if not wolf.alive:
 		return {}
@@ -708,6 +723,9 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
+	_on_hunt_started(hunt)
+	hunt.tendency = current_tendency()
+	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
 	if from_tracking:
 		hunt.experience.append("perception")
 	return hunt
@@ -745,6 +763,85 @@ func finish_hunt(hunt: HuntSystem) -> void:
 		wolf.clamp_stats()
 		_check_death()
 		state_changed.emit()
+
+# --- 試玩自動紀錄（SPEC「遊戲內自動紀錄」）---
+# life_log["stats"]：option_counts（每個決策的次數）、counters（觀察機會、因風向失敗…）、
+# nights（巢穴／野外）、after_deer（獵到鹿之後到下一次狩獵的天數與行動）。
+
+func _stat_inc(group: String, key: String, amount: int = 1) -> void:
+	var stats: Dictionary = life_log.get("stats", {})
+	var table: Dictionary = stats.get(group, {})
+	table[key] = int(table.get(key, 0)) + amount
+	stats[group] = table
+	life_log["stats"] = stats
+
+func _record_action(action: String) -> void:
+	var after: Dictionary = life_log.get("after_deer", {})
+	if not after.is_empty():
+		after["actions"][action] = int(after["actions"].get(action, 0)) + 1
+
+func _on_hunt_started(hunt: HuntSystem) -> void:
+	_stat_inc("counters", "hunts")
+	if hunt.stage == HuntSystem.Stage.OBSERVE:
+		_stat_inc("counters", "observe_opportunities")
+	var after: Dictionary = life_log.get("after_deer", {})
+	if not after.is_empty():
+		var stats: Dictionary = life_log.get("stats", {})
+		var list: Array = stats.get("after_deer", [])
+		list.append({"days": int(life_log.get("days_lived", 1)) - int(after["day"]), "actions": after["actions"]})
+		stats["after_deer"] = list
+		life_log["stats"] = stats
+		life_log["after_deer"] = {}
+
+# 死亡時把試玩紀錄寫成 JSON（user://playtest_logs/），方便比較兩隻狼。
+func _write_playtest_log() -> void:
+	DirAccess.make_dir_recursive_absolute("user://playtest_logs")
+	var path := "user://playtest_logs/wolf_%d.json" % int(Time.get_unix_time_from_system())
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify({"life_log": life_log, "knowledge_count": knowledge.size(),
+		"age_years": wolf.age_years, "tendency": current_tendency()}, "  "))
+
+# --- 狩獵傾向（SPEC「經歷與一生回顧」） ---
+# 最近 window 次決策中比例最高的傾向就是主要傾向，效果 = max_effect × 比例；
+# 主要傾向改變時記入 tendency_history，一生回顧用來描述「牠在哪個時期變了」。
+
+func record_decision(decision: String) -> void:
+	_stat_inc("option_counts", decision)
+	var cfg: Dictionary = GameData.tendency
+	var category: String = str(cfg.get("decision_map", {}).get(decision, "other"))
+	var list: Array = life_log.get("decisions", [])
+	list.append(category)
+	while list.size() > int(cfg.get("window", 30)):
+		list.pop_front()
+	life_log["decisions"] = list
+	var current: String = str(current_tendency().get("type", ""))
+	var history: Array = life_log.get("tendency_history", [])
+	if current != "" and (history.is_empty() or history[-1]["type"] != current):
+		history.append({"type": current, "age": snapped(wolf.age_years, 0.1), "day": int(life_log.get("days_lived", 1))})
+		life_log["tendency_history"] = history
+
+func current_tendency() -> Dictionary:
+	var cfg: Dictionary = GameData.tendency
+	var list: Array = life_log.get("decisions", [])
+	if list.size() < int(cfg.get("min_decisions", 5)):
+		return {}
+	var best: String = ""
+	var best_count: int = 0
+	for t in cfg.get("types", []):
+		var c: int = list.count(t)
+		if c > best_count:
+			best = t
+			best_count = c
+	if best == "":
+		return {}
+	var share: float = float(best_count) / float(list.size())
+	return {"type": best, "share": share, "effect": float(cfg.get("max_effect", 0.15)) * share}
+
+func tendency_effect(type: String) -> float:
+	var t := current_tendency()
+	return float(t.get("effect", 0.0)) if t.get("type", "") == type else 0.0
 
 # --- 主動事件 ---
 
@@ -880,6 +977,14 @@ func resolve_bear_passing(event: Dictionary, choice: String) -> Dictionary:
 
 # 狩獵紀錄（之後的狩獵傾向與一生回顧使用）：次數、成功、追擊中途放棄。
 func _record_hunt(hunt: HuntSystem) -> void:
+	if hunt.wind_failure:
+		_stat_inc("counters", "wind_failures")
+	if hunt.animal_id == "white_tailed_deer" and hunt.result == HuntSystem.Result.SUCCESS:
+		life_log["after_deer"] = {"day": int(life_log.get("days_lived", 1)), "actions": {}}
+	for d in hunt.decisions:
+		record_decision(d)
+	if hunt.result == HuntSystem.Result.PLAYER_GAVE_UP:
+		record_decision("give_up")
 	for option in hunt.successful_options:
 		if GameData.knowledge.get("weakness_options", []).has(option):
 			learn({"type": "weakness", "animal": hunt.animal_id, "life_stage": hunt.life_stage, "option": option})
@@ -956,6 +1061,12 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 	if event == "bear":
 		identify("grizzly_bear")
 		_learn_danger("grizzly_bear")
+		record_decision("scavenger." + choice)
+		if choice != "guard":
+			life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
+			life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
+	elif choice == "ignore":
+		life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
 	if event == "fox":
 		if choice == "ignore":
 			current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
@@ -1006,6 +1117,7 @@ func carcass_index_here() -> int:
 
 # 回到殘骸：1 回合；可能撞見正在吃的狐狸或灰熊。回傳 {"event": ...}，沒有殘骸時回傳空字典。
 func action_return_to_carcass() -> Dictionary:
+	_record_action("return_to_carcass")
 	var idx := carcass_index_here()
 	if idx < 0:
 		return {}
@@ -1068,6 +1180,7 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
 	identify(animal_id)
 	_learn_danger(animal_id)
+	record_decision("bear." + choice)
 	var cfg := _bear_cfg()
 	if choice == "flee":
 		# 被直接攻擊後逃跑：看速度，失敗會再受傷。

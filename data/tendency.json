@@ -1,0 +1,28 @@
+{
+  "_comment": "狩獵傾向（SPEC「經歷與一生回顧」）：依最近 window 次狩獵決策的比例計算，主要傾向的效果 = max_effect × 該傾向的比例。",
+  "window": 30,
+  "min_decisions": 5,
+  "max_effect": 0.15,
+  "types": ["stealth", "pursuit", "assault", "cautious"],
+  "decision_map": {
+    "stalk.downwind": "stealth",
+    "stalk.wait": "stealth",
+    "stalk.upstream": "stealth",
+    "stalk.ambush": "stealth",
+    "stalk.edge_strike": "stealth",
+    "stalk.direct": "assault",
+    "chase.sprint": "pursuit",
+    "chase.follow": "pursuit",
+    "chase.attack_standing": "assault",
+    "fight.bite_throat": "assault",
+    "fight.dodge": "cautious",
+    "observe.observe": "cautious",
+    "give_up": "cautious",
+    "avoid": "cautious",
+    "scavenger.guard": "assault",
+    "scavenger.abandon": "cautious",
+    "bear.fight": "assault",
+    "bear.retreat": "cautious",
+    "bear.flee": "cautious"
+  }
+}
