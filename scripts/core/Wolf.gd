@@ -13,6 +13,7 @@ var stamina: float = 80.0
 var speed: float = 40.0
 var strength: float = 40.0
 var skill: float = 40.0
+var perception: float = 40.0
 
 var hunger: float = 70.0
 var health_value: float = 80.0
@@ -47,6 +48,7 @@ func clamp_stats() -> void:
 	speed = clamp(speed, smin, smax)
 	strength = clamp(strength, smin, smax)
 	skill = clamp(skill, smin, smax)
+	perception = clamp(perception, smin, smax)
 	hunger = clamp(hunger, smin, float(GameData.balance.get("hunger_max", smax)))
 	health_value = clamp(health_value, smin, smax)
 
@@ -76,6 +78,9 @@ func effective_strength() -> float:
 func effective_skill() -> float:
 	return skill * _hunger_stat_mult()
 
+func effective_perception() -> float:
+	return perception * _hunger_stat_mult()
+
 func is_overfed() -> bool:
 	return hunger > float(GameData.balance.get("overfed_threshold", 120))
 
@@ -93,7 +98,7 @@ func _injury_mult(stat: String) -> float:
 func to_dict() -> Dictionary:
 	return {
 		"health": health, "stamina": stamina, "speed": speed,
-		"strength": strength, "skill": skill,
+		"strength": strength, "skill": skill, "perception": perception,
 		"hunger": hunger, "health_value": health_value, "age_years": age_years,
 		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat,
 		"poison_days_remaining": poison_days_remaining,
@@ -107,6 +112,7 @@ static func from_dict(data: Dictionary) -> Wolf:
 	w.speed = float(data.get("speed", 40.0))
 	w.strength = float(data.get("strength", 40.0))
 	w.skill = float(data.get("skill", 40.0))
+	w.perception = float(data.get("perception", 40.0))
 	w.hunger = float(data.get("hunger", 70.0))
 	w.health_value = float(data.get("health_value", 80.0))
 	w.age_years = float(data.get("age_years", 0.6667))

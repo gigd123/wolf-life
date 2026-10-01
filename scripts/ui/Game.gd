@@ -1,7 +1,7 @@
 extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
-const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill"]
+const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const ACTION_ORDER := ["find_tracks", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
 const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
@@ -200,9 +200,16 @@ func _build_ui() -> void:
 	_build_rest_overlay()
 	_build_debug_overlay()
 
+# 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
+func _overlay_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.07, 0.06, 0.94)
+	return style
+
 func _build_encounter_overlay() -> void:
 	encounter_overlay = Panel.new()
 	encounter_overlay.visible = false
+	encounter_overlay.add_theme_stylebox_override("panel", _overlay_style())
 	encounter_overlay.anchor_right = 1.0
 	encounter_overlay.anchor_bottom = 1.0
 	add_child(encounter_overlay)
@@ -231,6 +238,7 @@ func _build_encounter_overlay() -> void:
 func _build_hunt_overlay() -> void:
 	hunt_overlay = Panel.new()
 	hunt_overlay.visible = false
+	hunt_overlay.add_theme_stylebox_override("panel", _overlay_style())
 	hunt_overlay.anchor_right = 1.0
 	hunt_overlay.anchor_bottom = 1.0
 	add_child(hunt_overlay)
@@ -258,6 +266,7 @@ func _build_hunt_overlay() -> void:
 func _build_rest_overlay() -> void:
 	rest_overlay = Panel.new()
 	rest_overlay.visible = false
+	rest_overlay.add_theme_stylebox_override("panel", _overlay_style())
 	rest_overlay.anchor_right = 1.0
 	rest_overlay.anchor_bottom = 1.0
 	add_child(rest_overlay)
@@ -323,7 +332,7 @@ func _build_debug_overlay() -> void:
 	left.add_theme_constant_override("separation", 2)
 	columns.add_child(left)
 	left.add_child(_debug_section_label("debug.section.stats"))
-	for key in ["health", "stamina", "speed", "strength", "skill", "hunger", "health_value", "age_years"]:
+	for key in ["health", "stamina", "speed", "strength", "skill", "perception", "hunger", "health_value", "age_years"]:
 		var row := HBoxContainer.new()
 		left.add_child(row)
 		var l := Label.new()
@@ -420,6 +429,7 @@ func _get_wolf_stat(key: String) -> float:
 		"speed": return w.speed
 		"strength": return w.strength
 		"skill": return w.skill
+		"perception": return w.perception
 		"hunger": return w.hunger
 		"health_value": return w.health_value
 		"age_years": return w.age_years
@@ -443,6 +453,7 @@ func _refresh() -> void:
 	stats_bars["speed"].value = w.speed
 	stats_bars["strength"].value = w.strength
 	stats_bars["skill"].value = w.skill
+	stats_bars["perception"].value = w.perception
 
 	var is_elder: bool = w.life_stage() == Wolf.LifeStage.ELDER
 	wolf_portrait.modulate = Color(0.82, 0.82, 0.85) if is_elder else Color(1, 1, 1)
@@ -546,15 +557,17 @@ func _animal_scale(life_stage: String) -> float:
 func _show_find_result(result: Dictionary) -> void:
 	var animal_id: String = result["animal_id"]
 	var life_stage: String = result["life_stage"]
-	_log(tr("log.find_tracks.success") + " " + tr("animal." + animal_id))
-	encounter_message.text = tr("log.find_tracks.success") + "\n" + tr("animal." + animal_id)
+	var prey_dir: int = int(result.get("prey_dir", -1))
+	var wind_text: String = tr("factor.wind." + str(result.get("wind", "crosswind")))
+	_log(tr("log.find_tracks.success") + " " + tr("animal." + animal_id) + "（" + wind_text + "）")
+	encounter_message.text = tr("log.find_tracks.success") + "\n" + tr("animal." + animal_id) + "　" + wind_text
 	encounter_sprite.texture = PixelArt.make_animal_sprite(animal_id, Vector2i(72, 48), _animal_scale(life_stage))
 	_clear_children(encounter_buttons_box)
 	var hunt_btn := Button.new()
 	hunt_btn.text = tr("ui.hunt")
 	hunt_btn.pressed.connect(func():
 		encounter_overlay.visible = false
-		_begin_hunt(animal_id, life_stage)
+		_begin_hunt(animal_id, life_stage, prey_dir)
 	)
 	encounter_buttons_box.add_child(hunt_btn)
 	var ignore_btn := Button.new()
@@ -565,8 +578,8 @@ func _show_find_result(result: Dictionary) -> void:
 
 # --- Hunting ---
 
-func _begin_hunt(animal_id: String, life_stage: String) -> void:
-	current_hunt = GameState.start_hunt(animal_id, life_stage)
+func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> void:
+	current_hunt = GameState.start_hunt(animal_id, life_stage, prey_dir)
 	_render_hunt_stage()
 
 func _render_hunt_stage() -> void:
@@ -577,57 +590,84 @@ func _render_hunt_stage() -> void:
 	_clear_children(hunt_buttons_box)
 	var animal_name: String = tr("animal." + current_hunt.animal_id)
 	hunt_sprite.texture = PixelArt.make_animal_sprite(current_hunt.animal_id, Vector2i(72, 48), _animal_scale(current_hunt.life_stage))
+	var wind_text: String = tr("factor.wind." + current_hunt.wind_state())
 	match current_hunt.stage:
 		HuntSystem.Stage.DISCOVER:
-			hunt_message.text = tr("hunt.stage.discover").replace("{animal}", animal_name)
-			_add_hunt_choice(tr("hunt.action.observe"), func(): _resolve_stage(current_hunt.do_discover()))
+			hunt_message.text = tr("hunt.stage.discover").replace("{animal}", animal_name) + "　" + wind_text
+			_add_hunt_choice(tr("hunt.action.observe"), current_hunt.chance_discover(), func(): _resolve_stage(current_hunt.do_discover()))
 		HuntSystem.Stage.STALK:
-			hunt_message.text = tr("hunt.stage.stalk").replace("{animal}", animal_name)
-			_add_hunt_choice(tr("hunt.action.low_approach"), func(): _resolve_stage(current_hunt.do_stalk("low")))
-			_add_hunt_choice(tr("hunt.action.downwind"), func(): _resolve_stage(current_hunt.do_stalk("downwind")))
-			_add_hunt_choice(tr("hunt.action.wait"), func(): _resolve_stage(current_hunt.do_stalk("wait")))
+			hunt_message.text = tr("hunt.stage.stalk").replace("{animal}", animal_name) + "　" + wind_text
+			for approach in ["low", "downwind", "wait"]:
+				var key: String = "hunt.action.low_approach" if approach == "low" else "hunt.action." + approach
+				_add_hunt_choice(tr(key), current_hunt.chance_stalk(approach), func(): _resolve_stage(current_hunt.do_stalk(approach)))
 		HuntSystem.Stage.CHASE:
 			hunt_message.text = tr("hunt.stage.chase").replace("{animal}", animal_name)
-			_add_hunt_choice(tr("hunt.action.sprint"), func(): _resolve_stage(current_hunt.do_chase("sprint")))
-			_add_hunt_choice(tr("hunt.action.flank"), func(): _resolve_stage(current_hunt.do_chase("flank")))
-			_add_hunt_choice(tr("hunt.action.drive"), func(): _resolve_stage(current_hunt.do_chase("drive")))
+			for tactic in ["sprint", "flank", "drive"]:
+				_add_hunt_choice(tr("hunt.action." + tactic), current_hunt.chance_chase(tactic), func(): _resolve_stage(current_hunt.do_chase(tactic)))
 		HuntSystem.Stage.FIGHT:
 			hunt_message.text = tr("hunt.stage.fight").replace("{animal}", animal_name)
-			_add_hunt_choice(tr("hunt.action.bite_throat"), func():
-				Audio.play_bite()
-				_resolve_stage(current_hunt.do_fight("bite_throat"))
-			)
-			_add_hunt_choice(tr("hunt.action.bite_leg"), func():
-				Audio.play_bite()
-				_resolve_stage(current_hunt.do_fight("bite_leg"))
-			)
-			_add_hunt_choice(tr("hunt.action.pin"), func():
-				Audio.play_bite()
-				_resolve_stage(current_hunt.do_fight("pin"))
-			)
-	_add_hunt_choice(tr("ui.give_up"), func():
+			for move in ["bite_throat", "bite_leg", "pin"]:
+				_add_hunt_choice(tr("hunt.action." + move), current_hunt.chance_fight(move), func():
+					Audio.play_bite()
+					_resolve_stage(current_hunt.do_fight(move))
+				)
+	_add_hunt_choice(tr("ui.give_up"), {}, func():
 		current_hunt.give_up()
 		_finish_hunt()
 	)
 
-func _add_hunt_choice(label: String, callback: Callable) -> void:
+# info 是 HuntSystem.chance_* 的結果：按鈕顯示成功率，下方列出關鍵因素。
+func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> void:
 	var btn := Button.new()
 	btn.text = label
+	if info.has("chance"):
+		btn.text += "　%d%%" % int(round(float(info["chance"]) * 100.0))
 	btn.pressed.connect(callback)
 	hunt_buttons_box.add_child(btn)
+	if info.has("factors"):
+		var factor_label := Label.new()
+		factor_label.text = _format_factors(info["factors"])
+		factor_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		factor_label.add_theme_font_size_override("font_size", 12)
+		factor_label.modulate = Color(0.8, 0.85, 0.8)
+		hunt_buttons_box.add_child(factor_label)
+
+# 感知越高，列出的因素越多（2 個，感知達門檻時 3 個）。
+func _format_factors(factors: Array) -> String:
+	var cfg: Dictionary = GameData.balance.get("factor_display", {})
+	var count: int = int(cfg.get("base_count", 2))
+	if GameState.wolf.perception >= float(cfg.get("extra_count_perception", 55)):
+		count += 1
+	var main: Array = []
+	var info: Array = []
+	for f in factors:
+		(info if f.get("info", false) else main).append(f)
+	var parts: Array[String] = []
+	for f in HuntSystem.top_factors(main, count) + info:
+		var text: String = tr(str(f["key"])).replace("{n}", str(f.get("n", "")))
+		parts.append(text if f.get("info", false) else text + (" ✓" if f["good"] else " ✗"))
+	return "　".join(parts)
 
 func _resolve_stage(stage_result: Dictionary) -> void:
+	GameState.spend_hunt_turns(int(stage_result.get("turns", 0)))
+	var animal_name: String = tr("animal." + current_hunt.animal_id)
+	if stage_result.get("wind_shifted", false):
+		_log(tr("log.wind_shifted").replace("{wind}", tr("factor.wind." + current_hunt.wind_state())))
 	var text_key: String = stage_result.get("text_key", "")
 	if text_key != "":
 		_log(tr(text_key))
+	var reason_key: String = stage_result.get("reason_key", "")
+	if reason_key != "":
+		_log(tr(reason_key).replace("{animal}", animal_name))
 	if current_hunt.stage == HuntSystem.Stage.DONE:
 		_finish_hunt()
 	else:
 		_render_hunt_stage()
 
 func _finish_hunt() -> void:
-	if current_hunt.result == HuntSystem.Result.SUCCESS:
-		GameState.resolve_hunt_success(current_hunt.animal_id, current_hunt.life_stage)
+	var succeeded: bool = current_hunt.result == HuntSystem.Result.SUCCESS
+	GameState.finish_hunt(current_hunt)
+	if succeeded:
 		_log(tr("hunt.result.success").replace("{animal}", tr("animal." + current_hunt.animal_id)))
 	else:
 		_log(tr("hunt.result.fail"))

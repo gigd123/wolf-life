@@ -10,7 +10,10 @@ static func region_data(region_id: String) -> Dictionary:
 
 # period：獵物出現率依時段（animals.json 的 period_activity）；
 # depletion：該區域各獵物的資源消耗倍率（GameState.region_depletion），沒有就是 1。
-static func find_tracks(region_id: String, season: String, period: String = "", depletion: Dictionary = {}) -> Dictionary:
+# wind_dir：全域風向（0～3），每次發現時隨機決定獵物方位，換算成逆風／側風／順風；
+# perception：狼的感知，越高越容易找到蹤跡。
+static func find_tracks(region_id: String, season: String, period: String = "", depletion: Dictionary = {},
+		wind_dir: int = 0, perception: float = 40.0) -> Dictionary:
 	var region: Dictionary = region_data(region_id)
 	var weights: Dictionary = _seasonal_weights(region.get("prey_weights", {}), season)
 	if weights.is_empty():
@@ -24,12 +27,16 @@ static func find_tracks(region_id: String, season: String, period: String = "", 
 		weights[animal_id] = float(weights[animal_id]) * float(activity.get(period, 1.0)) * float(depletion.get(animal_id, 1.0))
 		adjusted_total += float(weights[animal_id])
 	var b: Dictionary = GameData.balance
+	var prey_dir: int = RNGService.randi_range(0, 3)
+	var wind: String = HuntSystem.relative_wind(wind_dir, prey_dir)
 	var find_chance: float = float(b.get("find_tracks_base_chance", 0.6)) * adjusted_total / base_total
-	if not RNGService.chance(min(find_chance, float(b.get("find_tracks_max_chance", 0.9)))):
-		return {"found": false}
+	find_chance *= float(b.get("find_tracks_wind_mult", {}).get(wind, 1.0))
+	find_chance += (perception - 40.0) / float(b.get("find_tracks_perception_divisor", 200))
+	if not RNGService.chance(clamp(find_chance, 0.05, float(b.get("find_tracks_max_chance", 0.9)))):
+		return {"found": false, "wind": wind}
 	var picked: String = RNGService.weighted_pick(weights)
 	var stage: String = "adult" if RNGService.chance(0.7) else "juvenile"
-	return {"found": true, "animal_id": picked, "life_stage": stage}
+	return {"found": true, "animal_id": picked, "life_stage": stage, "prey_dir": prey_dir, "wind": wind}
 
 static func roll_competitor(region_id: String, season: String) -> Dictionary:
 	var region: Dictionary = region_data(region_id)

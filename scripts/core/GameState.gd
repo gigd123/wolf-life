@@ -17,6 +17,8 @@ var found_sleep_spot_here: bool = false
 var rng_seed: int = 0
 # 區域資源消耗：{region_id: {animal_id: 出現率倍率}}，沒有紀錄就是 1。
 var region_depletion: Dictionary = {}
+# 全域風向（0～3，風從哪個方位吹來）。不做羅盤，遭遇時換算成逆風／側風／順風。
+var wind_dir: int = 0
 
 var life_log: Dictionary = {}
 
@@ -28,6 +30,7 @@ func new_game(start_den: String) -> void:
 	current_region = start_den
 	found_sleep_spot_here = false
 	region_depletion = {}
+	wind_dir = RNGService.randi_range(0, 3)
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -56,6 +59,9 @@ func _on_period_changed(_period_index: int) -> void:
 	var balance: Dictionary = GameData.balance
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
 	wolf.clamp_stats()
+	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
+	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
+		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
 	_check_death()
 	found_sleep_spot_here = false
 
@@ -80,9 +86,14 @@ func _apply_elder_decay() -> void:
 	wolf.speed -= float(decay.get("speed", 0.0))
 	wolf.strength -= float(decay.get("strength", 0.0))
 	wolf.skill -= float(decay.get("skill", 0.0))
+	wolf.perception -= float(decay.get("perception", 0.0))
 	wolf.clamp_stats()
 
-func _apply_growth() -> void:
+# 依行為累積經驗：探索與追蹤 → 感知；潛近與搏鬥 → 技巧；追擊 → 速度；搏鬥 → 力量。
+# mult 用來調整單次經驗的份量（例如找到蹤跡只算一半）。
+func grant_experience(stats: Array, mult: float = 1.0) -> void:
+	if wolf == null or stats.is_empty():
+		return
 	var growth: Dictionary = GameData.balance.get("growth", {})
 	var gains: Dictionary = {}
 	match wolf.life_stage():
@@ -94,11 +105,16 @@ func _apply_growth() -> void:
 				gains = growth.get("adult_gain_before_peak", {})
 	if gains.is_empty():
 		return
-	wolf.speed += float(gains.get("speed", 0.0))
-	wolf.strength += float(gains.get("strength", 0.0))
-	wolf.skill += float(gains.get("skill", 0.0))
+	for stat in stats:
+		var amount: float = float(gains.get(stat, 0.0)) * mult
+		match stat:
+			"speed": wolf.speed += amount
+			"strength": wolf.strength += amount
+			"skill": wolf.skill += amount
+			"perception": wolf.perception += amount
 	wolf.clamp_stats()
-	growth_applied.emit()
+	if mult >= 1.0:
+		growth_applied.emit()
 
 func _process_daily_recovery() -> void:
 	if wolf == null:
@@ -216,7 +232,9 @@ func action_find_tracks() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_tracks", 1)))
 	var result := EncounterSystem.find_tracks(current_region, GameTime.current_season(),
-		GameTime.current_period(), region_depletion.get(current_region, {}))
+		GameTime.current_period(), region_depletion.get(current_region, {}), wind_dir, wolf.effective_perception())
+	if result.get("found", false):
+		grant_experience(["perception"], float(GameData.balance.get("growth", {}).get("find_tracks_perception_mult", 0.5)))
 	state_changed.emit()
 	return result
 
@@ -292,7 +310,7 @@ func action_sleep() -> void:
 	SaveSystem.save_game()
 	state_changed.emit()
 
-func start_hunt(animal_id: String, life_stage: String) -> HuntSystem:
+func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> HuntSystem:
 	var animal_data: Dictionary = GameData.animals.get(animal_id, {})
 	var size: String = animal_data.get("size", "medium")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -302,7 +320,27 @@ func start_hunt(animal_id: String, life_stage: String) -> HuntSystem:
 	var detection_mod: float = 0.0
 	if GameTime.current_period() == "night":
 		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
-	return HuntSystem.new(wolf, animal_id, life_stage, detection_mod)
+	if prey_dir < 0:
+		prey_dir = RNGService.randi_range(0, 3)
+	return HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir)
+
+# 狩獵中花費額外回合（例如繞到下風處）。
+func spend_hunt_turns(turns: int) -> void:
+	if turns <= 0:
+		return
+	GameTime.advance_turns(turns)
+	_check_death()
+
+# 狩獵結束（成功或失敗）：同步風向、結算各階段累積的經驗。
+func finish_hunt(hunt: HuntSystem) -> void:
+	wind_dir = hunt.wind_dir
+	grant_experience(hunt.experience)
+	if hunt.result == HuntSystem.Result.SUCCESS:
+		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
+	else:
+		wolf.clamp_stats()
+		_check_death()
+		state_changed.emit()
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})
@@ -314,7 +352,6 @@ func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	if new_rank > current_rank:
 		life_log["biggest_prey"] = animal_id
 		life_log["biggest_prey_stage"] = life_stage
-	_apply_growth()
 	wolf.clamp_stats()
 	_check_death()
 	state_changed.emit()
@@ -335,7 +372,7 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 		var win_chance: float = clamp(0.5 + (wolf.effective_strength() + wolf.effective_skill() - power) / 200.0, 0.05, 0.7)
 		if RNGService.chance(win_chance):
 			wolf.stamina -= 15
-			_apply_growth()
+			grant_experience(["strength", "skill"])
 			wolf.clamp_stats()
 			return {"outcome": "win"}
 		var dmg: float = float(RNGService.randi_range(15, 35))
@@ -364,6 +401,7 @@ func debug_set_stat(stat_name: String, value: float) -> void:
 		"speed": wolf.speed = value
 		"strength": wolf.strength = value
 		"skill": wolf.skill = value
+		"perception": wolf.perception = value
 		"hunger": wolf.hunger = value
 		"health_value": wolf.health_value = value
 		"age_years": wolf.age_years = value
@@ -423,6 +461,7 @@ func to_dict() -> Dictionary:
 		"found_sleep_spot_here": found_sleep_spot_here,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
+		"wind_dir": wind_dir,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -442,6 +481,7 @@ func load_from_dict(data: Dictionary) -> void:
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})
 	region_depletion = data.get("region_depletion", {})
+	wind_dir = int(data.get("wind_dir", 0))
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))

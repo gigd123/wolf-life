@@ -32,6 +32,7 @@ stat.health_value,健康值
 stat.speed,速度
 stat.strength,力量
 stat.skill,技巧
+stat.perception,感知
 ui.region_map,區域地圖
 ui.actions,行動
 ui.debug,除錯選單
@@ -95,13 +96,13 @@ hunt.stage.chase,追擊階段：{animal}察覺到你了
 hunt.stage.fight,搏鬥階段：你撲向了{animal}
 hunt.action.observe,觀察並選定目標
 hunt.action.low_approach,伏低前進（省體力 命中普通）
-hunt.action.downwind,繞到下風處（較耗體力 命中最高）
+hunt.action.downwind,繞到下風處（較耗體力 可能多花回合）
 hunt.action.wait,等待時機（中等體力 命中中等）
 hunt.action.sprint,衝刺（最耗體力 這回合命中最高）
 hunt.action.flank,繞到側面（中等體力 小幅提升搏鬥勝算）
 hunt.action.drive,驅趕到不利地形（省體力 這回合較難成功 但大幅提升搏鬥勝算）
-hunt.action.bite_throat,咬喉（靠技巧 回報最高 反擊風險也最高）
-hunt.action.pin,壓制（靠力量 回報中等）
+hunt.action.bite_throat,咬喉（靠技巧 反擊風險最高）
+hunt.action.pin,壓制（靠力量）
 hunt.action.bite_leg,撲咬後腿（平衡安全 反擊風險最低）
 hunt.discover.success,你成功掌握了獵物的位置
 hunt.discover.fail,獵物先一步警覺離開了
@@ -114,6 +115,32 @@ hunt.fight.fail,獵物掙脫逃走了
 hunt.fight.counter,獵物反擊 你受了傷
 hunt.result.success,狩獵成功
 hunt.result.fail,這次狩獵失敗了
+factor.wind.headwind,逆風
+factor.wind.crosswind,側風
+factor.wind.tailwind,順風
+factor.prey_alert,牠很警覺
+factor.prey_unaware,牠沒注意到你
+factor.night,深夜
+factor.faster,你比牠快
+factor.slower,牠比你快
+factor.tired,體力不足
+factor.stronger,力量佔優
+factor.weaker,牠很難纏
+factor.chase_bonus,已佔好位置
+factor.hungry,飢餓虛弱
+factor.overfed,吃太撐
+factor.injured,重傷未癒
+factor.extra_turns,多花 {n} 回合
+reason.wind_turned,風向轉了 {animal}聞到了你
+reason.wind_tailwind,你在上風處 {animal}聞到了你
+reason.prey_alert,{animal}太警覺了
+reason.slower,{animal}跑得比你快
+reason.tired,你體力不支
+reason.weaker,{animal}掙扎得太厲害
+reason.hungry,飢餓讓你使不上力
+reason.overfed,吃得太撐 跑不動
+reason.injured,傷勢拖累了你
+log.wind_shifted,風向轉了 現在是{wind}
 encounter.competitor,你遇到了一隻{animal}
 encounter.result.win,你擊退了對方
 encounter.result.lose,你受傷了
