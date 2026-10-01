@@ -301,13 +301,15 @@ func action_track() -> Dictionary:
 		var worst := HuntSystem.main_negative_factor(info["factors"])
 		var reason: String = "" if worst.is_empty() else "reason." + str(worst["key"]).trim_prefix("factor.").replace(".", "_")
 		return {"success": false, "reason_key": reason}
-	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true, str(d.get("location", "")))}
+	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true,
+		str(d.get("location", "")), bool(d.get("injured", false)))}
 
 # 直接目擊獵物：不用追蹤，直接進入狩獵（從潛近開始）。
 func action_hunt_sighted() -> HuntSystem:
 	var d: Dictionary = current_discovery
 	current_discovery = {}
-	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false, str(d.get("location", "")))
+	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false,
+		str(d.get("location", "")), bool(d.get("injured", false)))
 
 # 採集探索到的採集物。
 func action_gather_discovered() -> String:
@@ -403,9 +405,11 @@ func action_sleep() -> void:
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
 # from_tracking：經由追蹤找到獵物時累積一次感知經驗。terrain：遭遇時的地形，空字串則隨機取區域的地形。
+# injured：受傷個體，一律走簡易流程。
 func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
-		terrain: String = "") -> HuntSystem:
-	GameTime.advance_turns(HuntSystem.depth_turns(HuntSystem.depth_of(animal_id, life_stage)))
+		terrain: String = "", injured: bool = false) -> HuntSystem:
+	var depth: String = "simple" if injured else HuntSystem.depth_of(animal_id, life_stage)
+	GameTime.advance_turns(HuntSystem.depth_turns(depth))
 	# 深夜對狼有利：獵物警覺降低。
 	var detection_mod: float = 0.0
 	if GameTime.current_period() == "night":
@@ -414,7 +418,7 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 		prey_dir = RNGService.randi_range(0, 3)
 	if terrain == "":
 		terrain = _random_terrain(current_region)
-	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain)
+	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	if from_tracking:
 		hunt.experience.append("perception")
 	return hunt
@@ -437,6 +441,7 @@ func spend_hunt_turns(turns: int) -> void:
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
 	grant_experience(hunt.experience)
+	_record_hunt(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
 	else:
@@ -445,10 +450,18 @@ func finish_hunt(hunt: HuntSystem) -> void:
 			current_discovery = {"kind": "clue", "source_kind": "prey", "source": hunt.animal_id,
 				"clue": "track", "location": _random_terrain(current_region), "fresh": true, "fresh_known": true,
 				"wind": HuntSystem.relative_wind(wind_dir, prey_dir), "prey_dir": prey_dir,
-				"life_stage": hunt.life_stage, "fled": true}
+				"life_stage": hunt.life_stage, "injured": hunt.injured, "fled": true}
 		wolf.clamp_stats()
 		_check_death()
 		state_changed.emit()
+
+# 狩獵紀錄（之後的狩獵傾向與一生回顧使用）：次數、成功、追擊中途放棄。
+func _record_hunt(hunt: HuntSystem) -> void:
+	life_log["hunt_attempts"] = int(life_log.get("hunt_attempts", 0)) + 1
+	if hunt.result == HuntSystem.Result.SUCCESS:
+		life_log["hunt_successes"] = int(life_log.get("hunt_successes", 0)) + 1
+	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP and hunt.gave_up_stage == HuntSystem.Stage.CHASE:
+		life_log["chase_give_ups"] = int(life_log.get("chase_give_ups", 0)) + 1
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})

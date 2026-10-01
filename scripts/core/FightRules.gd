@@ -9,6 +9,7 @@ extends RefCounted
 #   next_bonus：閃避等待破綻後，下一招的加成
 #   counter_reduction：閃避後，下一次被反擊的機率降低比例
 #   chase_bonus：追擊階段帶進搏鬥的有利位置
+#   penalty / counter_mult_extra：直接攻擊站定的雄鹿時，成功率降低、反擊加重
 
 static func _cfg() -> Dictionary:
 	return GameData.balance.get("hunt", {}).get("fight", {})
@@ -39,12 +40,16 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var next_bonus: float = float(state.get("next_bonus", 0.0))
 	if next_bonus > 0.0:
 		factors.append({"key": "factor.opening", "good": true, "weight": next_bonus})
-	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus
+	var penalty: float = float(state.get("penalty", 0.0))
+	if penalty > 0.0:
+		factors.append({"key": "factor.standing_danger", "good": false, "weight": penalty})
+	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus - penalty
 	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
 
 static func counter_chance(prey_counter: float, move: String, state: Dictionary) -> float:
 	var m: Dictionary = _cfg().get("moves", {}).get(move, {})
-	return (prey_counter / 100.0) * float(m.get("counter_mult", 1.0)) * (1.0 - float(state.get("counter_reduction", 0.0)))
+	return (prey_counter / 100.0) * float(m.get("counter_mult", 1.0)) * float(state.get("counter_mult_extra", 1.0)) \
+		* (1.0 - float(state.get("counter_reduction", 0.0)))
 
 # 執行一回合。回傳 {"outcome": "kill"|"continue"|"escape", "success": bool, "damage": float, "factors": Array}，
 # 並直接更新 state 與狼的血量／傷勢。

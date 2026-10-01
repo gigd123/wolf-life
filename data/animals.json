@@ -5,6 +5,7 @@
     "name_key": "animal.white_tailed_deer",
     "period_activity": { "dawn": 2.0, "day": 0.5, "dusk": 2.0 },
     "depth": { "juvenile": "simple", "adult": "standard", "buck": "full" },
+    "reactions": { "buck": { "stand": 0.35 }, "juvenile": { "hide": 0.4, "protect": 0.5 } },
     "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "hunger_value": 40 },
     "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 5, "hunger_value": 75 },
     "buck": { "detection": 60, "stamina": 60, "speed": 62, "counter_attack": 25, "hunger_value": 75 }
@@ -14,6 +15,7 @@
     "size": "small",
     "name_key": "animal.hare",
     "depth": { "juvenile": "simple", "adult": "simple" },
+    "reactions": { "adult": { "hide": 0.5 }, "juvenile": { "hide": 0.6 } },
     "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 7 },
     "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 12 }
   },
@@ -23,6 +25,7 @@
     "name_key": "animal.red_fox",
     "period_activity": { "night": 1.5 },
     "depth": { "juvenile": "simple", "adult": "standard" },
+    "reactions": { "juvenile": { "hide": 0.4 } },
     "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "hunger_value": 11 },
     "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "hunger_value": 18 }
   },

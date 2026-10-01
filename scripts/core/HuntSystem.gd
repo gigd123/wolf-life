@@ -17,6 +17,10 @@ extends RefCounted
 #
 # 風向以相對狀態 headwind（逆風）/ crosswind（側風）/ tailwind（順風）表示，
 # 潛近、撲抓前有機率轉變，最後由 GameState 同步回全域風向。
+#
+# 獵物反應（SPEC「獵物反應」，步驟 5）：flee 逃跑、stand 站定、counter 反擊、
+# hide 躲藏、protect 護幼（母鹿在附近）。反應依獵物、是否受傷與地形決定，
+# 追擊中可能改變。追擊是多回合：失敗不一定逃掉，超過 free_rounds 後成功率逐回合下降。
 
 enum Stage { OBSERVE, STALK, CHASE, FIGHT, POUNCE, DONE }
 enum Result { ONGOING, SUCCESS, PREY_FLED, PLAYER_GAVE_UP }
@@ -52,10 +56,21 @@ var chase_bonus: float = 0.0 # 潛近帶到追擊的加成（追擊起點）
 var fight_state: Dictionary = {} # 見 FightRules
 var fled: bool = false # 獵物逃走（可再追）
 
+var injured: bool = false # 受傷個體：走簡易流程，速度較慢，可能反擊
+var reaction: String = "flee"
+var mother_nearby: bool = false # 護幼：獵幼鹿時母鹿在附近
+var hiding: bool = false # 獵物躲起來了，要靠感知找出來
+var hid_once: bool = false # 一次狩獵最多躲一次
+var pounce_bonus: float = 0.0 # 找出躲藏的獵物後，下一次撲抓的加成
+var chase_round: int = 0 # 已經追了幾回合
+var prey_stamina_max: float
+var prey_stamina_cur: float
+var gave_up_stage: int = -1 # 放棄時所在的階段（記錄狩獵傾向）
+
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
 # p_terrain：遭遇時所在的地形（探索的地點特徵）。
 func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mod: float = 0.0,
-		p_wind_dir: int = 0, p_prey_dir: int = 0, p_terrain: String = "") -> void:
+		p_wind_dir: int = 0, p_prey_dir: int = 0, p_terrain: String = "", p_injured: bool = false) -> void:
 	wolf = p_wolf
 	animal_id = p_animal_id
 	life_stage = p_life_stage
@@ -70,7 +85,14 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 	prey_speed = float(stats.get("speed", 40))
 	prey_counter_attack = float(stats.get("counter_attack", 0))
 	prey_hunger_value = float(stats.get("hunger_value", 30))
+	prey_stamina_max = max(1.0, prey_stamina)
+	prey_stamina_cur = prey_stamina_max
+	injured = p_injured
 	depth = depth_of(animal_id, life_stage)
+	if injured:
+		depth = "simple"
+		prey_speed *= float(_reaction_cfg().get("injured_speed_mult", 0.8))
+	_roll_reaction()
 	match depth:
 		"simple": stage = Stage.POUNCE
 		"full": stage = Stage.OBSERVE
@@ -88,6 +110,30 @@ static func clamp_chance(value: float) -> float:
 
 func _tuning() -> Dictionary:
 	return GameData.balance.get("hunt", {})
+
+func _reaction_cfg() -> Dictionary:
+	return _tuning().get("reactions", {})
+
+func _reaction_table() -> Dictionary:
+	return GameData.animals.get(animal_id, {}).get("reactions", {}).get(life_stage, {})
+
+# 決定獵物的反應。受傷個體被逼近時可能反擊；雄鹿背靠密林、倒木時容易站定；
+# 幼鹿附近可能有母鹿護幼。躲藏在撲抓失敗時才判定。
+func _roll_reaction() -> void:
+	var cfg := _reaction_cfg()
+	var table := _reaction_table()
+	reaction = "flee"
+	if injured:
+		if RNGService.chance(float(cfg.get("injured_counter_chance", 0.5))):
+			reaction = "counter"
+		return
+	if table.has("stand"):
+		var mult: float = float(cfg.get("stand_terrain_mult", {}).get(terrain, 1.0))
+		if RNGService.chance(float(table["stand"]) * mult):
+			reaction = "stand"
+	if table.has("protect") and RNGService.chance(float(table["protect"])):
+		mother_nearby = true
+		reaction = "protect"
 
 func stage_name() -> String:
 	return STAGE_NAMES.get(stage, "")
@@ -130,8 +176,11 @@ func options() -> Array:
 	var list: Array = []
 	match stage:
 		Stage.POUNCE:
-			for id in _tuning().get("pounce", {}).get("options", {}).keys():
-				list.append(_pounce_option(id))
+			if hiding:
+				list.append(_search_option())
+			else:
+				for id in _tuning().get("pounce", {}).get("options", {}).keys():
+					list.append(_pounce_option(id))
 		Stage.OBSERVE:
 			list.append(_observe_option())
 			list.append({"id": "skip_observe", "label_key": "hunt.option.skip_observe", "turns": 0, "stamina": 0.0})
@@ -141,6 +190,11 @@ func options() -> Array:
 				if _option_available(opts[id]):
 					list.append(_stalk_option(id))
 		Stage.CHASE:
+			if reaction == "stand":
+				list.append(_harass_option())
+				list.append({"id": "attack_standing", "label_key": "hunt.option.attack_standing", "turns": 0, "stamina": 0.0,
+					"factors": [{"key": "factor.standing_danger", "good": false, "weight": 0.0, "info": true}]})
+				return list
 			var opts: Dictionary = _tuning().get("chase", {}).get("options", {})
 			for id in opts.keys():
 				if _option_available(opts[id]):
@@ -167,7 +221,15 @@ func _pounce_option(id: String) -> Dictionary:
 	_add_terrain_factor(factors, t)
 	_add_common_factors(factors)
 	_add_turns_factor(factors, int(opt.get("turns", 0)))
-	var value: float = float(cfg.get("base", 0.7)) + diff + w + t + float(opt.get("bonus", 0.0))
+	if mother_nearby:
+		var penalty: float = float(_reaction_cfg().get("mother_pounce_penalty", 0.1))
+		factors.append({"key": "factor.mother_nearby", "good": false, "weight": penalty})
+		t -= penalty
+	if pounce_bonus > 0.0:
+		factors.append({"key": "factor.found_hiding", "good": true, "weight": pounce_bonus})
+	if reaction == "counter":
+		factors.append({"key": "factor.cornered", "good": false, "weight": 0.0, "info": true})
+	var value: float = float(cfg.get("base", 0.7)) + diff + w + t + pounce_bonus + float(opt.get("bonus", 0.0))
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": int(opt.get("turns", 0)), "stamina": float(opt.get("stamina", 0))}
 
@@ -226,6 +288,14 @@ func _chase_option(id: String) -> Dictionary:
 	_add_terrain_factor(factors, t)
 	if chase_bonus > 0.0:
 		factors.append({"key": "factor.close_start", "good": true, "weight": chase_bonus})
+	# 追太久成功率逐回合下降；獵物體力下降則較容易追上。
+	var fatigue: float = max(0, chase_round + 1 - int(cfg.get("free_rounds", 2))) * float(cfg.get("fatigue_per_round", 0.1))
+	if fatigue > 0.0:
+		factors.append({"key": "factor.long_chase", "good": false, "weight": fatigue})
+	var tiring: float = (1.0 - prey_stamina_cur / prey_stamina_max) * float(cfg.get("prey_tired_bonus", 0.25))
+	if tiring > 0.01:
+		factors.append({"key": "factor.prey_tiring", "good": true, "weight": tiring})
+	t += tiring - fatigue
 	var cost: float = float(opt.get("stamina", 10))
 	var exhausted: float = 0.15 if wolf.stamina - cost <= 0.0 else 0.0
 	if exhausted > 0.0:
@@ -234,7 +304,55 @@ func _chase_option(id: String) -> Dictionary:
 	_add_turns_factor(factors, int(opt.get("turns", 0)))
 	var value: float = base + diff + t + chase_bonus + float(opt.get("bonus", 0.0)) - exhausted
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
-		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0))}
+		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0)),
+		"prey_drain": float(opt.get("prey_drain", 15))}
+
+func _search_option() -> Dictionary:
+	var cfg: Dictionary = _reaction_cfg().get("search", {})
+	var factors: Array = []
+	var diff: float = (wolf.effective_perception() - prey_detection) / float(cfg.get("perception_divisor", 120))
+	if diff >= 0.0:
+		factors.append({"key": "factor.sharp_nose", "good": true, "weight": diff})
+	else:
+		factors.append({"key": "factor.faint_trail", "good": false, "weight": -diff})
+	_add_common_factors(factors)
+	return {"id": "search", "label_key": "hunt.option.search", "chance": clamp_chance(float(cfg.get("base", 0.5)) + diff),
+		"factors": factors, "turns": 0, "stamina": 0.0}
+
+func _harass_option() -> Dictionary:
+	var cfg: Dictionary = _reaction_cfg().get("harass", {})
+	var factors: Array = []
+	var diff: float = (wolf.effective_skill() - 40.0) / float(cfg.get("skill_divisor", 120))
+	if diff >= 0.0:
+		factors.append({"key": "factor.skilled", "good": true, "weight": diff})
+	else:
+		factors.append({"key": "factor.unskilled", "good": false, "weight": -diff})
+	factors.append({"key": "factor.counter_risk", "good": false, "weight": 0.0, "info": true})
+	_add_common_factors(factors)
+	_add_turns_factor(factors, int(cfg.get("turns", 1)))
+	return {"id": "harass", "label_key": "hunt.option.harass", "chance": clamp_chance(float(cfg.get("base", 0.55)) + diff),
+		"factors": factors, "turns": int(cfg.get("turns", 1)), "stamina": float(cfg.get("stamina", 10))}
+
+# 雙方體力的描述（每回合追擊顯示）。感知高時才看得到獵物體力的精確數字。
+func wolf_stamina_key() -> String:
+	if wolf.stamina >= 60.0:
+		return "stamina.wolf.fresh"
+	if wolf.stamina >= 30.0:
+		return "stamina.wolf.panting"
+	return "stamina.wolf.exhausted"
+
+func prey_stamina_key() -> String:
+	var ratio: float = prey_stamina_cur / prey_stamina_max
+	if ratio >= 0.7:
+		return "stamina.prey.fresh"
+	if ratio >= 0.4:
+		return "stamina.prey.panting"
+	return "stamina.prey.slowing"
+
+func prey_stamina_precise() -> int:
+	if wolf.effective_perception() < float(_tuning().get("chase", {}).get("precise_perception", 60)):
+		return -1
+	return int(round(prey_stamina_cur / prey_stamina_max * 100.0))
 
 func _add_alert_factor(factors: Array, diff: float) -> void:
 	if diff >= 0.0:
@@ -307,6 +425,11 @@ func prey_state_keys() -> Array:
 	keys.append("prey_state.strong" if prey_stamina >= 50.0 else "prey_state.tired")
 	if prey_counter_attack >= 20.0:
 		keys.append("prey_state.dangerous")
+	# 感知夠高才能預判牠的反應。
+	if wolf.effective_perception() >= prey_detection - float(_reaction_cfg().get("predict_margin", 5)):
+		keys.append("prey_reaction." + reaction)
+	else:
+		keys.append("prey_reaction.unknown")
 	return keys
 
 # --- 執行（擲骰） ---
@@ -319,10 +442,14 @@ func choose(id: String) -> Dictionary:
 	wolf.stamina -= float(opt.get("stamina", 0.0))
 	var res: Dictionary
 	match stage:
-		Stage.POUNCE: res = _do_pounce(opt)
+		Stage.POUNCE: res = _do_search(opt) if hiding else _do_pounce(opt)
 		Stage.OBSERVE: res = _do_observe(opt)
 		Stage.STALK: res = _do_stalk(opt)
-		Stage.CHASE: res = _do_chase(opt)
+		Stage.CHASE:
+			match id:
+				"harass": res = _do_harass(opt)
+				"attack_standing": res = _do_attack_standing()
+				_: res = _do_chase(opt)
 		Stage.FIGHT: res = _do_fight(opt)
 		_: res = {"success": false}
 	res["turns"] = int(res.get("turns", 0)) + int(opt.get("turns", 0))
@@ -332,12 +459,77 @@ func _roll(chance_value: float) -> bool:
 	return RNGService.chance(clamp_chance(chance_value))
 
 func _do_pounce(opt: Dictionary) -> Dictionary:
+	var cfg := _reaction_cfg()
 	var shifted := _maybe_shift_wind()
+	var notes: Array = []
+	var damage: float = 0.0
+	# 護幼：母鹿可能衝過來。
+	if mother_nearby and RNGService.chance(float(cfg.get("mother_charge_chance", 0.35))):
+		damage += _hurt_wolf(int(cfg.get("mother_damage_min", 8)), int(cfg.get("mother_damage_max", 18)))
+		notes.append("hunt.mother.charge")
+	pounce_bonus = 0.0
 	if _roll(float(opt["chance"])):
 		_gain("speed")
 		_gain("skill")
-		return _kill("hunt.pounce.success")
-	return _flee("hunt.pounce.fail", opt["factors"], shifted)
+		var won := _kill("hunt.pounce.success")
+		won["notes"] = notes
+		won["damage"] = damage
+		return won
+	# 反擊：受傷個體被逼近時反撲，跑不遠，可以再撲但每次都可能受傷。
+	if reaction == "counter":
+		if RNGService.chance(prey_counter_attack / 100.0 + 0.3):
+			damage += _hurt_wolf(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 12)))
+			notes.append("hunt.counter.hit")
+		return {"success": false, "text_key": "hunt.counter.miss", "notes": notes, "damage": damage, "turns": 1}
+	# 躲藏：一次狩獵最多躲一次，之後要靠感知找出來。
+	var hide_chance: float = float(_reaction_table().get("hide", 0.0))
+	if not hid_once and RNGService.chance(hide_chance):
+		hiding = true
+		hid_once = true
+		return {"success": false, "text_key": "hunt.hide.start", "notes": notes, "damage": damage}
+	var fail := _flee("hunt.pounce.fail", opt["factors"], shifted)
+	fail["notes"] = notes
+	fail["damage"] = damage
+	return fail
+
+func _do_search(opt: Dictionary) -> Dictionary:
+	if _roll(float(opt["chance"])):
+		hiding = false
+		pounce_bonus = float(_reaction_cfg().get("search", {}).get("pounce_bonus", 0.1))
+		_gain("perception")
+		return {"success": true, "text_key": "hunt.hide.found"}
+	# 找不到就失去目標，沒有足跡可追。
+	stage = Stage.DONE
+	result = Result.PREY_FLED
+	return {"success": false, "text_key": "hunt.hide.lost", "reason_key": reason_from_factor(main_negative_factor(opt["factors"]))}
+
+func _do_harass(opt: Dictionary) -> Dictionary:
+	if _roll(float(opt["chance"])):
+		reaction = "flee"
+		_gain("skill")
+		return {"success": true, "text_key": "hunt.harass.success"}
+	var cfg := _reaction_cfg()
+	var damage: float = 0.0
+	var notes: Array = []
+	if RNGService.chance(prey_counter_attack / 100.0):
+		damage = _hurt_wolf(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 12)))
+		notes.append("hunt.counter.hit")
+	return {"success": false, "text_key": "hunt.harass.fail", "notes": notes, "damage": damage}
+
+# 直接攻擊站定的雄鹿：進入搏鬥，但成功率大降、反擊更凶。
+func _do_attack_standing() -> Dictionary:
+	var cfg: Dictionary = _reaction_cfg().get("standing_attack", {})
+	stage = Stage.FIGHT
+	fight_state["penalty"] = float(cfg.get("penalty", 0.2))
+	fight_state["counter_mult_extra"] = float(cfg.get("counter_mult", 1.5))
+	return {"success": true, "text_key": "hunt.stand.attack"}
+
+func _hurt_wolf(min_dmg: int, max_dmg: int) -> float:
+	var dmg: float = float(RNGService.randi_range(min_dmg, max_dmg))
+	wolf.health -= dmg
+	if dmg >= float(_tuning().get("fight", {}).get("counter_injury_damage", 12)):
+		wolf.apply_injury(Wolf.Injury.LIGHT, 2)
+	return dmg
 
 func _do_observe(opt: Dictionary) -> Dictionary:
 	stage = Stage.STALK
@@ -365,6 +557,9 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
 
 func _do_chase(opt: Dictionary) -> Dictionary:
+	var cfg: Dictionary = _tuning().get("chase", {})
+	chase_round += 1
+	prey_stamina_cur = max(0.0, prey_stamina_cur - float(opt.get("prey_drain", 15)))
 	if _roll(float(opt["chance"])):
 		_gain("speed")
 		if depth == "full":
@@ -372,7 +567,19 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 			fight_state["chase_bonus"] = float(opt.get("fight_bonus", 0.0))
 			return {"success": true, "text_key": "hunt.chase.success"}
 		return _kill("hunt.chase.catch")
-	return _flee("hunt.chase.fail", opt["factors"], false)
+	# 沒追上：獵物拉開距離，可能就此逃掉，也可能還在視線內（下一回合多花 1 回合）。
+	var over: int = max(0, chase_round - int(cfg.get("free_rounds", 2)))
+	var escape: float = float(cfg.get("escape_base", 0.3)) + over * float(cfg.get("escape_per_round", 0.1)) \
+		- (1.0 - prey_stamina_cur / prey_stamina_max) * 0.2
+	if RNGService.chance(clamp(escape, 0.05, 0.95)):
+		return _flee("hunt.chase.fail", opt["factors"], false)
+	var notes: Array = []
+	# 雄鹿被逼進密林、倒木時可能轉身站定。
+	var stand: float = float(_reaction_table().get("stand", 0.0))
+	if stand > 0.0 and RNGService.chance(stand * 0.5 * float(_reaction_cfg().get("stand_terrain_mult", {}).get(terrain, 1.0))):
+		reaction = "stand"
+		notes.append("hunt.stand.start")
+	return {"success": false, "text_key": "hunt.chase.continue", "turns": 1, "notes": notes}
 
 func _do_fight(opt: Dictionary) -> Dictionary:
 	var r := FightRules.resolve_round(wolf, prey_counter_attack, opt["id"], fight_state)
@@ -418,5 +625,6 @@ func _flee(text_key: String, factors: Array, wind_shifted: bool) -> Dictionary:
 	return {"success": false, "text_key": text_key, "reason_key": reason_key, "wind_shifted": wind_shifted}
 
 func give_up() -> void:
+	gave_up_stage = stage
 	result = Result.PLAYER_GAVE_UP
 	stage = Stage.DONE

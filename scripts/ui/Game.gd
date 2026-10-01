@@ -639,6 +639,8 @@ func _discovery_text(d: Dictionary) -> String:
 	if d.get("source_kind", "") == "gather":
 		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
 	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
+	if d.get("injured", false):
+		animal = tr("explore.injured") + animal
 	var fresh: String = ""
 	if d.get("fresh_known", true):
 		fresh = tr("explore.fresh") if d.get("fresh", false) else tr("explore.stale")
@@ -746,13 +748,29 @@ func _render_hunt_stage() -> void:
 		return
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
-	var animal_name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
+	var animal_name: String = _hunt_prey_name()
 	hunt_sprite.texture = PixelArt.make_animal_sprite(current_hunt.animal_id, Vector2i(72, 48), _animal_scale(current_hunt.life_stage))
 	var header: String = tr("hunt.stage." + current_hunt.stage_name()).replace("{animal}", animal_name)
 	var context: Array[String] = [tr("factor.wind." + current_hunt.wind_state())]
 	if current_hunt.terrain != "":
 		context.append(tr("explore.location." + current_hunt.terrain))
 	header += "　" + "・".join(context)
+	if current_hunt.stage == HuntSystem.Stage.CHASE:
+		# 每回合顯示雙方體力的描述，讓玩家判斷要不要繼續追。
+		var lines: Array[String] = []
+		if current_hunt.chase_round > 0:
+			lines.append(tr("hunt.chase.round").replace("{n}", str(current_hunt.chase_round + 1)))
+		lines.append(tr(current_hunt.wolf_stamina_key()))
+		var prey_text: String = tr(current_hunt.prey_stamina_key())
+		var precise: int = current_hunt.prey_stamina_precise()
+		if precise >= 0:
+			prey_text += "（%d%%）" % precise
+		lines.append(prey_text)
+		if current_hunt.reaction == "stand":
+			lines.append(tr("prey_reaction.stand"))
+		header += "\n" + "　".join(lines)
+	if current_hunt.stage == HuntSystem.Stage.POUNCE and current_hunt.hiding:
+		header += "\n" + tr("hunt.hide.start").replace("{animal}", animal_name)
 	if current_hunt.stage == HuntSystem.Stage.FIGHT:
 		var wounds: int = int(current_hunt.fight_state.get("wounds", 0))
 		if wounds > 0:
@@ -771,6 +789,10 @@ func _render_hunt_stage() -> void:
 		current_hunt.give_up()
 		_finish_hunt()
 	)
+
+func _hunt_prey_name() -> String:
+	var name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
+	return (tr("explore.injured") + name) if current_hunt.injured else name
 
 func _prey_name(animal_id: String, life_stage: String) -> String:
 	var key: String = "prey_name.%s.%s" % [animal_id, life_stage]
@@ -814,7 +836,9 @@ func _format_factors(factors: Array) -> String:
 
 func _resolve_stage(stage_result: Dictionary) -> void:
 	GameState.spend_hunt_turns(int(stage_result.get("turns", 0)))
-	var animal_name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
+	var animal_name: String = _hunt_prey_name()
+	for note in stage_result.get("notes", []):
+		_log(tr(note).replace("{animal}", animal_name))
 	if stage_result.has("prey_state"):
 		hunt_notes.clear()
 		for key in stage_result["prey_state"]:
@@ -842,7 +866,7 @@ func _finish_hunt() -> void:
 	var succeeded: bool = current_hunt.result == HuntSystem.Result.SUCCESS
 	GameState.finish_hunt(current_hunt)
 	if succeeded:
-		_log(tr("hunt.result.success").replace("{animal}", _prey_name(current_hunt.animal_id, current_hunt.life_stage)))
+		_log(tr("hunt.result.success").replace("{animal}", _hunt_prey_name()))
 	else:
 		_log(tr("hunt.result.fail"))
 	hunt_overlay.visible = false

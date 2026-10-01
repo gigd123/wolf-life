@@ -79,14 +79,28 @@
     "chase": {
       "base": 0.58, "speed_divisor": 110,
       "base_small": 0.75, "speed_divisor_small": 200,
+      "free_rounds": 2, "fatigue_per_round": 0.1,
+      "escape_base": 0.3, "escape_per_round": 0.1,
+      "prey_tired_bonus": 0.25, "precise_perception": 60,
       "options": {
-        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0 },
-        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1 },
-        "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15 },
-        "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"] },
-        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"] },
-        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs"] }
+        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15 },
+        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25 },
+        "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15, "prey_drain": 10 },
+        "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"], "prey_drain": 15 },
+        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"], "prey_drain": 20 },
+        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs"], "prey_drain": 20 }
       }
+    },
+    "reactions": {
+      "stand_terrain_mult": { "dense_forest": 1.5, "fallen_logs": 1.5 },
+      "injured_counter_chance": 0.5,
+      "injured_speed_mult": 0.8,
+      "mother_charge_chance": 0.35, "mother_damage_min": 8, "mother_damage_max": 18, "mother_pounce_penalty": 0.1,
+      "counter_damage_min": 5, "counter_damage_max": 12,
+      "search": { "base": 0.5, "perception_divisor": 120, "pounce_bonus": 0.1 },
+      "harass": { "base": 0.55, "skill_divisor": 120, "stamina": 10, "turns": 1 },
+      "standing_attack": { "penalty": 0.2, "counter_mult": 1.5 },
+      "predict_margin": 5
     },
     "terrain_mods": {
       "stream": { "stalk": 0.08 },

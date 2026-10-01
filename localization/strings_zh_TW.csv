@@ -156,6 +156,43 @@ prey_name.white_tailed_deer.juvenile,小鹿
 explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
+explore.injured,受傷的
+hunt.option.search,找出牠（看感知 失敗就失去目標）
+hunt.option.harass,騷擾逼牠逃跑（看技巧 可能被反擊）
+hunt.option.attack_standing,直接攻擊（非常危險）
+hunt.chase.continue,{animal}拉開了距離 但還在視線內
+hunt.chase.round,第 {n} 回合
+hunt.hide.start,{animal}躲了起來
+hunt.hide.found,你找到了躲起來的{animal}
+hunt.hide.lost,你找不到{animal} 失去了目標
+hunt.harass.success,{animal}被逼得轉身逃跑
+hunt.harass.fail,{animal}低頭擺出鹿角 不肯退
+hunt.stand.start,{animal}背靠障礙物 轉身站定
+hunt.stand.attack,你正面撲向站定的{animal}
+hunt.mother.charge,母鹿衝了過來 撞了你一下
+hunt.counter.hit,{animal}拼命反撲 你受了傷
+hunt.counter.miss,{animal}被逼到角落 不肯就範
+stamina.wolf.fresh,你還有餘力
+stamina.wolf.panting,你開始喘
+stamina.wolf.exhausted,你快撐不住了
+stamina.prey.fresh,牠還跑得很穩
+stamina.prey.panting,牠開始喘
+stamina.prey.slowing,牠的步伐明顯變慢
+prey_reaction.flee,牠多半會逃跑
+prey_reaction.stand,牠打算站定迎戰
+prey_reaction.counter,牠被逼急了會反擊
+prey_reaction.protect,附近有母鹿在護幼
+prey_reaction.unknown,看不出牠會怎麼反應
+factor.mother_nearby,母鹿在附近
+factor.found_hiding,已找到牠
+factor.cornered,牠會反擊
+factor.long_chase,追太久了
+factor.prey_tiring,牠開始累了
+factor.standing_danger,牠站定迎戰
+factor.counter_risk,可能被反擊
+reason.mother_nearby,母鹿擋在前面
+reason.long_chase,追得太久 你的腳步慢了下來
+reason.standing_danger,牠站定的位置太難攻
 factor.wind.headwind,逆風
 factor.wind.crosswind,側風
 factor.wind.tailwind,順風

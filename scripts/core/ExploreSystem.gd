@@ -81,8 +81,11 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			if RNGService.chance(float(variants[variant])):
 				life_stage = variant
 				break
+	# 偶爾遇到受傷的成體（走簡易狩獵流程）。
+	var injured: bool = life_stage != "juvenile" and RNGService.chance(float(cfg.get("injured_chance", 0.08)))
 	return {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
-		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage}
+		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage,
+		"injured": injured}
 
 static func _least_likely(weights: Dictionary) -> String:
 	var best: String = ""
