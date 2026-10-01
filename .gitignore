@@ -1,0 +1,17 @@
+# Godot 4 編輯器快取（會自動重建，不要上傳）
+.godot/
+
+# 匯出輸出
+/build/
+/export/
+*.pck
+*.exe
+export_presets.cfg
+
+# Android 建置範本
+/android/
+
+# 系統檔
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,111 @@
+keys,zh_TW
+game.subtitle,北美灰狼養成遊戲
+menu.new_game,新的一生
+menu.continue,繼續遊戲
+menu.quit,離開遊戲
+menu.main_menu,回到主選單
+den.select_title,選擇你的第一個巢穴
+den.forest_east.desc,靠近山地 地形起伏 交通方便
+den.forest_north.desc,靠近苔原 冬季鹿群聚集 較寒冷
+den.forest_south.desc,林緣開闊 野兔狐狸多
+den.forest_west.desc,最深的老林 食物豐富但灰熊出沒
+region.forest_east,森林東部
+region.forest_north,森林北部
+region.forest_south,森林南部
+region.forest_west,森林西部
+season.spring,春
+season.summer,夏
+season.autumn,秋
+season.winter,冬
+period.dawn,清晨
+period.day,白天
+period.dusk,黃昏
+period.night,深夜
+period.predawn,凌晨
+stage.subadult,次成年期
+stage.adult,成年期
+stage.elder,老年期
+stat.health,血量
+stat.stamina,體力
+stat.hunger,飽食度
+stat.health_value,健康值
+stat.speed,速度
+stat.strength,力量
+stat.skill,技巧
+ui.region_map,區域地圖
+ui.actions,行動
+ui.debug,除錯選單
+ui.save_and_exit,存檔並離開
+ui.here,目前位置
+ui.hunt,狩獵
+ui.ignore,不理會
+ui.fight,戰鬥
+ui.retreat,撤退
+ui.give_up,放棄
+action.find_tracks,尋找獵物蹤跡
+action.gather,採集
+action.find_sleep_spot,找尋睡覺的地方
+action.short_rest,短暫休息
+action.sleep,睡覺
+animal.white_tailed_deer,白尾鹿
+animal.hare,野兔
+animal.red_fox,狐狸
+animal.grizzly_bear,灰熊
+item.berries,漿果
+item.blueberries,藍莓
+item.mushroom,蘑菇
+item.beehive,蜂巢
+log.starving,飢餓正在侵蝕你的身體
+log.season_changed,季節變換了
+log.moved,你移動到了{region}
+log.poisoned,你中毒了
+log.stung,你被螫傷了
+log.find_tracks.fail,沒有找到任何蹤跡
+log.find_tracks.success,發現了蹤跡
+log.gather.success,採集到了{item}
+log.gather.fail,這裡沒有可採集的東西
+log.sleep_spot.success,找到了適合睡覺的地方
+log.sleep_spot.fail,沒有找到適合睡覺的地方
+log.short_rest,你稍作休息 恢復了一些體力
+log.slept,你睡了一覺
+hunt.stage.discover,發現階段：你注意到一隻{animal}
+hunt.stage.stalk,潛近階段：小心接近{animal}
+hunt.stage.chase,追擊階段：{animal}察覺到你了
+hunt.stage.fight,搏鬥階段：你撲向了{animal}
+hunt.action.observe,觀察並選定目標
+hunt.action.low_approach,伏低前進（省體力 命中普通）
+hunt.action.downwind,繞到下風處（較耗體力 命中最高）
+hunt.action.wait,等待時機（中等體力 命中中等）
+hunt.action.sprint,衝刺（最耗體力 這回合命中最高）
+hunt.action.flank,繞到側面（中等體力 小幅提升搏鬥勝算）
+hunt.action.drive,驅趕到不利地形（省體力 這回合較難成功 但大幅提升搏鬥勝算）
+hunt.action.bite_throat,咬喉（靠技巧 回報最高 反擊風險也最高）
+hunt.action.pin,壓制（靠力量 回報中等）
+hunt.action.bite_leg,撲咬後腿（平衡安全 反擊風險最低）
+hunt.discover.success,你成功掌握了獵物的位置
+hunt.discover.fail,獵物先一步警覺離開了
+hunt.stalk.success,你悄悄縮短了距離
+hunt.stalk.fail,獵物發現了你 逃走了
+hunt.chase.success,你追上了獵物
+hunt.chase.fail,獵物甩開了你
+hunt.fight.success,你成功制伏了獵物
+hunt.fight.fail,獵物掙脫逃走了
+hunt.fight.counter,獵物反擊 你受了傷
+hunt.result.success,狩獵成功
+hunt.result.fail,這次狩獵失敗了
+encounter.competitor,你遇到了一隻{animal}
+encounter.result.win,你擊退了對方
+encounter.result.lose,你受傷了
+encounter.result.retreat,你選擇了撤退
+summary.title,一生回顧
+summary.days_lived,存活了 {days} 天
+summary.age,死亡時年齡 {age} 歲
+summary.death_cause,死因：{cause}
+summary.regions_visited,曾經去過 {count} 個區域
+summary.prey_total,總共成功狩獵 {count} 次
+summary.biggest_prey,最大的獵物是 {animal}
+summary.new_life,展開新的一生
+death.starvation,餓死
+death.injury,傷重不治
+death.old_age,老死
+death.unknown,未知

@@ -1,0 +1,84 @@
+{
+  "start_map": "forest",
+  "regions": {
+    "forest_east": {
+      "name_key": "region.forest_east",
+      "adjacent": ["forest_north", "forest_south"],
+      "can_den": true,
+      "terrain_stamina_modifier": 0,
+      "sleep_find_chance": 0.6,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 4, "summer": 4, "autumn": 4, "winter": 4 },
+        "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "red_fox": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 2, "autumn": 2 },
+        "blueberries": { "summer": 2, "autumn": 2 },
+        "mushroom": { "autumn": 2 }
+      }
+    },
+    "forest_north": {
+      "name_key": "region.forest_north",
+      "adjacent": ["forest_east", "forest_west"],
+      "can_den": true,
+      "terrain_stamina_modifier": 3,
+      "sleep_find_chance": 0.5,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 4, "summer": 4, "autumn": 5, "winter": 9 },
+        "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "red_fox": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {
+        "mushroom": { "autumn": 2 }
+      }
+    },
+    "forest_south": {
+      "name_key": "region.forest_south",
+      "adjacent": ["forest_east", "forest_west"],
+      "can_den": true,
+      "terrain_stamina_modifier": 0,
+      "sleep_find_chance": 0.55,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "hare": { "spring": 7, "summer": 7, "autumn": 7, "winter": 7 },
+        "red_fox": { "spring": 7, "summer": 7, "autumn": 7, "winter": 7 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 2, "autumn": 2 },
+        "blueberries": { "summer": 2, "autumn": 2 },
+        "beehive": { "summer": 2 }
+      }
+    },
+    "forest_west": {
+      "name_key": "region.forest_west",
+      "adjacent": ["forest_north", "forest_south"],
+      "can_den": true,
+      "terrain_stamina_modifier": 0,
+      "sleep_find_chance": 0.7,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "hare": { "spring": 4, "summer": 4, "autumn": 4, "winter": 4 },
+        "red_fox": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 7, "summer": 7, "autumn": 7, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 7, "autumn": 7 },
+        "blueberries": { "summer": 6, "autumn": 6 },
+        "mushroom": { "autumn": 7 },
+        "beehive": { "summer": 7 }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Timberline"
+config/description="狼之一生：北美灰狼養成遊戲（開發代號 wolf-life）"
+run/main_scene="res://scenes/MainMenu.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+
+Loc="*res://scripts/core/Loc.gd"
+RNGService="*res://scripts/core/RNGService.gd"
+GameData="*res://scripts/core/GameData.gd"
+GameTime="*res://scripts/core/GameTime.gd"
+SaveSystem="*res://scripts/core/SaveSystem.gd"
+GameState="*res://scripts/core/GameState.gd"
+Audio="*res://scripts/core/Audio.gd"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1920
+window/size/window_height_override=1080
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
