@@ -28,7 +28,8 @@ static func prey_weights(region_id: String, season: String, period: String, depl
 static func gather_weights(region_id: String, season: String) -> Dictionary:
 	return _seasonal_weights(region_data(region_id).get("gather_weights", {}), season)
 
-static func roll_competitor(region_id: String, season: String) -> Dictionary:
+# guaranteed：已經決定會有遭遇（例如夜裡被驚醒），只挑選是哪種動物；該季節沒有競爭動物時仍可能沒有遭遇。
+static func roll_competitor(region_id: String, season: String, guaranteed: bool = false) -> Dictionary:
 	var region: Dictionary = region_data(region_id)
 	var weights: Dictionary = _seasonal_weights(region.get("competitor_weights", {}), season)
 	if weights.is_empty():
@@ -37,7 +38,7 @@ static func roll_competitor(region_id: String, season: String) -> Dictionary:
 	for w in weights.values():
 		total += float(w)
 	var chance_value: float = clamp(total / 40.0, 0.0, 0.35)
-	if not RNGService.chance(chance_value):
+	if not guaranteed and not RNGService.chance(chance_value):
 		return {"encountered": false}
 	var picked: String = RNGService.weighted_pick(weights)
 	var stage: String = "adult" if RNGService.chance(0.85) else "juvenile"

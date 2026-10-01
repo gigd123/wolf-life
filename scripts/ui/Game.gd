@@ -500,6 +500,8 @@ func _refresh() -> void:
 	for action_id in action_buttons.keys():
 		var btn: Button = action_buttons[action_id]
 		btn.visible = available.has(action_id)
+	# 睡覺按鈕標出現在的睡處等級
+	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
 
 func _stage_key(stage: int) -> String:
 	match stage:
@@ -536,8 +538,8 @@ func _on_action_button(action_id: String) -> void:
 			else:
 				_log(tr("log.gather.fail"))
 		"find_sleep_spot":
-			var found := GameState.action_find_sleep_spot()
-			_log(tr("log.sleep_spot.success") if found else tr("log.sleep_spot.fail"))
+			var spot := GameState.action_find_sleep_spot()
+			_log(tr("log.sleep_spot.fail") if spot == "" else tr("log.sleep_spot." + spot))
 		"short_rest":
 			GameState.action_short_rest()
 			_log(tr("log.short_rest"))
@@ -552,8 +554,11 @@ func _on_action_button(action_id: String) -> void:
 			else:
 				_show_feeding()
 		"sleep":
-			GameState.action_sleep()
-			_log(tr("log.slept"))
+			var res := GameState.action_sleep()
+			if not res.is_empty():
+				_log(tr("log.slept." + str(res["quality"])))
+				if res.get("interrupted", false):
+					_log(tr("log.sleep_interrupted"))
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:

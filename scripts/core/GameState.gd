@@ -13,7 +13,8 @@ signal growth_applied
 var wolf: Wolf
 var den_region: String = ""
 var current_region: String = ""
-var found_sleep_spot_here: bool = false
+# 這個區域找到的睡處："" 沒找到、"normal" 普通睡處、"good" 好睡處。離開區域或睡過之後失效。
+var sleep_spot_here: String = ""
 var rng_seed: int = 0
 # 區域資源消耗：{region_id: {animal_id: 出現率倍率}}，沒有紀錄就是 1。
 var region_depletion: Dictionary = {}
@@ -37,7 +38,7 @@ func new_game(start_den: String) -> void:
 	wolf = Wolf.new()
 	den_region = start_den
 	current_region = start_den
-	found_sleep_spot_here = false
+	sleep_spot_here = ""
 	region_depletion = {}
 	wind_dir = RNGService.randi_range(0, 3)
 	region_knowledge = {start_den: {"visited": true, "features": []}}
@@ -77,7 +78,6 @@ func _on_period_changed(_period_index: int) -> void:
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
 	_check_death()
-	found_sleep_spot_here = false
 
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
@@ -210,12 +210,10 @@ func _die(cause: String) -> void:
 # --- Player actions ---
 
 func available_actions() -> Array[String]:
-	var actions: Array[String] = ["explore", "find_sleep_spot", "short_rest", "rest_until"]
+	var actions: Array[String] = ["explore", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	if not region.get("gather_weights", {}).is_empty():
 		actions.append("gather")
-	if current_region == den_region or found_sleep_spot_here:
-		actions.append("sleep")
 	if carcass_index_here() >= 0:
 		actions.append("return_to_carcass")
 	return actions
@@ -228,7 +226,7 @@ func action_move(target_region: String) -> void:
 	if not adjacent_regions().has(target_region):
 		return
 	current_region = target_region
-	found_sleep_spot_here = false
+	sleep_spot_here = ""
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -362,15 +360,35 @@ func _apply_gather_effect(item_id: String) -> void:
 	wolf.clamp_stats()
 	_check_death()
 
-func action_find_sleep_spot() -> bool:
+# 找睡處：成功時是普通睡處；區域裡有好睡處時有機會找到它，並寫入區域知識（之後不用再找）。
+# 回傳 "good"、"normal" 或 ""（沒找到）。
+func action_find_sleep_spot() -> String:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_sleep_spot", 1)))
-	# 已發現好睡處的區域一定找得到。
-	var found := _feature_known_here("sleep_spot") or EncounterSystem.find_sleep_spot(current_region)
-	if found:
-		found_sleep_spot_here = true
+	if _feature_known_here("sleep_spot"):
+		sleep_spot_here = "good"
+	elif EncounterSystem.find_sleep_spot(current_region):
+		sleep_spot_here = "normal"
+		var region: Dictionary = EncounterSystem.region_data(current_region)
+		if region.get("secondary_features", []).has("good_sleep_spot") \
+				and RNGService.chance(float(GameData.balance.get("sleep", {}).get("good_spot_find_chance", 0.35))):
+			sleep_spot_here = "good"
+			var knowledge: Dictionary = region_knowledge.get(current_region, {"visited": true, "features": []})
+			if not knowledge["features"].has("good_sleep_spot"):
+				knowledge["features"].append("good_sleep_spot")
+			region_knowledge[current_region] = knowledge
 	state_changed.emit()
-	return found
+	return sleep_spot_here
+
+# 現在睡覺的睡處等級：巢穴 > 已知好睡處 > 找到的睡處 > 勉強過夜。
+func sleep_quality() -> String:
+	if current_region == den_region:
+		return "den"
+	if _feature_known_here("sleep_spot"):
+		return "good"
+	if sleep_spot_here != "":
+		return sleep_spot_here
+	return "rough"
 
 func action_short_rest() -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -399,18 +417,31 @@ func action_rest_until(target_period: String) -> bool:
 	state_changed.emit()
 	return wolf.alive
 
-func action_sleep() -> void:
+# 睡覺：可以在任何區域睡，隔天從這裡開始。回復缺少的血量與體力 × 睡處倍率；
+# 野外可能在夜裡被灰熊驚醒（回復減半，接著進入遭遇）。回傳 {"quality", "interrupted"}。
+func action_sleep() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	var cfg: Dictionary = GameData.balance.get("sleep", {})
+	var quality := sleep_quality()
 	GameTime.advance_turns(int(costs.get("sleep", 3)))
-	var balance: Dictionary = GameData.balance
-	var is_den: bool = current_region == den_region
-	var mult: float = 1.0 if is_den else float(balance.get("wild_sleep_multiplier", 0.6))
-	wolf.health += float(balance.get("den_sleep_health", 30)) * mult
-	wolf.stamina += float(balance.get("den_sleep_stamina", 60)) * mult
+	if not wolf.alive:
+		return {}
+	var encounter: Dictionary = {}
+	if RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0))):
+		encounter = EncounterSystem.roll_competitor(current_region, GameTime.current_season(), true)
+	var mult: float = float(cfg.get("recovery", {}).get(quality, 0.4))
+	if encounter.get("encountered", false):
+		mult *= float(cfg.get("interrupted_mult", 0.5))
+	var smax: float = float(GameData.balance.get("stat_max", 100))
+	wolf.health += (smax - wolf.health) * mult
+	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
-	found_sleep_spot_here = false
+	sleep_spot_here = ""
 	SaveSystem.save_game()
 	state_changed.emit()
+	if encounter.get("encountered", false):
+		encounter_triggered.emit(encounter)
+	return {"quality": quality, "interrupted": encounter.get("encountered", false)}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
 # from_tracking：經由追蹤找到獵物時累積一次感知經驗。terrain：遭遇時的地形，空字串則隨機取區域的地形。
@@ -743,7 +774,7 @@ func to_dict() -> Dictionary:
 		"wolf": wolf.to_dict() if wolf != null else {},
 		"den_region": den_region,
 		"current_region": current_region,
-		"found_sleep_spot_here": found_sleep_spot_here,
+		"sleep_spot_here": sleep_spot_here,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
@@ -763,7 +794,7 @@ func load_from_dict(data: Dictionary) -> void:
 	wolf = Wolf.from_dict(data.get("wolf", {}))
 	den_region = data.get("den_region", "")
 	current_region = data.get("current_region", den_region)
-	found_sleep_spot_here = data.get("found_sleep_spot_here", false)
+	sleep_spot_here = str(data.get("sleep_spot_here", ""))
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})

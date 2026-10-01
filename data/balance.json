@@ -25,9 +25,13 @@
   "wind_change_chance_per_period": 0.15,
   "factor_display": { "base_count": 2, "extra_count_perception": 55 },
   "region_depletion": { "per_hunt": 0.2, "recovery_per_day": 0.05, "min_mult": 0.2 },
-  "den_sleep_health": 30,
-  "den_sleep_stamina": 100,
-  "wild_sleep_multiplier": 0.6,
+  "sleep": {
+    "_comment": "野外過夜（SPEC「野外過夜與回巢」）：回復 = 缺少的血量與體力 × 倍率。",
+    "recovery": { "den": 1.0, "good": 0.9, "normal": 0.7, "rough": 0.4 },
+    "night_encounter": { "den": 0.0, "good": 0.03, "normal": 0.08, "rough": 0.15 },
+    "good_spot_find_chance": 0.35,
+    "interrupted_mult": 0.5
+  },
   "short_rest_stamina": 15,
   "rest_until_stamina_per_turn": 7.5,
   "poison_duration_min": 2,

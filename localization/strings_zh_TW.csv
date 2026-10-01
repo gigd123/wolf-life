@@ -69,11 +69,20 @@ log.stung,你被螫傷了
 log.find_tracks.success,發現了蹤跡
 log.gather.success,採集到了{item}
 log.gather.fail,這裡沒有可採集的東西
-log.sleep_spot.success,找到了適合睡覺的地方
+log.sleep_spot.normal,找到了可以睡覺的地方
+log.sleep_spot.good,找到了一處好睡處 之後在這裡不用再找
 log.sleep_spot.fail,沒有找到適合睡覺的地方
 log.short_rest,你稍作休息 恢復了一些體力
 log.rest_until,你休息到了{period}
-log.slept,你睡了一覺
+log.slept.den,你在巢穴裡安穩地睡了一覺
+log.slept.good,你在好睡處睡得很好
+log.slept.normal,你在找到的地方睡了一覺
+log.slept.rough,你勉強睡了一覺 睡得不太好
+log.sleep_interrupted,夜裡你被驚醒了
+sleep_spot.den,巢穴
+sleep_spot.good,好睡處
+sleep_spot.normal,普通睡處
+sleep_spot.rough,勉強過夜
 log.debug.age,（除錯）年齡調整為 {age} 歲
 debug.age_years,年齡（歲）
 debug.set,設定
