@@ -50,7 +50,7 @@
 | `backgrounds/regions/forest_*_burned.png` | 燒毀後的區域背景，640×360（`art.json` 的 `forest_east@burned`） | 5 **已接上** |
 | `icons/clue_smoke.png`、`icons/status_burn.png` | 煙味線索、燒傷狀態 | 5（燒傷狀態已接上；煙味線索目前沒有用到，大火徵兆是事件畫面） |
 
-2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`，預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/art_phase1.6.md`。苔原的區域 id 是暫定的，第 6 步開工時依規格再改檔名或 `art.json`。
+2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`，預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/art_phase1.6.md`。6a 已接上：苔原四區的區域背景（夏、冬）、五種地形背景（夏、冬，`terrain@winter`）、八張地圖按鈕的區域小圖（`region_tile.<id>`，森林四區也一起換掉程式生成的小圖）、嚴寒圖示。動物與線索圖示在 6b、6c 接上。
 
 | 路徑 | 內容 | 步驟 |
 | --- | --- | --- |

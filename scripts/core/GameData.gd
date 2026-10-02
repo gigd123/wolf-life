@@ -28,6 +28,26 @@ func _ready() -> void:
 func regions() -> Dictionary:
 	return regions_root.get("regions", {})
 
+# 大地圖（森林、苔原…）：{map_id: {name_key, layout, fire, cold}}。
+func maps() -> Dictionary:
+	return regions_root.get("maps", {})
+
+func map_of(region_id: String) -> String:
+	return str(regions().get(region_id, {}).get("map", regions_root.get("start_map", "forest")))
+
+func map_regions(map_id: String) -> Array:
+	return maps().get(map_id, {}).get("layout", [])
+
+# 從某個區域出發的跨地圖連接（雙向）：[{to, turns, stamina}]。
+func links_from(region_id: String) -> Array:
+	var list: Array = []
+	for link in regions_root.get("links", []):
+		if str(link["from"]) == region_id:
+			list.append({"to": str(link["to"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
+		elif str(link["to"]) == region_id:
+			list.append({"to": str(link["from"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
+	return list
+
 func region_features() -> Dictionary:
 	return regions_root.get("features", {})
 

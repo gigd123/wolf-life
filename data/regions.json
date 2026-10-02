@@ -1,5 +1,16 @@
 {
   "start_map": "forest",
+  "_maps_comment": "大地圖（SPEC 1.6「苔原」6a：跨地圖的基礎建設）。layout：地圖按鈕 2×2 的排列（左上、右上、左下、右下）。links：跨地圖的連接（雙向），turns 依 DESIGN.md「移動回合」森林↔苔原 2 回合，加上抵達後選區域的 1 回合；stamina 是額外的體力消耗。cold：在這張地圖每個時段額外消耗的飽食度與體力（依季節），再乘上區域的 cold_mult。",
+  "maps": {
+    "forest": { "name_key": "map.forest", "layout": ["forest_north", "forest_east", "forest_west", "forest_south"], "fire": true },
+    "tundra": {
+      "name_key": "map.tundra", "layout": ["tundra_north", "tundra_east", "tundra_central", "tundra_south"], "fire": false,
+      "cold": { "winter": { "hunger": 3, "stamina": 4 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
+    }
+  },
+  "links": [
+    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 8 }
+  ],
   "features": {
     "good_sleep_spot": { "sleep_spot": true },
     "game_trail": { "prey_mult": { "white_tailed_deer": 1.3 } },
@@ -9,6 +20,7 @@
   "regions": {
     "forest_east": {
       "name_key": "region.forest_east",
+      "map": "forest",
       "terrains": ["stream", "forest_edge"],
       "main_feature": "stream_valley",
       "secondary_features": ["game_trail", "good_sleep_spot"],
@@ -32,6 +44,7 @@
     },
     "forest_north": {
       "name_key": "region.forest_north",
+      "map": "forest",
       "terrains": ["dense_forest", "stream"],
       "main_feature": "deep_forest",
       "secondary_features": ["good_sleep_spot", "hidden_pool"],
@@ -53,6 +66,7 @@
     },
     "forest_south": {
       "name_key": "region.forest_south",
+      "map": "forest",
       "terrains": ["forest_edge", "clearing"],
       "main_feature": "forest_edge_meadow",
       "secondary_features": ["fox_den", "game_trail"],
@@ -76,6 +90,7 @@
     },
     "forest_west": {
       "name_key": "region.forest_west",
+      "map": "forest",
       "terrains": ["dense_forest", "fallen_logs"],
       "main_feature": "fallen_log_slope",
       "secondary_features": ["good_sleep_spot", "hidden_pool"],
@@ -97,6 +112,84 @@
         "mushroom": { "autumn": 7 },
         "beehive": { "summer": 7 }
       }
+    },
+    "tundra_south": {
+      "name_key": "region.tundra_south",
+      "map": "tundra",
+      "terrains": ["treeline", "open_tundra"],
+      "main_feature": "treeline",
+      "secondary_features": ["good_sleep_spot", "game_trail"],
+      "adjacent": ["tundra_central", "tundra_east"],
+      "can_den": true,
+      "terrain_stamina_modifier": 3,
+      "sleep_find_chance": 0.5,
+      "cold_mult": 0.8,
+      "prey_weights": {
+        "red_fox": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {
+        "blueberries": { "summer": 1, "autumn": 1 }
+      }
+    },
+    "tundra_central": {
+      "name_key": "region.tundra_central",
+      "map": "tundra",
+      "terrains": ["open_tundra"],
+      "main_feature": "open_tundra",
+      "secondary_features": [],
+      "adjacent": ["tundra_south", "tundra_east", "tundra_north"],
+      "can_den": false,
+      "terrain_stamina_modifier": 4,
+      "sleep_find_chance": 0.25,
+      "cold_mult": 1.2,
+      "prey_weights": {
+        "red_fox": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {}
+    },
+    "tundra_east": {
+      "name_key": "region.tundra_east",
+      "map": "tundra",
+      "terrains": ["river_willow", "open_tundra"],
+      "main_feature": "river_valley",
+      "secondary_features": ["hidden_pool", "good_sleep_spot"],
+      "adjacent": ["tundra_south", "tundra_central", "tundra_north"],
+      "can_den": true,
+      "terrain_stamina_modifier": 3,
+      "sleep_find_chance": 0.4,
+      "cold_mult": 1.0,
+      "prey_weights": {
+        "red_fox": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {}
+    },
+    "tundra_north": {
+      "name_key": "region.tundra_north",
+      "map": "tundra",
+      "terrains": ["rocky", "esker"],
+      "main_feature": "far_north",
+      "secondary_features": ["good_sleep_spot"],
+      "adjacent": ["tundra_central", "tundra_east"],
+      "can_den": true,
+      "terrain_stamina_modifier": 5,
+      "sleep_find_chance": 0.35,
+      "cold_mult": 1.5,
+      "prey_weights": {
+        "red_fox": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 0, "summer": 0, "autumn": 0, "winter": 0 }
+      },
+      "gather_weights": {}
     }
   }
 }

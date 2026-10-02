@@ -131,9 +131,9 @@
         "direct": { "bonus": -0.1, "stamina": 3, "chase_bonus": 0.0, "trains": ["strength", "skill"], "train_weights": { "skill": 0.4 } },
         "downwind": { "bonus": 0.0, "stamina": 6, "chase_bonus": 0.08, "as_headwind": true, "train_mult": 1.2, "trains": ["skill"] },
         "wait": { "bonus": 0.05, "stamina": 1, "chase_bonus": 0.0, "turns": 1, "train_mult": 1.5, "trains": ["skill"] },
-        "upstream": { "bonus": 0.06, "stamina": 8, "chase_bonus": 0.05, "terrain": ["stream"], "trains": ["skill"] },
-        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest"], "train_mult": 1.5, "trains": ["skill"] },
-        "edge_strike": { "bonus": 0.0, "stamina": 5, "chase_bonus": 0.15, "terrain": ["forest_edge"], "trains": ["skill"] }
+        "upstream": { "bonus": 0.06, "stamina": 8, "chase_bonus": 0.05, "terrain": ["stream", "river_willow"], "trains": ["skill"] },
+        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest", "treeline"], "train_mult": 1.5, "trains": ["skill"] },
+        "edge_strike": { "bonus": 0.0, "stamina": 5, "chase_bonus": 0.15, "terrain": ["forest_edge", "treeline"], "trains": ["skill"] }
       }
     },
     "chase": {
@@ -147,8 +147,8 @@
         "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25, "train_mult": 0.8, "trains": ["speed"] },
         "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15, "prey_drain": 10, "trains": ["skill", "speed"] },
         "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"], "prey_drain": 15, "trains": ["speed"] },
-        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"], "prey_drain": 20, "trains": ["speed"] },
-        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs"], "prey_drain": 20, "trains": ["speed"] }
+        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream", "river_willow"], "prey_drain": 20, "trains": ["speed"] },
+        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs", "rocky"], "prey_drain": 20, "trains": ["speed"] }
       }
     },
     "reactions": {
@@ -167,7 +167,13 @@
       "dense_forest": { "stalk": 0.06, "sprint": -0.1 },
       "forest_edge": { "observe": 0.1 },
       "clearing": { "stalk": -0.12, "chase": -0.05 },
-      "fallen_logs": { "stalk": 0.03 }
+      "fallen_logs": { "stalk": 0.03 },
+      "_tundra_comment": "苔原的地形（1.6 第 6 步）：開闊苔原風很強、幾乎沒有遮蔽，潛近困難、以追擊為主；林線還有一點樹林可以掩護。",
+      "treeline": { "stalk": 0.03 },
+      "open_tundra": { "stalk": -0.15, "chase": 0.05 },
+      "river_willow": { "stalk": 0.06 },
+      "rocky": { "stalk": -0.05, "sprint": -0.1 },
+      "esker": { "observe": 0.1, "stalk": -0.05 }
     },
     "fight": {
       "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2,

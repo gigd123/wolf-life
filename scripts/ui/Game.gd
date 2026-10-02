@@ -3,13 +3,18 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
-const STATUS_ICON_KINDS := ["injury", "burn", "poison", "hunger"]
+const STATUS_ICON_KINDS := ["injury", "burn", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
 var stats_labels: Dictionary = {}
 var portrait_stage: String = "?"
 var region_buttons: Dictionary = {}
+# 地圖按鈕的四個位置：依目前所在的大地圖（森林、苔原）換成那張地圖的區域（1.6 第 6 步）。
+var map_slots: Array[Button] = []
+var map_title: Label
+var cross_map_box: HBoxContainer
+var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var status_icons: Dictionary = {}
 var log_box: RichTextLabel
@@ -25,7 +30,7 @@ var hunt_wolf_sprite: AnimatedIcon
 var encounter_overlay: Panel
 var encounter_message: Label
 var encounter_sprite: AnimatedIcon
-var encounter_buttons_box: HBoxContainer
+var encounter_buttons_box: HFlowContainer
 var encounter_detail: Label
 
 var region_info_overlay: Panel
@@ -195,7 +200,7 @@ func _build_ui() -> void:
 	middle.add_child(map_panel)
 	var map_title_row := HBoxContainer.new()
 	map_panel.add_child(map_title_row)
-	var map_title := Label.new()
+	map_title = Label.new()
 	map_title.text = tr("ui.region_map")
 	map_title_row.add_child(map_title)
 	var region_info_btn := Button.new()
@@ -211,15 +216,19 @@ func _build_ui() -> void:
 	var map_grid := GridContainer.new()
 	map_grid.columns = 2
 	map_center.add_child(map_grid)
-	for region_id in REGION_ORDER:
+	for i in 4:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(140, 46)
 		# 標記變多時不要撐寬地圖（超出的字截掉）
 		btn.clip_text = true
 		btn.expand_icon = false
-		btn.pressed.connect(_on_region_button.bind(region_id))
+		btn.pressed.connect(_on_map_slot.bind(i))
 		map_grid.add_child(btn)
-		region_buttons[region_id] = btn
+		map_slots.append(btn)
+	# 跨地圖的移動（例如森林北部 → 苔原）
+	cross_map_box = HBoxContainer.new()
+	cross_map_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	map_panel.add_child(cross_map_box)
 
 	# 行動按鈕之後會變多，放在自己的捲動區，不會把行動紀錄擠出畫面。
 	var action_scroll := ScrollContainer.new()
@@ -320,7 +329,7 @@ func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
 		icon.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
-	rect.texture = ArtLibrary.terrain_background(terrain) if terrain != "" else null
+	rect.texture = ArtLibrary.terrain_background(terrain, GameTime.current_season()) if terrain != "" else null
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
 func _overlay_style() -> StyleBoxFlat:
@@ -342,7 +351,7 @@ func _build_encounter_overlay() -> void:
 	center.anchor_bottom = 1.0
 	encounter_overlay.add_child(center)
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(320, 0)
+	box.custom_minimum_size = Vector2(420, 0)
 	center.add_child(box)
 	var sprite_center := CenterContainer.new()
 	box.add_child(sprite_center)
@@ -352,8 +361,11 @@ func _build_encounter_overlay() -> void:
 	encounter_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	encounter_message.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(encounter_message)
-	encounter_buttons_box = HBoxContainer.new()
-	encounter_buttons_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	# 按鈕多時自動換行（例如大火的逃生選項、遇上陌生灰狼的四個選擇）
+	encounter_buttons_box = HFlowContainer.new()
+	encounter_buttons_box.alignment = FlowContainer.ALIGNMENT_CENTER
+	encounter_buttons_box.add_theme_constant_override("h_separation", 4)
+	encounter_buttons_box.add_theme_constant_override("v_separation", 4)
 	box.add_child(encounter_buttons_box)
 	encounter_detail = Label.new()
 	encounter_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -776,13 +788,30 @@ func _refresh() -> void:
 	status_icons["poison"].visible = w.poison_days_remaining > 0
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
+	status_icons["cold"].visible = GameState.is_freezing()
 
 	var season: String = GameTime.current_season()
-	if season != last_rendered_season:
+	var map_id: String = GameState.current_map()
+	if season != last_rendered_season or map_id != rendered_map:
 		last_rendered_season = season
-		for region_id in region_buttons.keys():
-			var btn: Button = region_buttons[region_id]
-			btn.icon = PixelArt.make_region_tile(region_id, season, Vector2i(18, 18))
+		rendered_map = map_id
+		map_title.text = tr(str(GameData.maps().get(map_id, {}).get("name_key", "ui.region_map")))
+		region_buttons = {}
+		var layout: Array = GameData.map_regions(map_id)
+		for i in map_slots.size():
+			var btn: Button = map_slots[i]
+			btn.visible = i < layout.size()
+			if i < layout.size():
+				region_buttons[str(layout[i])] = btn
+				btn.icon = _region_tile(str(layout[i]), season)
+	_clear_children(cross_map_box)
+	for link in GameData.links_from(GameState.current_region):
+		var target: String = str(link["to"])
+		var go := Button.new()
+		go.text = tr("ui.go_map").replace("{map}", tr(str(GameData.maps().get(GameData.map_of(target), {}).get("name_key", "")))) \
+			.replace("{n}", str(int(link["turns"])))
+		go.pressed.connect(_on_region_button.bind(target))
+		cross_map_box.add_child(go)
 
 	for region_id in region_buttons.keys():
 		var btn: Button = region_buttons[region_id]
@@ -831,6 +860,23 @@ func _clear_children(node: Node) -> void:
 		child.queue_free()
 
 # --- Region movement ---
+
+func _on_map_slot(i: int) -> void:
+	var layout: Array = GameData.map_regions(rendered_map)
+	if i < layout.size():
+		_on_region_button(str(layout[i]))
+
+# 地圖按鈕上的區域小圖：有美術就用（art.json 的 region_tile.<id>），沒有就用程式生成的小圖。
+func _region_tile(region_id: String, season: String) -> Texture2D:
+	var tex: Texture2D = ArtLibrary.icon("region_tile." + region_id)
+	return tex if tex != null else PixelArt.make_region_tile(region_id, season, Vector2i(18, 18))
+
+# 所有地圖的區域（區域資訊、知識清單用）。
+func _all_regions() -> Array:
+	var list: Array = []
+	for map_id in GameData.maps().keys():
+		list.append_array(GameData.map_regions(map_id))
+	return list
 
 func _on_region_button(region_id: String) -> void:
 	if region_id == GameState.current_region:
@@ -1396,7 +1442,7 @@ func _show_knowledge() -> void:
 		return int(a["count"]) > int(b["count"]))
 	for entry in entries:
 		lines.append(_knowledge_text(entry))
-	for region_id in REGION_ORDER:
+	for region_id in _all_regions():
 		for f in GameState.known_features(region_id):
 			lines.append(tr("knowledge.feature").replace("{region}", tr("region." + region_id)).replace("{feature}", tr("feature." + str(f))))
 	if lines.size() == 1:
@@ -1407,7 +1453,9 @@ func _show_knowledge() -> void:
 func _show_region_info() -> void:
 	var unknown: String = tr("ui.unknown")
 	var lines: Array[String] = [tr("ui.region_info")]
-	for region_id in REGION_ORDER:
+	for region_id in _all_regions():
+		if GameData.map_of(region_id) != GameData.map_of(GameState.den_region) and not GameState.is_region_visited(region_id):
+			continue
 		var data: Dictionary = EncounterSystem.region_data(region_id)
 		var visited: bool = GameState.is_region_visited(region_id)
 		var main: String = tr("region_main." + str(data.get("main_feature", ""))) if visited else unknown

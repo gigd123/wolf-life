@@ -111,6 +111,13 @@ func _ready() -> void:
 		_add_line(box, tr("summary.heavy_injuries").replace("{count}", str(wolf.heavy_injury_count)))
 		for record in wolf.old_injuries:
 			_add_line(box, _old_injury_line(record))
+	# 去過的大地圖（1.6 第 6 步：苔原）
+	var maps_visited: Array = log_data.get("maps_visited", [])
+	if maps_visited.size() > 1:
+		var map_names: Array[String] = []
+		for m in maps_visited:
+			map_names.append(tr(str(GameData.maps().get(str(m), {}).get("name_key", ""))))
+		_add_line(box, tr("summary.maps").replace("{list}", "、".join(map_names)))
 	# 經歷過的森林大火（1.6 第 5 步）
 	for f in log_data.get("fires", []):
 		_add_line(box, _fire_line(f))

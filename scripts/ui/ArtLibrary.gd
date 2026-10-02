@@ -75,8 +75,10 @@ static func region_background(region_id: String, season: String) -> Texture2D:
 	var table: Dictionary = _cfg().get("region_backgrounds", {})
 	return texture(str(table.get(region_id + "@" + season, table.get(region_id, ""))))
 
-static func terrain_background(terrain: String) -> Texture2D:
-	return texture(str(_cfg().get("terrain_backgrounds", {}).get(terrain, "")))
+# 地形背景；有 terrain@season（例如苔原的冬季版）就用季節版。
+static func terrain_background(terrain: String, season: String = "") -> Texture2D:
+	var table: Dictionary = _cfg().get("terrain_backgrounds", {})
+	return texture(str(table.get(terrain + "@" + season, table.get(terrain, ""))))
 
 static func icon(key: String) -> Texture2D:
 	return texture(str(_cfg().get("icons", {}).get(key, "")))

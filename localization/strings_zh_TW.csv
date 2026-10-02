@@ -705,3 +705,24 @@ bio.fire.burned,，身上留下了燒傷
 debug.skip_dry,跳到下一個乾季
 debug.fire.random,隨機區域
 debug.fire.start,森林大火
+region.tundra_south,苔原林線
+region.tundra_central,開闊苔原
+region.tundra_east,苔原河谷
+region.tundra_north,遠北苔原
+map.forest,森林
+map.tundra,苔原
+ui.go_map,前往{map}（{n} 回合）
+explore.location.treeline,林線上
+explore.location.open_tundra,開闊的苔原上
+explore.location.river_willow,河邊的柳叢裡
+explore.location.rocky,岩石間
+explore.location.esker,沙脊上
+region_main.treeline,雲杉林在這裡變得稀疏，再往北就只剩低矮的草和苔蘚
+region_main.open_tundra,一望無際的平原，風從四面八方吹來，幾乎沒有地方躲
+region_main.river_valley,一條河在柳樹叢間流過，岸邊的泥地上有許多足跡
+region_main.far_north,岩石和凍土一路延伸到天邊，冰河留下的沙脊高高隆起
+fire.option.other_map,逃進{region}　平安率 {n}%
+fire.result.safe.other_map,你一路往北跑，衝出了林子，逃進了{region}。
+summary.fire.escape.other_map,逃進{region}
+bio.fire.other_map,{age} 歲那年的大火裡，你一路往北逃進了苔原
+summary.maps,去過的地方：{list}

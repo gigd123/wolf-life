@@ -121,6 +121,9 @@ func _on_period_changed(_period_index: int) -> void:
 		return
 	var balance: Dictionary = GameData.balance
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
+	var cold := cold_cost()
+	wolf.hunger -= float(cold["hunger"])
+	wolf.stamina -= float(cold["stamina"])
 	wolf.clamp_stats()
 	_decay_carcasses()
 	_update_weather()
@@ -452,20 +455,49 @@ func available_actions() -> Array[String]:
 		actions.append("make_den")
 	return actions
 
+func current_map() -> String:
+	return GameData.map_of(current_region)
+
+func _link_to(target_region: String) -> Dictionary:
+	for link in GameData.links_from(current_region):
+		if link["to"] == target_region:
+			return link
+	return {}
+
+# 嚴寒（苔原）：每個時段額外消耗飽食度與體力，依季節與區域的 cold_mult。回傳 {"hunger", "stamina"}。
+func cold_cost(region_id: String = "") -> Dictionary:
+	if region_id == "":
+		region_id = current_region
+	var table: Dictionary = GameData.maps().get(GameData.map_of(region_id), {}).get("cold", {}).get(GameTime.current_season(), {})
+	var mult: float = float(EncounterSystem.region_data(region_id).get("cold_mult", 1.0))
+	return {"hunger": float(table.get("hunger", 0)) * mult, "stamina": float(table.get("stamina", 0)) * mult}
+
+# 頂部的嚴寒圖示：苔原的冬季。
+func is_freezing() -> bool:
+	return GameTime.current_season() == "winter" and float(cold_cost()["stamina"]) > 0.0
+
 func adjacent_regions() -> Array:
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	return region.get("adjacent", [])
 
 func action_move(target_region: String) -> void:
 	_record_action("move")
-	if not adjacent_regions().has(target_region):
+	var link := _link_to(target_region)
+	if not adjacent_regions().has(target_region) and link.is_empty():
 		return
 	current_region = target_region
+	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
+	if not link.is_empty():
+		wolf.stamina -= float(link["stamina"])
+		var maps_visited: Array = life_log.get("maps_visited", [GameData.map_of(den_region)])
+		if not maps_visited.has(GameData.map_of(target_region)):
+			maps_visited.append(GameData.map_of(target_region))
+		life_log["maps_visited"] = maps_visited
 	sleep_spot_here = ""
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
-	GameTime.advance_turns(int(costs.get("move_region", 1)))
+	GameTime.advance_turns(int(link["turns"]) if not link.is_empty() else int(costs.get("move_region", 1)))
 	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
 	if not is_region_visited(target_region):
 		var knowledge: Dictionary = region_knowledge.get(target_region, {"features": []})
@@ -1601,7 +1633,11 @@ func _update_fire() -> void:
 # 起火前的徵兆：origin 空字串時隨機選一個森林區域。除錯可以指定起火區域。
 func start_fire_warning(origin: String) -> void:
 	if origin == "":
-		var ids: Array = GameData.regions().keys()
+		# 只在會起火的地圖（森林）；苔原不會發生森林大火
+		var ids: Array = []
+		for region_id in GameData.regions().keys():
+			if bool(GameData.maps().get(GameData.map_of(region_id), {}).get("fire", true)):
+				ids.append(region_id)
 		origin = ids[RNGService.randi_range(0, ids.size() - 1)]
 	fire = {"origin": origin, "phase": "warning", "ignite_at": _abs_period() + int(_fire_cfg().get("warning_periods", 2)),
 		"noticed": false, "regions": {}, "burned": [], "alerted": [], "sheltered": "",
@@ -1666,6 +1702,10 @@ func fire_escape_options() -> Array:
 	for adj in adjacent_regions():
 		if not fire.get("regions", {}).has(adj):
 			list.append(_escape_option("flee", adj))
+	# 從森林北部逃進苔原（不會起火的地圖）
+	for link in GameData.links_from(current_region):
+		if not bool(GameData.maps().get(GameData.map_of(str(link["to"])), {}).get("fire", true)):
+			list.append(_escape_option("other_map", str(link["to"])))
 	if EncounterSystem.region_data(current_region).get("terrains", []).has("stream"):
 		list.append(_escape_option("stream", ""))
 	if current_region == den_region:
@@ -1675,7 +1715,7 @@ func fire_escape_options() -> Array:
 func _escape_option(kind: String, region_id: String) -> Dictionary:
 	var e: Dictionary = _fire_cfg().get("escape", {})
 	var danger: float = float(e.get(kind, 0.5))
-	if kind == "flee":
+	if kind in ["flee", "other_map"]:
 		if wolf.stamina < 30.0:
 			danger += float(e.get("low_stamina", 0.3))
 		danger -= (wolf.effective_speed() - 40.0) / float(e.get("speed_divisor", 200))
@@ -1720,7 +1760,7 @@ func fire_escape(id: String) -> Dictionary:
 		result = "heavy"
 	elif roll < float(probs["death"]) + float(probs["heavy"]) + float(probs["light"]):
 		result = "light"
-	if opt["kind"] == "flee":
+	if opt["kind"] in ["flee", "other_map"]:
 		wolf.stamina -= float(e.get("flee_stamina", 20))
 		action_move_silent(str(opt["region"]))
 	else:
@@ -1769,6 +1809,10 @@ func action_move_silent(target_region: String) -> void:
 	sleep_spot_here = ""
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
+	var maps_visited: Array = life_log.get("maps_visited", [GameData.map_of(den_region)])
+	if not maps_visited.has(GameData.map_of(target_region)):
+		maps_visited.append(GameData.map_of(target_region))
+	life_log["maps_visited"] = maps_visited
 	var rk: Dictionary = region_knowledge.get(target_region, {"features": []})
 	rk["visited"] = true
 	region_knowledge[target_region] = rk
@@ -1926,7 +1970,7 @@ func _after_stranger_combat(c: Combat) -> void:
 # 牠輸了之後搬到另一帶（不是你的巢穴，也不是剛讓出來的地方）。
 func _npc_new_territory(old: String) -> String:
 	var options: Array = []
-	for region_id in GameData.regions().keys():
+	for region_id in GameData.map_regions(GameData.map_of(old)):
 		if region_id != old and region_id != den_region:
 			options.append(region_id)
 	return options[RNGService.randi_range(0, options.size() - 1)] if not options.is_empty() else ""
