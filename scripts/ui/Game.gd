@@ -321,8 +321,9 @@ func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, ac
 
 func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
 	var stage: String = _wolf_stage_key()
-	if pose == "walk":
-		if ArtLibrary.setup_wolf(icon, "walk", 8.0, stage):
+	# 走路、嚎叫在 spritesheet 裡（wolf_sheet 的列），其他姿勢是單張
+	if pose in ["walk", "howl"]:
+		if ArtLibrary.setup_wolf(icon, pose, 8.0 if pose == "walk" else 4.0, stage):
 			return
 	var tex: Texture2D = ArtLibrary.wolf_pose(pose, stage)
 	if tex != null:
@@ -2049,7 +2050,7 @@ func _show_ice_feel(ice: Dictionary) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_wolf_pose(encounter_sprite, "walk")
-	_set_terrain_bg(encounter_bg, "river_willow")
+	encounter_bg.texture = ArtLibrary.terrain_background("river_willow", "winter") # 結冰的河面：一律用冬季版
 	_clear_children(encounter_buttons_box)
 	var target: String = str(ice["to"])
 	_add_encounter_button(tr("ice.prompt.go").replace("{region}", tr("region." + target)).replace("{n}", str(int(ice["turns"]))), func():
@@ -2067,7 +2068,7 @@ func _show_ice_break(event: Dictionary = {}) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_wolf_pose(encounter_sprite, "walk")
-	_set_terrain_bg(encounter_bg, "river_willow")
+	encounter_bg.texture = ArtLibrary.terrain_background("river_willow", "winter") # 結冰的河面：一律用冬季版
 	_clear_children(encounter_buttons_box)
 	for opt in GameState.ice_break_options():
 		var id: String = opt["id"]
