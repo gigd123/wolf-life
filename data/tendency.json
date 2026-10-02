@@ -27,6 +27,7 @@
     "combat.yield": "cautious",
     "combat.abandon": "cautious",
     "combat.grab": "cautious",
-    "combat.submit": "cautious"
+    "combat.submit": "cautious",
+    "combat.pursue": "assault"
   }
 }

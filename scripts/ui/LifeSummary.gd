@@ -111,6 +111,14 @@ func _ready() -> void:
 		_add_line(box, tr("summary.heavy_injuries").replace("{count}", str(wolf.heavy_injury_count)))
 		for record in wolf.old_injuries:
 			_add_line(box, _old_injury_line(record))
+	# 和陌生灰狼的每次相遇（1.6 第 4 步）
+	var meetings: Array = log_data.get("stranger_meetings", [])
+	if not meetings.is_empty():
+		var entries: Array[String] = []
+		for m in meetings:
+			entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
+				.replace("{outcome}", tr("summary.stranger_outcome." + str(m.get("outcome", "")))))
+		_add_line(box, tr("summary.stranger").replace("{n}", str(meetings.size())).replace("{list}", "、".join(entries)))
 
 	# 學會的知識：總數，加上幾條「確定」的內容
 	var confirmed: Array = []
@@ -155,6 +163,15 @@ func _death_bio(log_data: Dictionary) -> String:
 			return tr(key)
 	return tr("death_bio." + cause)
 
+# 和那隻黑狼之間最重要的一次：咬死牠 > 趕走牠 > 向牠示弱。
+func _stranger_bio(log_data: Dictionary) -> String:
+	for outcome in ["killed", "drove_off", "submit"]:
+		for m in log_data.get("stranger_meetings", []):
+			if str(m.get("outcome", "")) == outcome:
+				return tr("bio.stranger." + outcome).replace("{age}", str(int(float(m.get("age", 0.0))))) \
+					.replace("{region}", tr("region." + str(m.get("region", ""))))
+	return ""
+
 # 舊傷：部位、年齡、來源（例如「左後腿的舊傷，是 2.3 歲那年和灰熊搶食時留下的」）。
 func _old_injury_line(record: Dictionary) -> String:
 	var source: String = str(record.get("source", ""))
@@ -181,6 +198,9 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 		parts.append(tr("bio.became").replace("{desc}", tr("tendency_desc." + str(history[-1]["type"]))))
 	elif history.size() == 1:
 		parts.append(tr("bio.was").replace("{desc}", tr("tendency_desc." + str(history[0]["type"]))))
+	var stranger_line := _stranger_bio(log_data)
+	if stranger_line != "":
+		parts.append(stranger_line)
 	var age: String = "%.1f" % (wolf.age_years if wolf != null else 0.0)
 	parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", _death_bio(log_data)))
 	return "，".join(parts) + "。"

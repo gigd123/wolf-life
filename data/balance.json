@@ -31,6 +31,22 @@
     "mother_chance_spring": 0.4, "mother_direct_mult": 2.0,
     "observe_turns": 1
   },
+  "npc_wolves": {
+    "_comment": "具名 NPC 狼（SPEC 1.6「陌生灰狼」，NpcWolf.gd）。能力值的尺度同玩家；開局約 3～4 歲、正值壯年。",
+    "stranger_wolf": {
+      "sex": "male",
+      "start_age": [3.0, 4.0],
+      "start_stats": { "speed": [64, 72], "strength": [70, 78], "skill": [64, 72], "perception": [58, 66], "health_max": [105, 115] },
+      "ages": { "peak_end": 5.0, "elder": 6.5 },
+      "elder_decay_per_season": { "speed": 1.5, "strength": 1.0, "skill": 0.3, "perception": 0.5, "health_max": 1.5 },
+      "old_age_death": { "base": 0.03, "per_year": 0.05 },
+      "other_death_per_season": 0.01,
+      "heal_per_day": 10,
+      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.4, "shoulder": 0.4, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.3, "desperate_hit": 0.2, "desperate_damage": 1.5 },
+      "_interaction_comment": "unlock_subadult_chance：第一次可以直接互動的時機，這個機率在次成年期，否則在成年後（都要先遠距觀察過）。follow：跟蹤成功率 = base + (感知 − 牠的感知) / divisor。drive_off_dominance_bonus：每輸給牠或示弱一次，被驅趕的機率再加多少。",
+      "interaction": { "unlock_subadult_chance": 0.5, "follow_base": 0.45, "follow_divisor": 150, "drive_off_dominance_bonus": 0.15, "howl_mult_after_yield": 0.5, "submit_damage_mult": 0.6 }
+    }
+  },
   "combat": {
     "_comment": "戰鬥模式（SPEC 1.6「戰鬥模式」，規則在 FightRules.gd、流程在 Combat.gd）。力量值（power）的尺度與狼一致：狼的力量值 = 力量 × strength_weight + 技巧 × (2 − strength_weight)，約是能力值的兩倍。",
     "danger_ratio": 0.25,
@@ -48,7 +64,7 @@
       "probe": { "stamina": 4, "bonus": 0.08, "swipe_chance": 0.15 }
     },
     "_stake_comment": "對手為什麼在這裡：stake 倍率越高，越不容易被威嚇、越晚放棄。",
-    "stake_mult": { "carcass": 1.0, "encounter": 0.85, "mother": 1.6 },
+    "stake_mult": { "carcass": 1.0, "encounter": 0.85, "mother": 1.6, "meet": 1.0, "territory": 1.2 },
     "win": { "clean_ratio": 0.15, "clean_mult": 1.5, "costly_ratio": 0.4 },
     "injury": { "light_damage": 8, "heavy_damage": 22, "light_days": 2, "heavy_days_min": 3, "heavy_days_max": 5 },
     "part_stat": { "leg": "speed", "shoulder": "strength", "face": "perception" },

@@ -56,7 +56,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var gather := EncounterSystem.gather_weights(region_id, ctx["season"])
 	for item_id in gather.keys():
 		sources[item_id] = float(gather[item_id]) * float(cfg.get("gather_source_weight_mult", 0.5))
-	var threats := threat_weights(region_id, ctx["season"])
+	var threats := threat_weights(region_id, ctx["season"], str(ctx.get("stranger_territory", "?")))
 	for threat_id in threats.keys():
 		sources[threat_id] = threats[threat_id]
 	if sources.is_empty():
@@ -114,7 +114,9 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		"injured": injured}
 
 # 灰熊依區域的競爭動物季節權重，陌生灰狼依固定的區域權重。
-static func threat_weights(region_id: String, season: String) -> Dictionary:
+# stranger_territory：陌生灰狼目前的範圍（"" = 牠已經死了，不再有牠的線索；"?" = 不考慮）。
+# 牠會在範圍附近出沒，範圍所在的區域權重至少 3。
+static func threat_weights(region_id: String, season: String, stranger_territory: String = "?") -> Dictionary:
 	var result: Dictionary = {}
 	var threat_cfg: Dictionary = _cfg().get("threat_sources", {})
 	for threat_id in threat_cfg.keys():
@@ -125,6 +127,8 @@ static func threat_weights(region_id: String, season: String) -> Dictionary:
 			w = float(table.get(season, 0))
 		else:
 			w = float(t.get("region_weights", {}).get(region_id, 0))
+		if threat_id == "stranger_wolf" and stranger_territory != "?":
+			w = 0.0 if stranger_territory == "" else (max(w, 3.0) if region_id == stranger_territory else w)
 		if w > 0.0:
 			result[threat_id] = w * float(t.get("weight_mult", 0.3))
 	return result

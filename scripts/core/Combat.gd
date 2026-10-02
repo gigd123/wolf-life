@@ -6,7 +6,8 @@ extends RefCounted
 #
 # context：為什麼打起來。"carcass"（守住獵物）、"encounter"（遭遇）；mother：護幼的母熊。
 # outcome（結束時）："drove_off" 趕走對手、"retreated" 撤退、"yield" 退讓、"abandon" 放棄獵物、
-# "grab" 叼走一塊再退、"ignore" 不理（狐狸）、"died" 戰死。
+# "grab" 叼走一塊再退、"ignore" 不理（狐狸）、"died" 戰死；對具名 NPC 狼（陌生灰狼）另有
+# "submit" 你示弱、"killed" 追擊殺死了牠。牠示弱（opp_submitted）後，你選「放牠走」（drove_off）或「追擊」。
 
 enum Phase { STANDOFF, EXCHANGE, DONE }
 
@@ -38,6 +39,17 @@ var fail_streak: int = 0
 var yields: Array = []
 var can_submit: bool = false
 var terrain: String = "" # 在哪裡打（畫面背景）
+var npc: NpcWolf = null # 對手是具名 NPC 狼時（陌生灰狼）
+var opp_submitted: bool = false # 對手示弱了：之後可以放牠走或追擊
+var desperate: bool = false # 追擊示弱的對手：牠臨死前的反擊特別危險
+
+# 對手是具名 NPC 狼：能力、目前血量都來自牠；雙方都可以示弱。
+func set_npc(p_npc: NpcWolf) -> void:
+	npc = p_npc
+	opp = npc.combat_profile()
+	opp_hp_max = float(opp.get("hp", 100))
+	opp_hp = clamp(npc.health, 1.0, opp_hp_max)
+	can_submit = true
 
 func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p_mother: bool = false) -> void:
 	wolf = p_wolf
@@ -87,13 +99,21 @@ func options() -> Array:
 			for y in yields:
 				list.append({"id": str(y), "label_key": "combat.option." + str(y), "stamina": 0.0})
 		Phase.EXCHANGE:
+			if opp_submitted and not desperate:
+				list.append({"id": "let_go", "label_key": "combat.option.let_go", "stamina": 0.0})
+				var pursue := _attack_option("bite", false)
+				pursue["id"] = "pursue"
+				pursue["label_key"] = "combat.option.pursue"
+				pursue["injury_risk"] = min(0.95, float(pursue["injury_risk"]) + float(opp.get("desperate_hit", 0.2)))
+				list.append(pursue)
+				return list
 			list.append(_attack_option("bite", false))
 			list.append(_attack_option("lunge", false))
 			list.append(_dodge_option())
 			list.append(_retreat_option())
 			if context == "carcass" and yields.has("abandon"):
 				list.append({"id": "abandon", "label_key": "combat.option.abandon", "stamina": 0.0})
-			if can_submit:
+			if can_submit and not desperate:
 				list.append({"id": "submit", "label_key": "combat.option.submit", "stamina": 0.0})
 	return list
 
@@ -163,17 +183,26 @@ func choose(id: String) -> Dictionary:
 	wolf.stamina -= float(opt.get("stamina", 0.0))
 	wolf.clamp_stats()
 	# 瀕危後仍選擇繼續戰鬥（攻擊、閃避），這一回合才可能戰死。
-	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge"]
+	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue"]
 	var res: Dictionary = {"notes": [], "wolf_damage": 0.0, "opp_damage": 0.0, "wolf_pose": "threaten", "opp_action": "idle"}
 	match id:
 		"threaten": _do_threaten(opt, res)
 		"probe": _do_probe(opt, res)
 		"attack", "bite", "lunge": _do_attack(opt, "bite" if id == "attack" else id, lethal, res)
+		"pursue":
+			desperate = true
+			_do_attack(opt, "bite", lethal, res)
+		"let_go":
+			res["notes"].append("combat.let_go")
+			_end("drove_off")
 		"dodge": _do_dodge(opt, lethal, res)
 		"retreat": _do_retreat(opt, res)
 		"submit":
-			_end("submit")
+			# 示弱一定能活下來，代價是挨一下（不會致死）
+			_opponent_strikes("bite", false, res, 1.0, float(NpcWolf.cfg(animal_id).get("interaction", {}).get("submit_damage_mult", 0.6)))
+			res["notes"].append("combat.submit")
 			res["wolf_pose"] = "submit"
+			_end("submit")
 		_:
 			_end(id) # yield／abandon／grab／ignore
 	if phase != Phase.DONE and wolf.health <= 0.0:
@@ -194,12 +223,15 @@ func _practice(opt: Dictionary, success: bool) -> void:
 		fail_streak = 0 if success else fail_streak + 1
 
 # 對手打狼一下（lethal 見 FightRules.hurt_wolf）。
-func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0) -> bool:
+func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0, dmg_mult: float = 1.0) -> bool:
 	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move)
+	if desperate:
+		hit_chance = min(0.95, hit_chance + float(opp.get("desperate_hit", 0.2)))
+		dmg_mult *= float(opp.get("desperate_damage", 1.5))
 	if not RNGService.chance(hit_chance):
 		return false
 	var dmg_range: Array = opp.get("damage", [5, 10])
-	var dmg: float = float(RNGService.randi_range(int(dmg_range[0]), int(dmg_range[1])))
+	var dmg: float = float(RNGService.randi_range(int(dmg_range[0]), int(dmg_range[1]))) * dmg_mult
 	if mother:
 		dmg *= 1.2
 	var hit := FightRules.hurt_wolf(wolf, dmg, opp.get("parts", {}), animal_id + "." + context, lethal)
@@ -214,11 +246,23 @@ func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_overr
 
 # 對手評估：耐力低於門檻就放棄（趕走對手就是勝利）。
 func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
-	if opp_hp / opp_hp_max < opp_give_up_ratio():
+	if desperate and opp_hp <= 0.0:
+		res["notes"].append("combat.opp_killed")
+		res["opp_action"] = "down"
+		_end("killed")
+		return
+	if not desperate and opp_hp / opp_hp_max < opp_give_up_ratio():
+		# 會示弱的對手（陌生灰狼）：低頭示弱，由你決定放牠走或追擊
+		if bool(opp.get("can_submit", false)):
+			res["notes"].append("combat.opp_submits")
+			res["opp_action"] = "submit"
+			opp_submitted = true
+			return
 		res["notes"].append("combat.opp_gives_up")
 		_end("drove_off")
 		return
-	_opponent_strikes(move, lethal, res)
+	if not _opponent_strikes(move, lethal, res) and float(res.get("opp_damage", 0.0)) > 0.0:
+		res["opp_action"] = "hurt"
 
 func _do_threaten(opt: Dictionary, res: Dictionary) -> void:
 	res["wolf_pose"] = "threaten"
@@ -277,4 +321,4 @@ func _do_retreat(opt: Dictionary, res: Dictionary) -> void:
 	_opponent_strikes("retreat", false, res)
 
 func won() -> bool:
-	return outcome == "drove_off"
+	return outcome == "drove_off" or outcome == "killed"

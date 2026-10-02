@@ -64,6 +64,7 @@ var tendency_button: Button
 # 除錯「模擬到死亡」
 var auto_player: AutoPlayer = null
 var auto_status: Label
+var npc_status: Label
 const AUTO_DAYS_PER_FRAME := 2
 # 除錯「跳到次成年期最後一天」的玩法：[名稱, 獵物偏好, 打法]（見 AutoPlayer）
 const DEBUG_GROWTH_PROFILES := [["average", "all", "average"], ["pursuit", "all", "pursuit"], ["assault", "all", "assault"],
@@ -626,6 +627,21 @@ func _build_debug_overlay() -> void:
 		GameState.identify("grizzly_bear")
 		_on_encounter_triggered({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "mother": true})
 	)
+	var stranger_row := HBoxContainer.new()
+	right.add_child(stranger_row)
+	_debug_button(stranger_row, tr("debug.event.stranger_meet"), func():
+		debug_overlay.visible = false
+		GameState.debug_unlock_stranger()
+		_show_stranger_meet({"location": ""})
+	)
+	_debug_button(stranger_row, tr("debug.event.stranger_confront"), func():
+		debug_overlay.visible = false
+		GameState.debug_unlock_stranger()
+		_show_stranger_confront()
+	)
+	npc_status = Label.new()
+	npc_status.add_theme_font_size_override("font_size", 12)
+	right.add_child(npc_status)
 	_debug_button(combat_row, tr("debug.event.old_injury"), func():
 		debug_overlay.visible = false
 		GameState.debug_old_injury_flare()
@@ -661,6 +677,13 @@ func _on_debug_force_encounter(animal_id: String, life_stage: String) -> void:
 func _sync_debug_spins() -> void:
 	for key in debug_spins.keys():
 		debug_spins[key].value = _get_wolf_stat(key)
+	# 陌生灰狼的狀態（試玩時判斷「現在挑戰還是等牠變老」用）
+	var npc := GameState.stranger()
+	if npc_status != null and npc != null:
+		npc_status.text = tr("debug.npc_status").replace("{age}", "%.2f" % npc.age_years) \
+			.replace("{stats}", "　".join(["speed", "strength", "skill", "perception"].map(func(k): return tr("stat." + k) + " %d" % int(npc.get(k)))) \
+				+ "　" + tr("stat.health") + " %d／%d" % [int(npc.health), int(npc.health_max)]) \
+			.replace("{state}", ("" if npc.alive else tr("debug.npc_dead") + " ") + tr("region." + npc.territory) + " " + str(npc.dominance))
 
 func _on_debug_set(key: String, spin: SpinBox) -> void:
 	GameState.debug_set_stat(key, spin.value)
@@ -842,7 +865,12 @@ func _show_rest_overlay() -> void:
 
 func _on_rest_until(period: String) -> void:
 	rest_overlay.visible = false
-	if GameState.action_rest_until(period):
+	var res := GameState.action_rest_until(period)
+	if not res.get("alive", false):
+		return
+	if str(res.get("interrupted", "")) != "":
+		_log(tr("log.rest_interrupted"))
+	else:
 		_log(tr("log.rest_until").replace("{period}", tr("period." + period)))
 
 func _animal_scale(life_stage: String) -> float:
@@ -898,6 +926,13 @@ func _show_discovery(d: Dictionary) -> void:
 func _add_threat_options(d: Dictionary) -> void:
 	var source: String = str(d["source"])
 	if d.get("clue", "") == "sight":
+		if source == "stranger_wolf" and GameState.stranger_can_interact():
+			_add_encounter_button(tr("stranger.approach"), func():
+				var e := GameState.prepare_threat_sighting(source, str(d.get("location", "")))
+				GameState.clear_discovery()
+				_show_stranger_meet(e)
+			)
+			return
 		if source == "grizzly_bear" and GameState.is_identified(source):
 			_add_encounter_button(tr("ui.avoid"), _on_avoid)
 		else:
@@ -1136,6 +1171,9 @@ func _process_events() -> void:
 		"driven_off":
 			var to: String = GameState.apply_drive_off()
 			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "stranger_wolf")
+		"stranger_confront":
+			_show_stranger_confront()
+			return
 		"prey_nearby":
 			_show_prey_nearby(event)
 			return
@@ -1595,6 +1633,9 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 	if encounter.get("distant", false):
 		_show_distant(encounter)
 		return
+	if encounter.get("stranger_meet", false):
+		_show_stranger_meet(encounter)
+		return
 	var animal_id: String = encounter.get("animal_id", "")
 	var life_stage: String = encounter.get("life_stage", "adult")
 	var key: String = "encounter.competitor"
@@ -1632,6 +1673,78 @@ func _show_distant(encounter: Dictionary) -> void:
 		GameState.leave_distant(encounter)
 		encounter_overlay.visible = false
 		_refresh()
+	)
+	encounter_overlay.visible = true
+
+# --- 陌生灰狼（SPEC 1.6「陌生灰狼」） ---
+
+# 直接遇上牠：避開、跟蹤、威嚇、挑戰。第一次相遇時說出這一帶關於牠的傳說。
+func _show_stranger_meet(e: Dictionary, extra: String = "") -> void:
+	var npc := GameState.stranger()
+	var meetings: Array = GameState.life_log.get("stranger_meetings", [])
+	var lines: Array[String] = []
+	if meetings.is_empty() and extra == "":
+		lines.append(tr("stranger.legend").replace("{region}", tr("region." + npc.territory)))
+	else:
+		lines.append(tr("stranger.meet_again"))
+	lines.append(tr("stranger.age." + npc.life_stage_key()))
+	var a: Dictionary = GameState.life_log.get("stranger_assessment", {})
+	if extra != "":
+		lines.append(extra)
+	elif not a.is_empty():
+		lines.append(tr("stranger.last_assessment").replace("{age}", "%.1f" % float(a.get("wolf_age", 0.0))) \
+			.replace("{text}", tr("stranger.compare." + str(a["compare"]))))
+	if GameState.knowledge_level(GameState.opponent_knowledge("stranger_wolf", "adult")) > 0:
+		lines.append(tr("combat.remember").replace("{animal}", tr("animal.stranger_wolf")))
+	_log(lines[0])
+	encounter_message.text = "\n".join(lines)
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "stranger_wolf", "adult", "idle")
+	_set_terrain_bg(encounter_bg, str(e.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("stranger.avoid"), func():
+		GameState.stranger_avoid()
+		_log(tr("stranger.avoided"))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	if extra == "":
+		_add_encounter_button(tr("stranger.follow").replace("{n}", str(int(round(GameState.stranger_follow_chance() * 100.0)))), func():
+			var res := GameState.stranger_follow()
+			if res.get("success", false):
+				var text: String = tr("stranger.follow.success").replace("{text}", tr("stranger.compare." + str(res["assessment"]["compare"])))
+				_log(text)
+				_show_stranger_meet(e, text)
+			else:
+				_log(tr("stranger.follow.fail"))
+				_begin_combat(GameState.start_stranger_combat("meet"))
+		)
+	_add_encounter_button(tr("combat.option.threaten"), func():
+		_begin_combat(GameState.start_stranger_combat("meet"))
+		_on_combat_choice("threaten")
+	)
+	_add_encounter_button(tr("stranger.challenge"), func():
+		_begin_combat(GameState.start_stranger_combat("meet"))
+	)
+	encounter_overlay.visible = true
+
+# 在牠的範圍待太久：牠現身，退讓（離開這一帶，不受傷）或對峙（進入戰鬥，牠護地盤更拚）。
+func _show_stranger_confront() -> void:
+	var text: String = tr("stranger.confront")
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "stranger_wolf", "adult", "threaten")
+	_set_terrain_bg(encounter_bg, GameState._random_terrain(GameState.current_region))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("combat.option.yield"), func():
+		var to: String = GameState.stranger_yield_territory()
+		_log(tr("stranger.yielded").replace("{region}", tr("region." + to)))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	_add_encounter_button(tr("stranger.stand"), func():
+		_begin_combat(GameState.start_stranger_combat("territory"))
 	)
 	encounter_overlay.visible = true
 
@@ -1704,6 +1817,8 @@ func _finish_combat_ui() -> void:
 		_log(tr("combat.result." + c.outcome).replace("{animal}", name))
 		if str(r.get("grow", "")) != "":
 			_log(tr("combat.grow." + str(r["grow"])))
+		if c.npc != null and c.won():
+			_log(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)

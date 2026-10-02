@@ -1,14 +1,18 @@
 extends SceneTree
 # 戰鬥模擬（SPEC 1.6「戰鬥模式」「勝算基準」）：不同能力的狼 × 對手 × 打法，各打 RUNS 場。
 # 打法：fight＝一直撲咬、瀕危就撤退；lunge＝一直猛撲、瀕危就撤退；to_death＝瀕危也不退；threaten＝先威嚇再撲咬。
+# 陌生灰狼：瀕危時示弱（「退」也包含示弱），牠示弱後放牠走；「7 歲」是老年衰退兩年後的牠。
 # 統計：趕走對手（勝）、撤退、戰死的比例，平均受傷，重傷率，回合數。
 # 用法：bash tools/run_sim.sh combat_sim 0 400
 
 const WOLVES := [["次成年 40", 40, 40, 40, 80], ["成年 60", 60, 60, 60, 100], ["巔峰 78", 78, 72, 70, 110]]
 const OPPONENTS := [["灰熊（搶食）", "grizzly_bear", "adult", "carcass", false], ["灰熊（遭遇）", "grizzly_bear", "adult", "encounter", false],
 	["母熊", "grizzly_bear", "adult", "encounter", true], ["幼熊", "grizzly_bear", "juvenile", "encounter", false],
-	["狐狸（偷食）", "red_fox", "adult", "carcass", false]]
+	["狐狸（偷食）", "red_fox", "adult", "carcass", false],
+	["陌生灰狼 壯年", "stranger_wolf", "prime", "meet", false], ["陌生灰狼 地盤", "stranger_wolf", "prime", "territory", false],
+	["陌生灰狼 7 歲", "stranger_wolf", "old", "meet", false]]
 const POLICIES := ["fight", "lunge", "threaten", "to_death"]
+var NPC
 
 func _env_int(key: String, fallback: int) -> int:
 	var v := OS.get_environment(key)
@@ -18,6 +22,7 @@ func _process(_d):
 	var GS = root.get_node("GameState")
 	var CombatScript = load("res://scripts/core/Combat.gd")
 	var FR = load("res://scripts/core/FightRules.gd")
+	NPC = load("res://scripts/core/NpcWolf.gd")
 	var runs := _env_int("RUNS", 300)
 	print("== combat_sim：每格 %d 場" % runs)
 	for wd in WOLVES:
@@ -30,17 +35,29 @@ func _process(_d):
 					GS.new_game("forest_east")
 					var w = GS.wolf
 					w.strength = wd[1]; w.skill = wd[2]; w.speed = wd[3]; w.health_max = wd[4]; w.health = wd[4]
-					var c = CombatScript.new(w, od[1], od[2], od[3], od[4])
+					var c = CombatScript.new(w, od[1], "adult" if od[1] == "stranger_wolf" else od[2], od[3], od[4])
 					c.yields = ["yield"]
+					if od[1] == "stranger_wolf":
+						var npc = NPC.create("stranger_wolf", "forest_north")
+						npc.strength = 74; npc.skill = 68; npc.speed = 68; npc.perception = 62; npc.health_max = 110; npc.health = 110
+						if od[2] == "old":
+							npc.age_years = 7.0
+							for i in 2:
+								for k in ["speed", "strength", "skill", "health_max"]:
+									npc.set(k, npc.get(k) - 4.0)
+							npc.health = npc.health_max
+						c.set_npc(npc)
 					var g := 0
 					while c.phase != 2 and g < 40:
 						g += 1
 						var ids: Array = c.options().map(func(o): return o["id"])
 						var pick: String = "bite"
-						if c.phase == 0:
+						if ids.has("let_go"):
+							pick = "let_go"
+						elif c.phase == 0:
 							pick = "threaten" if pol == "threaten" and g == 1 else "attack"
 						elif FR.in_danger(w) and pol != "to_death":
-							pick = "retreat"
+							pick = "submit" if ids.has("submit") else "retreat"
 						elif pol == "lunge":
 							pick = "lunge"
 						c.choose(pick)
@@ -49,7 +66,7 @@ func _process(_d):
 					if w.injury == 2: heavy += 1
 					match c.outcome:
 						"drove_off": wins += 1
-						"retreated": retreats += 1
+						"retreated", "submit": retreats += 1
 						"died": deaths += 1
 				line += "  %s 勝%3.0f%% 退%3.0f%% 死%3.0f%% 傷%3.0f 重%3.0f%% 回%.1f" % [pol, 100.0 * wins / runs, 100.0 * retreats / runs, 100.0 * deaths / runs, dmg / runs, 100.0 * heavy / runs, float(rounds) / runs]
 				line += "\n           "

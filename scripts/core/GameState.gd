@@ -41,6 +41,8 @@ var events_today: int = 0
 # 陌生灰狼的範圍（開新狼時決定）；在範圍內連續停留的時段數。
 var stranger_territory: String = ""
 var territory_periods: int = 0
+# 具名 NPC 狼（SPEC 1.6「陌生灰狼」）：{id: NpcWolf}。陌生灰狼的範圍同步在 stranger_territory（牠死了就是空字串）。
+var npcs: Dictionary = {}
 # 天氣："clear"、"storm"（暴雨）、"after_rain"（雨停後）；weather_until 是結束的絕對時段編號。
 var weather: String = "clear"
 var weather_until: int = -1
@@ -76,6 +78,7 @@ func new_game(start_den: String) -> void:
 	weather_until = -1
 	var territory_weights: Dictionary = GameData.discovery.get("threat_sources", {}).get("stranger_wolf", {}).get("region_weights", {})
 	stranger_territory = RNGService.weighted_pick(territory_weights) if not territory_weights.is_empty() else ""
+	npcs = {"stranger_wolf": NpcWolf.create("stranger_wolf", stranger_territory)}
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -84,6 +87,8 @@ func new_game(start_den: String) -> void:
 		"days_lived": 1,
 		"death_cause": "",
 	}
+	# 第一次可以和陌生灰狼直接互動的時機：50% 在次成年期、50% 在成年後（都要先遠距觀察過）
+	life_log["stranger_unlock"] = "subadult" if RNGService.chance(float(_stranger_cfg().get("unlock_subadult_chance", 0.5))) else "adult"
 	var start_season: String = GameData.balance.get("start_season", "winter")
 	GameTime.setup(start_season, "normal")
 	_connect_time_signals()
@@ -125,6 +130,7 @@ func _on_day_changed(_day: int) -> void:
 	_apply_daily_hunger_penalty()
 	_queue_day_summary(before_injury, before_injury_stat, before_poison)
 	_recover_region_depletion()
+	_heal_npcs()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
 
@@ -136,6 +142,7 @@ func _on_season_changed(_season_index: int) -> void:
 		log_message.emit(tr("log.season_changed"))
 		_queue_season_card()
 		_check_life_stage_transition(prev_stage)
+		_age_npcs()
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -493,6 +500,7 @@ func action_explore() -> Dictionary:
 		"known_features": known_features(current_region),
 		"prey_knowledge": prey_knowledge_mults(current_region, GameTime.current_period()),
 		"weather": weather,
+		"stranger_territory": stranger_territory,
 	})
 	match current_discovery.get("kind", ""):
 		"feature":
@@ -648,6 +656,8 @@ func prepare_bear_encounter(encounter: Dictionary) -> Dictionary:
 
 # 遠距目擊灰熊或陌生灰狼（追蹤線索、或目擊線索）。
 func prepare_threat_sighting(source: String, location: String) -> Dictionary:
+	if source == "stranger_wolf" and stranger_can_interact():
+		return {"encountered": true, "animal_id": source, "life_stage": "adult", "stranger_meet": true, "location": location}
 	if source == "grizzly_bear":
 		var e := prepare_bear_encounter({"encountered": true, "animal_id": source, "life_stage": "adult"})
 		e["location"] = location
@@ -660,6 +670,8 @@ func action_observe_distant(encounter: Dictionary) -> void:
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
 	identify(animal_id)
 	_learn_threat(animal_id)
+	if animal_id == "stranger_wolf":
+		life_log["stranger_observed"] = true
 	Growth.learn_flat(wolf, "perception", "observe_distant_perception")
 	state_changed.emit()
 
@@ -820,24 +832,54 @@ func action_short_rest() -> void:
 	state_changed.emit()
 
 # 快轉：一回合一回合休息到指定時段開始，途中照常結算時段與每日變化；狼死亡就停止。
-func action_rest_until(target_period: String) -> bool:
+# 快轉：途中的主動事件與遭遇照常判定；重要事件（灰熊路過、獵物靠近、陌生灰狼現身、暴雨、大火徵兆）
+# 會打斷快轉，剩下的時間取消（每次最多打斷一次）。回傳 {"alive", "interrupted": 事件類型或 ""}。
+func action_rest_until(target_period: String) -> Dictionary:
 	_record_action("rest_until")
 	var target_index := GameTime.PERIODS.find(target_period)
 	if target_index < 0 or target_index == GameTime.period_index:
-		return false
+		return {"alive": wolf.alive, "interrupted": ""}
+	var cfg: Dictionary = _events_cfg().get("rest", {})
+	var interrupt: Array = cfg.get("interrupt", [])
+	var start_events: int = pending_events.size()
 	var stamina_per_turn: float = float(GameData.balance.get("rest_until_stamina_per_turn", 7.5))
 	var max_turns := GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD
+	var interrupted: String = ""
+	var gained_stamina: float = 0.0
 	for i in range(max_turns):
 		if not wolf.alive or GameTime.period_index == target_index:
 			break
+		var period_before: int = GameTime.period_index
 		GameTime.advance_turns(1)
-		if wolf.alive:
-			_rest_stamina(stamina_per_turn)
-			wolf.clamp_stats()
-	if wolf.alive:
-		_maybe_prey_nearby()
+		if not wolf.alive:
+			break
+		var before: float = wolf.stamina
+		_rest_stamina(stamina_per_turn)
+		wolf.clamp_stats()
+		gained_stamina += wolf.stamina - before
+		if GameTime.period_index != period_before:
+			_rest_period_events(cfg, gained_stamina)
+		for j in range(start_events, pending_events.size()):
+			if interrupt.has(str(pending_events[j].get("type", ""))):
+				interrupted = str(pending_events[j]["type"])
+				break
+		if interrupted != "":
+			break
 	state_changed.emit()
-	return wolf.alive
+	return {"alive": wolf.alive, "interrupted": interrupted}
+
+# 快轉每經過一個時段：獵物靠近、灰熊路過（在巢穴休息比在野外安全）。
+func _rest_period_events(cfg: Dictionary, gained_stamina: float) -> void:
+	var loc_mult: float = float(cfg.get("location_mult", {}).get(sleep_quality(), 1.0))
+	if _can_trigger_event() and RNGService.chance(float(cfg.get("prey_nearby_per_period", 0.06))):
+		var pn: Dictionary = _events_cfg().get("prey_nearby", {})
+		var animal: String = RNGService.weighted_pick(pn.get("animals", {"hare": 1}))
+		_queue_event({"type": "prey_nearby", "animal_id": animal,
+			"life_stage": str(pn.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
+	var weights: Dictionary = EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {})
+	if float(weights.get(GameTime.current_season(), 0)) > 0.0 and _can_trigger_event() \
+			and RNGService.chance(float(cfg.get("bear_per_period", 0.03)) * loc_mult * threat_mult()):
+		_queue_event({"type": "bear_passing", "health": 0.0, "stamina": gained_stamina})
 
 # 睡覺：可以在任何區域睡，隔天從這裡開始。回復缺少的血量與體力 × 睡處倍率；
 # 野外可能在夜裡被灰熊驚醒（回復減半，接著進入遭遇）。回傳 {"quality", "interrupted"}。
@@ -1102,7 +1144,11 @@ func start_storm() -> void:
 func _maybe_howl() -> void:
 	if GameTime.current_period() != "night" or stranger_territory == "" or not _can_trigger_event():
 		return
-	if RNGService.chance(float(_events_cfg().get("howl", {}).get("night_chance", 0.35))):
+	var chance_value: float = float(_events_cfg().get("howl", {}).get("night_chance", 0.35))
+	# 輸給你之後，遠方的狼嚎減少
+	if stranger() != null and stranger().yielded_to_player:
+		chance_value *= float(_stranger_cfg().get("howl_mult_after_yield", 0.5))
+	if RNGService.chance(chance_value):
 		trigger_howl()
 
 func trigger_howl() -> void:
@@ -1111,15 +1157,18 @@ func trigger_howl() -> void:
 
 # 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
 func _update_territory() -> void:
-	if current_region != stranger_territory:
+	var npc := stranger()
+	if current_region != stranger_territory or npc == null or not npc.alive or npc.yielded_to_player:
 		territory_periods = 0
 		return
 	territory_periods += 1
 	var cfg: Dictionary = _events_cfg().get("howl", {})
-	if territory_periods >= int(cfg.get("drive_off_periods", 4)) and _can_trigger_event() \
-			and RNGService.chance(float(cfg.get("drive_off_chance", 0.5))):
+	# 輸給牠或向牠示弱越多次，越常被趕
+	var chance_value: float = float(cfg.get("drive_off_chance", 0.5)) + npc.dominance * float(_stranger_cfg().get("drive_off_dominance_bonus", 0.15))
+	if territory_periods >= int(cfg.get("drive_off_periods", 4)) and _can_trigger_event() and RNGService.chance(chance_value):
 		territory_periods = 0
-		_queue_event({"type": "driven_off"})
+		# 可以直接互動後，「被驅趕」改為牠現身、由你選擇退讓或對峙（SPEC 1.6「陌生灰狼」）
+		_queue_event({"type": "stranger_confront" if stranger_can_interact() else "driven_off"})
 
 # 實際執行被驅趕（畫面層處理事件時呼叫）。回傳被趕到的區域。
 func apply_drive_off() -> String:
@@ -1128,6 +1177,10 @@ func apply_drive_off() -> String:
 		{"leg": 0.5, "shoulder": 0.5}, "stranger_wolf.encounter", false)
 	wolf.apply_injury(Wolf.Injury.LIGHT, 2)
 	identify("stranger_wolf")
+	return _leave_stranger_territory()
+
+# 離開陌生灰狼的範圍：這一帶的殘骸與進食中斷，移到相鄰的區域。回傳新的區域。
+func _leave_stranger_territory() -> String:
 	learn({"type": "territory", "animal": "stranger_wolf", "region": current_region})
 	var kept: Array = []
 	for c in carcasses:
@@ -1392,7 +1445,11 @@ func finish_combat(c: Combat) -> Dictionary:
 		record_decision(d)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
 	var result := {"outcome": c.outcome, "grow": ""}
+	if c.npc != null:
+		c.npc.health = c.opp_hp
 	if c.outcome == "died":
+		if c.npc != null:
+			_stranger_record("drive_off" if c.context == "territory" else "meet", "died", c.damage_taken, c.opp_hp_max - c.opp_hp)
 		die_in_combat(c.animal_id, c.life_stage, c.context)
 		return result
 	Growth.apply_practice(wolf, c.practice)
@@ -1415,6 +1472,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		learn(opponent_knowledge(c.animal_id, c.life_stage))
 	if c.context == "carcass":
 		_carcass_after_combat(c)
+	if c.npc != null and c.npc.id == "stranger_wolf":
+		_after_stranger_combat(c)
 	GameTime.advance_turns(1)
 	wolf.clamp_stats()
 	_check_death()
@@ -1440,6 +1499,137 @@ func _carcass_after_combat(c: Combat) -> void:
 	life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
 	if by_bear:
 		life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
+
+# --- 陌生灰狼（SPEC 1.6「陌生灰狼」；牠的資料在 NpcWolf.gd） ---
+
+func _stranger_cfg() -> Dictionary:
+	return NpcWolf.cfg("stranger_wolf").get("interaction", {})
+
+func stranger() -> NpcWolf:
+	return npcs.get("stranger_wolf", null)
+
+# 可以直接互動：牠還活著、至少遠距觀察過一次，而且到了這一局決定的時機（次成年期或成年後）。
+func stranger_can_interact() -> bool:
+	var npc := stranger()
+	if npc == null or not npc.alive or not bool(life_log.get("stranger_observed", false)):
+		return false
+	if str(life_log.get("stranger_unlock", "subadult")) == "adult" and wolf.life_stage() == Wolf.LifeStage.SUBADULT:
+		return false
+	return true
+
+func _heal_npcs() -> void:
+	for npc in npcs.values():
+		if npc.alive:
+			npc.health = min(npc.health_max, npc.health + float(NpcWolf.cfg(npc.id).get("heal_per_day", 10)))
+
+# 每季：牠也會變老；老死或死於其他原因後，那一帶就空了。
+func _age_npcs() -> void:
+	for npc in npcs.values():
+		var cause: String = npc.on_season_passed()
+		if cause != "":
+			_on_npc_died(npc)
+
+func _on_npc_died(npc: NpcWolf) -> void:
+	if npc.id == "stranger_wolf":
+		stranger_territory = ""
+	life_log["stranger_death"] = {"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)}
+
+# 和牠相比：依力量值差與牠的年紀，給出「牠比你強壯得多／不相上下／已經不如你」這類判斷。
+func stranger_assessment() -> Dictionary:
+	var npc := stranger()
+	var diff: float = npc.power() - FightRules.wolf_power(wolf)
+	var key: String = "even"
+	if diff > 25.0:
+		key = "much_stronger"
+	elif diff > 8.0:
+		key = "stronger"
+	elif diff < -25.0:
+		key = "much_weaker"
+	elif diff < -8.0:
+		key = "weaker"
+	return {"compare": key, "age": npc.life_stage_key()}
+
+func _stranger_record(kind: String, outcome: String, wolf_damage: float = 0.0, npc_damage: float = 0.0) -> void:
+	var entry := {"age": snapped(wolf.age_years, 0.1), "kind": kind, "outcome": outcome, "region": current_region,
+		"wolf_damage": snapped(wolf_damage, 1.0), "npc_damage": snapped(npc_damage, 1.0)}
+	stranger().add_record(entry.duplicate())
+	var list: Array = life_log.get("stranger_meetings", [])
+	list.append(entry)
+	life_log["stranger_meetings"] = list
+
+# 避開：悄悄繞開，不起衝突。
+func stranger_avoid() -> void:
+	record_decision("avoid")
+	_stranger_record("meet", "avoided")
+	state_changed.emit()
+
+# 跟蹤：看感知。成功就看清楚牠現在的狀態（和你相比的強弱、年紀）；失敗被牠發現，牠轉身對峙。
+func stranger_follow() -> Dictionary:
+	GameTime.advance_turns(1)
+	var npc := stranger()
+	var cfg := _stranger_cfg()
+	var chance_value: float = HuntSystem.clamp_chance(float(cfg.get("follow_base", 0.45)) + (wolf.effective_perception() - npc.perception) / float(cfg.get("follow_divisor", 150)))
+	var ok: bool = RNGService.chance(chance_value)
+	Growth.learn_flat(wolf, "perception", "track_perception", 1.0 if ok else float(Growth.cfg().get("fail_mult", 0.25)))
+	if not ok:
+		return {"success": false}
+	var a := stranger_assessment()
+	life_log["stranger_assessment"] = {"compare": a["compare"], "age": a["age"], "wolf_age": snapped(wolf.age_years, 0.1)}
+	_stranger_record("follow", "assessed")
+	state_changed.emit()
+	return {"success": true, "assessment": a}
+
+func stranger_follow_chance() -> float:
+	var cfg := _stranger_cfg()
+	return HuntSystem.clamp_chance(float(cfg.get("follow_base", 0.45)) + (wolf.effective_perception() - stranger().perception) / float(cfg.get("follow_divisor", 150)))
+
+# 和牠對峙或戰鬥。context：meet（主動遇上、挑戰）、territory（在牠的範圍被牠找上，牠護地盤更拚）。
+func start_stranger_combat(context: String) -> Combat:
+	var c := start_combat("stranger_wolf", "adult", context)
+	c.set_npc(stranger())
+	return c
+
+# 被牠找上時退讓：離開這一帶，不受傷。
+func stranger_yield_territory() -> String:
+	record_decision("combat.yield")
+	_stranger_record("drive_off", "yielded")
+	return _leave_stranger_territory()
+
+# 戰鬥後：牠的血量、你們的紀錄、範圍的歸屬（SPEC「勝負的結果」）。
+func _after_stranger_combat(c: Combat) -> void:
+	var npc := stranger()
+	npc.health = c.opp_hp
+	_stranger_record("drive_off" if c.context == "territory" else "meet", c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
+	match c.outcome:
+		"drove_off", "killed":
+			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕
+			life_log["own_territory"] = npc.territory
+			npc.yielded_to_player = true
+			npc.dominance = 0
+			if c.outcome == "killed":
+				npc.die("killed_by_player")
+				_on_npc_died(npc)
+			else:
+				npc.territory = _npc_new_territory(npc.territory)
+				stranger_territory = npc.territory
+		"submit":
+			# 示弱：活下來，但失去那一帶的範圍，之後更常被趕
+			npc.dominance += 1
+			if current_region == npc.territory:
+				_leave_stranger_territory()
+		"retreated", "yield":
+			if c.rounds > 0:
+				npc.dominance += 1
+			if c.context == "territory" and current_region == npc.territory:
+				_leave_stranger_territory()
+
+# 牠輸了之後搬到另一帶（不是你的巢穴，也不是剛讓出來的地方）。
+func _npc_new_territory(old: String) -> String:
+	var options: Array = []
+	for region_id in GameData.regions().keys():
+		if region_id != old and region_id != den_region:
+			options.append(region_id)
+	return options[RNGService.randi_range(0, options.size() - 1)] if not options.is_empty() else ""
 
 # --- Debug helpers (see DESIGN.md "測試與除錯") ---
 
@@ -1538,6 +1728,12 @@ func debug_old_injury_flare() -> void:
 		"lines": [{"key": "day_summary.old_injury_flare", "part": str(wolf.old_injuries[0]["part_key"])}]})
 	state_changed.emit()
 
+# 陌生灰狼：當作已經遠距觀察過、而且到了可以互動的時機。
+func debug_unlock_stranger() -> void:
+	identify("stranger_wolf")
+	life_log["stranger_observed"] = true
+	life_log["stranger_unlock"] = "subadult"
+
 func debug_export_playtest_log() -> String:
 	return _write_playtest_log() if wolf != null else ""
 
@@ -1556,6 +1752,12 @@ func debug_force_encounter(animal_id: String, life_stage: String) -> Dictionary:
 
 # --- Persistence ---
 
+func _npcs_to_dict() -> Dictionary:
+	var d: Dictionary = {}
+	for npc_id in npcs.keys():
+		d[npc_id] = npcs[npc_id].to_dict()
+	return d
+
 func to_dict() -> Dictionary:
 	return {
 		"wolf": wolf.to_dict() if wolf != null else {},
@@ -1571,6 +1773,7 @@ func to_dict() -> Dictionary:
 		"identified": identified,
 		"stranger_territory": stranger_territory,
 		"territory_periods": territory_periods,
+		"npcs": _npcs_to_dict(),
 		"weather": weather,
 		"weather_until": weather_until,
 		"events_today": events_today,
@@ -1602,6 +1805,11 @@ func load_from_dict(data: Dictionary) -> void:
 	identified = data.get("identified", GameData.knowledge.get("identified_at_start", []).duplicate())
 	stranger_territory = str(data.get("stranger_territory", "forest_north"))
 	territory_periods = int(data.get("territory_periods", 0))
+	npcs = {}
+	for npc_id in data.get("npcs", {}).keys():
+		npcs[npc_id] = NpcWolf.from_dict(data["npcs"][npc_id])
+	if not npcs.has("stranger_wolf"):
+		npcs["stranger_wolf"] = NpcWolf.create("stranger_wolf", stranger_territory)
 	weather = str(data.get("weather", "clear"))
 	weather_until = int(data.get("weather_until", -1))
 	events_today = int(data.get("events_today", 0))

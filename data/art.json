@@ -21,7 +21,18 @@
       "distant": { "single": "res://assets/art/sprites/animals/bear_distant.png" }
     },
     "stranger_wolf": {
-      "adult": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png" },
+      "adult": {
+        "sheet": "res://assets/art/sprites/wolf/wolf_stranger_sheet.png",
+        "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
+        "poses": {
+          "threaten": "res://assets/art/sprites/wolf/wolf_stranger_threaten.png",
+          "attack": "res://assets/art/sprites/wolf/wolf_stranger_bite.png",
+          "dodge": "res://assets/art/sprites/wolf/wolf_stranger_dodge.png",
+          "hurt": "res://assets/art/sprites/wolf/wolf_stranger_hurt.png",
+          "submit": "res://assets/art/sprites/wolf/wolf_stranger_submit.png",
+          "stalk": "res://assets/art/sprites/wolf/wolf_stranger_stalk.png"
+        }
+      },
       "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png" }
     }
   },

@@ -98,6 +98,8 @@ func _handle_pending() -> void:
 				GameState.action_observe_distant(e)
 			else:
 				GameState.leave_distant(e)
+		elif e.get("stranger_meet", false):
+			_meet_stranger()
 		else:
 			play_combat(GameState.start_combat(str(e.get("animal_id", "grizzly_bear")), str(e.get("life_stage", "adult")), "encounter", e))
 	while not done():
@@ -107,6 +109,11 @@ func _handle_pending() -> void:
 		match event.get("type", ""):
 			"driven_off":
 				GameState.apply_drive_off()
+			"stranger_confront":
+				if style == "assault":
+					play_combat(GameState.start_stranger_combat("territory"))
+				else:
+					GameState.stranger_yield_territory()
 			"bear_passing":
 				GameState.resolve_bear_passing(event, "leave")
 
@@ -117,6 +124,16 @@ func _explore_once() -> void:
 		return
 	match d.get("source_kind", ""):
 		"threat":
+			if str(d.get("source", "")) == "stranger_wolf" and GameState.stranger_can_interact():
+				GameState.clear_discovery()
+				_meet_stranger()
+				return
+			# 強攻型看到陌生灰狼會停下來觀察（之後才能直接互動）
+			if str(d.get("source", "")) == "stranger_wolf" and style == "assault" and d.get("clue", "") == "sight":
+				var e := GameState.prepare_threat_sighting("stranger_wolf", str(d.get("location", "")))
+				GameState.clear_discovery()
+				GameState.action_observe_distant(e)
+				return
 			if style == "assault":
 				GameState.clear_discovery()
 			else:
@@ -175,8 +192,27 @@ func play_combat(c: Combat) -> void:
 		c.choose(_combat_choice(c))
 	GameState.finish_combat(c)
 
+# 遇上陌生灰狼：強攻型先跟蹤看清楚，牠不比自己強就挑戰；其他打法避開。
+func _meet_stranger() -> void:
+	if style != "assault":
+		GameState.stranger_avoid()
+		return
+	var res := GameState.stranger_follow()
+	if not res.get("success", false):
+		play_combat(GameState.start_stranger_combat("meet"))
+	elif str(res["assessment"]["compare"]) in ["even", "weaker", "much_weaker"]:
+		play_combat(GameState.start_stranger_combat("meet"))
+	else:
+		GameState.stranger_avoid()
+
 func _combat_choice(c: Combat) -> String:
 	var ids: Array = c.options().map(func(o): return o["id"])
+	# 牠示弱了：強攻型血量還夠就追擊，否則放牠走
+	if ids.has("let_go"):
+		return "pursue" if style == "assault" and GameState.wolf.health > GameState.wolf.health_max * 0.6 else "let_go"
+	# 對陌生灰狼瀕危時示弱（一定能活下來）
+	if c.npc != null and c.phase == Combat.Phase.EXCHANGE and FightRules.in_danger(GameState.wolf) and ids.has("submit"):
+		return "submit"
 	var fights: bool = style == "assault" or c.animal_id == "red_fox"
 	if c.phase == Combat.Phase.STANDOFF:
 		if not fights:

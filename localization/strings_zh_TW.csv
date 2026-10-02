@@ -568,7 +568,7 @@ combat.result.yield,你退開了，{animal}沒有追來。
 combat.result.abandon,你放棄了獵物，退到安全的地方。
 combat.result.grab,你叼走一大塊肉，迅速退開。
 combat.result.ignore,{animal}叼走了一塊肉。
-combat.result.submit,你低下頭，夾起了尾巴。
+combat.result.submit,你活了下來，但這一帶不再是你能久留的地方。
 combat.grow.clean,這一仗幾乎沒受傷，你打得越來越熟練。
 combat.grow.costly,這一仗贏得辛苦，你記住了牠的每一個動作。
 factor.combat.next_bonus,抓到破綻
@@ -610,3 +610,57 @@ chance_label.hit,命中率
 chance_label.dodge,閃開率
 chance_label.escape,脫身率
 chance_label.drive_off,嚇退率
+log.rest_interrupted,休息被打斷了。
+stranger.approach,走近一點
+stranger.legend,牠是盤踞在{region}的那一隻黑狼。這一帶的狐狸遠遠就會繞開牠的氣味；據說牠曾從那股可怕氣味的主人爪下，奪回一頭鹿。沒有誰知道這是不是真的。
+stranger.meet_again,那隻黑狼又出現在你面前。
+stranger.age.prime,牠正值壯年，肩背寬厚，毛色發亮。
+stranger.age.past_peak,牠仍然強壯，但口鼻邊已經有了幾根白毛。
+stranger.age.elder,牠老了，口鼻泛白，走起路來有些僵硬。
+stranger.last_assessment,上次跟蹤牠時：{text}
+stranger.compare.much_stronger,牠比你強壯得多。
+stranger.compare.stronger,牠比你強一些。
+stranger.compare.even,你們不相上下。
+stranger.compare.weaker,牠已經不如你了。
+stranger.compare.much_weaker,牠遠遠不是你的對手了。
+stranger.avoid,避開
+stranger.avoided,你悄悄繞開，沒有驚動牠。
+stranger.follow,跟蹤　成功率 {n}%
+stranger.follow.success,你遠遠跟著牠看了很久。{text}
+stranger.follow.fail,一根枯枝在你腳下斷了，牠轉過頭來。
+stranger.challenge,挑戰
+stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾著低吼。牠要你離開這一帶。
+stranger.stand,對峙
+stranger.yielded,你退開了，往{region}走去。
+stranger.won_territory,{region}從此是你的了。
+combat.stake.meet.stranger_wolf,牠盯著你，尾巴高高舉起。
+combat.stake.territory.stranger_wolf,這裡是牠的地盤，牠會拚命守住。
+combat.option.let_go,放牠走
+combat.option.pursue,追擊
+combat.opp_submits,{animal}低下頭，夾起尾巴，向你示弱。
+combat.opp_killed,{animal}倒下了，再也沒有起來。
+combat.let_go,你放牠走了。
+combat.submit,你低下頭，夾起尾巴。
+combat.result.killed,你咬死了{animal}。
+summary.stranger,和那隻黑狼相遇 {n} 次：{list}
+summary.stranger_entry,{age} 歲{outcome}
+summary.stranger_outcome.avoided,避開
+summary.stranger_outcome.assessed,跟蹤
+summary.stranger_outcome.yielded,退讓
+summary.stranger_outcome.yield,退讓
+summary.stranger_outcome.drove_off,趕走了牠
+summary.stranger_outcome.killed,咬死了牠
+summary.stranger_outcome.submit,示弱
+summary.stranger_outcome.retreated,撤退
+summary.stranger_outcome.died,戰死
+bio.stranger.killed,{age} 歲那年，你咬死了盤踞在{region}的那隻黑狼
+bio.stranger.drove_off,{age} 歲那年，你把那隻黑狼趕出了{region}
+bio.stranger.submit,{age} 歲那年，你在{region}和那隻黑狼對峙，最後低下了頭
+death_bio.combat.stranger_wolf.meet,拒絕向那隻黑狼低頭，死在牠的牙下
+death_bio.combat.stranger_wolf.territory,拒絕向那隻黑狼低頭，死在牠的牙下
+injury_source.stranger_wolf.meet,和那隻黑狼打鬥
+injury_source.stranger_wolf.territory,和那隻黑狼爭地盤
+debug.event.stranger_meet,陌生灰狼直接互動
+debug.event.stranger_confront,陌生灰狼現身（範圍）
+debug.npc_status,陌生灰狼：{age} 歲　{stats}　{state}
+debug.npc_dead,（已死）
