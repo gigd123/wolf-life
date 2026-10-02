@@ -142,7 +142,10 @@ func _ready() -> void:
 		for m in wolverine_meetings:
 			w_entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
 				.replace("{outcome}", tr("summary.wolverine_outcome." + str(m.get("outcome", "")))))
-		_add_line(box, tr("summary.wolverine").replace("{n}", str(wolverine_meetings.size())).replace("{list}", "、".join(w_entries)))
+		var w_line: String = tr("summary.wolverine").replace("{n}", str(wolverine_meetings.size())).replace("{list}", "、".join(w_entries))
+		if int(log_data.get("wolverine_gen", 1)) > 1:
+			w_line += tr("summary.wolverine_gen").replace("{n}", str(int(log_data["wolverine_gen"])))
+		_add_line(box, w_line)
 	# 和苔原狼的相遇（1.6 第 6e 步）：嚎叫的回應不列入，只列見面的經過
 	var tundra_meetings: Array = log_data.get("tundra_meetings", []).filter(func(m): return str(m.get("kind", "")) != "howl")
 	if not tundra_meetings.is_empty():

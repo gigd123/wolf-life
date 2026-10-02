@@ -694,6 +694,10 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		_show_tundra_meet(GameState.debug_tundra_meet())
 	)
+	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.mob"), func():
+		debug_overlay.visible = false
+		_show_tundra_mob(GameState.debug_tundra_mob())
+	)
 	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.howl"), func():
 		debug_overlay.visible = false
 		GameState.debug_tundra_howl()
@@ -1019,6 +1023,9 @@ func _show_discovery(d: Dictionary) -> void:
 		return
 	if d.get("kind", "") == "tundra_wolves":
 		_show_tundra_meet(d)
+		return
+	if d.get("kind", "") == "tundra_mob":
+		_show_tundra_mob(d)
 		return
 	var text := _discovery_text(d)
 	_log(text)
@@ -2110,6 +2117,31 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	)
 	encounter_overlay.visible = true
 
+# 兩隻苔原狼圍攻狼獾：幫苔原狼、在旁邊看、離開。
+func _show_tundra_mob(d: Dictionary) -> void:
+	var text: String = tr("tundra.mob." + ("known" if d.get("wolverine_known", false) else "unknown"))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "wolverine", "adult", "attack")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("tundra.mob.help"), func():
+		_begin_combat(GameState.start_mob_combat(), "attack")
+	)
+	_add_encounter_button(tr("tundra.mob.watch"), func():
+		var res := GameState.watch_tundra_mob()
+		encounter_overlay.visible = false
+		_log(tr("tundra.mob.watch." + str(res["result"])))
+		_refresh()
+	)
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.leave_tundra_mob()
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
 func _show_tundra_howl(event: Dictionary) -> void:
 	var text: String = tr("tundra.howl." + GameState.tundra_relation_key()).replace("{region}", tr("region." + str(event.get("region", ""))))
 	_log(text)
@@ -2280,7 +2312,9 @@ func _finish_combat_ui() -> void:
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
 		return
-	if c.context == "carcass" and GameState.is_feeding():
+	if c.context == "mob" and GameState.is_feeding():
+		_log(tr("tundra.mob.share"))
+	if c.context in ["carcass", "mob"] and GameState.is_feeding():
 		_show_feeding()
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---

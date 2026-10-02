@@ -45,6 +45,9 @@ var desperate: bool = false # 追擊示弱的對手：牠臨死前的反擊特�
 # 對手有同伴（苔原狼一對）：每回合 partner_chance 的機率另一隻也插進來咬一口（傷害 × partner_damage_mult）
 var partner_chance: float = 0.0
 var partner_damage_mult: float = 0.6
+# 你這邊有同伴（幫苔原狼圍攻狼獾）：每回合 ally_chance 的機率同伴咬中對手（ally_damage 範圍）
+var ally_chance: float = 0.0
+var ally_damage: Array = [6, 10]
 
 # 對手是具名 NPC 狼：能力、目前血量都來自牠；雙方都可以示弱。
 func set_npc(p_npc: NpcWolf) -> void:
@@ -147,6 +150,9 @@ func _attack_option(move: String, initiative: bool) -> Dictionary:
 		risk = 1.0 - (1.0 - risk) * (1.0 - partner_chance * risk)
 		factors = factors.duplicate()
 		factors.append({"key": "factor.combat.partner", "good": false, "weight": 0.0, "info": true})
+	if ally_chance > 0.0:
+		factors = factors.duplicate()
+		factors.append({"key": "factor.combat.ally", "good": true, "weight": 0.0, "info": true})
 	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
 		"injury_risk": risk}
 	return _move_trains(opt, move)
@@ -259,7 +265,16 @@ func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_overr
 	return true
 
 # 對手評估：耐力低於門檻就放棄（趕走對手就是勝利）。
+func _ally_turn(res: Dictionary) -> void:
+	if ally_chance <= 0.0 or not RNGService.chance(ally_chance):
+		return
+	var dmg: float = float(RNGService.randi_range(int(ally_damage[0]), int(ally_damage[1])))
+	opp_hp = max(0.0, opp_hp - dmg)
+	res["opp_damage"] = float(res.get("opp_damage", 0.0)) + dmg
+	res["notes"].append("combat.ally_hits")
+
 func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
+	_ally_turn(res)
 	if desperate and opp_hp <= 0.0:
 		res["notes"].append("combat.opp_killed")
 		res["opp_action"] = "down"
@@ -320,6 +335,11 @@ func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) ->
 
 func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	res["wolf_pose"] = "dodge"
+	_ally_turn(res)
+	if ally_chance > 0.0 and opp_hp / opp_hp_max < opp_give_up_ratio():
+		res["notes"].append("combat.opp_gives_up")
+		_end("drove_off")
+		return
 	var was_hit: bool = _opponent_strikes("dodge", lethal, res)
 	if not was_hit:
 		state["next_bonus"] = float(FightRules.move_cfg("dodge").get("next_bonus", 0.1))

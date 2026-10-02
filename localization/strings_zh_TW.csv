@@ -875,3 +875,21 @@ ui.go_map_ice.solid,冰面捷徑（{n} 回合）
 ui.go_map_ice.thin,冰面捷徑（{n} 回合・冰薄）
 log.ice_shortcut,你沿著結冰的河面走，冰上沒有積雪，走得很快。
 ice.here.shortcut,走到河中央時，腳下的冰發出一聲悶響，裂開了！
+tundra.mob.known,兩隻苔原狼正圍著一隻狼獾。狼獾背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
+tundra.mob.unknown,兩隻毛色偏淺的狼正圍著一隻你沒見過的深色動物。牠背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
+tundra.mob.help,幫苔原狼
+tundra.mob.watch,在旁邊看
+tundra.mob.watch.drove_off,狼獾終於撐不住，叼著一塊肉退走了。苔原狼低頭吃了起來。
+tundra.mob.watch.killed,苔原狼一前一後撲上去，狼獾倒在雪地裡，再也沒有起來。
+tundra.mob.watch.held,狼獾死守著殘骸，苔原狼繞了幾圈，最後放棄走開了。
+tundra.mob.share,苔原狼讓出了位置，你分到了一段肉。
+combat.ally_hits,苔原狼從側面咬中了{animal}！
+combat.stake.mob.wolverine,牠被圍在中間，已經受了傷，卻一步也不退。
+summary.tundra_outcome.helped_won,幫牠們趕走了狼獾
+summary.tundra_outcome.helped_retreated,幫牠們圍攻狼獾，最後撤退
+summary.tundra_outcome.watched_drove_off,看著牠們趕走狼獾
+summary.tundra_outcome.watched_killed,看著牠們咬死狼獾
+summary.tundra_outcome.watched_held,看著狼獾守住殘骸
+summary.wolverine_gen,（前後共 {n} 隻）
+debug.tundra_wolf.mob,圍攻狼獾
+factor.combat.ally,苔原狼在一旁助攻

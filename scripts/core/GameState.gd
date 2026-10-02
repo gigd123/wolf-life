@@ -596,8 +596,8 @@ func action_explore() -> Dictionary:
 		current_discovery = {"kind": "nothing", "blizzard": true, "location": _random_terrain(current_region)}
 		state_changed.emit()
 		return current_discovery
-	# 苔原狼：在牠們這陣子待的區域探索，有機會遇上
-	if _maybe_meet_tundra_wolves():
+	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
+	if _maybe_tundra_mob() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -1631,6 +1631,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		_after_stranger_combat(c)
 	elif c.npc != null and c.npc.id == "wolverine":
 		_wolverine_record(c)
+		if c.context == "mob":
+			_after_mob_combat(c)
 	elif c.npc != null and TUNDRA_WOLF_IDS.has(c.npc.id):
 		_after_tundra_combat(c)
 	GameTime.advance_turns(1)
@@ -2003,8 +2005,23 @@ func _age_npcs() -> void:
 		var cause: String = npc.on_season_passed()
 		if cause != "":
 			_on_npc_died(npc)
+	_maybe_new_wolverine()
+
+# 狼獾死後，每一季有機會從別處遷進一隻新的（第幾隻記在 life_log.wolverine_gen）。
+func _maybe_new_wolverine() -> void:
+	var npc := wolverine()
+	if npc != null and npc.alive:
+		return
+	if RNGService.chance(float(_wolverine_cfg().get("replace_chance_per_season", 0.5))):
+		npcs["wolverine"] = NpcWolf.create("wolverine", "")
+		life_log["wolverine_gen"] = int(life_log.get("wolverine_gen", 1)) + 1
 
 func _on_npc_died(npc: NpcWolf) -> void:
+	if npc.id == "wolverine":
+		var deaths: Array = life_log.get("wolverine_deaths", [])
+		deaths.append({"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)})
+		life_log["wolverine_deaths"] = deaths
+		return
 	if npc.id != "stranger_wolf":
 		life_log[npc.id + "_death"] = {"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)}
 		return
@@ -2491,8 +2508,8 @@ func start_wolverine_combat() -> Combat:
 
 func _wolverine_record(c: Combat) -> void:
 	var npc := wolverine()
-	var entry := {"age": snapped(wolf.age_years, 0.1), "outcome": c.outcome, "region": current_region,
-		"wolf_damage": snapped(c.damage_taken, 1.0), "npc_damage": snapped(c.opp_hp_max - c.opp_hp, 1.0)}
+	var entry := {"age": snapped(wolf.age_years, 0.1), "outcome": c.outcome, "region": current_region, "context": c.context,
+		"wolf_damage": snapped(c.damage_taken, 1.0), "npc_damage": snapped(c.opp_hp_max - c.opp_hp, 1.0), "gen": int(life_log.get("wolverine_gen", 1))}
 	npc.add_record(entry.duplicate())
 	var list: Array = life_log.get("wolverine_meetings", [])
 	list.append(entry)
@@ -2651,6 +2668,70 @@ func _after_tundra_combat(c: Combat) -> void:
 	if c.outcome == "killed":
 		leader.die("killed_by_player")
 		_on_npc_died(leader)
+
+# --- 苔原狼圍攻狼獾（兩隻苔原狼都在、狼獾還活著） ---
+
+func _mob_cfg() -> Dictionary:
+	return _tundra_cfg().get("mob", {})
+
+func _maybe_tundra_mob() -> bool:
+	if not _tundra_wolves_here() or tundra_pair().size() < 2 or not _wolverine_alive() or blizzard_here():
+		return false
+	if not RNGService.chance(float(_mob_cfg().get("mob_chance", 0.05))):
+		return false
+	current_discovery = {"kind": "tundra_mob", "location": _random_terrain(current_region),
+		"wolverine_known": is_identified("wolverine"), "tundra_known": is_identified("tundra_wolf")}
+	identify("wolverine")
+	identify("tundra_wolf")
+	return true
+
+# 幫苔原狼：從交鋒開始，狼獾已經被咬傷，苔原狼每回合也會咬牠。
+func start_mob_combat() -> Combat:
+	clear_discovery()
+	var c := start_combat("wolverine", "adult", "mob")
+	c.set_npc(wolverine())
+	var m := _mob_cfg()
+	c.opp_hp = min(c.opp_hp, c.opp_hp_max * float(m.get("start_hp_ratio", 0.7)))
+	c.ally_chance = float(m.get("ally_chance", 0.5))
+	c.ally_damage = m.get("ally_damage", [6, 10])
+	c.phase = Combat.Phase.EXCHANGE
+	return c
+
+# 幫忙之後：趕走狼獾，苔原狼把殘骸分你一段（關係 +3）；撤退也算有幫（+1）；動手的對象不是牠們，不算衝突。
+func _after_mob_combat(c: Combat) -> void:
+	var won: bool = c.won()
+	_tundra_relation_add("help_won" if won else "help_tried")
+	_tundra_record("mob", "helped_won" if won else "helped_" + c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
+	if won and tundra_relation_key() != "hostile":
+		var segments: int = int(_mob_cfg().get("share_segments", 1))
+		var total: float = float(GameData.animals.get("caribou", {}).get("adult", {}).get("hunger_value", 0))
+		var per: int = HuntSystem.feeding_segments("caribou", "adult")
+		current_feeding = {"animal_id": "caribou", "life_stage": "adult", "segments_left": segments,
+			"segment_value": total / max(1, per), "turns_stayed": 0, "terrain": c.terrain, "shared": true}
+
+# 在旁邊看：多半是狼獾被趕走，偶爾被咬死。回傳 {"result": "drove_off"|"killed"|"held"}。
+func watch_tundra_mob() -> Dictionary:
+	clear_discovery()
+	GameTime.advance_turns(1)
+	var m := _mob_cfg()
+	var result: String = "held"
+	var roll: float = RNGService.randf()
+	if roll < float(m.get("watch_kill", 0.1)):
+		result = "killed"
+		var npc := wolverine()
+		npc.die("tundra_wolves")
+		_on_npc_died(npc)
+	elif roll < float(m.get("watch_kill", 0.1)) + float(m.get("watch_drive_off", 0.7)):
+		result = "drove_off"
+	record_decision("tundra.mob.watch")
+	_tundra_record("mob", "watched_" + result)
+	Growth.learn_flat(wolf, "perception", "track_perception")
+	state_changed.emit()
+	return {"result": result}
+
+func leave_tundra_mob() -> void:
+	clear_discovery()
+	record_decision("tundra.mob.leave")
 
 # 回家的下一步（自動遊玩用）：往 target 走的相鄰區域（含跨地圖連接），已經在 target 或走不到就回傳空字串。
 func next_step_toward(target: String) -> String:
@@ -2816,6 +2897,16 @@ func debug_tundra_wolves_here() -> void:
 func debug_tundra_meet() -> Dictionary:
 	debug_tundra_wolves_here()
 	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf")}
+	identify("tundra_wolf")
+	return current_discovery
+
+func debug_tundra_mob() -> Dictionary:
+	debug_tundra_wolves_here()
+	if not _wolverine_alive():
+		npcs["wolverine"] = NpcWolf.create("wolverine", "")
+	current_discovery = {"kind": "tundra_mob", "location": _random_terrain(current_region),
+		"wolverine_known": is_identified("wolverine"), "tundra_known": is_identified("tundra_wolf")}
+	identify("wolverine")
 	identify("tundra_wolf")
 	return current_discovery
 

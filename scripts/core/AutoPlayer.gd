@@ -144,6 +144,17 @@ func _explore_once() -> void:
 	if d.get("kind", "") == "tundra_wolves":
 		_meet_tundra()
 		return
+	if d.get("kind", "") == "tundra_mob":
+		# 強攻型幫苔原狼，謹慎型離開，其他在旁邊看
+		match style:
+			"assault":
+				play_combat(GameState.start_mob_combat())
+				_feed_loop()
+			"cautious":
+				GameState.leave_tundra_mob()
+			_:
+				GameState.watch_tundra_mob()
+		return
 	if d.get("kind", "") != "clue":
 		GameState.clear_discovery()
 		return
