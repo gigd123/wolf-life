@@ -206,18 +206,70 @@ func options() -> Array:
 				list.append(_harass_option())
 				list.append({"id": "attack_standing", "label_key": "hunt.option.attack_standing", "turns": 0, "stamina": 0.0,
 					"factors": [{"key": "factor.standing_danger", "good": false, "weight": 0.0, "info": true}]})
-				return list
-			var opts: Dictionary = _tuning().get("chase", {}).get("options", {})
-			for id in opts.keys():
-				if _option_available(opts[id]):
-					list.append(_chase_option(id))
+			else:
+				var opts: Dictionary = _tuning().get("chase", {}).get("options", {})
+				for id in opts.keys():
+					if _option_available(opts[id]):
+						list.append(_chase_option(id))
 		Stage.FIGHT:
 			for id in FightRules.move_ids():
 				var info := FightRules.chance(wolf, prey_counter_attack, id, fight_state)
 				_add_common_factors(info["factors"])
 				list.append({"id": id, "label_key": "hunt.option." + id, "chance": info["chance"],
 					"factors": info["factors"], "turns": 0, "stamina": 0.0})
+	for opt in list:
+		_annotate(opt)
 	return list
+
+# 代價列（SPEC 1.6「選項的代價與收穫」）：除了體力與回合，再補上
+# trains（練到的能力，來自 balance.json 的 trains）、next_bonus（對下一階段的加成）、
+# injury_risk（這一步可能受傷的機率）。沒有的項目不放。
+func _annotate(opt: Dictionary) -> void:
+	var t := _tuning()
+	var id: String = opt["id"]
+	var cfg: Dictionary = {}
+	match stage:
+		Stage.POUNCE:
+			cfg = _reaction_cfg().get("search", {}) if id == "search" else t.get("pounce", {}).get("options", {}).get(id, {})
+			var risk: float = 0.0
+			if mother_nearby and id != "search":
+				risk = float(_reaction_cfg().get("mother_charge_chance", 0.35))
+			if reaction == "counter" and id != "search":
+				risk = max(risk, (1.0 - float(opt.get("chance", 0.0))) * min(1.0, prey_counter_attack / 100.0 + 0.3))
+			if risk > 0.0:
+				opt["injury_risk"] = risk
+		Stage.OBSERVE:
+			if id == "observe":
+				cfg = t.get("observe", {})
+				opt["next_bonus"] = {"stage": "stalk", "value": float(cfg.get("stalk_bonus", 0.0))}
+		Stage.STALK:
+			cfg = t.get("stalk", {}).get("options", {}).get(id, {})
+			if float(cfg.get("chase_bonus", 0.0)) > 0.0:
+				opt["next_bonus"] = {"stage": "chase", "value": float(cfg["chase_bonus"])}
+		Stage.CHASE:
+			match id:
+				"harass":
+					cfg = _reaction_cfg().get("harass", {})
+					opt["injury_risk"] = (1.0 - float(opt.get("chance", 0.0))) * prey_counter_attack / 100.0
+				"attack_standing":
+					opt["injury_risk"] = min(1.0, prey_counter_attack / 100.0 * float(_reaction_cfg().get("standing_attack", {}).get("counter_mult", 1.5)))
+				_:
+					cfg = t.get("chase", {}).get("options", {}).get(id, {})
+					if depth == "full" and float(cfg.get("fight_bonus", 0.0)) > 0.0:
+						opt["next_bonus"] = {"stage": "fight", "value": float(cfg["fight_bonus"])}
+		Stage.FIGHT:
+			cfg = t.get("fight", {}).get("moves", {}).get(id, {})
+			opt["injury_risk"] = (1.0 - float(opt.get("chance", 0.0))) * FightRules.counter_chance(prey_counter_attack, id, fight_state)
+			if float(cfg.get("next_bonus", 0.0)) > 0.0:
+				opt["next_bonus"] = {"stage": "fight", "value": float(cfg["next_bonus"])}
+	if float(cfg.get("prey_drain", 0.0)) > 0.0:
+		opt["prey_drain"] = float(cfg["prey_drain"])
+	if cfg.has("trains"):
+		opt["trains"] = cfg["trains"]
+
+func _gain_trains(opt: Dictionary) -> void:
+	for stat in opt.get("trains", []):
+		_gain(str(stat))
 
 func _pounce_option(id: String) -> Dictionary:
 	var cfg: Dictionary = _tuning().get("pounce", {})
@@ -232,7 +284,6 @@ func _pounce_option(id: String) -> Dictionary:
 	var t: float = _terrain_mod("stalk") * float(cfg.get("terrain_mult", 0.5))
 	_add_terrain_factor(factors, t)
 	_add_common_factors(factors)
-	_add_turns_factor(factors, int(opt.get("turns", 0)))
 	if mother_nearby:
 		var penalty: float = float(_reaction_cfg().get("mother_pounce_penalty", 0.1))
 		factors.append({"key": "factor.mother_nearby", "good": false, "weight": penalty})
@@ -283,7 +334,6 @@ func _stalk_option(id: String) -> Dictionary:
 		t += stealth
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
-	_add_turns_factor(factors, turns)
 	var value: float = float(cfg.get("base", 0.58)) + diff + w + t + stalk_bonus + float(opt.get("bonus", 0.0))
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": turns, "stamina": float(opt.get("stamina", 0))}
@@ -320,13 +370,15 @@ func _chase_option(id: String) -> Dictionary:
 	if tiring > 0.01:
 		factors.append({"key": "factor.prey_tiring", "good": true, "weight": tiring})
 	t += tiring - fatigue
-	# 追獵型：追擊的體力消耗逐步降低。
-	var cost: float = float(opt.get("stamina", 10)) * (1.0 - _tendency_effect("pursuit"))
+	# 追獵型：追擊的體力消耗逐步降低（顯示在因素欄）。
+	var pursuit: float = _tendency_effect("pursuit")
+	var cost: float = float(opt.get("stamina", 10)) * (1.0 - pursuit)
+	if pursuit > 0.0:
+		factors.append({"key": "factor.tendency.pursuit", "good": true, "weight": 0.0, "info": true, "n": int(round(pursuit * 100.0))})
 	var exhausted: float = 0.15 if wolf.stamina - cost <= 0.0 else 0.0
 	if exhausted > 0.0:
 		factors.append({"key": "factor.tired", "good": false, "weight": exhausted})
 	_add_common_factors(factors)
-	_add_turns_factor(factors, int(opt.get("turns", 0)))
 	var known: float = float(knowledge_bonus.get(id, 0.0))
 	if known > 0.0:
 		factors.append({"key": "factor.knowledge", "good": true, "weight": known})
@@ -357,7 +409,6 @@ func _harass_option() -> Dictionary:
 		factors.append({"key": "factor.unskilled", "good": false, "weight": -diff})
 	factors.append({"key": "factor.counter_risk", "good": false, "weight": 0.0, "info": true})
 	_add_common_factors(factors)
-	_add_turns_factor(factors, int(cfg.get("turns", 1)))
 	return {"id": "harass", "label_key": "hunt.option.harass", "chance": clamp_chance(float(cfg.get("base", 0.55)) + diff),
 		"factors": factors, "turns": int(cfg.get("turns", 1)), "stamina": float(cfg.get("stamina", 10))}
 
@@ -403,10 +454,6 @@ func _add_terrain_factor(factors: Array, bonus: float) -> void:
 	if terrain == "" or absf(bonus) < 0.001:
 		return
 	factors.append({"key": "factor.terrain." + terrain, "good": bonus > 0.0, "weight": absf(bonus)})
-
-func _add_turns_factor(factors: Array, turns: int) -> void:
-	if turns > 0:
-		factors.append({"key": "factor.extra_turns", "good": false, "weight": 0.0, "n": turns, "info": true})
 
 # 飢餓、吃太撐、重傷：只在有影響時列出。
 func _add_common_factors(factors: Array) -> void:
@@ -501,8 +548,7 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 		notes.append("hunt.mother.charge")
 	pounce_bonus = 0.0
 	if _roll(float(opt["chance"])):
-		_gain("speed")
-		_gain("skill")
+		_gain_trains(opt)
 		var won := _kill("hunt.pounce.success")
 		won["notes"] = notes
 		won["damage"] = damage
@@ -528,7 +574,7 @@ func _do_search(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		hiding = false
 		pounce_bonus = float(_reaction_cfg().get("search", {}).get("pounce_bonus", 0.1))
-		_gain("perception")
+		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.hide.found"}
 	# 找不到就失去目標，沒有足跡可追。
 	stage = Stage.DONE
@@ -538,7 +584,7 @@ func _do_search(opt: Dictionary) -> Dictionary:
 func _do_harass(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		reaction = "flee"
-		_gain("skill")
+		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.harass.success"}
 	var cfg := _reaction_cfg()
 	var damage: float = 0.0
@@ -571,7 +617,7 @@ func _do_observe(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		observed = true
 		stalk_bonus = float(cfg.get("stalk_bonus", 0.06))
-		_gain("perception")
+		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.observe.success", "prey_state": prey_state_keys()}
 	# 觀察失敗：獵物察覺到動靜，變得更警覺，但還沒逃。
 	prey_detection += float(cfg.get("fail_alert", 10))
@@ -583,7 +629,7 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		stage = Stage.CHASE
 		chase_bonus = float(stalk_opt.get("chase_bonus", 0.0))
-		_gain("skill")
+		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted}
 	# 選擇繞到下風處時，已經依當下風向重新站位，不算「風向轉了」。
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
@@ -593,7 +639,7 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	chase_round += 1
 	prey_stamina_cur = max(0.0, prey_stamina_cur - float(opt.get("prey_drain", 15)))
 	if _roll(float(opt["chance"])):
-		_gain("speed")
+		_gain_trains(opt)
 		successful_options.append(str(opt["id"]))
 		if depth == "full":
 			stage = Stage.FIGHT
@@ -617,7 +663,7 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 func _do_fight(opt: Dictionary) -> Dictionary:
 	var r := FightRules.resolve_round(wolf, prey_counter_attack, opt["id"], fight_state)
 	if r["success"]:
-		_gain("strength" if opt["id"] == "bite_leg" else "skill")
+		_gain_trains(opt)
 	match r["outcome"]:
 		"kill":
 			_gain("strength")

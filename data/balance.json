@@ -68,26 +68,27 @@
   "hunt": {
     "_comment": "狩獵深度分級與各階段選項（SPEC「狩獵深度分級」「地形」）。選項的 terrain 表示只在該地形出現。",
     "depth_turns": { "simple": 1, "standard": 2, "full": 3 },
+    "_trains_comment": "trains：成功時練到的能力（也顯示在選項的代價列「練：…」）。1.6 第 2 步改為新的成長系統時沿用這份對應。",
     "wind_shift_chance_per_stage": 0.08,
     "pounce": {
       "base": 0.7, "divisor": 200, "wind_mult": 0.5, "terrain_mult": 0.5,
       "options": {
-        "pounce": { "bonus": 0.0, "stamina": 8 },
-        "creep_pounce": { "bonus": 0.1, "stamina": 10, "turns": 1 }
+        "pounce": { "bonus": 0.0, "stamina": 8, "trains": ["skill", "speed"] },
+        "creep_pounce": { "bonus": 0.1, "stamina": 10, "turns": 1, "trains": ["skill", "speed"] }
       }
     },
-    "observe": { "base": 0.65, "perception_divisor": 140, "stalk_bonus": 0.06, "fail_alert": 10 },
+    "observe": { "base": 0.65, "perception_divisor": 140, "stalk_bonus": 0.06, "fail_alert": 10, "trains": ["perception"] },
     "stalk": {
       "base": 0.58, "skill_divisor": 110,
       "wind_bonus": { "headwind": 0.12, "crosswind": 0.0, "tailwind": -0.2 },
       "downwind_turns": { "headwind": 0, "crosswind": 1, "tailwind": 2 },
       "options": {
-        "direct": { "bonus": -0.1, "stamina": 3, "chase_bonus": 0.0 },
-        "downwind": { "bonus": 0.0, "stamina": 6, "chase_bonus": 0.08, "as_headwind": true },
-        "wait": { "bonus": 0.05, "stamina": 1, "chase_bonus": 0.0, "turns": 1 },
-        "upstream": { "bonus": 0.06, "stamina": 8, "chase_bonus": 0.05, "terrain": ["stream"] },
-        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest"] },
-        "edge_strike": { "bonus": 0.0, "stamina": 5, "chase_bonus": 0.15, "terrain": ["forest_edge"] }
+        "direct": { "bonus": -0.1, "stamina": 3, "chase_bonus": 0.0, "trains": ["skill"] },
+        "downwind": { "bonus": 0.0, "stamina": 6, "chase_bonus": 0.08, "as_headwind": true, "trains": ["skill"] },
+        "wait": { "bonus": 0.05, "stamina": 1, "chase_bonus": 0.0, "turns": 1, "trains": ["skill"] },
+        "upstream": { "bonus": 0.06, "stamina": 8, "chase_bonus": 0.05, "terrain": ["stream"], "trains": ["skill"] },
+        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest"], "trains": ["skill"] },
+        "edge_strike": { "bonus": 0.0, "stamina": 5, "chase_bonus": 0.15, "terrain": ["forest_edge"], "trains": ["skill"] }
       }
     },
     "chase": {
@@ -97,12 +98,12 @@
       "escape_base": 0.3, "escape_per_round": 0.1,
       "prey_tired_bonus": 0.25, "precise_perception": 60,
       "options": {
-        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15 },
-        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25 },
-        "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15, "prey_drain": 10 },
-        "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"], "prey_drain": 15 },
-        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"], "prey_drain": 20 },
-        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs"], "prey_drain": 20 }
+        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15, "trains": ["speed"] },
+        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25, "trains": ["speed"] },
+        "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15, "prey_drain": 10, "trains": ["skill", "speed"] },
+        "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"], "prey_drain": 15, "trains": ["speed"] },
+        "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"], "prey_drain": 20, "trains": ["speed"] },
+        "drive_logs": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["fallen_logs"], "prey_drain": 20, "trains": ["speed"] }
       }
     },
     "reactions": {
@@ -111,8 +112,8 @@
       "injured_speed_mult": 0.8,
       "mother_charge_chance": 0.35, "mother_damage_min": 8, "mother_damage_max": 18, "mother_pounce_penalty": 0.1,
       "counter_damage_min": 5, "counter_damage_max": 12,
-      "search": { "base": 0.5, "perception_divisor": 120, "pounce_bonus": 0.1 },
-      "harass": { "base": 0.55, "skill_divisor": 120, "stamina": 10, "turns": 1 },
+      "search": { "base": 0.5, "perception_divisor": 120, "pounce_bonus": 0.1, "trains": ["perception"] },
+      "harass": { "base": 0.55, "skill_divisor": 120, "stamina": 10, "turns": 1, "trains": ["skill", "speed"] },
       "standing_attack": { "penalty": 0.2, "counter_mult": 1.5 },
       "predict_margin": 5
     },
@@ -128,9 +129,9 @@
       "escape_chance_on_fail": 0.25, "extra_round_turns": 1,
       "counter_damage_min": 5, "counter_damage_max": 15, "counter_injury_damage": 12,
       "moves": {
-        "bite_leg": { "bonus": 0.1, "strength_weight": 1.2, "wound": 1, "counter_mult": 0.4 },
-        "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4 },
-        "dodge": { "bonus": 0.1, "strength_weight": 0.2, "next_bonus": 0.1, "counter_reduction": 0.5, "counter_mult": 0.2 }
+        "bite_leg": { "bonus": 0.1, "strength_weight": 1.2, "wound": 1, "counter_mult": 0.4, "trains": ["strength", "skill"] },
+        "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4, "trains": ["skill", "strength"] },
+        "dodge": { "bonus": 0.1, "strength_weight": 0.2, "next_bonus": 0.1, "counter_reduction": 0.5, "counter_mult": 0.2, "trains": ["skill"] }
       }
     }
   },

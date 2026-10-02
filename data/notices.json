@@ -1,0 +1,45 @@
+{
+  "_comment": "轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）。文字都是翻譯鍵，撰寫依 docs/writing-guide.md。",
+  "_season_cards_comment": "季節卡片：full／short 是第一次與之後的描述；if 的條件：identified:<動物> 已辨識、sensed:<動物> 還沒辨識但察覺過危險（{region} 換成察覺最多次的區域）。",
+  "season_cards": {
+    "spring": [
+      { "full": "season_card.spring.full", "short": "season_card.spring.short" },
+      { "if": "identified:grizzly_bear", "text": "season_card.spring.bear_known" },
+      { "if": "sensed:grizzly_bear", "animal": "grizzly_bear", "text": "season_card.spring.bear_sensed" }
+    ],
+    "summer": [
+      { "full": "season_card.summer.full", "short": "season_card.summer.short" }
+    ],
+    "autumn": [
+      { "full": "season_card.autumn.full", "short": "season_card.autumn.short" }
+    ],
+    "winter": [
+      { "full": "season_card.winter.full", "short": "season_card.winter.short" },
+      { "if": "identified:grizzly_bear", "text": "season_card.winter.bear_known" },
+      { "if": "sensed:grizzly_bear", "animal": "grizzly_bear", "text": "season_card.winter.bear_sensed" }
+    ]
+  },
+  "_day_summary_comment": "換日摘要：hunger_tier_N 是飢餓懲罰段數變成 N（0 = 解除）；heavy_healed_<能力> 依重傷影響的能力。",
+  "day_summary": {
+    "hunger_tier_0": "day_summary.hunger_recovered",
+    "hunger_tier_1": "day_summary.hunger_low",
+    "hunger_tier_2": "day_summary.hunger_severe",
+    "light_healed": "day_summary.light_healed",
+    "heavy_healed": "day_summary.heavy_healed",
+    "heavy_healed_speed": "day_summary.heavy_healed_speed",
+    "heavy_healed_strength": "day_summary.heavy_healed_strength",
+    "poison_healed": "day_summary.poison_healed"
+  },
+  "_sleep_summary_comment": "睡覺結算的原因句：速度或力量提升時顯示，鍵為「飽食.活動」。飽食：full（飽食度 ≥ full_hunger）、ok、hungry（飢餓懲罰中）；活動：chase（追擊較多）、fight（搏鬥較多）。",
+  "sleep_summary": {
+    "full_hunger": 70,
+    "reasons": {
+      "full.chase": "sleep_reason.full_chase",
+      "full.fight": "sleep_reason.full_fight",
+      "ok.chase": "sleep_reason.ok_chase",
+      "ok.fight": "sleep_reason.ok_fight",
+      "hungry.chase": "sleep_reason.hungry_chase",
+      "hungry.fight": "sleep_reason.hungry_fight"
+    }
+  }
+}

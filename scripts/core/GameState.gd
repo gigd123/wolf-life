@@ -50,6 +50,8 @@ var avoid_bear: Dictionary = {}
 var carcasses: Array = []
 
 var life_log: Dictionary = {}
+# 自動遊玩（除錯「模擬到死亡」）期間不產生提示卡片。
+var auto_playing: bool = false
 
 func new_game(start_den: String) -> void:
 	RNGService.randomize_seed()
@@ -85,6 +87,8 @@ func new_game(start_den: String) -> void:
 	var start_season: String = GameData.balance.get("start_season", "winter")
 	GameTime.setup(start_season, "normal")
 	_connect_time_signals()
+	_snapshot_sleep_stats()
+	_queue_season_card()
 	SaveSystem.save_game()
 	state_changed.emit()
 
@@ -114,8 +118,12 @@ func _on_period_changed(_period_index: int) -> void:
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
 	events_today = 0
+	var before_injury: int = wolf.injury if wolf != null else Wolf.Injury.NONE
+	var before_injury_stat: String = wolf.injury_stat if wolf != null else ""
+	var before_poison: int = wolf.poison_days_remaining if wolf != null else 0
 	_process_daily_recovery()
 	_apply_daily_hunger_penalty()
+	_queue_day_summary(before_injury, before_injury_stat, before_poison)
 	_recover_region_depletion()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
@@ -125,6 +133,110 @@ func _on_season_changed(_season_index: int) -> void:
 		wolf.age_years += 0.25
 		_apply_elder_decay()
 	log_message.emit(tr("log.season_changed"))
+	_queue_season_card()
+
+# --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
+# 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
+
+func _queue_notice(event: Dictionary) -> void:
+	if auto_playing or wolf == null or not wolf.alive:
+		return
+	pending_events.append(event)
+
+# 季節卡片：第一次經歷某個季節顯示完整描述，之後顯示精簡版；變化依這隻狼的辨識與知識決定。
+func _queue_season_card() -> void:
+	var season: String = GameTime.current_season()
+	var seen: Array = life_log.get("seasons_seen", [])
+	var first: bool = not seen.has(season)
+	if first:
+		seen.append(season)
+		life_log["seasons_seen"] = seen
+	var lines: Array = []
+	for line in GameData.notices.get("season_cards", {}).get(season, []):
+		if line.has("full"):
+			lines.append({"key": str(line["full"] if first else line["short"])})
+		elif _notice_condition(str(line.get("if", ""))):
+			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
+	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines})
+
+func _notice_condition(cond: String) -> bool:
+	var parts: PackedStringArray = cond.split(":")
+	if parts.size() != 2:
+		return cond == ""
+	match parts[0]:
+		"identified": return is_identified(parts[1])
+		"sensed": return not is_identified(parts[1]) and _sensed_region(parts[1]) != ""
+	return false
+
+# 還沒辨識、但已經在某個區域察覺過的危險來源（記得最清楚的那一區）。
+func _sensed_region(animal_id: String) -> String:
+	var best: String = ""
+	var best_count: int = 0
+	for entry in knowledge.values():
+		if entry.get("type", "") == "danger" and entry.get("animal", "") == animal_id and int(entry.get("count", 0)) > best_count:
+			best = str(entry["region"])
+			best_count = int(entry["count"])
+	return best
+
+# 飢餓懲罰的段數：0 無、1 輕度（低於 30）、2 重度（低於 10）。
+func hunger_tier() -> int:
+	var p: Dictionary = GameData.balance.get("hunger_penalties", {})
+	if wolf.hunger < float(p.get("severe_threshold", 10)):
+		return 2
+	if wolf.hunger < float(p.get("low_threshold", 30)):
+		return 1
+	return 0
+
+# 換日摘要：飢餓懲罰生效或解除、傷勢與中毒痊癒時才顯示（舊傷在第 3 步加入）。
+func _queue_day_summary(before_injury: int, before_injury_stat: String, before_poison: int) -> void:
+	if wolf == null or not wolf.alive:
+		return
+	var cfg: Dictionary = GameData.notices.get("day_summary", {})
+	var lines: Array = []
+	var tier: int = hunger_tier()
+	var last_tier: int = int(life_log.get("hunger_tier", 0))
+	if tier != last_tier:
+		lines.append({"key": str(cfg.get("hunger_tier_%d" % tier, ""))})
+		life_log["hunger_tier"] = tier
+	if before_injury != Wolf.Injury.NONE and wolf.injury == Wolf.Injury.NONE:
+		if before_injury == Wolf.Injury.HEAVY:
+			lines.append({"key": str(cfg.get("heavy_healed_" + before_injury_stat, cfg.get("heavy_healed", "")))})
+		else:
+			lines.append({"key": str(cfg.get("light_healed", ""))})
+	if before_poison > 0 and wolf.poison_days_remaining <= 0:
+		lines.append({"key": str(cfg.get("poison_healed", ""))})
+	if not lines.is_empty():
+		_queue_notice({"type": "day_summary", "lines": lines, "day": int(life_log.get("days_lived", 1))})
+
+# 睡覺結算：記下這次睡覺時的能力值，下次睡覺時比較。
+const SLEEP_SUMMARY_STATS := ["speed", "strength", "skill", "perception"]
+
+func _snapshot_sleep_stats() -> void:
+	var snap: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		snap[stat] = float(wolf.get(stat))
+	life_log["sleep_snapshot"] = snap
+	life_log["since_sleep"] = {}
+
+# 上次睡覺到現在提升的能力，以及速度或力量提升時的原因句（依飽食度與活動組合）。
+func sleep_summary() -> Dictionary:
+	var snap: Dictionary = life_log.get("sleep_snapshot", {})
+	var gains: Array = []
+	for stat in SLEEP_SUMMARY_STATS:
+		if snap.has(stat) and float(wolf.get(stat)) > float(snap[stat]) + 0.001:
+			gains.append(stat)
+	var reason: String = ""
+	if gains.has("speed") or gains.has("strength"):
+		var cfg: Dictionary = GameData.notices.get("sleep_summary", {})
+		var since: Dictionary = life_log.get("since_sleep", {})
+		var fed: String = "hungry" if hunger_tier() > 0 else ("full" if wolf.hunger >= float(cfg.get("full_hunger", 70)) else "ok")
+		var activity: String = "chase" if int(since.get("chase", 0)) >= int(since.get("fight", 0)) else "fight"
+		if not gains.has("speed"):
+			activity = "fight"
+		elif not gains.has("strength"):
+			activity = "chase"
+		reason = str(cfg.get("reasons", {}).get(fed + "." + activity, ""))
+	return {"gains": gains, "reason": reason}
 
 func _apply_elder_decay() -> void:
 	if wolf.life_stage() != Wolf.LifeStage.ELDER:
@@ -697,11 +809,13 @@ func action_sleep() -> Dictionary:
 	if not encounter.get("encountered", false) and quality != "rough":
 		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
 	sleep_spot_here = ""
+	var summary := sleep_summary()
+	_snapshot_sleep_stats()
 	SaveSystem.save_game()
 	state_changed.emit()
 	if encounter.get("encountered", false):
 		encounter_triggered.emit(prepare_bear_encounter(encounter))
-	return {"quality": quality, "interrupted": encounter.get("encountered", false)}
+	return {"quality": quality, "interrupted": encounter.get("encountered", false), "summary": summary}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
 # from_tracking：經由追蹤找到獵物時累積一次感知經驗。terrain：遭遇時的地形，空字串則隨機取區域的地形。
@@ -816,28 +930,51 @@ func record_decision(decision: String) -> void:
 	while list.size() > int(cfg.get("window", 30)):
 		list.pop_front()
 	life_log["decisions"] = list
-	var current: String = str(current_tendency().get("type", ""))
-	var history: Array = life_log.get("tendency_history", [])
-	if current != "" and (history.is_empty() or history[-1]["type"] != current):
-		history.append({"type": current, "age": snapped(wolf.age_years, 0.1), "day": int(life_log.get("days_lived", 1))})
-		life_log["tendency_history"] = history
+	var since: Dictionary = life_log.get("since_sleep", {})
+	if decision.begins_with("chase."):
+		since["chase"] = int(since.get("chase", 0)) + 1
+	elif decision.begins_with("fight.") or decision in ["bear.fight", "scavenger.guard"]:
+		since["fight"] = int(since.get("fight", 0)) + 1
+	life_log["since_sleep"] = since
+	_update_main_tendency()
 
-func current_tendency() -> Dictionary:
+# 主要傾向的遲滯判定（SPEC 1.6「狩獵傾向」）：累積 min_decisions 次後才判定；
+# 新傾向的比例要比目前的主要傾向多 switch_margin 才轉變。
+func _update_main_tendency() -> void:
 	var cfg: Dictionary = GameData.tendency
 	var list: Array = life_log.get("decisions", [])
-	if list.size() < int(cfg.get("min_decisions", 5)):
-		return {}
+	if list.size() < int(cfg.get("min_decisions", 10)):
+		return
+	var shares := tendency_shares()
 	var best: String = ""
-	var best_count: int = 0
 	for t in cfg.get("types", []):
-		var c: int = list.count(t)
-		if c > best_count:
+		if float(shares.get(t, 0.0)) > 0.0 and (best == "" or float(shares[t]) > float(shares[best])):
 			best = t
-			best_count = c
+	var current: String = str(life_log.get("main_tendency", ""))
+	if best == "" or best == current:
+		return
+	if current != "" and float(shares[best]) - float(shares.get(current, 0.0)) < float(cfg.get("switch_margin", 0.1)) - 0.0001:
+		return
+	life_log["main_tendency"] = best
+	var history: Array = life_log.get("tendency_history", [])
+	history.append({"type": best, "age": snapped(wolf.age_years, 0.1), "day": int(life_log.get("days_lived", 1))})
+	life_log["tendency_history"] = history
+	_queue_notice({"type": "tendency_changed", "tendency": best, "from": current})
+
+# 最近 window 次決策中，各傾向所佔的比例（分母含不屬於任何傾向的決策）。
+func tendency_shares() -> Dictionary:
+	var list: Array = life_log.get("decisions", [])
+	var shares: Dictionary = {}
+	for t in GameData.tendency.get("types", []):
+		shares[t] = float(list.count(t)) / float(list.size()) if not list.is_empty() else 0.0
+	return shares
+
+func current_tendency() -> Dictionary:
+	var best: String = str(life_log.get("main_tendency", ""))
 	if best == "":
 		return {}
-	var share: float = float(best_count) / float(list.size())
-	return {"type": best, "share": share, "effect": float(cfg.get("max_effect", 0.15)) * share}
+	var share: float = float(tendency_shares().get(best, 0.0))
+	return {"type": best, "share": share, "effect": float(GameData.tendency.get("max_effect", 0.15)) * share}
 
 func tendency_effect(type: String) -> float:
 	var t := current_tendency()
@@ -1233,6 +1370,10 @@ func debug_set_stat(stat_name: String, value: float) -> void:
 		"age_years": wolf.age_years = value
 	wolf.clamp_stats()
 	state_changed.emit()
+
+# 除錯「模擬到死亡」跑到年齡上限時，直接結束這一生。
+func debug_end_life(cause: String) -> void:
+	_die(cause)
 
 func debug_skip_day() -> void:
 	GameTime.advance_turns(GameTime.TURNS_PER_PERIOD * GameTime.PERIODS.size())

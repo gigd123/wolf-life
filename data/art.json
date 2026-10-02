@@ -58,7 +58,25 @@
     "item.mushroom": "res://assets/art/icons/mushroom.png",
     "item.beehive": "res://assets/art/icons/honeycomb.png",
     "den_marker": "res://assets/art/icons/den_marker.png",
-    "wind": "res://assets/art/icons/wind.png"
+    "wind": "res://assets/art/icons/wind.png",
+    "stat.speed": "res://assets/art/icons/stat_speed.png",
+    "stat.strength": "res://assets/art/icons/stat_strength.png",
+    "stat.skill": "res://assets/art/icons/stat_skill.png",
+    "stat.perception": "res://assets/art/icons/stat_perception.png",
+    "stat.health": "res://assets/art/icons/stat_health.png",
+    "stat.stamina": "res://assets/art/icons/stat_stamina.png",
+    "cost.turns": "res://assets/art/icons/cost_turns.png",
+    "cost.injury_risk": "res://assets/art/icons/cost_injury_risk.png",
+    "tendency.stealth": "res://assets/art/icons/tendency_stealth.png",
+    "tendency.pursuit": "res://assets/art/icons/tendency_pursuit.png",
+    "tendency.assault": "res://assets/art/icons/tendency_assault.png",
+    "tendency.cautious": "res://assets/art/icons/tendency_cautious.png"
+  },
+  "season_backgrounds": {
+    "spring": "res://assets/art/backgrounds/seasons/season_spring.png",
+    "summer": "res://assets/art/backgrounds/seasons/season_summer.png",
+    "autumn": "res://assets/art/backgrounds/seasons/season_autumn.png",
+    "winter": "res://assets/art/backgrounds/seasons/season_winter.png"
   },
   "_period_tint_comment": "時段光線（CLAUDE.md：用程式調色，不另外出圖）：乘在背景上的顏色。",
   "period_tint": {

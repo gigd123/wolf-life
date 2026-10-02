@@ -1,7 +1,8 @@
 {
-  "_comment": "狩獵傾向（SPEC「經歷與一生回顧」）：依最近 window 次狩獵決策的比例計算，主要傾向的效果 = max_effect × 該傾向的比例。",
+  "_comment": "狩獵傾向（SPEC「經歷與一生回顧」）：依最近 window 次狩獵決策的比例計算，主要傾向的效果 = max_effect × 該傾向的比例。至少 min_decisions 次才判定；新傾向的比例要比目前的主要傾向多 switch_margin 才轉變（SPEC 1.6「狩獵傾向」）。觀察與閃避不計入謹慎型。",
   "window": 30,
-  "min_decisions": 5,
+  "min_decisions": 10,
+  "switch_margin": 0.1,
   "max_effect": 0.15,
   "types": ["stealth", "pursuit", "assault", "cautious"],
   "decision_map": {
@@ -15,8 +16,6 @@
     "chase.follow": "pursuit",
     "chase.attack_standing": "assault",
     "fight.bite_throat": "assault",
-    "fight.dodge": "cautious",
-    "observe.observe": "cautious",
     "give_up": "cautious",
     "avoid": "cautious",
     "scavenger.guard": "assault",

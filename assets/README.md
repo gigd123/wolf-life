@@ -34,16 +34,16 @@
 | `icons/{berry,mushroom,honeycomb,den_marker}.png` | 採集物、巢穴標記 | `wolf_assets/icons` | 16×16 |
 | `icons/clue_{claw,scent,sight,sound,track,unknown}.png`、`wind.png` | 線索與風向圖示 | `phase1.5_art/*_1x` | 16×16 |
 
-## Phase 1.6 佔位素材（已放入、尚未接上）
+## Phase 1.6 佔位素材
 
-2026-10-02 加入 45 個 1.6 佔位素材，原始壓縮檔在 `arts/phase1.6_art.zip`，預覽圖 `arts/phase1.6_art_preview.png`，清單與用途見 `docs/art_phase1.6.md`。依 1.6 各步驟需要再寫進 `data/art.json`，並把接上的項目補進上面的目錄表。
+2026-10-02 加入 45 個 1.6 佔位素材，原始壓縮檔在 `arts/phase1.6_art.zip`，預覽圖 `arts/phase1.6_art_preview.png`，清單與用途見 `docs/art_phase1.6.md`。依 1.6 各步驟需要再寫進 `data/art.json`。第 1 步的項目已接上（`art.json` 的 `icons` 鍵 `stat.*`、`cost.*`、`tendency.*`，與 `season_backgrounds`）。
 
 | 路徑 | 內容 | 1.6 步驟 |
 | --- | --- | --- |
-| `icons/stat_{speed,strength,skill,perception,health,stamina}.png` | 能力圖示 | 1（代價列、睡覺結算） |
-| `icons/cost_{turns,injury_risk}.png` | 代價列：多花回合、受傷風險 | 1 |
-| `icons/tendency_{stealth,pursuit,assault,cautious}.png` | 狩獵傾向圖示 | 1 |
-| `backgrounds/seasons/season_{spring,summer,autumn,winter}.png` | 季節卡片背景，640×360 | 1 |
+| `icons/stat_{speed,strength,skill,perception,health,stamina}.png` | 能力圖示 | 1（代價列、睡覺結算）**已接上** |
+| `icons/cost_{turns,injury_risk}.png` | 代價列：多花回合、受傷風險 | 1 **已接上** |
+| `icons/tendency_{stealth,pursuit,assault,cautious}.png` | 狩獵傾向圖示 | 1（頂部傾向按鈕、說明面板）**已接上** |
+| `backgrounds/seasons/season_{spring,summer,autumn,winter}.png` | 季節卡片背景，640×360 | 1 **已接上** |
 | `sprites/wolf/wolf_adult_*`、`wolf_elder_*` | 成年、老年狼（sheet 格式同 `wolf_sheet.png`，加單張姿勢） | 2 |
 | `sprites/wolf/wolf_{threaten,bite,dodge,hurt,submit}.png` | 狼的戰鬥姿勢 | 3 |
 | `sprites/wolf/wolf_stranger_sheet.png`、`wolf_stranger_*` | 陌生灰狼（黑狼）的動畫、跟蹤、撲擊與戰鬥姿勢 | 4 |

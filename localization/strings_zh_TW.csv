@@ -112,25 +112,25 @@ hunt.result.success,狩獵成功
 hunt.result.fail,這次狩獵失敗了
 hunt.stage.observe,觀察階段：遠處有一隻{animal}
 hunt.stage.pounce,{animal}就在附近
-hunt.option.pounce,撲抓（一次判定）
-hunt.option.creep_pounce,靠近一點再撲（多 1 回合 較穩）
-hunt.option.observe,觀察（看感知 獵物可能察覺）
-hunt.option.skip_observe,不觀察 直接潛近
-hunt.option.direct,正面接近（最快 容易被發現）
-hunt.option.downwind,繞到下風處（看技巧 追擊起點較近）
-hunt.option.wait,伏低等待（幾乎不耗體力）
-hunt.option.upstream,繞到上游（耗體力 從側面接近）
-hunt.option.ambush,伏擊（在獵物路徑上等待）
-hunt.option.edge_strike,從林中突襲（成功時追擊起點很近）
-hunt.option.sprint,全力衝刺（耗大量體力 看速度）
-hunt.option.follow,保持跟隨（省體力 搏鬥稍有利）
-hunt.option.flank,切側翼（看技巧 成功後搏鬥位置有利）
-hunt.option.drive_forest,驅趕向密林（成功後獵物速度下降）
-hunt.option.drive_stream,逼向溪流（成功後獵物速度大降）
-hunt.option.drive_logs,逼向倒木區（成功後獵物難以脫身）
-hunt.option.bite_leg,咬後腿（安全 需要多回合）
-hunt.option.bite_throat,直取咽喉（一擊制伏 失敗易被反擊）
-hunt.option.dodge,閃避等待破綻（看技巧 降低下次被反擊）
+hunt.option.pounce,撲抓
+hunt.option.creep_pounce,靠近再撲
+hunt.option.observe,觀察
+hunt.option.skip_observe,直接潛近
+hunt.option.direct,正面接近
+hunt.option.downwind,繞到下風
+hunt.option.wait,伏低等待
+hunt.option.upstream,繞到上游
+hunt.option.ambush,伏擊
+hunt.option.edge_strike,林中突襲
+hunt.option.sprint,全力衝刺
+hunt.option.follow,保持跟隨
+hunt.option.flank,切側翼
+hunt.option.drive_forest,趕向密林
+hunt.option.drive_stream,逼向溪流
+hunt.option.drive_logs,逼向倒木
+hunt.option.bite_leg,咬後腿
+hunt.option.bite_throat,直取咽喉
+hunt.option.dodge,閃避等待
 hunt.pounce.success,你一撲就抓住了{animal}
 hunt.pounce.fail,{animal}閃開了
 hunt.observe.success,你仔細觀察了牠：
@@ -291,9 +291,9 @@ scavenger.result.abandon,你放棄了獵物 退到安全的地方
 scavenger.result.drive,你把狐狸趕走了
 scavenger.result.ignore,狐狸叼走了一塊肉
 explore.injured,受傷的
-hunt.option.search,找出牠（看感知 失敗就失去目標）
-hunt.option.harass,騷擾逼牠逃跑（看技巧 可能被反擊）
-hunt.option.attack_standing,直接攻擊（非常危險）
+hunt.option.search,找出牠
+hunt.option.harass,騷擾驅趕
+hunt.option.attack_standing,直接攻擊
 hunt.chase.continue,{animal}拉開了距離 但還在視線內
 hunt.chase.round,第 {n} 回合
 hunt.hide.start,{animal}躲了起來
@@ -342,7 +342,6 @@ factor.chase_bonus,已佔好位置
 factor.hungry,飢餓虛弱
 factor.overfed,吃太撐
 factor.injured,重傷未癒
-factor.extra_turns,多花 {n} 回合
 reason.wind_turned,風向轉了 {animal}聞到了你
 reason.wind_tailwind,你在上風處 {animal}聞到了你
 reason.prey_alert,{animal}太警覺了
@@ -436,7 +435,68 @@ death_bio.unknown,離開了這片森林
 factor.tendency.stealth,潛伏的習慣
 factor.tendency.cautious,謹慎的習慣
 factor.tendency.assault,強攻的習慣
+factor.tendency.pursuit,追獵的習慣：體力 -{n}%
 death.starvation,餓死
 death.injury,傷重不治
 death.old_age,老死
 death.unknown,未知
+cost.stamina,體力 -{n}
+cost.turns,多 {n} 回合
+cost.next_bonus,{stage} +{n}%
+cost.trains,練：{list}
+cost.injury_risk,受傷 {n}%
+cost.prey_drain,獵物體力 -{n}
+cost.stage.stalk,潛近
+cost.stage.chase,追擊
+cost.stage.fight,搏鬥
+ui.day_toast,第 {n} 天・{season}
+ui.day_summary.title,第 {n} 天
+sleep_summary.today,今天：
+season_card.title,{season}天
+season_card.spring.full,積雪一塊塊融化，溪水漲了起來，帶著泥土的氣味。在北方雲杉林避寒的鹿群散開了，回到各處的林地。
+season_card.spring.short,雪融了，鹿群從北方的雲杉林散開。
+season_card.spring.bear_known,灰熊醒了。餓了一整個冬天，牠們會在林間四處翻找食物。
+season_card.spring.bear_sensed,入冬前在{region}聞到的那股氣味，也許又會回來。
+season_card.summer.full,白晝變長，林子裡又悶又熱。灌木結出了漿果，一串串垂在枝頭。溪邊的蚊蚋整天嗡嗡作響。
+season_card.summer.short,漿果又熟了，林子裡悶熱起來。
+season_card.autumn.full,葉子轉黃，一片片落在林間的小徑上。漿果還掛在枝頭，倒木下冒出了蘑菇。夜裡的風開始帶著涼意。
+season_card.autumn.short,葉子黃了，倒木下又冒出蘑菇。
+season_card.winter.full,第一場雪落下後，森林安靜了下來。漿果早已不見，溪水邊結了一層薄冰。北部的雲杉林裡，鹿的足跡越來越多，牠們正往那裡聚集避寒。
+season_card.winter.short,雪又來了。鹿群再次往北方的雲杉林聚集。
+season_card.winter.bear_known,灰熊的氣味從林間消失了，牠們大概找了個地方，睡過這個冬天。
+season_card.winter.bear_sensed,{region}那股陌生而危險的氣味，不知何時淡了。
+day_summary.hunger_recovered,這幾天總算吃飽了，身體慢慢緩了過來。
+day_summary.hunger_low,長久吃不飽，你的肋骨一根根浮了出來。
+day_summary.hunger_severe,飢餓啃著你的身體，每一步都比昨天沉重。
+day_summary.light_healed,身上的小傷已經結痂，不再牽動你的步伐。
+day_summary.heavy_healed,那道深深的傷口終於癒合了。
+day_summary.heavy_healed_speed,後腿的傷終於不再作痛。
+day_summary.heavy_healed_strength,肩上的傷終於不再作痛，你又能用力撕咬了。
+day_summary.poison_healed,肚子裡那股翻攪終於平息了。
+sleep_reason.full_chase,這幾天吃得很飽，追擊又多，你的腿更有力了。
+sleep_reason.full_fight,這幾天吃得很飽，又幾番撲咬纏鬥，你的頸背更結實了。
+sleep_reason.ok_chase,這幾天的追逐，讓你的腿更有力了。
+sleep_reason.ok_fight,幾番撲咬纏鬥，讓你的頸背更結實了。
+sleep_reason.hungry_chase,雖然常常餓著肚子，這幾天的追逐還是讓你的腿更有力了。
+sleep_reason.hungry_fight,雖然常常餓著肚子，幾番纏鬥還是讓你更結實了。
+ui.tendency.title,狩獵傾向
+ui.tendency.recent,最近 {n} 次決策中的比例
+ui.tendency.none,還看不出你的狩獵習慣（再 {n} 次決策）
+ui.tendency.main,主要傾向：{name}
+ui.tendency.switch_hint,其他傾向的比例要高出 {n} 個百分點，才會轉變。
+tendency_effect.stealth,潛近成功率 +{n}%
+tendency_effect.pursuit,追擊體力消耗 -{n}%
+tendency_effect.assault,搏鬥成功率 +{n}%
+tendency_effect.cautious,觀察成功率 +{n}%　遭遇危險的機率 -{n}%
+tendency_change.title,你的狩獵方式變了
+tendency_change.stealth,你越來越習慣伏低身子，借著風和地形一點一點靠近。
+tendency_change.pursuit,你越來越願意長距離地追，跑得久，也跑得省力。
+tendency_change.assault,你越來越常正面撲上去，用力量和牙齒結束一場狩獵。
+tendency_change.cautious,你越來越懂得在不對勁的時候抽身，不去冒不必要的險。
+debug.section.auto,模擬到死亡
+debug.auto.prey.small_only,只吃小獵物
+debug.auto.prey.deer_focus,以鹿為主
+debug.auto.style.cautious,謹慎
+debug.auto.style.assault,強攻
+debug.auto.start,開始
+debug.auto.running,模擬中：第 {n} 天，{age} 歲

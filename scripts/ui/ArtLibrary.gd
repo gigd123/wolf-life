@@ -67,6 +67,14 @@ static func terrain_background(terrain: String) -> Texture2D:
 static func icon(key: String) -> Texture2D:
 	return texture(str(_cfg().get("icons", {}).get(key, "")))
 
+# 圖示的路徑（給 RichTextLabel 的 [img] 用）；檔案不存在時回傳空字串。
+static func icon_path(key: String) -> String:
+	var path: String = str(_cfg().get("icons", {}).get(key, ""))
+	return path if path != "" and ResourceLoader.exists(path) else ""
+
+static func season_background(season: String) -> Texture2D:
+	return texture(str(_cfg().get("season_backgrounds", {}).get(season, "")))
+
 static func period_tint(period: String) -> Color:
 	var c: Array = _cfg().get("period_tint", {}).get(period, [1, 1, 1])
 	return Color(float(c[0]), float(c[1]), float(c[2]))

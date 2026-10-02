@@ -43,6 +43,21 @@ var rain: CPUParticles2D
 var debug_overlay: Panel
 var debug_spins: Dictionary = {}
 
+# 轉變與回饋提示（SPEC 1.6）：全畫面卡片（季節、換日摘要、傾向）、不擋操作的淡入提示、頂部的傾向按鈕。
+var card_overlay: Panel
+var card_bg: TextureRect
+var card_title: Label
+var card_body: RichTextLabel
+var card_buttons_box: HBoxContainer
+var toast: RichTextLabel
+var toast_tween: Tween
+var tendency_button: Button
+
+# 除錯「模擬到死亡」
+var auto_player: AutoPlayer = null
+var auto_status: Label
+const AUTO_DAYS_PER_FRAME := 2
+
 func _ready() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
@@ -51,8 +66,9 @@ func _ready() -> void:
 	GameState.log_message.connect(_log)
 	GameState.wolf_died.connect(_on_wolf_died)
 	GameState.encounter_triggered.connect(_on_encounter_triggered)
-	GameState.growth_applied.connect(func(): Audio.play_level_up())
+	GameState.growth_applied.connect(func(): if not GameState.auto_playing: Audio.play_level_up())
 	GameState.knowledge_learned.connect(func(entry): _log(tr("log.knowledge_learned") + _knowledge_text(entry)))
+	GameTime.day_changed.connect(func(_d): _show_day_toast.call_deferred())
 	_refresh()
 	Audio.play_bgm()
 	Audio.play_howl()
@@ -107,6 +123,14 @@ func _build_ui() -> void:
 	top_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_label.clip_text = true
 	top_row.add_child(top_label)
+
+	# 目前的主要狩獵傾向，點了打開說明面板
+	tendency_button = Button.new()
+	tendency_button.flat = true
+	tendency_button.visible = false
+	tendency_button.expand_icon = false
+	tendency_button.pressed.connect(_show_tendency_panel)
+	top_row.add_child(tendency_button)
 
 	var status_row := HBoxContainer.new()
 	top_row.add_child(status_row)
@@ -230,6 +254,8 @@ func _build_ui() -> void:
 	_build_rest_overlay()
 	_build_region_info_overlay()
 	_build_rain()
+	_build_card_overlay()
+	_build_toast()
 	_build_debug_overlay()
 
 # --- 美術（data/art.json；找不到圖時退回 PixelArt 程式生成的佔位圖） ---
@@ -333,7 +359,7 @@ func _build_hunt_overlay() -> void:
 	center.anchor_bottom = 1.0
 	hunt_overlay.add_child(center)
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(380, 0)
+	box.custom_minimum_size = Vector2(560, 0)
 	center.add_child(box)
 	var sprite_center := CenterContainer.new()
 	box.add_child(sprite_center)
@@ -350,6 +376,7 @@ func _build_hunt_overlay() -> void:
 	hunt_message.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(hunt_message)
 	hunt_buttons_box = VBoxContainer.new()
+	hunt_buttons_box.add_theme_constant_override("separation", 3)
 	box.add_child(hunt_buttons_box)
 
 func _build_rest_overlay() -> void:
@@ -519,6 +546,32 @@ func _build_debug_overlay() -> void:
 		GameState.pending_events.append({"type": "bear_passing", "health": 0.0, "stamina": 0.0})
 		_refresh()
 	)
+	# 模擬到死亡（1.6 第 1 步，驗收 1.5 的「兩隻風格相反的狼」）
+	right.add_child(_debug_section_label("debug.section.auto"))
+	var auto_row := HBoxContainer.new()
+	right.add_child(auto_row)
+	var den_pick := OptionButton.new()
+	for region_id in REGION_ORDER:
+		if EncounterSystem.region_data(region_id).get("can_den", false):
+			den_pick.add_item(tr("region." + region_id))
+			den_pick.set_item_metadata(den_pick.item_count - 1, region_id)
+	auto_row.add_child(den_pick)
+	var prey_pick := OptionButton.new()
+	for p in ["small_only", "deer_focus"]:
+		prey_pick.add_item(tr("debug.auto.prey." + p))
+		prey_pick.set_item_metadata(prey_pick.item_count - 1, p)
+	auto_row.add_child(prey_pick)
+	var style_pick := OptionButton.new()
+	for st in ["cautious", "assault"]:
+		style_pick.add_item(tr("debug.auto.style." + st))
+		style_pick.set_item_metadata(style_pick.item_count - 1, st)
+	auto_row.add_child(style_pick)
+	_debug_button(auto_row, tr("debug.auto.start"), func():
+		_start_auto_play(str(den_pick.get_item_metadata(den_pick.selected)),
+			str(prey_pick.get_item_metadata(prey_pick.selected)), str(style_pick.get_item_metadata(style_pick.selected)))
+	)
+	auto_status = Label.new()
+	right.add_child(auto_status)
 	_debug_button(right, tr("debug.playtest_stats"), func():
 		debug_overlay.visible = false
 		_show_playtest_stats()
@@ -574,7 +627,7 @@ func _get_wolf_stat(key: String) -> float:
 	return 0.0
 
 func _refresh() -> void:
-	if GameState.wolf == null:
+	if GameState.wolf == null or GameState.auto_playing:
 		return
 	var w: Wolf = GameState.wolf
 	top_label.text = "%s   %s D%d %s%s   |   %s" % [
@@ -585,10 +638,12 @@ func _refresh() -> void:
 		"" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather),
 		tr("stage." + _stage_key(w.life_stage())),
 	]
-	# 只顯示目前的主要狩獵方式（不跳解鎖通知）
+	# 目前的主要狩獵方式（按鈕，點了看說明）
 	var tendency: Dictionary = GameState.current_tendency()
+	tendency_button.visible = not tendency.is_empty()
 	if not tendency.is_empty():
-		top_label.text += "   |   " + tr("tendency." + str(tendency["type"]))
+		tendency_button.text = tr("tendency." + str(tendency["type"]))
+		tendency_button.icon = ArtLibrary.icon("tendency." + str(tendency["type"]))
 	rain.emitting = GameState.weather == "storm"
 	region_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
 	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period())
@@ -644,7 +699,7 @@ func _stage_key(stage: int) -> String:
 		_: return "elder"
 
 func _log(text: String) -> void:
-	if text == "":
+	if text == "" or GameState.auto_playing:
 		return
 	log_box.append_text(text + "\n")
 
@@ -695,6 +750,7 @@ func _on_action_button(action_id: String) -> void:
 				_log(tr("log.slept." + str(res["quality"])))
 				if res.get("interrupted", false):
 					_log(tr("log.sleep_interrupted"))
+				_show_sleep_summary(res.get("summary", {}))
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
@@ -988,7 +1044,7 @@ func _build_rain() -> void:
 
 func _overlay_busy() -> bool:
 	return current_hunt != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
-		or debug_overlay.visible or region_info_overlay.visible
+		or debug_overlay.visible or region_info_overlay.visible or card_overlay.visible
 
 # 目前的行動結束、沒有其他畫面開著時，依序處理世界主動找上門的事件。
 func _process_events() -> void:
@@ -1013,6 +1069,15 @@ func _process_events() -> void:
 			return
 		"bear_passing":
 			_show_bear_passing(event)
+			return
+		"season_card":
+			_show_season_card(event)
+			return
+		"day_summary":
+			_show_day_summary(event)
+			return
+		"tendency_changed":
+			_show_tendency_changed(event)
 			return
 	_refresh()
 
@@ -1300,21 +1365,79 @@ func _hunt_prey_name() -> String:
 func _prey_name(animal_id: String, life_stage: String) -> String:
 	return TextFormat.prey_name(animal_id, life_stage)
 
-# info 是 HuntSystem.chance_* 的結果：按鈕顯示成功率，下方列出關鍵因素。
+# info 是 HuntSystem.options() 的一項：左邊是按鈕（名稱與成功率），右邊兩行是代價列與關鍵因素。
 func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	hunt_buttons_box.add_child(row)
 	var btn := Button.new()
 	btn.text = label
 	if info.has("chance"):
 		btn.text += "　%d%%" % int(round(float(info["chance"]) * 100.0))
+	btn.custom_minimum_size = Vector2(140, 0)
 	btn.pressed.connect(callback)
-	hunt_buttons_box.add_child(btn)
+	row.add_child(btn)
+	var cost: String = _format_cost(info)
+	if cost == "" and not info.has("factors"):
+		return
+	var detail := VBoxContainer.new()
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail.alignment = BoxContainer.ALIGNMENT_CENTER
+	detail.add_theme_constant_override("separation", 0)
+	row.add_child(detail)
+	if cost != "":
+		var cost_label := _make_small_rich_label()
+		cost_label.text = cost
+		detail.add_child(cost_label)
 	if info.has("factors"):
 		var factor_label := Label.new()
 		factor_label.text = _format_factors(info["factors"])
-		factor_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		factor_label.add_theme_font_size_override("font_size", 12)
 		factor_label.modulate = Color(0.8, 0.85, 0.8)
-		hunt_buttons_box.add_child(factor_label)
+		detail.add_child(factor_label)
+
+func _make_small_rich_label() -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	label.add_theme_font_size_override("normal_font_size", 12)
+	label.modulate = Color(0.95, 0.9, 0.75)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+# [img] 小圖示；找不到圖時不顯示。
+func _icon_bb(key: String, size: int = 12) -> String:
+	var path: String = ArtLibrary.icon_path(key)
+	return "[img=%dx%d]%s[/img]" % [size, size, path] if path != "" else ""
+
+# 代價列（SPEC 1.6「選項的代價與收穫」）：體力、下一階段的加成、練到的能力、多花的回合、受傷風險。沒有的項目不顯示。
+func _format_cost(info: Dictionary) -> String:
+	var parts: Array[String] = []
+	var stamina: int = int(round(float(info.get("stamina", 0.0))))
+	if stamina > 0:
+		parts.append(_icon_bb("stat.stamina") + tr("cost.stamina").replace("{n}", str(stamina)))
+	var next: Dictionary = info.get("next_bonus", {})
+	if float(next.get("value", 0.0)) > 0.0:
+		parts.append(tr("cost.next_bonus").replace("{stage}", tr("cost.stage." + str(next["stage"]))) \
+			.replace("{n}", str(int(round(float(next["value"]) * 100.0)))))
+	if float(info.get("prey_drain", 0.0)) > 0.0:
+		parts.append(tr("cost.prey_drain").replace("{n}", str(int(info["prey_drain"]))))
+	var trains: Array = info.get("trains", [])
+	if not trains.is_empty():
+		var names: Array[String] = []
+		for stat in trains:
+			names.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)))
+		parts.append(tr("cost.trains").replace("{list}", "、".join(names)))
+	var turns: int = int(info.get("turns", 0))
+	if turns > 0:
+		parts.append(_icon_bb("cost.turns") + tr("cost.turns").replace("{n}", str(turns)))
+	var risk: int = int(round(float(info.get("injury_risk", 0.0)) * 100.0))
+	if risk > 0:
+		parts.append("[color=#e8a07a]" + _icon_bb("cost.injury_risk") + tr("cost.injury_risk").replace("{n}", str(risk)) + "[/color]")
+	return "　".join(parts)
 
 # 感知越高，列出的因素越多（2 個，感知達門檻時 3 個）。
 func _format_factors(factors: Array) -> String:
@@ -1385,6 +1508,8 @@ func _finish_hunt() -> void:
 
 # 灰熊遭遇。辨識前一律是遠距目擊（_show_distant）；之後可能是母熊帶幼熊，或直接衝過來攻擊。
 func _on_encounter_triggered(encounter: Dictionary) -> void:
+	if GameState.auto_playing:
+		return
 	if encounter.get("distant", false):
 		_show_distant(encounter)
 		return
@@ -1458,6 +1583,208 @@ func _resolve_encounter(choice: String, encounter: Dictionary) -> void:
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
+
+# --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
+
+func _build_card_overlay() -> void:
+	card_overlay = Panel.new()
+	card_overlay.visible = false
+	card_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	card_overlay.anchor_right = 1.0
+	card_overlay.anchor_bottom = 1.0
+	add_child(card_overlay)
+	card_bg = _make_background_rect(true)
+	card_overlay.add_child(card_bg)
+	var center := CenterContainer.new()
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	card_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.05, 0.04, 0.72)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(420, 0)
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	card_title = Label.new()
+	card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card_title.add_theme_font_size_override("font_size", 20)
+	box.add_child(card_title)
+	card_body = RichTextLabel.new()
+	card_body.bbcode_enabled = true
+	card_body.fit_content = true
+	card_body.scroll_active = false
+	card_body.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	box.add_child(card_body)
+	card_buttons_box = HBoxContainer.new()
+	card_buttons_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(card_buttons_box)
+
+# bg 為 null 時沿用目前區域的背景。關閉後繼續處理佇列裡的下一個事件。
+func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
+	card_title.text = title
+	card_body.text = body
+	card_bg.texture = bg if bg != null else ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
+	card_bg.modulate = Color(1, 1, 1) if bg != null else ArtLibrary.period_tint(GameTime.current_period())
+	_clear_children(card_buttons_box)
+	var btn := Button.new()
+	btn.text = tr("ui.continue")
+	btn.pressed.connect(func():
+		card_overlay.visible = false
+		_refresh()
+	)
+	card_buttons_box.add_child(btn)
+	card_overlay.visible = true
+	btn.grab_focus.call_deferred()
+
+func _notice_lines(lines: Array) -> String:
+	var texts: Array[String] = []
+	for line in lines:
+		var text: String = tr(str(line.get("key", "")))
+		var region: String = str(line.get("region", ""))
+		if region != "":
+			text = text.replace("{region}", tr("region." + region))
+		texts.append(text)
+	return "".join(texts)
+
+func _show_season_card(event: Dictionary) -> void:
+	var season: String = str(event.get("season", GameTime.current_season()))
+	var body: String = _notice_lines(event.get("lines", []))
+	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, ArtLibrary.season_background(season))
+
+func _show_day_summary(event: Dictionary) -> void:
+	var texts: Array[String] = []
+	for line in event.get("lines", []):
+		var text: String = tr(str(line.get("key", "")))
+		texts.append(text)
+		_log(text)
+	_show_card(tr("ui.day_summary.title").replace("{n}", str(int(event.get("day", GameState.life_log.get("days_lived", 1))))), "\n".join(texts))
+
+func _tendency_effect_text(type: String, effect: float) -> String:
+	return tr("tendency_effect." + type).replace("{n}", str(int(round(effect * 100.0))))
+
+func _show_tendency_changed(event: Dictionary) -> void:
+	var type: String = str(event.get("tendency", ""))
+	var text: String = tr("tendency_change." + type)
+	_log(text)
+	var body: String = text + "\n\n" + _icon_bb("tendency." + type, 16) + " " + tr("tendency." + type) \
+		+ "　" + _tendency_effect_text(type, GameState.tendency_effect(type))
+	_show_card(tr("tendency_change.title"), body)
+
+func _show_tendency_panel() -> void:
+	if _overlay_busy():
+		return
+	var cfg: Dictionary = GameData.tendency
+	var decisions: Array = GameState.life_log.get("decisions", [])
+	var shares: Dictionary = GameState.tendency_shares()
+	var current: Dictionary = GameState.current_tendency()
+	var lines: Array[String] = []
+	if current.is_empty():
+		lines.append(tr("ui.tendency.none").replace("{n}", str(max(0, int(cfg.get("min_decisions", 10)) - decisions.size()))))
+	else:
+		var type: String = str(current["type"])
+		lines.append(_icon_bb("tendency." + type, 16) + " " + tr("ui.tendency.main").replace("{name}", tr("tendency." + type)) \
+			+ "　" + _tendency_effect_text(type, float(current["effect"])))
+		lines.append(tr("tendency_desc." + type))
+	lines.append("")
+	lines.append(tr("ui.tendency.recent").replace("{n}", str(decisions.size())))
+	for t in cfg.get("types", []):
+		var pct: int = int(round(float(shares.get(t, 0.0)) * 100.0))
+		lines.append("%s %s　%d%%　%s" % [_icon_bb("tendency." + str(t)), tr("tendency." + str(t)), pct, "▮".repeat(int(round(pct / 5.0)))])
+	lines.append("")
+	lines.append(tr("ui.tendency.switch_hint").replace("{n}", str(int(round(float(cfg.get("switch_margin", 0.1)) * 100.0)))))
+	_show_card(tr("ui.tendency.title"), "\n".join(lines))
+
+func _build_toast() -> void:
+	toast = RichTextLabel.new()
+	toast.bbcode_enabled = true
+	toast.fit_content = true
+	toast.scroll_active = false
+	toast.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast.anchor_left = 0.5
+	toast.anchor_right = 0.5
+	# 放在能力條下方，避免蓋住畫面中央的卡片
+	toast.anchor_top = 0.21
+	toast.offset_left = -200
+	toast.offset_right = 200
+	toast.modulate = Color(1, 1, 1, 0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.6)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	toast.add_theme_stylebox_override("normal", style)
+	add_child(toast)
+
+# 不擋操作的短暫提示：淡入、停留、淡出。
+func _show_toast(text: String, hold: float = 1.6) -> void:
+	toast.text = "[center]" + text + "[/center]"
+	move_child(toast, get_child_count() - 1)
+	if toast_tween != null:
+		toast_tween.kill()
+	toast_tween = create_tween()
+	toast.modulate = Color(1, 1, 1, 0)
+	toast_tween.tween_property(toast, "modulate:a", 1.0, 0.4)
+	toast_tween.tween_interval(hold)
+	toast_tween.tween_property(toast, "modulate:a", 0.0, 0.6)
+
+func _show_day_toast() -> void:
+	if GameState.wolf == null or not GameState.wolf.alive or GameState.auto_playing:
+		return
+	# 有季節卡片或換日摘要要顯示時，卡片本身就交代了換日
+	if card_overlay.visible:
+		return
+	for event in GameState.pending_events:
+		if event.get("type", "") in ["season_card", "day_summary"]:
+			return
+	_show_toast(tr("ui.day_toast").replace("{n}", str(int(GameState.life_log.get("days_lived", 1)))) \
+		.replace("{season}", tr("season." + GameTime.current_season())))
+
+# 睡覺結算：上次睡覺到這次提升的能力；速度或力量提升時附一句原因（也寫進行動紀錄）。
+func _show_sleep_summary(summary: Dictionary) -> void:
+	var gains: Array = summary.get("gains", [])
+	if gains.is_empty():
+		return
+	var parts: Array[String] = []
+	for stat in gains:
+		parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=#9be38a]▲[/color]")
+	var text: String = tr("sleep_summary.today") + "　".join(parts)
+	var reason: String = str(summary.get("reason", ""))
+	if reason != "":
+		text += "\n" + tr(reason)
+		_log(tr(reason))
+	_show_toast(text, 3.0)
+
+# --- 除錯：模擬到死亡 ---
+
+func _start_auto_play(den: String, prey: String, style: String) -> void:
+	if auto_player != null:
+		return
+	current_hunt = null
+	for overlay in [encounter_overlay, hunt_overlay, rest_overlay, region_info_overlay, card_overlay]:
+		overlay.visible = false
+	auto_player = AutoPlayer.new(prey, style)
+	auto_player.start(den)
+
+func _process(_delta: float) -> void:
+	if auto_player == null:
+		return
+	auto_player.step(AUTO_DAYS_PER_FRAME)
+	if GameState.wolf != null:
+		auto_status.text = tr("debug.auto.running").replace("{age}", "%.1f" % GameState.wolf.age_years) \
+			.replace("{n}", str(int(GameState.life_log.get("days_lived", 1))))
+	if auto_player.done():
+		# 死亡時 GameState 已發出 wolf_died，畫面會切到一生回顧。
+		auto_player.finish()
+		auto_player = null
 
 # --- Lifecycle ---
 
