@@ -45,6 +45,19 @@
       "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.4, "shoulder": 0.4, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.3, "desperate_hit": 0.2, "desperate_damage": 1.5 },
       "_interaction_comment": "unlock_subadult_chance：第一次可以直接互動的時機，這個機率在次成年期，否則在成年後（都要先遠距觀察過）。follow：跟蹤成功率 = base + (感知 − 牠的感知) / divisor。drive_off_dominance_bonus：每輸給牠或示弱一次，被驅趕的機率再加多少。",
       "interaction": { "unlock_subadult_chance": 0.5, "follow_base": 0.45, "follow_divisor": 150, "drive_off_dominance_bonus": 0.15, "howl_mult_after_yield": 0.5, "submit_damage_mult": 0.6 }
+    },
+    "wolverine": {
+      "_comment": "狼獾（1.6 第 6d 步）：苔原的搶屍者。體型小但極兇猛：力量值約 110，很少放棄（耐力低於 15% 才退），不會示弱，也不會想殺狼。interaction：map 牠活動的地圖；feed_chance 在苔原分段進食時每一段吃完後找上門的機率（渡鴉的 feeding_bonus_per_turn 會再往上加）；return_chance 回到苔原的殘骸時撞見牠的機率；carcass_loss_mult 苔原的殘骸被偷吃（消失）的倍率。",
+      "sex": "unknown",
+      "start_age": [2.0, 4.0],
+      "start_stats": { "speed": [55, 60], "strength": [48, 54], "skill": [58, 64], "perception": [55, 60], "health_max": [55, 65] },
+      "ages": { "peak_end": 6.0, "elder": 8.0 },
+      "elder_decay_per_season": { "speed": 1.0, "strength": 1.0, "skill": 0.3, "perception": 0.5, "health_max": 1.0 },
+      "old_age_death": { "base": 0.04, "per_year": 0.06 },
+      "other_death_per_season": 0.01,
+      "heal_per_day": 10,
+      "combat": { "damage_per_strength": 0.12, "parts": { "leg": 0.5, "face": 0.3, "shoulder": 0.2 }, "give_up_ratio": 0.15, "threat_resist": 0.5, "can_submit": false, "never_lethal": true, "desperate_hit": 0.25, "desperate_damage": 1.3 },
+      "interaction": { "map": "tundra", "feed_chance": 0.1, "return_chance": 0.25, "carcass_loss_mult": 2.0 }
     }
   },
   "combat": {

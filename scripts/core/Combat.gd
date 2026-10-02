@@ -49,7 +49,7 @@ func set_npc(p_npc: NpcWolf) -> void:
 	opp = npc.combat_profile()
 	opp_hp_max = float(opp.get("hp", 100))
 	opp_hp = clamp(npc.health, 1.0, opp_hp_max)
-	can_submit = true
+	can_submit = bool(opp.get("can_submit", true)) # 狼獾不示弱，你向牠示弱也沒有意義
 
 func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p_mother: bool = false) -> void:
 	wolf = p_wolf
@@ -111,6 +111,8 @@ func options() -> Array:
 			list.append(_attack_option("lunge", false))
 			list.append(_dodge_option())
 			list.append(_retreat_option())
+			if context == "carcass" and yields.has("share"):
+				list.append({"id": "share", "label_key": "combat.option.share", "stamina": 0.0})
 			if context == "carcass" and yields.has("abandon"):
 				list.append({"id": "abandon", "label_key": "combat.option.abandon", "stamina": 0.0})
 			if can_submit and not desperate:
@@ -183,7 +185,9 @@ func choose(id: String) -> Dictionary:
 	wolf.stamina -= float(opt.get("stamina", 0.0))
 	wolf.clamp_stats()
 	# 瀕危後仍選擇繼續戰鬥（攻擊、閃避），這一回合才可能戰死。
-	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue"]
+	# 不想殺狼的對手（狼獾）：任何一擊都不會致死。
+	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue"] \
+		and not bool(opp.get("never_lethal", false))
 	var res: Dictionary = {"notes": [], "wolf_damage": 0.0, "opp_damage": 0.0, "wolf_pose": "threaten", "opp_action": "idle"}
 	match id:
 		"threaten": _do_threaten(opt, res)
@@ -204,7 +208,7 @@ func choose(id: String) -> Dictionary:
 			res["wolf_pose"] = "submit"
 			_end("submit")
 		_:
-			_end(id) # yield／abandon／grab／ignore
+			_end(id) # yield／abandon／grab／ignore／share（讓狼獾吃一段）
 	if phase != Phase.DONE and wolf.health <= 0.0:
 		_end("died")
 	rounds += 1

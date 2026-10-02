@@ -123,6 +123,12 @@
     "esker": "res://assets/art/backgrounds/terrain/esker.png",
     "esker@winter": "res://assets/art/backgrounds/terrain/esker_winter.png"
   },
+  "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",
+  "carcasses": {
+    "white_tailed_deer": "res://assets/art/sprites/animals/carcass_deer.png",
+    "caribou": "res://assets/art/sprites/animals/carcass_caribou.png",
+    "moose": "res://assets/art/sprites/animals/carcass_moose.png"
+  },
   "icons": {
     "status.injury": "res://assets/art/icons/status_injury.png",
     "status.poison": "res://assets/art/icons/status_poison.png",

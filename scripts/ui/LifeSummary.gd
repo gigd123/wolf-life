@@ -129,6 +129,22 @@ func _ready() -> void:
 			entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
 				.replace("{outcome}", tr("summary.stranger_outcome." + str(m.get("outcome", "")))))
 		_add_line(box, tr("summary.stranger").replace("{n}", str(meetings.size())).replace("{list}", "、".join(entries)))
+	# 苔原的經歷（1.6 第 6d 步）：困在暴風雪裡、和狼獾交手、在河谷落水
+	for b in log_data.get("blizzards", []):
+		if bool(b.get("in_tundra", false)):
+			var choice: String = str(b.get("choice", ""))
+			_add_line(box, tr("summary.blizzard").replace("{age}", "%.1f" % float(b.get("age", 0.0))).replace("{days}", str(int(b.get("days", 2)))) \
+				.replace("{choice}", tr("summary.blizzard.choice." + (choice if choice != "" else "none"))) \
+				.replace("{result}", tr("summary.blizzard.result." + (str(b.get("result", "")) if choice != "" else "safe"))))
+	var wolverine_meetings: Array = log_data.get("wolverine_meetings", [])
+	if not wolverine_meetings.is_empty():
+		var w_entries: Array[String] = []
+		for m in wolverine_meetings:
+			w_entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
+				.replace("{outcome}", tr("summary.wolverine_outcome." + str(m.get("outcome", "")))))
+		_add_line(box, tr("summary.wolverine").replace("{n}", str(wolverine_meetings.size())).replace("{list}", "、".join(w_entries)))
+	if int(log_data.get("fell_through_ice", 0)) > 0:
+		_add_line(box, tr("summary.fell_through_ice").replace("{n}", str(int(log_data["fell_through_ice"]))))
 
 	# 學會的知識：總數，加上幾條「確定」的內容
 	var confirmed: Array = []

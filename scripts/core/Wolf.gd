@@ -40,6 +40,8 @@ var start_stats: Dictionary = {}
 var potential: Dictionary = {}
 var training: Dictionary = {}
 var fed_streak: int = 0
+# 環境對感知的倍率（苔原的白矇天），由 GameState 每個時段設定，不存檔。
+var env_perception_mult: float = 1.0
 
 func _init() -> void:
 	age_years = float(GameData.balance.get("start_age_years", 0.6667))
@@ -103,7 +105,7 @@ func effective_skill() -> float:
 	return skill * _hunger_stat_mult()
 
 func effective_perception() -> float:
-	return perception * _hunger_stat_mult() * _injury_mult("perception")
+	return perception * _hunger_stat_mult() * _injury_mult("perception") * env_perception_mult
 
 func is_overfed() -> bool:
 	return hunger > float(GameData.balance.get("overfed_threshold", 120))

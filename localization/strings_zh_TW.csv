@@ -751,3 +751,69 @@ prey_name.moose.juvenile,小駝鹿
 explore.sign.antler_rub,樹幹上被磨掉一大片樹皮的痕跡
 factor.huge_prey,牠的體型大得多
 reason.huge_prey,牠一腳踢開了你，你根本壓不住這麼大的身軀。
+animal.wolverine,狼獾
+animal.raven,渡鴉
+weather.blizzard,暴風雪
+weather.whiteout,白矇天
+combat.option.share,讓牠吃一段
+combat.result.share,{animal}叼走了一段肉，拖著走遠了。
+combat.stake.carcass.wolverine,牠個子不大，卻弓著背、齜著牙，一步也不讓。
+feeding.risk.wolverine,　狼獾 {n}%
+feeding.risk.ravens,　渡鴉在頭頂盤旋
+scavenger.wolverine.arrive,一隻矮壯的深色動物從雪地另一頭直直走過來，盯著你的獵物。是狼獾。
+scavenger.wolverine.arrive.first,一隻你沒見過的動物從雪地另一頭直直走過來。牠不比狐狸大多少，卻一點也不怕你，一路低吼著逼近你的獵物。
+scavenger.wolverine.returning,你回來時，狼獾正趴在你的獵物上撕咬。
+scavenger.wolverine.returning.first,你回來時，一隻你沒見過的深色動物正趴在你的獵物上撕咬，看到你也不肯走。
+explore.blizzard,風雪裡什麼都看不見，連自己的腳印都很快被雪蓋住了。
+explore.carcass,{location} 雪裡露出一具{animal}的屍體，已經凍硬了。
+explore.carcass.frozen,{location} 雪堆底下埋著一具凍死的{animal}，是這場風雪留下的。
+ui.eat_carcass,上前去吃
+blizzard.warning.early,風突然停了，天色發黃。雪兔都鑽進了雪裡，遠處的馴鹿背著風擠成一團。暴風雪要來了。
+blizzard.warning.late,北方的天空一下子暗了下來，風捲著雪橫著打過來。暴風雪來了。
+blizzard.far,北方傳來低沉的風聲，苔原那邊起了暴風雪。
+blizzard.here,暴風雪壓在{region}上，眼前一片白，風颳得站不穩。
+blizzard.detail,沒有躲好的話，嚴寒的消耗是平常的三倍；風雪中也不能狩獵。
+blizzard.option.dig,在雪地挖洞躲著　平安率 {n}%
+blizzard.option.den,躲進避風處　平安率 {n}%
+blizzard.option.retreat,頂著風往{region}撤退　平安率 {n}%
+blizzard.result.dig,你在雪堆背風的一側挖了個洞，蜷起身子，把鼻子埋進尾巴裡。
+blizzard.result.den,你擠進避風的地方，風聲從頭頂呼嘯而過。
+blizzard.result.retreat,你頂著風一步一步往南走，終於到了{region}。
+blizzard.result.lost,白茫茫一片，你分不清方向，走到了{region}。
+blizzard.frostbite.light,你的耳朵和腳掌凍得發麻，受了輕度凍傷。
+blizzard.frostbite.heavy,寒氣鑽進了骨頭裡，你受了重度凍傷。
+blizzard.over.title,風雪之後
+blizzard.over,風雪終於停了。苔原上一片寂靜，雪堆得比你的肩膀還高。
+blizzard.over.kills,有些動物沒能撐過這場風雪。雪地底下也許埋著凍死的獵物，但灰熊、狼獾也會去找。
+event.whiteout,起霧了，風捲起地上的雪，天地白成一片。你看不清遠處，也容易走錯方向。
+log.whiteout_lost,白茫茫一片，你本來要去{target}，卻走到了{region}。
+ice.here,過河時，腳下的河冰發出一聲悶響，裂開了！
+ice.option.jump,跳回岸上　成功率 {n}%
+ice.option.crawl,趴低慢慢爬回去　成功率 {n}%
+ice.result.success,你回到了岸上，河水在身後翻湧。
+ice.result.fail,你掉進了冰冷的河水裡，拚命爬上岸時已經筋疲力盡，全身發抖。
+ravens.here,幾隻渡鴉在附近的天空盤旋，一邊叫一邊往下看。
+ravens.far,{region}的上空有幾隻渡鴉在盤旋。
+ravens.follow,跟過去
+ravens.ignore,不理牠們
+ravens.found,渡鴉底下是一具{animal}的殘骸，還剩下一些肉。
+ravens.nothing,你跟到那裡，渡鴉已經散了，什麼也沒找到。
+summary.blizzard,{age} 歲的冬天，苔原起了 {days} 天的暴風雪；你{choice}，{result}。
+summary.blizzard.choice.dig,在雪地挖洞躲著
+summary.blizzard.choice.den,躲進避風處
+summary.blizzard.choice.retreat,頂著風往南撤
+summary.blizzard.choice.none,剛好躲過了最猛的風雪
+summary.blizzard.result.safe,平安撐了過去
+summary.blizzard.result.light,受了輕度凍傷
+summary.blizzard.result.heavy,受了重度凍傷
+summary.wolverine,和狼獾交手 {n} 次：{list}
+summary.wolverine_outcome.drove_off,趕走了牠
+summary.wolverine_outcome.share,讓牠吃了一段
+summary.wolverine_outcome.abandon,放棄了獵物
+summary.wolverine_outcome.retreated,撤退
+summary.fell_through_ice,春天在河谷踩破河冰落水 {n} 次
+debug.tundra.blizzard,暴風雪
+debug.tundra.wolverine,狼獾搶食
+debug.tundra.ravens,渡鴉
+debug.tundra.whiteout,白矇天
+debug.tundra.ice,河冰崩裂

@@ -110,9 +110,25 @@ static func make_animal_sprite(species_id: String, size: Vector2i = Vector2i(48,
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.72, 0.36, 0.18), "pointed", "bushy_low", 0.75, false, false)
 		"grizzly_bear":
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.35, 0.27, 0.18), "round", "stub", 1.6, false, false)
+		"wolverine":
+			# 狼獾（佔位）：深褐、矮壯、圓耳、蓬鬆的短尾
+			_draw_quadruped(img, cx, ground_y, scale, Color(0.24, 0.17, 0.12), "round", "bushy_low", 0.85, false, false)
+		"raven":
+			_draw_bird(img, cx, size.y * 0.45, scale, Color(0.08, 0.08, 0.1))
 		_:
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.5, 0.5, 0.5), "pointed", "stub", 1.0, false, false)
 	return ImageTexture.create_from_image(img)
+
+# 飛鳥（渡鴉的佔位）：張開的翅膀、楔形尾。
+static func _draw_bird(img: Image, cx: float, cy: float, scale: float, color: Color) -> void:
+	var w: float = img.get_width() * 0.42 * scale
+	var h: float = img.get_height() * 0.12 * scale
+	_fill_ellipse(img, cx, cy, w * 0.35, h, color)
+	_fill_ellipse(img, cx + w * 0.38, cy - h * 0.3, h * 0.8, h * 0.7, color)
+	_fill_triangle(img, cx + w * 0.55, cy - h * 0.4, cx + w * 0.75, cy - h * 0.1, cx + w * 0.55, cy + h * 0.1, color)
+	_fill_triangle(img, cx - w * 0.1, cy, cx + w * 0.15, cy, cx - w * 0.35, cy - h * 4.0, color)
+	_fill_triangle(img, cx - w * 0.05, cy, cx + w * 0.2, cy, cx + w * 0.1, cy + h * 3.5, color)
+	_fill_triangle(img, cx - w * 0.3, cy - h * 0.5, cx - w * 0.3, cy + h * 0.5, cx - w * 0.6, cy, color)
 
 static func _draw_quadruped(
 	img: Image, cx: float, ground_y: float, scale: float, body_color: Color,

@@ -50,6 +50,12 @@ var fire: Dictionary = {}
 var region_burn: Dictionary = {}
 var fire_at: int = -1
 var last_fire_abs: int = -100000
+# 苔原的暴風雪（1.6 第 6d 步）：blizzard 是進行中的風雪 {phase: "warning"|"active", start_at, end_at, days, noticed,
+# alerted: 已經提示過的區域, shelter: "dig"|"den"|"", shelter_region, in_tundra, choice, result}。blizzard_at：排定的時段（-1 = 沒有）。
+var blizzard: Dictionary = {}
+var blizzard_at: int = -1
+# 白矇天：結束的絕對時段（-1 = 沒有），只在 events.json whiteout.regions 的區域有效。
+var whiteout_until: int = -1
 # 天氣："clear"、"storm"（暴雨）、"after_rain"（雨停後）；weather_until 是結束的絕對時段編號。
 var weather: String = "clear"
 var weather_until: int = -1
@@ -90,6 +96,10 @@ func new_game(start_den: String) -> void:
 	region_burn = {}
 	fire_at = -1
 	last_fire_abs = -100000
+	blizzard = {}
+	blizzard_at = -1
+	whiteout_until = -1
+	npcs["wolverine"] = NpcWolf.create("wolverine", "")
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -103,6 +113,7 @@ func new_game(start_den: String) -> void:
 	var start_season: String = GameData.balance.get("start_season", "winter")
 	GameTime.setup(start_season, "normal")
 	_connect_time_signals()
+	_maybe_schedule_blizzard()
 	_snapshot_sleep_stats()
 	_queue_season_card()
 	SaveSystem.save_game()
@@ -130,6 +141,7 @@ func _on_period_changed(_period_index: int) -> void:
 	_maybe_howl()
 	_update_territory()
 	_update_fire()
+	_update_tundra_events()
 	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
@@ -159,6 +171,7 @@ func _on_season_changed(_season_index: int) -> void:
 		_check_life_stage_transition(prev_stage)
 		_age_npcs()
 		_maybe_schedule_fire()
+		_maybe_schedule_blizzard()
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -470,6 +483,10 @@ func cold_cost(region_id: String = "") -> Dictionary:
 		region_id = current_region
 	var table: Dictionary = GameData.maps().get(GameData.map_of(region_id), {}).get("cold", {}).get(GameTime.current_season(), {})
 	var mult: float = float(EncounterSystem.region_data(region_id).get("cold_mult", 1.0))
+	# 暴風雪：沒躲的話消耗 ×3，挖雪洞照常，巢穴或沙脊減半
+	if blizzard_active() and GameData.map_of(region_id) == _blizzard_map():
+		var shelter: String = str(blizzard.get("shelter", "")) if blizzard.get("shelter_region", "") == region_id else ""
+		mult *= float(_blizzard_cfg().get("cold_mult", {}).get(shelter if shelter != "" else "none", 1.0))
 	return {"hunger": float(table.get("hunger", 0)) * mult, "stamina": float(table.get("stamina", 0)) * mult}
 
 # 頂部的嚴寒圖示：苔原的冬季。
@@ -485,6 +502,14 @@ func action_move(target_region: String) -> void:
 	var link := _link_to(target_region)
 	if not adjacent_regions().has(target_region) and link.is_empty():
 		return
+	# 白矇天：看不清方向，可能走到另一個相鄰區域
+	var lost_from: String = ""
+	if link.is_empty() and whiteout_here() and RNGService.chance(float(_events_cfg().get("whiteout", {}).get("lost_chance", 0.3))):
+		var others: Array = adjacent_regions().filter(func(r): return r != target_region and GameData.map_of(r) == current_map())
+		if not others.is_empty():
+			lost_from = target_region
+			target_region = others[RNGService.randi_range(0, others.size() - 1)]
+	var ice_check: bool = link.is_empty() and (current_region == _ice_cfg().get("region", "") or target_region == _ice_cfg().get("region", ""))
 	current_region = target_region
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
 	if not link.is_empty():
@@ -499,6 +524,8 @@ func action_move(target_region: String) -> void:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(link["turns"]) if not link.is_empty() else int(costs.get("move_region", 1)))
 	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
+	if lost_from != "":
+		log_message.emit(tr("log.whiteout_lost").replace("{target}", tr("region." + lost_from)).replace("{region}", tr("region." + target_region)))
 	if not is_region_visited(target_region):
 		var knowledge: Dictionary = region_knowledge.get(target_region, {"features": []})
 		knowledge["visited"] = true
@@ -516,6 +543,11 @@ func action_move(target_region: String) -> void:
 			encounter_triggered.emit(prepare_bear_encounter(encounter))
 	_check_fire_here()
 	_note_den_smell()
+	if wolf.alive:
+		_apply_env_perception()
+		_check_blizzard_here()
+		if ice_check:
+			_maybe_ice_break()
 	state_changed.emit()
 
 # --- 探索（取代「尋找獵物蹤跡」） ---
@@ -540,6 +572,19 @@ func action_explore() -> Dictionary:
 	if not wolf.alive:
 		return {}
 	Growth.train_activity(wolf, "explore")
+	# 暴風雪中什麼都看不見，也不能狩獵
+	if blizzard_here():
+		current_discovery = {"kind": "nothing", "blizzard": true, "location": _random_terrain(current_region)}
+		state_changed.emit()
+		return current_discovery
+	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
+	var hidden := _hidden_carcass_here()
+	if hidden >= 0 and RNGService.chance(float(_blizzard_cfg().get("winter_kill", {}).get("explore_find_chance", 0.5))):
+		carcasses[hidden]["found"] = true
+		current_discovery = {"kind": "carcass", "animal_id": carcasses[hidden]["animal_id"], "life_stage": carcasses[hidden]["life_stage"],
+			"location": carcasses[hidden]["terrain"], "frozen": bool(carcasses[hidden].get("frozen", false))}
+		state_changed.emit()
+		return current_discovery
 	current_discovery = ExploreSystem.generate({
 		"region_id": current_region,
 		"season": GameTime.current_season(),
@@ -1330,7 +1375,14 @@ func scavenge_chances() -> Dictionary:
 		bear += float(cfg.get("night_bonus", 0.05))
 	if current_feeding.get("terrain", "") == "dense_forest":
 		bear += float(cfg.get("dense_forest_bonus", 0.05))
-	return {"bear": clamp(bear, 0.0, 0.95), "fox": float(cfg.get("fox_chance", 0.12))}
+	# 苔原：渡鴉在上空盤旋，吃得越久，越多動物知道這裡有肉
+	var wolverine: float = 0.0
+	if current_map() == str(_ravens_cfg().get("map", "tundra")):
+		var bonus: float = float(_ravens_cfg().get("feeding_bonus_per_turn", 0.04)) * int(current_feeding.get("turns_stayed", 0))
+		bear += bonus
+		if _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")):
+			wolverine = float(_wolverine_cfg().get("feed_chance", 0.1)) + bonus
+	return {"bear": clamp(bear, 0.0, 0.95), "fox": float(cfg.get("fox_chance", 0.12)), "wolverine": clamp(wolverine, 0.0, 0.95)}
 
 # 吃一段：1 回合、飽食度 + 一段。之後判定搶食事件。回傳 {"gain", "event": "bear"|"fox"|""}。
 func feed_once() -> Dictionary:
@@ -1350,6 +1402,8 @@ func feed_once() -> Dictionary:
 	if int(current_feeding["segments_left"]) > 0:
 		if RNGService.chance(float(chances["bear"]) * threat_mult()):
 			event = "bear"
+		elif RNGService.chance(float(chances["wolverine"])):
+			event = "wolverine"
 		elif RNGService.chance(float(chances["fox"])):
 			event = "fox"
 	else:
@@ -1399,7 +1453,14 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 
 func carcass_index_here() -> int:
 	for i in carcasses.size():
-		if carcasses[i]["region_id"] == current_region:
+		if carcasses[i]["region_id"] == current_region and bool(carcasses[i].get("found", true)):
+			return i
+	return -1
+
+# 這一區還沒被找到的屍體（風雪後凍死的動物、渡鴉盤旋處的殘骸）。
+func _hidden_carcass_here() -> int:
+	for i in carcasses.size():
+		if carcasses[i]["region_id"] == current_region and not bool(carcasses[i].get("found", true)):
 			return i
 	return -1
 
@@ -1425,6 +1486,9 @@ func action_return_to_carcass() -> Dictionary:
 	var event: String = ""
 	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult()):
 		event = "bear"
+	elif _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")) \
+			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25))):
+		event = "wolverine"
 	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
 		event = "fox"
 	state_changed.emit()
@@ -1438,7 +1502,13 @@ func _decay_carcasses() -> void:
 	for c in carcasses:
 		if today - int(c["day"]) > int(cfg.get("carcass_days", 2)):
 			continue
-		if RNGService.chance(float(cfg.get("carcass_loss_per_period", 0.15))):
+		var loss: float = float(cfg.get("carcass_loss_per_period", 0.15))
+		if bool(c.get("frozen", false)):
+			loss *= float(_blizzard_cfg().get("winter_kill", {}).get("loss_mult", 0.3))
+		# 苔原的殘骸還會被狼獾偷吃
+		if _wolverine_alive() and GameData.map_of(str(c["region_id"])) == str(_wolverine_cfg().get("map", "tundra")):
+			loss *= float(_wolverine_cfg().get("carcass_loss_mult", 1.0))
+		if RNGService.chance(loss):
 			continue
 		kept.append(c)
 	carcasses = kept
@@ -1478,7 +1548,10 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 		c.terrain = _random_terrain(current_region)
 	match context:
 		"carcass":
-			c.yields = ["grab", "abandon"] if animal_id == "grizzly_bear" else ["ignore"]
+			match animal_id:
+				"grizzly_bear": c.yields = ["grab", "abandon"]
+				"wolverine": c.yields = ["share", "abandon"]
+				_: c.yields = ["ignore"]
 		_:
 			c.yields = ["yield"]
 	if encounter.get("direct", false):
@@ -1526,6 +1599,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		_carcass_after_combat(c)
 	if c.npc != null and c.npc.id == "stranger_wolf":
 		_after_stranger_combat(c)
+	elif c.npc != null and c.npc.id == "wolverine":
+		_wolverine_record(c)
 	GameTime.advance_turns(1)
 	wolf.clamp_stats()
 	_check_death()
@@ -1537,6 +1612,14 @@ func _carcass_after_combat(c: Combat) -> void:
 	var by_bear: bool = c.animal_id == "grizzly_bear"
 	match c.outcome:
 		"drove_off":
+			return
+		"share":
+			# 讓狼獾吃掉一段，換牠離開
+			if not current_feeding.is_empty():
+				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+				if int(current_feeding["segments_left"]) <= 0:
+					current_feeding = {}
+			life_log["shared_with_wolverine"] = int(life_log.get("shared_with_wolverine", 0)) + 1
 			return
 		"grab":
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
@@ -1551,6 +1634,8 @@ func _carcass_after_combat(c: Combat) -> void:
 	life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
 	if by_bear:
 		life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
+	elif c.animal_id == "wolverine":
+		life_log["scavenged_by_wolverine"] = int(life_log.get("scavenged_by_wolverine", 0)) + 1
 
 # --- 森林大火（SPEC 1.6「森林大火」） ---
 
@@ -1821,6 +1906,7 @@ func action_move_silent(target_region: String) -> void:
 	var rk: Dictionary = region_knowledge.get(target_region, {"features": []})
 	rk["visited"] = true
 	region_knowledge[target_region] = rk
+	_apply_env_perception()
 
 # 回到被燒過的巢穴：聞到很重的焦味（每場火提示一次）。
 func _note_den_smell() -> void:
@@ -1879,8 +1965,10 @@ func _age_npcs() -> void:
 			_on_npc_died(npc)
 
 func _on_npc_died(npc: NpcWolf) -> void:
-	if npc.id == "stranger_wolf":
-		stranger_territory = ""
+	if npc.id != "stranger_wolf":
+		life_log[npc.id + "_death"] = {"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)}
+		return
+	stranger_territory = ""
 	life_log["stranger_death"] = {"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)}
 
 # 和牠相比：依力量值差與牠的年紀，給出「牠比你強壯得多／不相上下／已經不如你」這類判斷。
@@ -1979,6 +2067,418 @@ func _npc_new_territory(old: String) -> String:
 		if region_id != old and region_id != den_region:
 			options.append(region_id)
 	return options[RNGService.randi_range(0, options.size() - 1)] if not options.is_empty() else ""
+
+# --- 苔原的事件（1.6 第 6d 步，docs/tundra-detail.md；數值在 events.json 與 balance.json npc_wolves.wolverine） ---
+
+func _blizzard_cfg() -> Dictionary:
+	return _events_cfg().get("blizzard", {})
+
+func _blizzard_map() -> String:
+	return str(_blizzard_cfg().get("map", "tundra"))
+
+func _ice_cfg() -> Dictionary:
+	return _events_cfg().get("ice_break", {})
+
+func _ravens_cfg() -> Dictionary:
+	return _events_cfg().get("ravens", {})
+
+func _update_tundra_events() -> void:
+	_update_blizzard()
+	_update_whiteout()
+	_maybe_ravens()
+
+# 冬季開始時擲一次：這個冬天會不會有暴風雪，會的話排定在冬季中的某個時段（留下風雪持續的天數）。
+func _maybe_schedule_blizzard() -> void:
+	var cfg := _blizzard_cfg()
+	if GameTime.current_season() != str(cfg.get("season", "winter")) or not blizzard.is_empty() or blizzard_at >= 0:
+		return
+	if RNGService.chance(float(cfg.get("winter_chance", 0.4))):
+		var per_day: int = GameTime.PERIODS.size()
+		var last_day: int = GameTime._season_day_count() - int(cfg.get("duration_days_max", 3))
+		blizzard_at = _abs_period() + RNGService.randi_range(per_day, max(per_day, last_day * per_day - 1))
+
+func blizzard_active() -> bool:
+	return not blizzard.is_empty() and blizzard.get("phase", "") == "active"
+
+# 狼正在風雪裡（在苔原）。
+func blizzard_here() -> bool:
+	return blizzard_active() and current_map() == _blizzard_map()
+
+func _update_blizzard() -> void:
+	var now: int = _abs_period()
+	if blizzard.is_empty():
+		if blizzard_at >= 0 and now >= blizzard_at:
+			start_blizzard_warning()
+		return
+	if blizzard["phase"] == "warning":
+		_maybe_notice_blizzard()
+		if now >= int(blizzard["start_at"]):
+			blizzard["phase"] = "active"
+			if not bool(blizzard.get("noticed", false)) and current_map() == _blizzard_map():
+				blizzard["noticed"] = true
+				pending_events.append({"type": "blizzard_warning", "late": true})
+		_check_blizzard_here()
+		return
+	if now >= int(blizzard["end_at"]):
+		_end_blizzard()
+		return
+	_check_blizzard_here()
+
+# 起風雪前的徵兆（start_at 前 warning_periods 個時段）。
+func start_blizzard_warning(warning_periods: int = -1) -> void:
+	var cfg := _blizzard_cfg()
+	if warning_periods < 0:
+		warning_periods = int(cfg.get("warning_periods", 2))
+	var start: int = _abs_period() + warning_periods
+	var days: int = RNGService.randi_range(int(cfg.get("duration_days_min", 2)), int(cfg.get("duration_days_max", 3)))
+	blizzard = {"phase": "warning", "start_at": start, "end_at": start + days * GameTime.PERIODS.size(), "days": days,
+		"noticed": false, "alerted": [], "shelter": "", "shelter_region": "", "in_tundra": false, "far_noted": false,
+		"choice": "", "result": "", "start_age": snapped(wolf.age_years, 0.1)}
+	blizzard_at = -1
+	_maybe_notice_blizzard()
+
+# 感知越高越早察覺：風突然停了、天色發黃，雪兔躲進雪裡，馴鹿背風擠成一團。只有在苔原才看得到。
+func _maybe_notice_blizzard() -> void:
+	if bool(blizzard.get("noticed", false)) or current_map() != _blizzard_map():
+		return
+	var n: Dictionary = _blizzard_cfg().get("notice", {})
+	var chance_value: float = min(float(n.get("max", 0.9)), float(n.get("base", 0.35)) + (wolf.effective_perception() - 40.0) * float(n.get("per_perception", 0.01)))
+	if RNGService.chance(chance_value):
+		blizzard["noticed"] = true
+		pending_events.append({"type": "blizzard_warning", "late": false})
+
+# 風雪中、狼在苔原：每個區域提示一次「要怎麼躲」；已經在這一區躲好就不再提示。在森林只聽到北方的風聲。
+func _check_blizzard_here() -> void:
+	if not blizzard_active() or wolf == null or not wolf.alive:
+		return
+	if current_map() != _blizzard_map():
+		if not bool(blizzard.get("far_noted", false)) and not bool(blizzard.get("in_tundra", false)):
+			blizzard["far_noted"] = true
+			pending_events.append({"type": "blizzard_far"})
+		return
+	blizzard["in_tundra"] = true
+	if blizzard.get("shelter_region", "") == current_region and str(blizzard.get("shelter", "")) != "":
+		return
+	if blizzard["alerted"].has(current_region):
+		return
+	blizzard["alerted"].append(current_region)
+	pending_events.append({"type": "blizzard_here", "region": current_region})
+
+# 選擇：挖雪洞躲著、躲進巢穴或好睡處（巢穴、沙脊）、頂著風往林線撤退。每個選項附「平安率」（不凍傷的機率）。
+func blizzard_options() -> Array:
+	var list: Array = [_blizzard_option("dig")]
+	if current_region == den_region or _feature_known_here("sleep_spot"):
+		list.append(_blizzard_option("den"))
+	var target := _retreat_target()
+	if target != "":
+		list.append(_blizzard_option("retreat", target))
+	return list
+
+func _blizzard_option(kind: String, target: String = "") -> Dictionary:
+	var e: Dictionary = _blizzard_cfg().get("escape", {})
+	var danger: float = float(e.get(kind, 0.4))
+	if kind == "retreat":
+		if wolf.stamina < 30.0:
+			danger += float(e.get("low_stamina", 0.3))
+		danger -= (wolf.effective_speed() - 40.0) / float(e.get("speed_divisor", 200))
+	elif wolf.hunger < 40.0:
+		# 躲著不動：肚子空空撐不久
+		danger += float(e.get("low_hunger", 0.2))
+	if wolf.health < wolf.health_max * 0.5:
+		danger += float(e.get("low_health", 0.2))
+	danger = clamp(danger, 0.05, 1.5)
+	var o: Dictionary = _blizzard_cfg().get("outcome", {})
+	var heavy: float = float(o.get("heavy", 0.3)) * danger
+	var light: float = float(o.get("light", 0.45)) * danger
+	if heavy + light > 1.0:
+		var total: float = heavy + light
+		heavy /= total
+		light /= total
+	return {"id": kind, "kind": kind, "region": target, "danger": danger, "heavy": heavy, "light": light, "safe": 1.0 - heavy - light}
+
+# 撤退的方向：離開苔原最近的那一步（林線就直接進森林）。
+func _retreat_target() -> String:
+	for link in GameData.links_from(current_region):
+		if GameData.map_of(str(link["to"])) != _blizzard_map():
+			return str(link["to"])
+	var best: String = ""
+	var best_steps: int = 99
+	for adj in adjacent_regions():
+		var steps := _steps_to_exit(str(adj))
+		if steps < best_steps:
+			best = str(adj)
+			best_steps = steps
+	return best
+
+func _steps_to_exit(start: String) -> int:
+	var frontier: Array = [start]
+	var seen: Array = [start]
+	var steps: int = 0
+	while not frontier.is_empty() and steps < 10:
+		var next: Array = []
+		for r in frontier:
+			for link in GameData.links_from(str(r)):
+				if GameData.map_of(str(link["to"])) != _blizzard_map():
+					return steps
+			for adj in EncounterSystem.region_data(str(r)).get("adjacent", []):
+				if not seen.has(adj):
+					seen.append(adj)
+					next.append(adj)
+		frontier = next
+		steps += 1
+	return 99
+
+# 執行選擇。回傳 {"result": "safe"|"light"|"heavy", "kind", "region", "lost"}。
+func blizzard_choose(id: String) -> Dictionary:
+	var opt: Dictionary = {}
+	for o in blizzard_options():
+		if o["id"] == id:
+			opt = o
+	if opt.is_empty():
+		return {}
+	var e: Dictionary = _blizzard_cfg().get("escape", {})
+	var roll: float = RNGService.randf()
+	var result: String = "safe"
+	if roll < float(opt["heavy"]):
+		result = "heavy"
+	elif roll < float(opt["heavy"]) + float(opt["light"]):
+		result = "light"
+	record_decision("blizzard." + id)
+	var lost: bool = false
+	var target: String = str(opt["region"])
+	if id == "retreat":
+		# 在白茫茫中走錯區域（跨地圖那一步沿著林線，不會走錯）
+		var link := _link_to(target)
+		if link.is_empty() and RNGService.chance(float(e.get("lost_chance", 0.3))):
+			var others: Array = adjacent_regions().filter(func(r): return r != target)
+			if not others.is_empty():
+				target = others[RNGService.randi_range(0, others.size() - 1)]
+				lost = true
+		wolf.stamina -= float(e.get("retreat_stamina", 15)) + (float(link["stamina"]) if not link.is_empty() else 0.0)
+		action_move_silent(target)
+		GameTime.advance_turns(int(link["turns"]) if not link.is_empty() else 1)
+	else:
+		blizzard["shelter"] = id
+		blizzard["shelter_region"] = current_region
+		GameTime.advance_turns(1)
+	# 一場風雪裡最重的那次記入一生回顧
+	var order := ["safe", "light", "heavy"]
+	if blizzard.is_empty():
+		pass
+	elif str(blizzard.get("result", "")) == "" or order.find(result) >= order.find(str(blizzard.get("result", "safe"))):
+		blizzard["choice"] = id
+		blizzard["result"] = result
+	_apply_frostbite(result)
+	wolf.clamp_stats()
+	_check_death()
+	_check_blizzard_here()
+	state_changed.emit()
+	return {"result": result, "kind": id, "region": current_region, "lost": lost}
+
+# 凍傷：耳朵（臉）或腳掌（腿）。不會致死；重度凍傷可能留下舊傷（同其他重傷）。
+func _apply_frostbite(result: String) -> void:
+	if result == "safe":
+		return
+	var f: Dictionary = _blizzard_cfg().get("frostbite", {})
+	var part: String = str(RNGService.weighted_pick(f.get("parts", {"face": 0.5, "leg": 0.5})))
+	var stat: String = str(GameData.balance.get("combat", {}).get("part_stat", {}).get(part, ""))
+	if result == "light":
+		var r: Array = f.get("light_damage", [5, 10])
+		wolf.health = max(1.0, wolf.health - RNGService.randi_range(int(r[0]), int(r[1])))
+		wolf.apply_injury(Wolf.Injury.LIGHT, int(f.get("light_days", 2)), "", "", "blizzard")
+	else:
+		var r2: Array = f.get("heavy_damage", [15, 25])
+		wolf.health = max(1.0, wolf.health - RNGService.randi_range(int(r2[0]), int(r2[1])))
+		wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(f.get("heavy_days_min", 4)), int(f.get("heavy_days_max", 6))), stat, part, "blizzard")
+	life_log["frostbite"] = int(life_log.get("frostbite", 0)) + 1
+
+# 風雪停了：苔原上出現凍死的馴鹿或駝鹿（冬殺），要自己找到（探索、渡鴉）；比平常的殘骸保存得久。
+func _end_blizzard() -> void:
+	var wk: Dictionary = _blizzard_cfg().get("winter_kill", {})
+	var regions: Array = GameData.map_regions(_blizzard_map())
+	var today: int = int(life_log.get("days_lived", 1))
+	var kills: int = RNGService.randi_range(int(wk.get("count_min", 1)), int(wk.get("count_max", 3)))
+	for i in kills:
+		var region_id: String = str(regions[RNGService.randi_range(0, regions.size() - 1)])
+		var animal_id: String = str(RNGService.weighted_pick(wk.get("animals", {"caribou": 1})))
+		var segments: int = HuntSystem.feeding_segments(animal_id, "adult")
+		var total: float = float(GameData.animals.get(animal_id, {}).get("adult", {}).get("hunger_value", 0))
+		carcasses.append({"region_id": region_id, "terrain": _random_terrain(region_id), "animal_id": animal_id, "life_stage": "adult",
+			"segments_left": segments, "segment_value": total / max(1, segments), "day": today + int(wk.get("extra_days", 2)),
+			"frozen": true, "found": false})
+	var entry := {"age": blizzard.get("start_age", snapped(wolf.age_years, 0.1)), "days": int(blizzard.get("days", 2)),
+		"in_tundra": bool(blizzard.get("in_tundra", false)), "choice": str(blizzard.get("choice", "")), "result": str(blizzard.get("result", ""))}
+	var list: Array = life_log.get("blizzards", [])
+	list.append(entry)
+	life_log["blizzards"] = list
+	if entry["in_tundra"] or current_map() == _blizzard_map():
+		_queue_notice({"type": "blizzard_over", "kills": kills})
+	blizzard = {}
+
+# 白矇天：開闊苔原、遠北偶爾起霧或刮白毛風，持續 1～2 個時段。感知 −20%，移動可能走錯區域。
+func _update_whiteout() -> void:
+	var cfg: Dictionary = _events_cfg().get("whiteout", {})
+	var now: int = _abs_period()
+	if whiteout_until >= 0 and now > whiteout_until:
+		whiteout_until = -1
+	if whiteout_until < 0 and not blizzard_active() and cfg.get("regions", []).has(current_region) and _can_trigger_event() \
+			and RNGService.chance(float(cfg.get("period_chance", 0.04))):
+		whiteout_until = now + RNGService.randi_range(int(cfg.get("periods_min", 1)), int(cfg.get("periods_max", 2))) - 1
+		life_log["whiteouts"] = int(life_log.get("whiteouts", 0)) + 1
+		_queue_event({"type": "whiteout"})
+	_apply_env_perception()
+
+func whiteout_here() -> bool:
+	return whiteout_until >= _abs_period() and _events_cfg().get("whiteout", {}).get("regions", []).has(current_region)
+
+func _apply_env_perception() -> void:
+	if wolf != null:
+		wolf.env_perception_mult = float(_events_cfg().get("whiteout", {}).get("perception_mult", 0.8)) if whiteout_here() else 1.0
+
+# 春融：春季進出河谷要過河，河冰可能在腳下裂開。
+func _maybe_ice_break() -> void:
+	var cfg := _ice_cfg()
+	if GameTime.current_season() != str(cfg.get("season", "spring")) or not wolf.alive:
+		return
+	if RNGService.chance(float(cfg.get("move_chance", 0.2))):
+		pending_events.append({"type": "ice_break"})
+
+# 選項：跳回岸上（看速度）、趴低慢慢爬回（較穩，多花回合）。
+func ice_break_options() -> Array:
+	var cfg := _ice_cfg()
+	var jump: float = HuntSystem.clamp_chance(float(cfg.get("jump_base", 0.6)) + (wolf.effective_speed() - 40.0) / float(cfg.get("speed_divisor", 150)))
+	return [{"id": "jump", "chance": jump, "turns": 1}, {"id": "crawl", "chance": float(cfg.get("crawl_chance", 0.8)), "turns": int(cfg.get("crawl_turns", 2))}]
+
+# 失敗就落水：體力大減、受凍（飽食度下降）、輕傷，不會致死。回傳 {"success"}。
+func ice_break_choose(id: String) -> Dictionary:
+	var opt: Dictionary = {}
+	for o in ice_break_options():
+		if o["id"] == id:
+			opt = o
+	if opt.is_empty():
+		return {}
+	var cfg := _ice_cfg()
+	record_decision("ice." + id)
+	var ok: bool = RNGService.chance(float(opt["chance"]))
+	if id == "jump":
+		Growth.train_activity(wolf, "action", "speed", 0.5)
+	if not ok:
+		wolf.stamina -= float(cfg.get("fail_stamina", 100))
+		wolf.hunger -= float(cfg.get("fail_hunger", 10))
+		wolf.health = max(1.0, wolf.health - float(cfg.get("fail_damage", 8)))
+		life_log["fell_through_ice"] = int(life_log.get("fell_through_ice", 0)) + 1
+	wolf.clamp_stats()
+	GameTime.advance_turns(int(opt["turns"]))
+	_check_death()
+	state_changed.emit()
+	return {"success": ok}
+
+# 渡鴉：白天在苔原看到遠處盤旋（地圖上有屍體時更常見）。跟過去有機會找到屍體。
+func _maybe_ravens() -> void:
+	var cfg := _ravens_cfg()
+	if current_map() != str(cfg.get("map", "tundra")) or is_feeding() or not _can_trigger_event():
+		return
+	if not cfg.get("periods", ["day"]).has(GameTime.current_period()):
+		return
+	var chance_value: float = float(cfg.get("period_chance", 0.03))
+	var target: String = ""
+	var nearby: Array = [current_region] + adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
+	for c in carcasses:
+		if nearby.has(c["region_id"]):
+			target = str(c["region_id"])
+			chance_value *= float(cfg.get("carcass_chance_mult", 3.0))
+			break
+	if not RNGService.chance(chance_value):
+		return
+	if target == "":
+		target = str(nearby[RNGService.randi_range(0, nearby.size() - 1)])
+	life_log["ravens_seen"] = int(life_log.get("ravens_seen", 0)) + 1
+	_queue_event({"type": "ravens", "region": target})
+
+# 跟著渡鴉過去：1 回合（到相鄰區域照常移動）。找到屍體就標記為已找到，接著可以回到殘骸吃。回傳 {"found"}。
+func ravens_follow(event: Dictionary) -> Dictionary:
+	var target: String = str(event.get("region", current_region))
+	record_decision("ravens.follow")
+	if target != current_region and adjacent_regions().has(target):
+		action_move(target)
+		if not wolf.alive:
+			return {}
+	else:
+		GameTime.advance_turns(1)
+	var idx := -1
+	for i in carcasses.size():
+		if carcasses[i]["region_id"] == current_region:
+			idx = i
+			break
+	var cfg := _ravens_cfg()
+	if idx < 0 and RNGService.chance(float(cfg.get("found_chance", 0.6))):
+		var left: Dictionary = cfg.get("leftover", {})
+		var animal_id: String = str(RNGService.weighted_pick(left.get("animals", {"caribou": 1})))
+		var segments: int = HuntSystem.feeding_segments(animal_id, "adult")
+		var total: float = float(GameData.animals.get(animal_id, {}).get("adult", {}).get("hunger_value", 0))
+		carcasses.append({"region_id": current_region, "terrain": _random_terrain(current_region), "animal_id": animal_id, "life_stage": "adult",
+			"segments_left": min(segments, RNGService.randi_range(int(left.get("segments_min", 1)), int(left.get("segments_max", 2)))),
+			"segment_value": total / max(1, segments), "day": int(life_log.get("days_lived", 1))})
+		idx = carcasses.size() - 1
+	life_log["ravens_followed"] = int(life_log.get("ravens_followed", 0)) + 1
+	state_changed.emit()
+	if idx < 0:
+		return {"found": false}
+	carcasses[idx]["found"] = true
+	return {"found": true, "animal_id": carcasses[idx]["animal_id"]}
+
+# --- 狼獾（具名 NPC，沿用 NpcWolf；牠爭的是你的食物，不是地盤） ---
+
+func wolverine() -> NpcWolf:
+	return npcs.get("wolverine", null)
+
+func _wolverine_cfg() -> Dictionary:
+	return NpcWolf.cfg("wolverine").get("interaction", {})
+
+func _wolverine_alive() -> bool:
+	var npc := wolverine()
+	return npc != null and npc.alive
+
+# 狼獾來搶食：進入戰鬥模式（對峙時可以讓牠吃一段換牠離開，或放棄）。
+func start_wolverine_combat() -> Combat:
+	identify("wolverine")
+	var c := start_combat("wolverine", "adult", "carcass")
+	c.set_npc(wolverine())
+	return c
+
+func _wolverine_record(c: Combat) -> void:
+	var npc := wolverine()
+	var entry := {"age": snapped(wolf.age_years, 0.1), "outcome": c.outcome, "region": current_region,
+		"wolf_damage": snapped(c.damage_taken, 1.0), "npc_damage": snapped(c.opp_hp_max - c.opp_hp, 1.0)}
+	npc.add_record(entry.duplicate())
+	var list: Array = life_log.get("wolverine_meetings", [])
+	list.append(entry)
+	life_log["wolverine_meetings"] = list
+
+# 回家的下一步（自動遊玩用）：往 target 走的相鄰區域（含跨地圖連接），已經在 target 或走不到就回傳空字串。
+func next_step_toward(target: String) -> String:
+	if current_region == target:
+		return ""
+	var prev: Dictionary = {current_region: ""}
+	var frontier: Array = [current_region]
+	while not frontier.is_empty():
+		var next: Array = []
+		for r in frontier:
+			var neighbors: Array = EncounterSystem.region_data(str(r)).get("adjacent", []).duplicate()
+			for link in GameData.links_from(str(r)):
+				neighbors.append(link["to"])
+			for n in neighbors:
+				if prev.has(n):
+					continue
+				prev[n] = r
+				if n == target:
+					var step: String = str(n)
+					while str(prev[step]) != current_region:
+						step = str(prev[step])
+					return step
+				next.append(n)
+		frontier = next
+	return ""
 
 # --- Debug helpers (see DESIGN.md "測試與除錯") ---
 
@@ -2092,6 +2592,29 @@ func debug_skip_to_dry_season() -> void:
 		debug_skip_to_next_season()
 		guard += 1
 
+# 苔原的事件（除錯）：暴風雪 1 個時段後開始；白矇天、渡鴉、河冰直接觸發。
+func debug_start_blizzard() -> void:
+	if not blizzard.is_empty():
+		return
+	start_blizzard_warning(1)
+	state_changed.emit()
+
+func debug_whiteout() -> void:
+	whiteout_until = _abs_period() + 1
+	_apply_env_perception()
+	pending_events.append({"type": "whiteout"})
+	state_changed.emit()
+
+func debug_ravens() -> void:
+	pending_events.append({"type": "ravens", "region": current_region})
+
+func debug_ice_break() -> void:
+	pending_events.append({"type": "ice_break"})
+
+# 狼獾搶食（除錯）：先在這裡擺一具馴鹿讓狼吃。
+func debug_wolverine_feed() -> void:
+	start_feeding("caribou", "adult", _random_terrain(current_region))
+
 # 陌生灰狼：當作已經遠距觀察過、而且到了可以互動的時機。
 func debug_unlock_stranger() -> void:
 	identify("stranger_wolf")
@@ -2142,6 +2665,9 @@ func to_dict() -> Dictionary:
 		"region_burn": region_burn,
 		"fire_at": fire_at,
 		"last_fire_abs": last_fire_abs,
+		"blizzard": blizzard,
+		"blizzard_at": blizzard_at,
+		"whiteout_until": whiteout_until,
 		"weather": weather,
 		"weather_until": weather_until,
 		"events_today": events_today,
@@ -2182,6 +2708,11 @@ func load_from_dict(data: Dictionary) -> void:
 		npcs[npc_id] = NpcWolf.from_dict(data["npcs"][npc_id])
 	if not npcs.has("stranger_wolf"):
 		npcs["stranger_wolf"] = NpcWolf.create("stranger_wolf", stranger_territory)
+	if not npcs.has("wolverine"):
+		npcs["wolverine"] = NpcWolf.create("wolverine", "")
+	blizzard = data.get("blizzard", {})
+	blizzard_at = int(data.get("blizzard_at", -1))
+	whiteout_until = int(data.get("whiteout_until", -1))
 	weather = str(data.get("weather", "clear"))
 	weather_until = int(data.get("weather_until", -1))
 	events_today = int(data.get("events_today", 0))
@@ -2193,4 +2724,5 @@ func load_from_dict(data: Dictionary) -> void:
 	GameTime.period_index = int(t.get("period_index", 0))
 	GameTime.turn_in_period = int(t.get("turn_in_period", 0))
 	_connect_time_signals()
+	_apply_env_perception()
 	state_changed.emit()

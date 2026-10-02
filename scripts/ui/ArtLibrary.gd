@@ -84,6 +84,10 @@ static func terrain_background(terrain: String, season: String = "") -> Texture2
 	var table: Dictionary = _cfg().get("terrain_backgrounds", {})
 	return texture(str(table.get(terrain + "@" + season, table.get(terrain, ""))))
 
+# 屍體（art.json 的 carcasses）；沒有對應的圖回傳 null。
+static func carcass(animal_id: String) -> Texture2D:
+	return texture(str(_cfg().get("carcasses", {}).get(animal_id, "")))
+
 static func icon(key: String) -> Texture2D:
 	return texture(str(_cfg().get("icons", {}).get(key, "")))
 

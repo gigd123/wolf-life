@@ -86,6 +86,8 @@ func _play_day() -> void:
 		if GameState.wolf.hunger > 110 or GameState.wolf.stamina < 35:
 			GameState.action_short_rest()
 			continue
+		if _go_home():
+			continue
 		_explore_once()
 
 # 處理遭遇與事件佇列（自動遊玩時不會顯示畫面）。
@@ -123,6 +125,17 @@ func _handle_pending() -> void:
 					GameState.stranger_yield_territory()
 			"bear_passing":
 				GameState.resolve_bear_passing(event, "leave")
+			"blizzard_here":
+				_pick_safest(GameState.blizzard_options(), "safe", func(id): GameState.blizzard_choose(id))
+			"ice_break":
+				_pick_safest(GameState.ice_break_options(), "chance", func(id): GameState.ice_break_choose(id))
+			"ravens":
+				# 餓了才跟著渡鴉去找屍體
+				if GameState.wolf.hunger < 80.0 and GameState.ravens_follow(event).get("found", false) and not done():
+					var res := GameState.action_return_to_carcass()
+					if str(res.get("event", "")) != "":
+						_scavenger(str(res["event"]))
+					_feed_loop()
 
 func _explore_once() -> void:
 	var d: Dictionary = GameState.action_explore()
@@ -183,13 +196,41 @@ func _play_hunt(hunt: HuntSystem) -> void:
 	if done():
 		return
 	GameState.finish_hunt(hunt)
+	_feed_loop()
+
+func _feed_loop() -> void:
 	while GameState.is_feeding() and not done():
 		var fr: Dictionary = GameState.feed_once()
 		var ev: String = str(fr.get("event", ""))
-		if ev == "bear" and not GameState.is_identified("grizzly_bear"):
-			GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
-		elif ev != "":
-			play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
+		if ev != "":
+			_scavenger(ev)
+
+func _scavenger(ev: String) -> void:
+	if ev == "bear" and not GameState.is_identified("grizzly_bear"):
+		GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
+	elif ev == "wolverine":
+		play_combat(GameState.start_wolverine_combat())
+	else:
+		play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
+
+# 選平安率／成功率最高的選項。
+func _pick_safest(opts: Array, key: String, apply: Callable) -> void:
+	var best: Dictionary = {}
+	for o in opts:
+		if best.is_empty() or float(o[key]) > float(best[key]):
+			best = o
+	if not best.is_empty():
+		apply.call(str(best["id"]))
+
+# 逃離大火或風雪後不在巢穴：一步一步走回去（巢穴正在燒就先不回去）。回傳有沒有移動。
+func _go_home() -> bool:
+	if GameState.current_region == GameState.den_region or GameState.burn_state(GameState.den_region) == "burning":
+		return false
+	var step := GameState.next_step_toward(GameState.den_region)
+	if step == "":
+		return false
+	GameState.action_move(step)
+	return true
 
 # 戰鬥：強攻型會打（灰熊搶食時守住），打到瀕危就撤退；其他打法對灰熊退讓（叼走一塊或放棄），
 # 對狐狸先威嚇再咬。
@@ -224,7 +265,7 @@ func _combat_choice(c: Combat) -> String:
 	var fights: bool = style == "assault" or c.animal_id == "red_fox"
 	if c.phase == Combat.Phase.STANDOFF:
 		if not fights:
-			for y in ["yield", "abandon" if style == "cautious" else "grab", "grab", "abandon"]:
+			for y in ["yield", "share", "abandon" if style == "cautious" else "grab", "grab", "abandon"]:
 				if ids.has(y):
 					return y
 		return "threaten" if c.animal_id == "red_fox" else "attack"

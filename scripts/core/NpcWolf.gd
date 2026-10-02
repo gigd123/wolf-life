@@ -91,7 +91,7 @@ func combat_profile() -> Dictionary:
 	return {"power": power(), "hp": health_max, "damage": [int(dmg_base), int(dmg_base + 8)],
 		"parts": d.get("parts", {"leg": 0.4, "shoulder": 0.4, "face": 0.2}),
 		"give_up_ratio": float(d.get("give_up_ratio", 0.35)), "threat_resist": float(d.get("threat_resist", 0.3)),
-		"can_submit": true, "desperate_hit": float(d.get("desperate_hit", 0.2)), "desperate_damage": float(d.get("desperate_damage", 1.5))}
+		"can_submit": bool(d.get("can_submit", true)), "never_lethal": bool(d.get("never_lethal", false)), "desperate_hit": float(d.get("desperate_hit", 0.2)), "desperate_damage": float(d.get("desperate_damage", 1.5))}
 
 func add_record(entry: Dictionary) -> void:
 	entry["npc_age"] = snapped(age_years, 0.25)

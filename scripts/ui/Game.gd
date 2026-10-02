@@ -51,6 +51,7 @@ var rest_overlay: Panel
 var rest_buttons_box: VBoxContainer
 
 var rain: CPUParticles2D
+var snow: CPUParticles2D # 苔原的暴風雪、白矇天
 
 var debug_overlay: Panel
 var debug_spins: Dictionary = {}
@@ -278,6 +279,7 @@ func _build_ui() -> void:
 	_build_rest_overlay()
 	_build_region_info_overlay()
 	_build_rain()
+	_build_snow()
 	_build_card_overlay()
 	_build_toast()
 	_build_debug_overlay()
@@ -314,7 +316,7 @@ func _make_creature_icon(fit_height: int = 0) -> AnimatedIcon:
 
 func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle") -> void:
 	if not ArtLibrary.setup_animal(icon, animal_id, life_stage, action):
-		var fallback_id: String = "gray_wolf" if animal_id == "stranger_wolf" else animal_id
+		var fallback_id: String = "gray_wolf" if animal_id == "stranger_wolf" else animal_id # 狼獾、渡鴉的美術之後補上，先用程式佔位
 		icon.show_static(PixelArt.make_animal_sprite(fallback_id, Vector2i(72, 48), _animal_scale(life_stage)))
 
 func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
@@ -657,6 +659,34 @@ func _build_debug_overlay() -> void:
 		GameState.debug_start_fire(str(fire_pick.get_item_metadata(fire_pick.selected)))
 		_refresh()
 	)
+	# 苔原的事件（1.6 第 6d 步）
+	var tundra_row := HBoxContainer.new()
+	right.add_child(tundra_row)
+	_debug_button(tundra_row, tr("debug.tundra.blizzard"), func():
+		debug_overlay.visible = false
+		GameState.debug_start_blizzard()
+		_refresh()
+	)
+	_debug_button(tundra_row, tr("debug.tundra.wolverine"), func():
+		debug_overlay.visible = false
+		GameState.debug_wolverine_feed()
+		_show_scavenger("wolverine", false)
+	)
+	_debug_button(tundra_row, tr("debug.tundra.ravens"), func():
+		debug_overlay.visible = false
+		GameState.debug_ravens()
+		_refresh()
+	)
+	_debug_button(tundra_row, tr("debug.tundra.whiteout"), func():
+		debug_overlay.visible = false
+		GameState.debug_whiteout()
+		_refresh()
+	)
+	_debug_button(tundra_row, tr("debug.tundra.ice"), func():
+		debug_overlay.visible = false
+		GameState.debug_ice_break()
+		_refresh()
+	)
 	var stranger_row := HBoxContainer.new()
 	right.add_child(stranger_row)
 	_debug_button(stranger_row, tr("debug.event.stranger_meet"), func():
@@ -747,7 +777,7 @@ func _refresh() -> void:
 		tr("season." + GameTime.current_season()),
 		GameTime.day,
 		tr("period." + GameTime.current_period()),
-		"" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather),
+		_weather_text(),
 		tr("stage." + _stage_key(w.life_stage())),
 	]
 	# 目前的主要狩獵方式（按鈕，點了看說明）
@@ -756,7 +786,9 @@ func _refresh() -> void:
 	if not tendency.is_empty():
 		tendency_button.text = tr("tendency." + str(tendency["type"]))
 		tendency_button.icon = ArtLibrary.icon("tendency." + str(tendency["type"]))
-	rain.emitting = GameState.weather == "storm"
+	rain.emitting = GameState.weather == "storm" and not GameState.blizzard_here()
+	snow.emitting = GameState.blizzard_here() or GameState.whiteout_here()
+	snow.amount = 400 if GameState.blizzard_here() else 160
 	# 燒過一片焦黑時換成燒毀的區域背景（art.json 的 region@burned）
 	var scorched: bool = GameState.burn_state(GameState.current_region) in ["burning", "ash"]
 	region_bg.texture = ArtLibrary.region_background(GameState.current_region, "burned" if scorched else GameTime.current_season())
@@ -962,6 +994,12 @@ func _show_discovery(d: Dictionary) -> void:
 	_show_discovery_sprite(d)
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
+	if d.get("kind", "") == "carcass":
+		_add_encounter_button(tr("ui.eat_carcass"), func():
+			GameState.clear_discovery()
+			encounter_overlay.visible = false
+			_on_action_button("return_to_carcass")
+		)
 	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
 		_add_threat_options(d)
 	elif d.get("kind", "") == "clue":
@@ -1056,6 +1094,11 @@ func _add_encounter_button(label: String, callback: Callable) -> void:
 func _discovery_text(d: Dictionary) -> String:
 	var location: String = tr("explore.location." + str(d.get("location", "")))
 	match d.get("kind", ""):
+		"nothing" when d.get("blizzard", false):
+			return tr("explore.blizzard")
+		"carcass":
+			return tr("explore.carcass" + (".frozen" if d.get("frozen", false) else "")).replace("{location}", location) \
+				.replace("{animal}", tr("animal." + str(d["animal_id"])))
 		"nothing":
 			return tr("explore.nothing").replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))
@@ -1105,6 +1148,11 @@ func _show_discovery_sprite(d: Dictionary) -> void:
 			encounter_sprite.show_static(item_tex)
 			return
 	var icon_key: String = "sight"
+	if kind == "carcass":
+		var carcass_tex: Texture2D = ArtLibrary.carcass(str(d["animal_id"]))
+		if carcass_tex != null:
+			encounter_sprite.show_static(carcass_tex)
+			return
 	if kind == "nothing":
 		icon_key = "unknown"
 	elif kind == "clue":
@@ -1132,6 +1180,10 @@ func _show_feeding() -> void:
 	var chances := GameState.scavenge_chances()
 	encounter_detail.text = tr("feeding.risk").replace("{bear}", str(int(round(float(chances["bear"]) * 100.0)))) \
 		.replace("{fox}", str(int(round(float(chances["fox"]) * 100.0))))
+	if float(chances.get("wolverine", 0.0)) > 0.0 and GameState.is_identified("wolverine"):
+		encounter_detail.text += tr("feeding.risk.wolverine").replace("{n}", str(int(round(float(chances["wolverine"]) * 100.0))))
+	elif float(chances.get("wolverine", 0.0)) > 0.0:
+		encounter_detail.text += tr("feeding.risk.ravens")
 	_set_wolf_pose(encounter_sprite, "eat")
 	_set_terrain_bg(encounter_bg, str(f.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
@@ -1161,6 +1213,11 @@ func _on_feed() -> void:
 
 # 灰熊或狐狸來搶食。returning：回到殘骸時撞見。
 func _show_scavenger(event: String, returning: bool) -> void:
+	if event == "wolverine":
+		var first: bool = not GameState.is_identified("wolverine")
+		_log(tr("scavenger.wolverine.%s%s" % ["returning" if returning else "arrive", ".first" if first else ""]))
+		_begin_combat(GameState.start_wolverine_combat(), "move")
+		return
 	var bear_known: bool = event != "bear" or GameState.is_identified("grizzly_bear")
 	var key: String = "scavenger.%s.%s" % [event, "returning" if returning else "arrive"]
 	if not bear_known:
@@ -1256,6 +1313,25 @@ func _process_events() -> void:
 			return
 		"fire_over":
 			_show_fire_over(event)
+			return
+		"blizzard_warning":
+			_show_event_message(tr("blizzard.warning." + ("late" if event.get("late", false) else "early")), "caribou")
+			return
+		"blizzard_far":
+			_log(tr("blizzard.far"))
+		"blizzard_here":
+			_show_blizzard(event)
+			return
+		"blizzard_over":
+			_show_blizzard_over(event)
+			return
+		"whiteout":
+			_log(tr("event.whiteout"))
+		"ice_break":
+			_show_ice_break()
+			return
+		"ravens":
+			_show_ravens(event)
 			return
 		"prey_nearby":
 			_show_prey_nearby(event)
@@ -1820,6 +1896,130 @@ func _show_fire_over(event: Dictionary) -> void:
 	var burned: Array = event.get("burned", [])
 	_show_card(tr("fire.over.title"), body, ArtLibrary.region_background(str(burned[0]) if not burned.is_empty() else GameState.current_region, "burned"))
 
+# --- 苔原的事件（1.6 第 6d 步） ---
+
+func _weather_text() -> String:
+	if GameState.blizzard_here():
+		return "　" + tr("weather.blizzard")
+	if GameState.whiteout_here():
+		return "　" + tr("weather.whiteout")
+	return "" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather)
+
+# 暴風雪用粒子效果（同暴雨，不需要另外的圖）：斜吹的雪片。
+func _build_snow() -> void:
+	snow = CPUParticles2D.new()
+	snow.emitting = false
+	snow.amount = 400
+	snow.lifetime = 2.0
+	snow.position = Vector2(700, -10)
+	snow.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	snow.emission_rect_extents = Vector2(700, 1)
+	snow.direction = Vector2(-1, 0.6)
+	snow.spread = 12.0
+	snow.gravity = Vector2.ZERO
+	snow.initial_velocity_min = 220.0
+	snow.initial_velocity_max = 320.0
+	snow.scale_amount_min = 1.0
+	snow.scale_amount_max = 2.5
+	snow.color = Color(0.95, 0.97, 1.0, 0.7)
+	var flake := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+	flake.fill(Color(1, 1, 1, 1))
+	snow.texture = ImageTexture.create_from_image(flake)
+	snow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(snow)
+
+func _show_blizzard(event: Dictionary) -> void:
+	var region: String = str(event.get("region", GameState.current_region))
+	var text: String = tr("blizzard.here").replace("{region}", tr("region." + region))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = tr("blizzard.detail")
+	_set_wolf_pose(encounter_sprite, "walk")
+	encounter_bg.texture = ArtLibrary.region_background(region, "winter")
+	encounter_bg.modulate = Color(0.8, 0.85, 0.95)
+	_clear_children(encounter_buttons_box)
+	for opt in GameState.blizzard_options():
+		var label: String = tr("blizzard.option." + str(opt["kind"])).replace("{region}", tr("region." + str(opt["region"]))) \
+			.replace("{n}", str(int(round(float(opt["safe"]) * 100.0))))
+		var id: String = opt["id"]
+		_add_encounter_button(label, func(): _on_blizzard_choice(id))
+	encounter_overlay.visible = true
+
+func _on_blizzard_choice(id: String) -> void:
+	var res := GameState.blizzard_choose(id)
+	encounter_bg.modulate = Color(1, 1, 1)
+	encounter_overlay.visible = false
+	if res.is_empty():
+		return
+	if res.get("lost", false):
+		_log(tr("blizzard.result.lost").replace("{region}", tr("region." + str(res["region"]))))
+	elif str(res["kind"]) == "retreat":
+		_log(tr("blizzard.result.retreat").replace("{region}", tr("region." + str(res["region"]))))
+	else:
+		_log(tr("blizzard.result." + str(res["kind"])))
+	if str(res["result"]) != "safe":
+		_log(tr("blizzard.frostbite." + str(res["result"])))
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+
+func _show_blizzard_over(event: Dictionary) -> void:
+	var body: String = tr("blizzard.over")
+	if int(event.get("kills", 0)) > 0:
+		body += "\n\n" + tr("blizzard.over.kills")
+	_log(tr("blizzard.over"))
+	_show_card(tr("blizzard.over.title"), body, ArtLibrary.region_background(GameState.current_region, "winter"))
+
+func _show_ice_break() -> void:
+	var text: String = tr("ice.here")
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "walk")
+	_set_terrain_bg(encounter_bg, "river_willow")
+	_clear_children(encounter_buttons_box)
+	for opt in GameState.ice_break_options():
+		var id: String = opt["id"]
+		_add_encounter_button(tr("ice.option." + id).replace("{n}", str(int(round(float(opt["chance"]) * 100.0)))), func():
+			var res := GameState.ice_break_choose(id)
+			encounter_overlay.visible = false
+			_log(tr("ice.result." + ("success" if res.get("success", false) else "fail")))
+			_refresh()
+			if GameState.wolf != null and not GameState.wolf.alive:
+				_on_wolf_died(GameState.wolf.death_cause)
+		)
+	encounter_overlay.visible = true
+
+func _show_ravens(event: Dictionary) -> void:
+	var region: String = str(event.get("region", GameState.current_region))
+	var text: String = tr("ravens.here" if region == GameState.current_region else "ravens.far").replace("{region}", tr("region." + region))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "raven", "adult")
+	encounter_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("ravens.follow"), func():
+		encounter_overlay.visible = false
+		var res := GameState.ravens_follow(event)
+		if GameState.wolf == null or not GameState.wolf.alive:
+			_refresh()
+			if GameState.wolf != null:
+				_on_wolf_died(GameState.wolf.death_cause)
+			return
+		if res.get("found", false):
+			_log(tr("ravens.found").replace("{animal}", tr("animal." + str(res["animal_id"]))))
+			_on_action_button("return_to_carcass")
+		else:
+			_log(tr("ravens.nothing"))
+		_refresh()
+	)
+	_add_encounter_button(tr("ravens.ignore"), func():
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
 # --- 陌生灰狼（SPEC 1.6「陌生灰狼」） ---
 
 # 直接遇上牠：避開、跟蹤、威嚇、挑戰。第一次相遇時說出這一帶關於牠的傳說。
@@ -1961,7 +2161,7 @@ func _finish_combat_ui() -> void:
 		_log(tr("combat.result." + c.outcome).replace("{animal}", name))
 		if str(r.get("grow", "")) != "":
 			_log(tr("combat.grow." + str(r["grow"])))
-		if c.npc != null and c.won():
+		if c.npc != null and c.npc.id == "stranger_wolf" and c.won():
 			_log(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
