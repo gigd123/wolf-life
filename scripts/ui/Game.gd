@@ -2465,7 +2465,11 @@ func _notice_lines(lines: Array) -> String:
 func _show_season_card(event: Dictionary) -> void:
 	var season: String = str(event.get("season", GameTime.current_season()))
 	var body: String = _notice_lines(event.get("lines", []))
-	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, ArtLibrary.season_background(season))
+	# 苔原的卡片用那一區的季節背景（森林用季節背景）
+	var bg: Texture2D = ArtLibrary.season_background(season)
+	if str(event.get("map", "forest")) != "forest":
+		bg = ArtLibrary.region_background(str(event.get("region", GameState.current_region)), season)
+	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, bg)
 
 func _show_day_summary(event: Dictionary) -> void:
 	var texts: Array[String] = []

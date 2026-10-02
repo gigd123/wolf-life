@@ -914,3 +914,16 @@ ice.prompt.go,走過去（{n} 回合到{region}）
 ice.prompt.back,還是繞路
 log.made_den.bonus.tundra_north,沙脊的沙土鬆軟乾燥，你挖得又深又暖。待在這一帶時，寒冷不再那麼難熬。
 ui.region_info.den_bonus.tundra_north,沙脊的沙土適合挖巢穴：在這裡安家，待在這一帶時嚴寒的消耗減半，暴風雪時躲進巢穴也更安全
+season_card.tundra.spring.full,苔原上的雪開始融化，低窪處積成一灘灘的水。成群的北美馴鹿從南方的林線走出來，穿過開闊苔原往北去。河谷的冰變薄了，踩上去會發出悶響。
+season_card.tundra.spring.short,雪融了，馴鹿群又穿過開闊苔原往北走。河冰變薄了。
+season_card.tundra.spring.tundra_wolf,那對苔原狼大概也會跟著馴鹿回來。
+season_card.tundra.summer.full,太陽幾乎不落下，夜裡天色只暗一會兒。融雪後的苔原長滿苔蘚和低矮的花，蚊蚋成群。馴鹿群已經走到更北的地方，林線的灌木結了藍莓。
+season_card.tundra.summer.short,白晝漫長，苔原一片綠，馴鹿群在遠方。林線的藍莓熟了。
+season_card.tundra.summer.bear_known,河谷的柳叢裡，灰熊在翻找食物。
+season_card.tundra.autumn.full,苔蘚轉紅，第一場霜落在苔原上。馴鹿群從北方回來，成群穿過開闊苔原往南方的林線移動。雪兔的毛色開始變白。
+season_card.tundra.autumn.short,苔原轉紅，馴鹿群又南下了。雪兔的毛色開始變白。
+season_card.tundra.autumn.tundra_wolf,那對苔原狼跟著馴鹿群，往南邊來了。
+season_card.tundra.winter.full,苔原被厚厚的雪蓋住，風從北方一路颳過來，沒有東西擋得住。河面結了厚冰，可以直接走過去。白天很短，待在這裡的每一刻都在消耗體力。
+season_card.tundra.winter.short,寒風又颳了起來，河面結了厚冰。待在這裡的每一刻都在消耗體力。
+season_card.tundra.winter.blizzard,天色發黃、風突然停下的時候，要趕快找地方躲。
+season_card.tundra.winter.wolverine,狼獾不冬眠。雪地上那串寬大的腳印，說明牠還在附近找吃的。

@@ -187,20 +187,32 @@ func _queue_notice(event: Dictionary) -> void:
 	pending_events.append(event)
 
 # 季節卡片：第一次經歷某個季節顯示完整描述，之後顯示精簡版；變化依這隻狼的辨識與知識決定。
+# 人在苔原時用苔原的卡片（notices.json 的 season_cards_by_map），第一次與否分開記（seasons_seen 的 "tundra:winter"）。
 func _queue_season_card() -> void:
 	var season: String = GameTime.current_season()
+	var map_cards: Dictionary = GameData.notices.get("season_cards_by_map", {}).get(current_map(), {})
+	var seen_key: String = season if map_cards.is_empty() else current_map() + ":" + season
 	var seen: Array = life_log.get("seasons_seen", [])
-	var first: bool = not seen.has(season)
+	var first: bool = not seen.has(seen_key)
 	if first:
-		seen.append(season)
+		seen.append(seen_key)
 		life_log["seasons_seen"] = seen
 	var lines: Array = []
-	for line in GameData.notices.get("season_cards", {}).get(season, []):
+	var cards: Array = map_cards.get(season, []) if not map_cards.is_empty() else GameData.notices.get("season_cards", {}).get(season, [])
+	for line in cards:
 		if line.has("full"):
 			lines.append({"key": str(line["full"] if first else line["short"])})
 		elif _notice_condition(str(line.get("if", ""))):
 			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
-	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines})
+	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region})
+
+# 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
+func _maybe_map_season_card() -> void:
+	if GameData.notices.get("season_cards_by_map", {}).get(current_map(), {}).is_empty():
+		return
+	if life_log.get("seasons_seen", []).has(current_map() + ":" + GameTime.current_season()):
+		return
+	_queue_season_card()
 
 func _notice_condition(cond: String) -> bool:
 	var parts: PackedStringArray = cond.split(":")
@@ -208,6 +220,7 @@ func _notice_condition(cond: String) -> bool:
 		return cond == ""
 	match parts[0]:
 		"identified": return is_identified(parts[1])
+		"seen": return not life_log.get(parts[1], []).is_empty()
 		"sensed": return not is_identified(parts[1]) and _sensed_region(parts[1]) != ""
 	return false
 
@@ -605,6 +618,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 	if wolf.alive:
 		_apply_env_perception()
 		_check_blizzard_here()
+		_maybe_map_season_card()
 		if ice_check:
 			_maybe_ice_break()
 		elif not ice.is_empty() and RNGService.chance(float(ice["break"])):
@@ -1991,6 +2005,7 @@ func action_move_silent(target_region: String) -> void:
 	rk["visited"] = true
 	region_knowledge[target_region] = rk
 	_apply_env_perception()
+	_maybe_map_season_card()
 
 # 回到被燒過的巢穴：聞到很重的焦味（每場火提示一次）。
 func _note_den_smell() -> void:

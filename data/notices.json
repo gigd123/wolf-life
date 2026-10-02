@@ -1,6 +1,28 @@
 {
   "_comment": "轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）。文字都是翻譯鍵，撰寫依 docs/writing-guide.md。",
   "_season_cards_comment": "季節卡片：full／short 是第一次與之後的描述；if 的條件：identified:<動物> 已辨識、sensed:<動物> 還沒辨識但察覺過危險（{region} 換成察覺最多次的區域）。",
+  "_season_cards_by_map_comment": "苔原的季節卡片（使用者決定要補）：換季時人在苔原，或第一次在某個季節來到苔原時顯示；格式同 season_cards，另外有 seen:<life_log 的鍵>（那件事發生過）的條件。第一次與之後的精簡版分開記（life_log.seasons_seen 的 tundra:<季節>）。",
+  "season_cards_by_map": {
+    "tundra": {
+      "spring": [
+        { "full": "season_card.tundra.spring.full", "short": "season_card.tundra.spring.short" },
+        { "if": "identified:tundra_wolf", "text": "season_card.tundra.spring.tundra_wolf" }
+      ],
+      "summer": [
+        { "full": "season_card.tundra.summer.full", "short": "season_card.tundra.summer.short" },
+        { "if": "identified:grizzly_bear", "text": "season_card.tundra.summer.bear_known" }
+      ],
+      "autumn": [
+        { "full": "season_card.tundra.autumn.full", "short": "season_card.tundra.autumn.short" },
+        { "if": "identified:tundra_wolf", "text": "season_card.tundra.autumn.tundra_wolf" }
+      ],
+      "winter": [
+        { "full": "season_card.tundra.winter.full", "short": "season_card.tundra.winter.short" },
+        { "if": "seen:blizzards", "text": "season_card.tundra.winter.blizzard" },
+        { "if": "identified:wolverine", "text": "season_card.tundra.winter.wolverine" }
+      ]
+    }
+  },
   "season_cards": {
     "spring": [
       { "full": "season_card.spring.full", "short": "season_card.spring.short" },
