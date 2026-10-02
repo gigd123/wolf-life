@@ -1,6 +1,6 @@
 # Phase 1.6 美術清單
 
-`art_phase1.6_placeholders.zip` 解壓後是 `assets/art/` 的目錄結構，直接合併進 repo 即可（不會覆蓋任何現有檔案）。這些都是**佔位素材**：圖示是手繪像素，其他由現有素材調色或變形而來。正式素材之後照同樣的檔名與尺寸替換，程式不用改。
+`art_phase1.6_placeholders.zip`（第 1～5 步）與 `art_tundra_placeholders.zip`（第 6 步苔原，加上 1.5 遺留的獵物屍體與區域小圖）解壓後都是 `assets/art/` 的目錄結構，直接合併進 repo 即可（不會覆蓋任何現有檔案）。這些都是**佔位素材**：圖示是手繪像素，其他由現有素材調色或變形而來。正式素材之後照同樣的檔名與尺寸替換，程式不用改。
 
 所有素材都遵守 `assets/README.md` 的規則：PNG、透明背景（背景圖除外）、1x 尺寸、顯示時用 Nearest 過濾。
 
@@ -93,20 +93,50 @@
 | 中 | 狼的戰鬥姿勢 | 威嚇（壓低身體、頸毛豎起、露牙）、撲咬、閃避、受傷、示弱（耳朵向後、尾巴夾起、身體伏低）；目前是由其他姿勢變形而來 |
 | 中 | 四季插圖 | 正式版可以是專門繪製的季節場景，而不是區域背景調色 |
 | 中 | 燒毀與再生的區域 | 燒毀後的焦黑版本，以及草木新生的版本 |
-| 低 | 1.5 遺留 | 雄鹿、母鹿的動畫，遠距灰熊的動畫，獵物屍體，地圖按鈕上的區域小圖 |
+| 低 | 1.5 遺留 | 雄鹿、母鹿的動畫，遠距灰熊的動畫（獵物屍體與區域小圖已有佔位） |
 
-這次沒有製作獵物屍體與區域小圖：前者無法從現有素材合理變形，後者要先確認地圖按鈕的實際尺寸。
+1.5 遺留的白尾鹿屍體（`carcass_deer.png`）與森林四區的區域小圖，已包含在 `art_tundra_placeholders.zip`。
 
-## 四、第 6 步（苔原）的需求，屆時再製作
+## 四、第 6 步：苔原（已製作佔位）
 
-| 素材 | 數量 |
-| --- | --- |
-| 區域背景 | 4 區 × 夏、冬 ＝ 8 張（640×360） |
-| 地形背景 | 林線、開闊苔原、河谷柳叢、岩石區、沙脊，約 5 張（320×180） |
-| 地圖按鈕的區域小圖 | 4 張 |
-| 雪兔 | 褐色、白色各一套（同野兔的 4 欄 × 2 列） |
-| 北美馴鹿 | 待機、行走、奔跑、警戒，加上鹿群 |
-| 駝鹿 | 待機、行走、奔跑、警戒、踢擊、受傷 |
-| 獵物屍體 | 馴鹿、駝鹿 |
-| 線索圖示 | 雪兔足跡、馴鹿足跡、駝鹿磨角痕跡 |
-| 狀態圖示 | 嚴寒 |
+苔原的區域 id 暫定為 `tundra_south`（林線）、`tundra_central`（開闊苔原）、`tundra_east`（河谷）、`tundra_north`（遠北），檔名照森林的規則；實際 id 由苔原的詳細規格決定，屆時改檔名或 `art.json` 即可。
+
+### 背景
+
+| 檔案 | 尺寸 | 用途 |
+| --- | --- | --- |
+| `backgrounds/regions/tundra_{south,central,east,north}.png` | 640×360 | 區域背景（夏季，春秋由程式調色） |
+| `backgrounds/regions/tundra_{south,central,east,north}_winter.png` | 640×360 | 區域背景（冬季），可用 `tundra_south@winter` 這類鍵對應 |
+| `backgrounds/terrain/{treeline,open_tundra,river_willow,rocky,esker}.png` | 320×180 | 狩獵、遭遇畫面的地形背景：林線、開闊苔原、河谷柳叢、岩石區、沙脊 |
+| `backgrounds/terrain/{同上}_winter.png` | 320×180 | 地形背景的冬季版（森林的地形背景目前不分季節，這是新增的做法，要不要用由實作決定） |
+
+背景是程式繪製的，風格比森林的正式背景簡單，地面以橫向色塊表現。
+
+### 動物
+
+| 檔案 | 尺寸 | 用途 |
+| --- | --- | --- |
+| `sprites/animals/snowhare_summer_sheet.png` | 192×64 | 雪兔夏季（褐色、白腳），4 欄 × 2 列：待機、跑動 |
+| `sprites/animals/snowhare_winter_sheet.png` | 192×64 | 雪兔冬季（白色、黑耳尖） |
+| `sprites/animals/caribou_sheet.png` | 192×64 | 北美馴鹿，4 欄 × 2 列：待機、跑動；警戒可用待機第一格 |
+| `sprites/animals/caribou_herd.png` | 約 120×40 | 馴鹿群（四隻疊在一起） |
+| `sprites/animals/moose.png` | 約 60×80 | 駝鹿，單張（比雄鹿大約 1.3 倍） |
+| `sprites/animals/moose_run.png`、`moose_kick.png`、`moose_hurt.png` | 同上 | 駝鹿的奔跑、踢擊、受傷 |
+| `sprites/animals/carcass_caribou.png`、`carcass_moose.png`、`carcass_deer.png` | 不定 | 獵物屍體，用在進食畫面 |
+
+雪兔、馴鹿由野兔與白尾鹿的現有素材調色；駝鹿由雄鹿改造（換成掌狀鹿角、加上肩峰與垂肉、淺色的腿），動作是變形而來，正式版需要重畫。
+
+### 圖示
+
+| 檔案 | 尺寸 | 用途 |
+| --- | --- | --- |
+| `icons/clue_track_snowhare.png` | 16×16 | 雪兔足跡 |
+| `icons/clue_track_caribou.png` | 16×16 | 馴鹿足跡（偶蹄） |
+| `icons/clue_antler_rub.png` | 16×16 | 駝鹿在樹幹上磨角的痕跡 |
+| `icons/status_cold.png` | 16×16 | 嚴寒 |
+| `icons/region_tile_forest_{east,north,south,west}.png` | 18×18 | 地圖按鈕上的區域小圖（取代程式生成的小圖） |
+| `icons/region_tile_tundra_{south,central,east,north}.png` | 18×18 | 苔原的區域小圖 |
+
+### 正式美術的優先順序
+
+駝鹿與北美馴鹿最需要正式繪製，牠們是苔原的主角，目前的佔位是由白尾鹿改造而來。其次是苔原的四張區域背景。

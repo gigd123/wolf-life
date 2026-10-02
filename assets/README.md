@@ -50,6 +50,18 @@
 | `backgrounds/regions/forest_*_burned.png` | 燒毀後的區域背景，640×360（建議鍵 `forest_east@burned`） | 5 |
 | `icons/clue_smoke.png`、`icons/status_burn.png` | 煙味線索、燒傷狀態 | 5 |
 
+2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`，預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/art_phase1.6.md`。苔原的區域 id 是暫定的，第 6 步開工時依規格再改檔名或 `art.json`。
+
+| 路徑 | 內容 | 步驟 |
+| --- | --- | --- |
+| `backgrounds/regions/tundra_{south,central,east,north}.png`、`*_winter.png` | 苔原四區的區域背景（夏季、冬季），640×360 | 6 |
+| `backgrounds/terrain/{treeline,open_tundra,river_willow,rocky,esker}.png`、`*_winter.png` | 苔原地形背景（林線、開闊苔原、河谷柳叢、岩石區、沙脊），320×180；森林的地形背景目前不分季節 | 6 |
+| `sprites/animals/snowhare_{summer,winter}_sheet.png`、`caribou_sheet.png` | 雪兔（夏、冬毛色）、北美馴鹿，4 欄 × 2 列 | 6 |
+| `sprites/animals/caribou_herd.png`、`moose.png`、`moose_{run,kick,hurt}.png` | 馴鹿群、駝鹿（單張，76×76） | 6 |
+| `icons/clue_track_{snowhare,caribou}.png`、`clue_antler_rub.png`、`status_cold.png` | 苔原的線索與嚴寒狀態 | 6 |
+| `sprites/animals/carcass_{deer,caribou,moose}.png` | 獵物屍體（進食畫面） | 白尾鹿可隨時接上；其他 6 |
+| `icons/region_tile_{forest_*,tundra_*}.png` | 地圖按鈕的區域小圖，18×18（取代程式生成的小圖） | 森林可隨時接上；苔原 6 |
+
 ## 顯示方式
 
 - 主畫面：區域背景依季節換圖、依時段調色，上面蓋一層 45% 的暗色讓文字好讀。
