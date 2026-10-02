@@ -26,6 +26,10 @@
         "poses": { "herd": "res://assets/art/sprites/animals/caribou_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "moose": {
+      "adult": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
+      "juvenile": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png" } }
+    },
     "grizzly_bear": {
       "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },

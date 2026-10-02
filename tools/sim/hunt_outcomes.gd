@@ -12,11 +12,11 @@ func _process(_d):
 	var GS = root.get_node("GameState")
 	GS.new_game("forest_east")
 	var missing := {}
-	for spec in [["hare","adult",false],["white_tailed_deer","juvenile",false],["white_tailed_deer","adult",false],["white_tailed_deer","buck",false],["white_tailed_deer","adult",true],["red_fox","adult",false],["snowshoe_hare","adult",false],["caribou","adult",false],["caribou","juvenile",false]]:
+	for spec in [["hare","adult",false],["white_tailed_deer","juvenile",false],["white_tailed_deer","adult",false],["white_tailed_deer","buck",false],["white_tailed_deer","adult",true],["red_fox","adult",false],["snowshoe_hare","adult",false],["caribou","adult",false],["caribou","juvenile",false],["moose","adult",false],["moose","juvenile",false]]:
 		var reactions := {}; var res := {}; var rounds := 0; var dmg := 0.0; var notes := {}
 		for i in 400:
 			GS.wolf.stamina = 100; GS.wolf.health = 100; GS.wolf.hunger = 60; GS.wolf.speed = 40; GS.wolf.strength = 40; GS.wolf.skill = 40; GS.wolf.perception = 40
-			var h = GS.start_hunt(spec[0], spec[1], -1, false, (["treeline","open_tundra","river_willow","rocky","esker"] if spec[0] in ["snowshoe_hare","caribou"] else ["stream","dense_forest","forest_edge","clearing","fallen_logs"])[i % 5], spec[2])
+			var h = GS.start_hunt(spec[0], spec[1], -1, false, (["treeline","open_tundra","river_willow","rocky","esker"] if spec[0] in ["snowshoe_hare","caribou","moose"] else ["stream","dense_forest","forest_edge","clearing","fallen_logs"])[i % 5], spec[2])
 			reactions[h.reaction] = reactions.get(h.reaction, 0) + 1
 			var g := 0
 			while h.stage != STAGE_DONE and g < 30:

@@ -1516,6 +1516,9 @@ func _render_hunt_stage() -> void:
 	var herd: bool = bool(GameData.animals.get(current_hunt.animal_id, {}).get("herd", false)) and current_hunt.life_stage != "juvenile"
 	if herd and current_hunt.stage == HuntSystem.Stage.OBSERVE:
 		prey_action = "herd"
+	# 搏鬥時獵物擺出反擊的姿勢（有圖的才會換，例如駝鹿的踢擊）
+	if current_hunt.stage == HuntSystem.Stage.FIGHT:
+		prey_action = "attack"
 	_set_creature(hunt_sprite, current_hunt.animal_id, current_hunt.life_stage, prey_action)
 	var pose: String = "stalk"
 	match current_hunt.stage:

@@ -107,6 +107,11 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		"full": stage = Stage.OBSERVE
 		_: stage = Stage.STALK
 	fight_state = {"wounds": 0, "next_bonus": 0.0, "counter_reduction": 0.0, "chase_bonus": 0.0, "tendency_bonus": 0.0}
+	# 個別獵物的搏鬥特性（例如駝鹿：更難制伏、正面踢擊更重、多半踢中腿）
+	var fight_mods: Dictionary = stats.get("fight", {})
+	for key in ["difficulty", "wounds_to_kill", "counter_damage_mult", "parts"]:
+		if fight_mods.has(key):
+			fight_state[key] = fight_mods[key]
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))

@@ -81,6 +81,11 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var penalty: float = float(state.get("penalty", 0.0))
 	if penalty > 0.0:
 		factors.append({"key": "factor.standing_danger", "good": false, "weight": penalty})
+	# 體型巨大的獵物（駝鹿）：搏鬥本身就很難
+	var difficulty: float = float(state.get("difficulty", 0.0))
+	if difficulty > 0.0:
+		factors.append({"key": "factor.huge_prey", "good": false, "weight": difficulty})
+		penalty += difficulty
 	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus + tendency_bonus - penalty
 	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
 
@@ -105,16 +110,17 @@ static func resolve_round(wolf: Wolf, prey_counter: float, move: String, state: 
 			return {"outcome": "kill", "success": true, "factors": info["factors"]}
 		if m.has("wound"):
 			state["wounds"] = int(state.get("wounds", 0)) + int(m["wound"])
-			if int(state["wounds"]) >= int(cfg.get("wounds_to_kill", 2)):
+			if int(state["wounds"]) >= int(state.get("wounds_to_kill", cfg.get("wounds_to_kill", 2))):
 				return {"outcome": "kill", "success": true, "factors": info["factors"]}
 		state["next_bonus"] = float(m.get("next_bonus", 0.0))
 		state["counter_reduction"] = float(m.get("counter_reduction", 0.0))
 		return {"outcome": "continue", "success": true, "factors": info["factors"]}
 	var result := {"outcome": "continue", "success": false, "damage": 0.0, "factors": info["factors"]}
 	if RNGService.chance(counter):
-		var dmg: float = float(RNGService.randi_range(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 15))))
+		var dmg: float = float(RNGService.randi_range(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 15)))) \
+			* float(state.get("counter_damage_mult", 1.0))
 		# 瀕危時仍選擇繼續搏鬥，這一擊才可能致死
-		var hit := hurt_wolf(wolf, dmg, cfg.get("parts", {}), str(state.get("source", "")), bool(state.get("lethal", false)))
+		var hit := hurt_wolf(wolf, dmg, state.get("parts", cfg.get("parts", {})), str(state.get("source", "")), bool(state.get("lethal", false)))
 		result["damage"] = hit["damage"]
 	if RNGService.chance(float(cfg.get("escape_chance_on_fail", 0.3))):
 		result["outcome"] = "escape"

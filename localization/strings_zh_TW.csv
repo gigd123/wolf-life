@@ -745,3 +745,9 @@ reason.terrain_rocky,岩石絆住了你的腳步。
 reason.terrain_esker,沙脊上太顯眼了。
 reason.snow_camouflage,雪白的身影一閃，就融進了雪地裡。
 hunt.stage.observe_herd,觀察階段：遠處有一群{animal}
+animal.moose,駝鹿
+prey_name.moose.adult,駝鹿
+prey_name.moose.juvenile,小駝鹿
+explore.sign.antler_rub,樹幹上被磨掉一大片樹皮的痕跡
+factor.huge_prey,牠的體型大得多
+reason.huge_prey,牠一腳踢開了你，你根本壓不住這麼大的身軀。

@@ -125,6 +125,7 @@
       "sleep_find_chance": 0.5,
       "cold_mult": 0.8,
       "prey_weights": {
+        "moose": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 },
         "snowshoe_hare": { "spring": 4, "summer": 4, "autumn": 4, "winter": 4 },
         "red_fox": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 }
       },
@@ -168,6 +169,7 @@
       "sleep_find_chance": 0.4,
       "cold_mult": 1.0,
       "prey_weights": {
+        "moose": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 },
         "snowshoe_hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
         "caribou": { "spring": 1, "summer": 0, "autumn": 1, "winter": 0 },
         "red_fox": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
