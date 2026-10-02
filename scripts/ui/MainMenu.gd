@@ -64,4 +64,8 @@ func _on_new_game() -> void:
 
 func _on_continue() -> void:
 	if SaveSystem.load_game():
+		# 死亡時已經存檔；若當時沒切到一生回顧（例如程式出錯），繼續時直接進一生回顧。
+		if GameState.wolf != null and not GameState.wolf.alive:
+			get_tree().change_scene_to_file("res://scenes/LifeSummary.tscn")
+			return
 		get_tree().change_scene_to_file("res://scenes/Game.tscn")
