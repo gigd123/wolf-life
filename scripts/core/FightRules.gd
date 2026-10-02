@@ -151,7 +151,6 @@ static func attack_chance(wolf: Wolf, opp_power: float, move: String, state: Dic
 		if v > 0.0:
 			value += v
 			factors.append({"key": "factor.combat." + key, "good": true, "weight": v})
-	_add_wolf_condition(wolf, factors)
 	return {"chance": clamp(value, float(a.get("min", 0.05)), float(a.get("max", 0.95))), "factors": factors}
 
 # 對手這一回合打中狼的機率；dodge 大幅降低，猛撲提高。
@@ -193,7 +192,3 @@ static func threaten_chance(wolf: Wolf, opp: Dictionary, stake_mult: float) -> D
 	if resist > 0.0:
 		factors.append({"key": "factor.combat.determined", "good": false, "weight": resist})
 	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.3)) + diff - resist), "factors": factors}
-
-static func _add_wolf_condition(wolf: Wolf, factors: Array) -> void:
-	if in_danger(wolf):
-		factors.append({"key": "factor.combat.danger", "good": false, "weight": 0.0, "info": true})

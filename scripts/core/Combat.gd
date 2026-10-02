@@ -115,27 +115,27 @@ func _attack_state(initiative: bool) -> Dictionary:
 func _attack_option(move: String, initiative: bool) -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), move, _attack_state(initiative))
 	var label: String = "combat.option.attack" if initiative else "combat.option." + move
-	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "factors": info["factors"],
+	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "chance_key": "chance_label.hit", "factors": info["factors"],
 		"injury_risk": FightRules.opponent_hit_chance(wolf, opp_power(), move)}
 	return _move_trains(opt, move)
 
 func _dodge_option() -> Dictionary:
 	var hit: float = FightRules.opponent_hit_chance(wolf, opp_power(), "dodge")
-	var opt := {"id": "dodge", "label_key": "combat.option.dodge", "chance": 1.0 - hit,
+	var opt := {"id": "dodge", "label_key": "combat.option.dodge", "chance": 1.0 - hit, "chance_key": "chance_label.dodge",
 		"factors": [{"key": "factor.combat.opening", "good": true, "weight": 0.0, "info": true}], "injury_risk": hit}
 	opt["next_bonus"] = {"stage": "attack", "value": float(FightRules.move_cfg("dodge").get("next_bonus", 0.1))}
 	return _move_trains(opt, "dodge")
 
 func _retreat_option() -> Dictionary:
 	var info := FightRules.retreat_chance(wolf, _tendency_effect("cautious"))
-	var opt := {"id": "retreat", "label_key": "combat.option.retreat", "chance": info["chance"], "factors": info["factors"],
+	var opt := {"id": "retreat", "label_key": "combat.option.retreat", "chance": info["chance"], "chance_key": "chance_label.escape", "factors": info["factors"],
 		"injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "retreat")}
 	return _move_trains(opt, "retreat")
 
 func _threaten_option() -> Dictionary:
 	var info := FightRules.threaten_chance(wolf, opp, stake_mult)
 	var t: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("threaten", {})
-	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": info["chance"], "factors": info["factors"],
+	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": info["chance"], "chance_key": "chance_label.drive_off", "factors": info["factors"],
 		"stamina": float(t.get("stamina", 3)), "injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "bite")}
 
 func _probe_option() -> Dictionary:

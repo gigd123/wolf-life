@@ -429,7 +429,7 @@ cost.stamina,體力 -{n}
 cost.turns,多 {n} 回合
 cost.next_bonus,{stage} +{n}%
 cost.trains,練：{list}
-cost.injury_risk,受傷 {n}%
+cost.injury_risk,你被打中 {n}%
 cost.prey_drain,獵物體力 -{n}
 cost.stage.stalk,潛近
 cost.stage.chase,追擊
@@ -544,7 +544,7 @@ combat.remember,你記得：上次你還不是牠的對手。
 combat.opp.strong,牠還很有力。
 combat.opp.hurt,牠身上帶著傷，動作慢了些。
 combat.opp.wavering,牠喘著氣，似乎想退了。
-combat.danger,你傷得很重，再打下去可能會死。
+combat.danger,【你瀕危】你傷得很重，再打下去可能會死；現在撤退比較容易脫身。
 combat.threaten.success,你豎起頸毛、露出牙齒，{animal}退開了。
 combat.threaten.fail,{animal}沒有被嚇住，反而撲了過來。
 combat.probe.resolute,你繞著牠試探，牠寸步不讓，看來是鐵了心。
@@ -580,7 +580,6 @@ factor.combat.slow,跑得慢
 factor.combat.they_let_go,牠只想趕走你
 factor.combat.leg_injury,腿傷
 factor.combat.determined,牠不肯退
-factor.combat.danger,瀕危
 factor.combat.opening,閃開就有破綻
 knowledge.opponent,{animal}：現在的你還不是牠的對手
 day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
@@ -607,3 +606,7 @@ injury_source.hunt,狩獵
 debug.event.fox_scavenge,狐狸偷食
 debug.event.mother_bear,母熊
 debug.event.old_injury,舊傷發作
+chance_label.hit,命中
+chance_label.dodge,閃開
+chance_label.escape,脫身
+chance_label.drive_off,嚇退
