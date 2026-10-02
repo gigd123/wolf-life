@@ -111,6 +111,9 @@ func _ready() -> void:
 		_add_line(box, tr("summary.heavy_injuries").replace("{count}", str(wolf.heavy_injury_count)))
 		for record in wolf.old_injuries:
 			_add_line(box, _old_injury_line(record))
+	# 經歷過的森林大火（1.6 第 5 步）
+	for f in log_data.get("fires", []):
+		_add_line(box, _fire_line(f))
 	# 和陌生灰狼的每次相遇（1.6 第 4 步）
 	var meetings: Array = log_data.get("stranger_meetings", [])
 	if not meetings.is_empty():
@@ -163,6 +166,35 @@ func _death_bio(log_data: Dictionary) -> String:
 			return tr(key)
 	return tr("death_bio." + cause)
 
+func _region_names(list: Array) -> String:
+	var names: Array[String] = []
+	for r in list:
+		names.append(tr("region." + str(r)))
+	return "、".join(names)
+
+func _fire_line(f: Dictionary) -> String:
+	var escape: String = str(f.get("escape", ""))
+	var result: String = str(f.get("result", "safe"))
+	if escape == "":
+		escape = "none"
+		result = "safe"
+	return tr("summary.fire").replace("{age}", "%.1f" % float(f.get("age", 0.0))) \
+		.replace("{season}", tr("season." + str(f.get("season", "summer")))) \
+		.replace("{origin}", tr("region." + str(f.get("origin", "")))).replace("{list}", _region_names(f.get("burned", []))) \
+		.replace("{escape}", tr("summary.fire.escape." + escape).replace("{region}", tr("region." + str(f.get("escape_region", ""))))) \
+		.replace("{result}", tr("summary.fire.result." + result))
+
+# 一生中第一場大火的生平句（死在火裡時由死因那一句交代）。
+func _fire_bio(f: Dictionary) -> String:
+	var escape: String = str(f.get("escape", ""))
+	if escape == "":
+		escape = "none"
+	var text: String = tr("bio.fire." + escape).replace("{age}", str(int(float(f.get("age", 0.0))))) \
+		.replace("{region}", tr("region." + str(f.get("escape_region", ""))))
+	if str(f.get("result", "")) in ["light", "heavy"]:
+		text += tr("bio.fire.burned")
+	return text
+
 # 和那隻黑狼之間最重要的一次：咬死牠 > 趕走牠 > 向牠示弱。
 func _stranger_bio(log_data: Dictionary) -> String:
 	for outcome in ["killed", "drove_off", "submit"]:
@@ -198,6 +230,9 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 		parts.append(tr("bio.became").replace("{desc}", tr("tendency_desc." + str(history[-1]["type"]))))
 	elif history.size() == 1:
 		parts.append(tr("bio.was").replace("{desc}", tr("tendency_desc." + str(history[0]["type"]))))
+	var fires: Array = log_data.get("fires", [])
+	if not fires.is_empty():
+		parts.append(_fire_bio(fires[0]))
 	var stranger_line := _stranger_bio(log_data)
 	if stranger_line != "":
 		parts.append(stranger_line)

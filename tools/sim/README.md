@@ -9,6 +9,7 @@
 | `explore_distribution` | 各區域的發現種類、來源、線索類型、新鮮度；「什麼都沒發現」不超過 15% | 探索系統 |
 | `event_frequency` | 主動事件每天的次數、被驅趕、暴雨對線索的影響 | 主動事件、暴雨 |
 | `combat_sim` | 三種能力的狼（次成年、成年、巔峰）× 對手（灰熊搶食／遭遇、母熊、幼熊、狐狸、陌生灰狼壯年／護地盤／7 歲）× 打法（一直撲咬、猛撲、先威嚇、瀕危也不退），統計勝、撤退、戰死、受傷、重傷與回合數 | 1.6 戰鬥模式、勝算基準、戰鬥中的死亡 |
+| `fire_sim` | 自動玩家玩到死，一生遇到大火的機率、每場燒過幾個區域、逃生結果與死因；不同狀態的狼在各種逃生方式下的結果分布 | 1.6 森林大火 |
 | `growth_sim` | 七種玩法（平均、偏追獵、偏強攻、偏潛伏、偏謹慎、只吃小獵物、以鹿為主）各 RUNS 隻狼的次成年期成長與成年時的巔峰上限；`ADULT=1` 時再玩到 5 歲，看各年齡離上限多遠。機器人是 `scripts/core/AutoPlayer.gd` | 1.6 成長系統、潛力結算 |
 
 ## 執行
@@ -20,6 +21,7 @@ bash tools/run_sim.sh explore_distribution
 bash tools/run_sim.sh event_frequency
 bash tools/run_sim.sh growth_sim 0 20          # 每種玩法 20 隻
 bash tools/run_sim.sh combat_sim 0 400         # 每格 400 場
+bash tools/run_sim.sh fire_sim 0 60            # 60 隻狼玩到死（較慢，約 3 分鐘）
 ADULT=1 bash tools/run_sim.sh growth_sim 0 8  # 再玩到 5 歲（較慢）
 ```
 

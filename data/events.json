@@ -18,7 +18,22 @@
     "prey_nearby_per_period": 0.035,
     "bear_per_period": 0.03,
     "location_mult": { "den": 0.3, "good": 0.6, "normal": 1.0, "rough": 1.3 },
-    "interrupt": ["bear_passing", "prey_nearby", "stranger_confront", "driven_off", "storm", "fire_warning"]
+    "interrupt": ["bear_passing", "prey_nearby", "stranger_confront", "driven_off", "storm", "fire_warning", "fire_here"]
+  },
+  "_fire_comment": "森林大火（SPEC 1.6「森林大火」）。year_chance：每年乾季（夏秋）發生一次的機率，夏季開始時擲骰並排定時間；cooldown_days：大火後幾天內不再發生（2 年 = 80 天）。warning_periods：起火前的徵兆時段數；notice：每個徵兆時段察覺的機率 = base + (感知 − 40) × per_perception。spread_chance：燃燒中的區域每個時段延燒到每個相鄰區域的機率；burn_periods：一個區域燒多久。escape：各逃生方式的危險度（越高越危險），再依體力、血量、速度與是否熟悉目的地調整；outcome：危險度 1 時死亡／重度燒傷／輕度燒傷的機率。after：燒過的區域 ash_days 天內是一片焦黑（獵物 ×0.3、找不到好睡處與採集物），之後 regrowth_days 天草木新生（鹿 ×1.5）。",
+  "fire": {
+    "dry_seasons": ["summer", "autumn"],
+    "year_chance": 0.12,
+    "cooldown_days": 80,
+    "warning_periods": 2,
+    "notice": { "base": 0.35, "per_perception": 0.01, "max": 0.9 },
+    "spread_chance": 0.22,
+    "burn_periods": 3,
+    "escape": { "flee": 0.55, "stream": 0.25, "den": 0.75, "unknown_region_mult": 1.3, "low_stamina": 0.3, "low_health": 0.3, "speed_divisor": 200, "flee_stamina": 20 },
+    "outcome": { "death": 0.12, "heavy": 0.3, "light": 0.35 },
+    "burn": { "light_damage": [8, 15], "heavy_damage": [20, 35], "light_days": 2, "heavy_days_min": 4, "heavy_days_max": 6 },
+    "after": { "ash_days": 12, "regrowth_days": 40, "ash_prey_mult": 0.3, "regrowth_prey_mult": { "white_tailed_deer": 1.5 } },
+    "npc_death_chance": 0.3
   },
   "bear_passing": {
     "sleep_chance": 0.08,

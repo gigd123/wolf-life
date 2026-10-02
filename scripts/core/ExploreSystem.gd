@@ -42,8 +42,10 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	if RNGService.chance(nothing_chance):
 		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights)}
 
+	# 燒過一片焦黑（ctx.burn = burning／ash）：找不到次要特徵與採集物（SPEC 1.6「火後」）
+	var scorched: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
 	var unknown: Array = []
-	for f in region.get("secondary_features", []):
+	for f in ([] if scorched else region.get("secondary_features", [])):
 		if not known_features.has(f):
 			unknown.append(f)
 	if not unknown.is_empty() and RNGService.chance(float(cfg.get("feature_chance", 0.12))):
@@ -53,7 +55,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	for animal_id in weights.keys():
 		if float(weights[animal_id]) > 0.0:
 			sources[animal_id] = weights[animal_id]
-	var gather := EncounterSystem.gather_weights(region_id, ctx["season"])
+	var gather := {} if scorched else EncounterSystem.gather_weights(region_id, ctx["season"])
 	for item_id in gather.keys():
 		sources[item_id] = float(gather[item_id]) * float(cfg.get("gather_source_weight_mult", 0.5))
 	var threats := threat_weights(region_id, ctx["season"], str(ctx.get("stranger_territory", "?")))

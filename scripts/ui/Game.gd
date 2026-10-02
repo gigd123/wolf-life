@@ -2,8 +2,8 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
-const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass"]
-const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
+const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
+const STATUS_ICON_KINDS := ["injury", "burn", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
@@ -214,6 +214,8 @@ func _build_ui() -> void:
 	for region_id in REGION_ORDER:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(140, 46)
+		# 標記變多時不要撐寬地圖（超出的字截掉）
+		btn.clip_text = true
 		btn.expand_icon = false
 		btn.pressed.connect(_on_region_button.bind(region_id))
 		map_grid.add_child(btn)
@@ -492,6 +494,7 @@ func _build_debug_overlay() -> void:
 	right.add_child(time_grid)
 	_debug_button(time_grid, tr("debug.skip_day"), func(): GameState.debug_skip_day())
 	_debug_button(time_grid, tr("debug.skip_season"), func(): GameState.debug_skip_to_next_season())
+	_debug_button(time_grid, tr("debug.skip_dry"), func(): GameState.debug_skip_to_dry_season(); _sync_debug_spins())
 	_debug_button(time_grid, tr("debug.add_year"), func(): GameState.debug_add_age(1.0); _sync_debug_spins())
 	_debug_button(time_grid, tr("debug.jump_stage").replace("{stage}", tr("stage.adult")),
 		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ADULT); _sync_debug_spins())
@@ -627,6 +630,21 @@ func _build_debug_overlay() -> void:
 		GameState.identify("grizzly_bear")
 		_on_encounter_triggered({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "mother": true})
 	)
+	# 森林大火（1.6 第 5 步）：指定起火區域
+	var fire_row := HBoxContainer.new()
+	right.add_child(fire_row)
+	var fire_pick := OptionButton.new()
+	fire_pick.add_item(tr("debug.fire.random"))
+	fire_pick.set_item_metadata(0, "")
+	for region_id in REGION_ORDER:
+		fire_pick.add_item(tr("region." + region_id))
+		fire_pick.set_item_metadata(fire_pick.item_count - 1, region_id)
+	fire_row.add_child(fire_pick)
+	_debug_button(fire_row, tr("debug.fire.start"), func():
+		debug_overlay.visible = false
+		GameState.debug_start_fire(str(fire_pick.get_item_metadata(fire_pick.selected)))
+		_refresh()
+	)
 	var stranger_row := HBoxContainer.new()
 	right.add_child(stranger_row)
 	_debug_button(stranger_row, tr("debug.event.stranger_meet"), func():
@@ -727,7 +745,9 @@ func _refresh() -> void:
 		tendency_button.text = tr("tendency." + str(tendency["type"]))
 		tendency_button.icon = ArtLibrary.icon("tendency." + str(tendency["type"]))
 	rain.emitting = GameState.weather == "storm"
-	region_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
+	# 燒過一片焦黑時換成燒毀的區域背景（art.json 的 region@burned）
+	var scorched: bool = GameState.burn_state(GameState.current_region) in ["burning", "ash"]
+	region_bg.texture = ArtLibrary.region_background(GameState.current_region, "burned" if scorched else GameTime.current_season())
 	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period())
 	_process_events.call_deferred()
 	# 血量顯示「血量 72／90」，條的上限是血量上限（SPEC 1.6「血量上限成為能力值」）
@@ -750,7 +770,9 @@ func _refresh() -> void:
 		if not ArtLibrary.setup_wolf(wolf_portrait, "idle", 5.0, stage_key):
 			wolf_portrait.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
-	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE
+	var burned: bool = w.injury != Wolf.Injury.NONE and w.injury_source == "fire"
+	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE and not burned
+	status_icons["burn"].visible = burned
 	status_icons["poison"].visible = w.poison_days_remaining > 0
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
@@ -771,7 +793,9 @@ func _refresh() -> void:
 		var here: String = (" [" + tr("ui.here") + "]") if is_current else ""
 		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
 		var danger: String = " ⚠" if not GameState.known_dangers(region_id, GameTime.current_season()).is_empty() else ""
-		btn.text = tr("region." + region_id) + marker + unknown + danger + here
+		var burn: String = GameState.burn_state(region_id)
+		var fire_mark: String = tr("map." + burn) if burn != "" else ""
+		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark + here
 
 	var available: Array[String] = GameState.available_actions()
 	for action_id in action_buttons.keys():
@@ -835,6 +859,8 @@ func _on_action_button(action_id: String) -> void:
 			_log(tr("log.short_rest"))
 		"rest_until":
 			_show_rest_overlay()
+		"make_den":
+			GameState.action_make_den()
 		"return_to_carcass":
 			var res := GameState.action_return_to_carcass()
 			if res.get("gone", false) or res.is_empty():
@@ -1173,6 +1199,16 @@ func _process_events() -> void:
 			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "stranger_wolf")
 		"stranger_confront":
 			_show_stranger_confront()
+			return
+		"fire_warning":
+			_show_event_message(tr("fire.warning." + ("late" if event.get("late", false) else "early")) \
+				.replace("{origin}", tr("region." + str(event.get("origin", "")))), "white_tailed_deer")
+			return
+		"fire_here":
+			_show_fire_escape(event)
+			return
+		"fire_over":
+			_show_fire_over(event)
 			return
 		"prey_nearby":
 			_show_prey_nearby(event)
@@ -1675,6 +1711,55 @@ func _show_distant(encounter: Dictionary) -> void:
 		_refresh()
 	)
 	encounter_overlay.visible = true
+
+# --- 森林大火（SPEC 1.6「森林大火」） ---
+
+# 火燒到你所在的區域：逃往還沒燒到的區域、到溪邊避難、躲進巢穴，各自附平安率。
+func _show_fire_escape(event: Dictionary) -> void:
+	var region: String = str(event.get("region", GameState.current_region))
+	var text: String = tr("fire.here").replace("{region}", tr("region." + region))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "walk")
+	encounter_bg.texture = ArtLibrary.region_background(region, "burned")
+	encounter_bg.modulate = Color(1.0, 0.55, 0.35)
+	_clear_children(encounter_buttons_box)
+	for opt in GameState.fire_escape_options():
+		var key: String = "fire.option." + str(opt["kind"])
+		if opt["kind"] == "flee" and not GameState.is_region_visited(str(opt["region"])):
+			key = "fire.option.flee_unknown"
+		var label: String = tr(key).replace("{region}", tr("region." + str(opt["region"]))) \
+			.replace("{n}", str(int(round(float(opt["safe"]) * 100.0))))
+		var id: String = opt["id"]
+		_add_encounter_button(label, func(): _on_fire_escape(id))
+	encounter_overlay.visible = true
+
+func _on_fire_escape(id: String) -> void:
+	var res := GameState.fire_escape(id)
+	encounter_bg.modulate = Color(1, 1, 1)
+	encounter_overlay.visible = false
+	if res.is_empty():
+		return
+	var result: String = str(res["result"])
+	if result == "safe":
+		_log(tr("fire.result.safe." + str(res["kind"])).replace("{region}", tr("region." + str(res["region"]))))
+	elif result != "death":
+		_log(tr("fire.result." + result))
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+
+func _show_fire_over(event: Dictionary) -> void:
+	var names: Array[String] = []
+	for r in event.get("burned", []):
+		names.append(tr("region." + str(r)))
+	var body: String = tr("fire.over").replace("{list}", "、".join(names))
+	if event.get("den_burned", false):
+		body += "\n\n" + tr("fire.over.den").replace("{region}", tr("region." + GameState.den_region))
+	_log(tr("fire.over").replace("{list}", "、".join(names)))
+	var burned: Array = event.get("burned", [])
+	_show_card(tr("fire.over.title"), body, ArtLibrary.region_background(str(burned[0]) if not burned.is_empty() else GameState.current_region, "burned"))
 
 # --- 陌生灰狼（SPEC 1.6「陌生灰狼」） ---
 

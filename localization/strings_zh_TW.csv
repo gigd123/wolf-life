@@ -664,3 +664,44 @@ debug.event.stranger_meet,陌生灰狼直接互動
 debug.event.stranger_confront,陌生灰狼現身（範圍）
 debug.npc_status,陌生灰狼：{age} 歲　{stats}　{state}
 debug.npc_dead,（已死）
+fire.warning.early,風裡有一股焦味。鳥群從{origin}那邊飛過來，林間的動物都往同一個方向逃。
+fire.warning.late,遠處的天空泛著紅光，濃煙已經從{origin}升起。
+fire.here,火燒到了{region}！濃煙從林間湧來，樹冠劈啪作響。
+fire.option.flee,逃往{region}　平安率 {n}%
+fire.option.flee_unknown,逃往{region}（沒去過）　平安率 {n}%
+fire.option.stream,到溪邊避難　平安率 {n}%
+fire.option.den,躲進巢穴　平安率 {n}%
+fire.result.safe.flee,你一路狂奔，衝出了煙霧，逃到了{region}。
+fire.result.safe.stream,你伏在溪水裡，看著火從頭頂燒過去。
+fire.result.safe.den,你縮在巢穴深處，濃煙從洞口灌進來，但你撐過去了。
+fire.result.light,火舌舔過你的腳掌，你身上留下了燒傷。
+fire.result.heavy,你被火困住了好一陣子，身上燒傷得很重。
+fire.over.title,大火之後
+fire.over,火終於熄了。{list}只剩焦黑的樹幹，空氣裡全是灰燼的味道。
+fire.over.den,巢穴所在的{region}也燒過了。巢穴在地下還在，但這一帶要很久才會恢復。要留下來等草木新生，還是到別處安家，由你決定。
+log.den_burned,巢穴還在地下，但四周都是很重的焦味。
+log.made_den,你在{region}安了新家。
+action.make_den,在這裡安家
+map.burning, 火
+map.ash, 焦
+map.regrowth, 新綠
+death.fire,葬身火海
+death_bio.fire,死在一場森林大火裡
+injury_source.fire,大火
+summary.fire,{age} 歲那年的{season}天，大火從{origin}燒起，燒過了{list}；你{escape}，{result}。
+summary.fire.escape.flee,逃往{region}
+summary.fire.escape.stream,躲到溪邊
+summary.fire.escape.den,躲進巢穴
+summary.fire.escape.none,沒有被困在火裡
+summary.fire.result.safe,平安無事
+summary.fire.result.light,受了輕度燒傷
+summary.fire.result.heavy,受了重度燒傷
+summary.fire.result.death,死在火裡
+bio.fire.flee,{age} 歲那年的大火裡，你一路逃到了{region}
+bio.fire.stream,{age} 歲那年的大火裡，你伏在溪水裡熬了過去
+bio.fire.den,{age} 歲那年的大火裡，你躲在巢穴裡撐過了濃煙
+bio.fire.none,{age} 歲那年，你看著一場大火燒過了森林
+bio.fire.burned,，身上留下了燒傷
+debug.skip_dry,跳到下一個乾季
+debug.fire.random,隨機區域
+debug.fire.start,森林大火

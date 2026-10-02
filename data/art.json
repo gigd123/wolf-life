@@ -77,7 +77,11 @@
     "forest_north": "res://assets/art/backgrounds/regions/forest_north.png",
     "forest_north@winter": "res://assets/art/backgrounds/regions/forest_north_winter.png",
     "forest_south": "res://assets/art/backgrounds/regions/forest_south.png",
-    "forest_west": "res://assets/art/backgrounds/regions/forest_west.png"
+    "forest_west": "res://assets/art/backgrounds/regions/forest_west.png",
+    "forest_east@burned": "res://assets/art/backgrounds/regions/forest_east_burned.png",
+    "forest_north@burned": "res://assets/art/backgrounds/regions/forest_north_burned.png",
+    "forest_south@burned": "res://assets/art/backgrounds/regions/forest_south_burned.png",
+    "forest_west@burned": "res://assets/art/backgrounds/regions/forest_west_burned.png"
   },
   "terrain_backgrounds": {
     "stream": "res://assets/art/backgrounds/terrain/stream.png",
@@ -101,6 +105,8 @@
     "stat.skill": "res://assets/art/icons/stat_skill.png",
     "stat.perception": "res://assets/art/icons/stat_perception.png",
     "stat.health": "res://assets/art/icons/stat_health.png",
+    "status.burn": "res://assets/art/icons/status_burn.png",
+    "clue.smoke": "res://assets/art/icons/clue_smoke.png",
     "stat.health_max": "res://assets/art/icons/stat_health.png",
     "stat.stamina": "res://assets/art/icons/stat_stamina.png",
     "cost.turns": "res://assets/art/icons/cost_turns.png",

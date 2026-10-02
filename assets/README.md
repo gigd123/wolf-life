@@ -47,8 +47,8 @@
 | `sprites/wolf/wolf_adult_*`、`wolf_elder_*` | 成年、老年狼（sheet 格式同 `wolf_sheet.png`，加單張姿勢） | 2 |
 | `sprites/wolf/wolf_{threaten,bite,dodge,hurt,submit}.png` | 狼的戰鬥姿勢 | 3 |
 | `sprites/wolf/wolf_stranger_sheet.png`、`wolf_stranger_*` | 陌生灰狼（黑狼）的動畫、跟蹤、撲擊與戰鬥姿勢 | 4 |
-| `backgrounds/regions/forest_*_burned.png` | 燒毀後的區域背景，640×360（建議鍵 `forest_east@burned`） | 5 |
-| `icons/clue_smoke.png`、`icons/status_burn.png` | 煙味線索、燒傷狀態 | 5 |
+| `backgrounds/regions/forest_*_burned.png` | 燒毀後的區域背景，640×360（`art.json` 的 `forest_east@burned`） | 5 **已接上** |
+| `icons/clue_smoke.png`、`icons/status_burn.png` | 煙味線索、燒傷狀態 | 5（燒傷狀態已接上；煙味線索目前沒有用到，大火徵兆是事件畫面） |
 
 2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`，預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/art_phase1.6.md`。苔原的區域 id 是暫定的，第 6 步開工時依規格再改檔名或 `art.json`。
 
