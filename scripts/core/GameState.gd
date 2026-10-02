@@ -888,7 +888,14 @@ func is_confirmed(entry: Dictionary) -> bool:
 	return knowledge_level(entry) >= int(GameData.knowledge.get("confirm_count", 3))
 
 func _learn_prey_sighting(animal_id: String) -> void:
-	learn({"type": "prey", "animal": animal_id, "region": current_region, "period": GameTime.current_period()})
+	var entry := {"type": "prey", "animal": animal_id, "region": current_region, "period": GameTime.current_period()}
+	# 一天最多累積 1 次（knowledge.json 的 prey_once_per_day）
+	var today: int = int(life_log.get("days_lived", 1))
+	var existing: Dictionary = knowledge.get(knowledge_key(entry), {})
+	if bool(GameData.knowledge.get("prey_once_per_day", true)) and int(existing.get("last_day", -1)) == today:
+		return
+	learn(entry)
+	knowledge[knowledge_key(entry)]["last_day"] = today
 
 # 確定的獵物出沒知識：此時此地該獵物的出現權重倍率。
 func prey_knowledge_mults(region_id: String, period: String) -> Dictionary:

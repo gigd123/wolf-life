@@ -1,6 +1,8 @@
 {
   "_comment": "知識系統（SPEC「知識系統」「辨識與規律」）。同一類線索累積 1／2／3 次 = 似乎／通常／確定。",
   "confirm_count": 3,
+  "_prey_once_per_day_comment": "獵物出沒是跨日子的規律：同一筆（同區域、同時段、同獵物）一天最多累積 1 次，要在 3 個不同的日子看到才會「確定」（2026-10-02 使用者同意）。",
+  "prey_once_per_day": true,
   "identified_at_start": ["white_tailed_deer", "hare", "red_fox", "snowshoe_hare", "caribou", "moose"],
   "prey_confirmed_weight_mult": 1.2,
   "prey_confirmed_track_bonus": 0.1,
