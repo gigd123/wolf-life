@@ -9,6 +9,7 @@ enum LifeStage { SUBADULT, ADULT, ELDER }
 enum Injury { NONE, LIGHT, HEAVY }
 
 var health: float = 80.0
+var health_max: float = 80.0 # 血量上限（SPEC 1.6）：目前血量最多能回到的數值，會成長、納入潛力
 var stamina: float = 80.0
 var speed: float = 40.0
 var strength: float = 40.0
@@ -16,7 +17,7 @@ var skill: float = 40.0
 var perception: float = 40.0
 
 var hunger: float = 70.0
-var health_value: float = 80.0
+var health_value: float = 80.0 # 「體質」：長期狀態（變數名沿用 health_value）
 var age_years: float = 0.6667
 
 var injury: int = Injury.NONE
@@ -28,8 +29,17 @@ var poison_days_remaining: int = 0
 var alive: bool = true
 var death_cause: String = ""
 
+# 成長（見 Growth.gd）：開局能力值、成年時結算的巔峰上限、還沒睡覺結算的鍛鍊點、連續吃飽睡覺的天數。
+var start_stats: Dictionary = {}
+var potential: Dictionary = {}
+var training: Dictionary = {}
+var fed_streak: int = 0
+
 func _init() -> void:
 	age_years = float(GameData.balance.get("start_age_years", 0.6667))
+	health_max = float(GameData.balance.get("start_health_max", 80))
+	health = health_max
+	start_stats = {"speed": speed, "strength": strength, "skill": skill, "perception": perception, "health_max": health_max}
 
 func life_stage() -> int:
 	var ages: Dictionary = GameData.balance.get("life_stage_ages", {})
@@ -44,7 +54,8 @@ func life_stage() -> int:
 func clamp_stats() -> void:
 	var smin: float = float(GameData.balance.get("stat_min", 0))
 	var smax: float = float(GameData.balance.get("stat_max", 100))
-	health = clamp(health, smin, smax)
+	health_max = clamp(health_max, 1.0, float(GameData.balance.get("growth", {}).get("potential", {}).get("max", {}).get("health_max", 120)))
+	health = clamp(health, smin, health_max)
 	stamina = clamp(stamina, smin, smax)
 	speed = clamp(speed, smin, smax)
 	strength = clamp(strength, smin, smax)
@@ -100,16 +111,18 @@ func _injury_mult(stat: String) -> float:
 
 func to_dict() -> Dictionary:
 	return {
-		"health": health, "stamina": stamina, "speed": speed,
+		"health": health, "health_max": health_max, "stamina": stamina, "speed": speed,
 		"strength": strength, "skill": skill, "perception": perception,
 		"hunger": hunger, "health_value": health_value, "age_years": age_years,
 		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat, "heavy_injury_count": heavy_injury_count,
 		"poison_days_remaining": poison_days_remaining,
 		"alive": alive, "death_cause": death_cause,
+		"start_stats": start_stats, "potential": potential, "training": training, "fed_streak": fed_streak,
 	}
 
 static func from_dict(data: Dictionary) -> Wolf:
 	var w := Wolf.new()
+	w.health_max = float(data.get("health_max", 80.0))
 	w.health = float(data.get("health", 80.0))
 	w.stamina = float(data.get("stamina", 80.0))
 	w.speed = float(data.get("speed", 40.0))
@@ -126,4 +139,8 @@ static func from_dict(data: Dictionary) -> Wolf:
 	w.poison_days_remaining = int(data.get("poison_days_remaining", 0))
 	w.alive = bool(data.get("alive", true))
 	w.death_cause = str(data.get("death_cause", ""))
+	w.start_stats = data.get("start_stats", w.start_stats)
+	w.potential = data.get("potential", {})
+	w.training = data.get("training", {})
+	w.fed_streak = int(data.get("fed_streak", 0))
 	return w

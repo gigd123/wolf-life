@@ -130,10 +130,12 @@ func _on_day_changed(_day: int) -> void:
 
 func _on_season_changed(_season_index: int) -> void:
 	if wolf != null:
+		var prev_stage: int = wolf.life_stage()
 		wolf.age_years += 0.25
 		_apply_elder_decay()
-	log_message.emit(tr("log.season_changed"))
-	_queue_season_card()
+		log_message.emit(tr("log.season_changed"))
+		_queue_season_card()
+		_check_life_stage_transition(prev_stage)
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -209,7 +211,7 @@ func _queue_day_summary(before_injury: int, before_injury_stat: String, before_p
 		_queue_notice({"type": "day_summary", "lines": lines, "day": int(life_log.get("days_lived", 1))})
 
 # 睡覺結算：記下這次睡覺時的能力值，下次睡覺時比較。
-const SLEEP_SUMMARY_STATS := ["speed", "strength", "skill", "perception"]
+const SLEEP_SUMMARY_STATS := ["speed", "strength", "health_max", "skill", "perception"]
 
 func _snapshot_sleep_stats() -> void:
 	var snap: Dictionary = {}
@@ -219,15 +221,21 @@ func _snapshot_sleep_stats() -> void:
 	life_log["since_sleep"] = {}
 
 # 上次睡覺到現在提升的能力，以及速度或力量提升時的原因句（依飽食度與活動組合）。
-func sleep_summary() -> Dictionary:
+# settle 是 Growth.settle_sleep 的結果：鍛鍊了不少、卻因為太餓幾乎沒長時，也給一句原因。
+func sleep_summary(settle: Dictionary = {}) -> Dictionary:
+	var cfg: Dictionary = GameData.notices.get("sleep_summary", {})
 	var snap: Dictionary = life_log.get("sleep_snapshot", {})
 	var gains: Array = []
 	for stat in SLEEP_SUMMARY_STATS:
-		if snap.has(stat) and float(wolf.get(stat)) > float(snap[stat]) + 0.001:
+		if snap.has(stat) and float(wolf.get(stat)) > float(snap[stat]) + float(cfg.get("min_gain", 0.05)):
 			gains.append(stat)
 	var reason: String = ""
-	if gains.has("speed") or gains.has("strength"):
-		var cfg: Dictionary = GameData.notices.get("sleep_summary", {})
+	if float(settle.get("points", 0.0)) >= float(cfg.get("starved_points", 15)) \
+			and float(settle.get("hunger_mult", 1.0)) < float(cfg.get("starved_mult", 0.3)):
+		reason = str(cfg.get("reasons", {}).get("starved", ""))
+		# 太餓時身體只長了一點點，不標 ▲，免得和原因句矛盾。
+		gains = gains.filter(func(stat): return not Growth.BODY_STATS.has(stat))
+	elif gains.has("speed") or gains.has("strength"):
 		var since: Dictionary = life_log.get("since_sleep", {})
 		var fed: String = "hungry" if hunger_tier() > 0 else ("full" if wolf.hunger >= float(cfg.get("full_hunger", 70)) else "ok")
 		var activity: String = "chase" if int(since.get("chase", 0)) >= int(since.get("fight", 0)) else "fight"
@@ -239,41 +247,45 @@ func sleep_summary() -> Dictionary:
 	return {"gains": gains, "reason": reason}
 
 func _apply_elder_decay() -> void:
-	if wolf.life_stage() != Wolf.LifeStage.ELDER:
-		return
-	var decay: Dictionary = GameData.balance.get("growth", {}).get("elder_decay_per_season", {})
-	wolf.speed -= float(decay.get("speed", 0.0))
-	wolf.strength -= float(decay.get("strength", 0.0))
-	wolf.skill -= float(decay.get("skill", 0.0))
-	wolf.perception -= float(decay.get("perception", 0.0))
-	wolf.clamp_stats()
+	Growth.apply_elder_decay(wolf)
 
-# 依行為累積經驗：探索與追蹤 → 感知；潛近與搏鬥 → 技巧；追擊 → 速度；搏鬥 → 力量。
-# mult 用來調整單次經驗的份量（例如找到蹤跡只算一半）。
-func grant_experience(stats: Array, mult: float = 1.0) -> void:
-	if wolf == null or stats.is_empty():
+# 生命階段轉變（SPEC 1.6「潛力與生命階段轉變」）：年齡改變後呼叫。
+# 進入成年時結算潛力並顯示成年卡片；進入老年時顯示老年卡片。
+func _check_life_stage_transition(prev_stage: int) -> void:
+	if wolf == null:
 		return
-	var growth: Dictionary = GameData.balance.get("growth", {})
-	var gains: Dictionary = {}
-	match wolf.life_stage():
-		Wolf.LifeStage.SUBADULT:
-			gains = growth.get("subadult_gain", {})
-		Wolf.LifeStage.ADULT:
-			var peak_age: float = float(growth.get("peak_age", 4.0))
-			if wolf.age_years < peak_age:
-				gains = growth.get("adult_gain_before_peak", {})
-	if gains.is_empty():
-		return
-	for stat in stats:
-		var amount: float = float(gains.get(stat, 0.0)) * mult
-		match stat:
-			"speed": wolf.speed += amount
-			"strength": wolf.strength += amount
-			"skill": wolf.skill += amount
-			"perception": wolf.perception += amount
-	wolf.clamp_stats()
-	if mult >= 1.0:
-		growth_applied.emit()
+	var stage: int = wolf.life_stage()
+	if prev_stage == Wolf.LifeStage.SUBADULT and stage != Wolf.LifeStage.SUBADULT:
+		_settle_adulthood()
+	if prev_stage != Wolf.LifeStage.ELDER and stage == Wolf.LifeStage.ELDER:
+		life_log["elder_age"] = snapped(wolf.age_years, 0.01)
+		_queue_notice({"type": "elder_transition"})
+
+func _settle_adulthood() -> void:
+	var potential := Growth.settle_potential(wolf)
+	life_log["potential"] = potential.duplicate()
+	life_log["adult_body"] = adult_body_key()
+	_queue_notice({"type": "adult_transition"})
+
+# 成年描述：依次成年期成長最突出的能力（成長 ÷ 一般玩法的成長）與主要狩獵傾向，從 notices.json 的 adult_transition.rules 挑第一條符合的。
+func adult_body_key() -> String:
+	var growth := Growth.subadult_growth(wolf)
+	var ref: Dictionary = Growth.cfg().get("potential", {}).get("reference_growth", {})
+	var top: String = ""
+	var top_score: float = -1.0
+	for stat in Growth.ALL_STATS:
+		var score: float = float(growth.get(stat, 0.0)) / max(0.1, float(ref.get(stat, 1.0)))
+		if score > top_score:
+			top = stat
+			top_score = score
+	var tendency: String = str(current_tendency().get("type", ""))
+	for rule in GameData.notices.get("adult_transition", {}).get("rules", []):
+		if rule.has("stat") and str(rule["stat"]) != top:
+			continue
+		if rule.has("tendency") and str(rule["tendency"]) != tendency:
+			continue
+		return str(rule.get("key", ""))
+	return ""
 
 func _process_daily_recovery() -> void:
 	if wolf == null:
@@ -420,6 +432,7 @@ func action_explore() -> Dictionary:
 	GameTime.advance_turns(int(costs.get("explore", 1)))
 	if not wolf.alive:
 		return {}
+	Growth.train_activity(wolf, "explore")
 	current_discovery = ExploreSystem.generate({
 		"region_id": current_region,
 		"season": GameTime.current_season(),
@@ -436,7 +449,7 @@ func action_explore() -> Dictionary:
 			knowledge["features"].append(current_discovery["feature_id"])
 			region_knowledge[current_region] = knowledge
 		"clue":
-			grant_experience(["perception"], float(GameData.discovery.get("explore_perception_mult", 0.15)))
+			Growth.learn_flat(wolf, "perception", "explore_perception")
 			# 新鮮線索與直接目擊自動累積「獵物出沒」知識；陳舊線索要玩家選「記下」。
 			if current_discovery.get("source_kind", "") == "prey" and (current_discovery.get("fresh", false) or not current_discovery.get("fresh_known", true)):
 				_learn_prey_sighting(current_discovery["source"])
@@ -471,14 +484,17 @@ func action_track() -> Dictionary:
 	if not d.get("fresh", false):
 		state_changed.emit()
 		return {"success": false, "reason_key": "reason.stale"}
+	# 追蹤是感知的練習：成功一份，失敗 fail_mult 份。
+	var tracked: bool = RNGService.chance(float(info["chance"]))
+	Growth.learn_flat(wolf, "perception", "track_perception", 1.0 if tracked else float(Growth.cfg().get("fail_mult", 0.25)))
 	if d.get("source_kind", "") == "threat":
 		# 追蹤灰熊或陌生灰狼的足跡：成功就遇上牠（辨識前一律是遠距目擊）。
-		if not RNGService.chance(float(info["chance"])):
+		if not tracked:
 			state_changed.emit()
 			return {"success": false, "reason_key": ""}
 		state_changed.emit()
 		return {"success": true, "encounter": prepare_threat_sighting(d["source"], str(d.get("location", "")))}
-	if not RNGService.chance(float(info["chance"])):
+	if not tracked:
 		state_changed.emit()
 		var worst := HuntSystem.main_negative_factor(info["factors"])
 		var reason: String = "" if worst.is_empty() else "reason." + str(worst["key"]).trim_prefix("factor.").replace(".", "_")
@@ -502,6 +518,7 @@ func action_gather_discovered() -> String:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("gather", 1)))
 	if wolf.alive:
+		_practice_gather()
 		_apply_gather_effect(d["source"])
 	state_changed.emit()
 	return d["source"]
@@ -534,6 +551,7 @@ func _abs_period() -> int:
 # 避開灰熊線索：這個時段內，此區域的灰熊遭遇機率降低。
 func action_avoid() -> void:
 	record_decision("avoid")
+	Growth.learn_flat(wolf, "perception", "avoid_perception")
 	avoid_bear = {"region_id": current_region, "until": _abs_period()}
 	current_discovery = {}
 	state_changed.emit()
@@ -592,7 +610,7 @@ func action_observe_distant(encounter: Dictionary) -> void:
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
 	identify(animal_id)
 	_learn_threat(animal_id)
-	grant_experience(["perception"])
+	Growth.learn_flat(wolf, "perception", "observe_distant_perception")
 	state_changed.emit()
 
 # 只是看見、沒有觀察就離開：灰熊也算見過（建立辨識），之後的遭遇才套用一般規則。
@@ -690,11 +708,18 @@ func action_gather() -> Dictionary:
 	_record_action("gather")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("gather", 1)))
+	if wolf.alive:
+		_practice_gather()
 	var result := EncounterSystem.gather(current_region, GameTime.current_season())
 	if result.get("found", false):
 		_apply_gather_effect(result["item_id"])
 	state_changed.emit()
 	return result
+
+# 採集：少量感知，鍛鍊點三項平均。
+func _practice_gather() -> void:
+	Growth.learn_flat(wolf, "perception", "gather_perception")
+	Growth.train_activity(wolf, "gather")
 
 func _apply_gather_effect(item_id: String) -> void:
 	var effects: Dictionary = GameData.balance.get("gather_effects", {}).get(item_id, {})
@@ -802,14 +827,18 @@ func action_sleep() -> Dictionary:
 	var smax: float = float(GameData.balance.get("stat_max", 100))
 	var before_health: float = wolf.health
 	var before_stamina: float = wolf.stamina
-	wolf.health += (smax - wolf.health) * mult
+	# 睡覺才結算鍛鍊點（SPEC 1.6「成長系統」），血量回復到新的血量上限。
+	var settle := Growth.settle_sleep(wolf)
+	if not settle["gains"].is_empty():
+		growth_applied.emit()
+	wolf.health += (wolf.health_max - wolf.health) * mult
 	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
 	if not encounter.get("encountered", false) and quality != "rough":
 		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
 	sleep_spot_here = ""
-	var summary := sleep_summary()
+	var summary := sleep_summary(settle)
 	_snapshot_sleep_stats()
 	SaveSystem.save_game()
 	state_changed.emit()
@@ -818,7 +847,7 @@ func action_sleep() -> Dictionary:
 	return {"quality": quality, "interrupted": encounter.get("encountered", false), "summary": summary}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
-# from_tracking：經由追蹤找到獵物時累積一次感知經驗。terrain：遭遇時的地形，空字串則隨機取區域的地形。
+# from_tracking：經由追蹤找到獵物（追蹤的感知成長在 action_track 結算）。terrain：遭遇時的地形，空字串則隨機取區域的地形。
 # injured：受傷個體，一律走簡易流程。
 func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
 		terrain: String = "", injured: bool = false) -> HuntSystem:
@@ -840,8 +869,6 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	_on_hunt_started(hunt)
 	hunt.tendency = current_tendency()
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
-	if from_tracking:
-		hunt.experience.append("perception")
 	return hunt
 
 func _random_terrain(region_id: String) -> String:
@@ -861,7 +888,7 @@ func spend_hunt_turns(turns: int) -> void:
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
-	grant_experience(hunt.experience)
+	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
@@ -908,14 +935,15 @@ func _on_hunt_started(hunt: HuntSystem) -> void:
 		life_log["after_deer"] = {}
 
 # 死亡時把試玩紀錄寫成 JSON（user://playtest_logs/），方便比較兩隻狼。
-func _write_playtest_log() -> void:
+func _write_playtest_log() -> String:
 	DirAccess.make_dir_recursive_absolute("user://playtest_logs")
 	var path := "user://playtest_logs/wolf_%d.json" % int(Time.get_unix_time_from_system())
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		return
+		return ""
 	file.store_string(JSON.stringify({"life_log": life_log, "knowledge_count": knowledge.size(),
-		"age_years": wolf.age_years, "tendency": current_tendency()}, "  "))
+		"age_years": wolf.age_years, "tendency": current_tendency(), "wolf": wolf.to_dict()}, "  "))
+	return ProjectSettings.globalize_path(path)
 
 # --- 狩獵傾向（SPEC「經歷與一生回顧」） ---
 # 最近 window 次決策中比例最高的傾向就是主要傾向，效果 = max_effect × 比例；
@@ -1216,7 +1244,8 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 			var g: Dictionary = cfg.get("guard", {})
 			if RNGService.chance(guard_win_chance()):
 				wolf.stamina -= float(g.get("win_stamina", 20))
-				grant_experience(["strength", "skill"])
+				Growth.train_activity(wolf, "guard", "strength")
+				Growth.learn(wolf, "skill", 1.0)
 				result["outcome"] = "guard_win"
 			else:
 				var dmg: float = float(RNGService.randi_range(int(g.get("damage_min", 20)), int(g.get("damage_max", 45))))
@@ -1335,7 +1364,8 @@ func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dict
 		# 單狼對成年灰熊極度不利（DESIGN.md「灰熊行為」）。
 		if RNGService.chance(bear_fight_chance(encounter)):
 			wolf.stamina -= float(cfg.get("win_stamina", 15))
-			grant_experience(["strength", "skill"])
+			Growth.train_activity(wolf, "guard", "strength")
+			Growth.learn(wolf, "skill", 1.0)
 			wolf.clamp_stats()
 			return {"outcome": "win"}
 		var dmg: float = float(RNGService.randi_range(int(cfg.get("lose_damage_min", 20)), int(cfg.get("lose_damage_max", 45))))
@@ -1360,6 +1390,7 @@ func debug_set_stat(stat_name: String, value: float) -> void:
 		return
 	match stat_name:
 		"health": wolf.health = value
+		"health_max": wolf.health_max = value
 		"stamina": wolf.stamina = value
 		"speed": wolf.speed = value
 		"strength": wolf.strength = value
@@ -1395,8 +1426,10 @@ func debug_add_age(years: float) -> void:
 		return
 	var steps := int(round(years / 0.25))
 	for i in range(steps):
+		var prev_stage: int = wolf.life_stage()
 		wolf.age_years += 0.25
 		_apply_elder_decay()
+		_check_life_stage_transition(prev_stage)
 	log_message.emit(tr("log.debug.age").replace("{age}", "%.2f" % wolf.age_years))
 	state_changed.emit()
 
@@ -1406,6 +1439,36 @@ func debug_jump_to_stage(stage: int) -> void:
 	var ages: Dictionary = GameData.balance.get("life_stage_ages", {})
 	var target: float = float(ages.get("subadult_end", 2.0)) if stage == Wolf.LifeStage.ADULT else float(ages.get("adult_end", 6.0))
 	debug_add_age(ceil((target - wolf.age_years) / 0.25 - 0.0001) * 0.25)
+
+# 跳到老年前一天：年齡加到再過一季就進入老年，日期跳到這一季的最後一天（不經過中間的日子）。
+func debug_jump_to_elder_eve() -> void:
+	if wolf == null or wolf.life_stage() == Wolf.LifeStage.ELDER:
+		return
+	var adult_end: float = float(GameData.balance.get("life_stage_ages", {}).get("adult_end", 6.0))
+	var steps: int = int(ceil((adult_end - 0.25 - wolf.age_years) / 0.25 - 0.0001))
+	if steps > 0:
+		debug_add_age(steps * 0.25)
+	GameTime.day = GameTime._season_day_count()
+	state_changed.emit()
+
+# 是否在次成年期的最後一天（再換季就成年）。
+func is_last_subadult_day() -> bool:
+	var subadult_end: float = float(GameData.balance.get("life_stage_ages", {}).get("subadult_end", 1.16))
+	return wolf.life_stage() == Wolf.LifeStage.SUBADULT and wolf.age_years + 0.25 >= subadult_end \
+		and GameTime.day >= GameTime._season_day_count()
+
+# 強制顯示成年／老年轉變卡片（成年會用目前的能力值重新結算潛力）。
+func debug_force_transition(stage: String) -> void:
+	if wolf == null:
+		return
+	if stage == "adult":
+		_settle_adulthood()
+	else:
+		_queue_notice({"type": "elder_transition"})
+	state_changed.emit()
+
+func debug_export_playtest_log() -> String:
+	return _write_playtest_log() if wolf != null else ""
 
 func debug_animal_ids() -> Array:
 	return GameData.animals.keys()

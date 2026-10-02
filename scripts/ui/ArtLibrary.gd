@@ -44,18 +44,26 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 		return true
 	return false
 
-# 主角灰狼：idle／walk／howl／down 是 spritesheet 的列。
-static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0) -> bool:
+# 主角灰狼：idle／walk／howl／down 是 spritesheet 的列。stage：""（次成年）、"adult"、"elder"。
+static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0, stage: String = "") -> bool:
 	var wolf: Dictionary = _cfg().get("wolf", {})
-	var tex := texture(str(wolf.get("sheet", "")))
+	var tex := texture(str(_wolf_stage(stage).get("sheet", "")))
+	if tex == null:
+		tex = texture(str(wolf.get("sheet", "")))
 	if tex == null:
 		return false
 	icon.setup(tex, frame_size(), int(wolf.get("rows", {}).get(action, 0)), 4, fps)
 	return true
 
 # 灰狼的單張姿勢：stalk／pounce／eat／sleep。
-static func wolf_pose(pose: String) -> Texture2D:
+static func wolf_pose(pose: String, stage: String = "") -> Texture2D:
+	var tex := texture(str(_wolf_stage(stage).get("poses", {}).get(pose, "")))
+	if tex != null:
+		return tex
 	return texture(str(_cfg().get("wolf", {}).get("poses", {}).get(pose, "")))
+
+static func _wolf_stage(stage: String) -> Dictionary:
+	return _cfg().get("wolf", {}).get("stages", {}).get(stage, {})
 
 static func region_background(region_id: String, season: String) -> Texture2D:
 	var table: Dictionary = _cfg().get("region_backgrounds", {})

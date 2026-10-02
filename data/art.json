@@ -33,6 +33,27 @@
       "pounce": "res://assets/art/sprites/wolf/wolf_pounce.png",
       "eat": "res://assets/art/sprites/wolf/wolf_eat.png",
       "sleep": "res://assets/art/sprites/wolf/wolf_sleep.png"
+    },
+    "_stages_comment": "成年、老年的外貌（1.6 第 2 步，佔位圖）。格式同上，沒有的項目沿用次成年期的圖。",
+    "stages": {
+      "adult": {
+        "sheet": "res://assets/art/sprites/wolf/wolf_adult_sheet.png",
+        "poses": {
+          "stalk": "res://assets/art/sprites/wolf/wolf_adult_stalk.png",
+          "pounce": "res://assets/art/sprites/wolf/wolf_adult_pounce.png",
+          "eat": "res://assets/art/sprites/wolf/wolf_adult_eat.png",
+          "sleep": "res://assets/art/sprites/wolf/wolf_adult_sleep.png"
+        }
+      },
+      "elder": {
+        "sheet": "res://assets/art/sprites/wolf/wolf_elder_sheet.png",
+        "poses": {
+          "stalk": "res://assets/art/sprites/wolf/wolf_elder_stalk.png",
+          "pounce": "res://assets/art/sprites/wolf/wolf_elder_pounce.png",
+          "eat": "res://assets/art/sprites/wolf/wolf_elder_eat.png",
+          "sleep": "res://assets/art/sprites/wolf/wolf_elder_sleep.png"
+        }
+      }
     }
   },
   "region_backgrounds": {
@@ -64,6 +85,7 @@
     "stat.skill": "res://assets/art/icons/stat_skill.png",
     "stat.perception": "res://assets/art/icons/stat_perception.png",
     "stat.health": "res://assets/art/icons/stat_health.png",
+    "stat.health_max": "res://assets/art/icons/stat_health.png",
     "stat.stamina": "res://assets/art/icons/stat_stamina.png",
     "cost.turns": "res://assets/art/icons/cost_turns.png",
     "cost.injury_risk": "res://assets/art/icons/cost_injury_risk.png",

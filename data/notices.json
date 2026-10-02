@@ -33,7 +33,11 @@
   "_sleep_summary_comment": "睡覺結算的原因句：速度或力量提升時顯示，鍵為「飽食.活動」。飽食：full（飽食度 ≥ full_hunger）、ok、hungry（飢餓懲罰中）；活動：chase（追擊較多）、fight（搏鬥較多）。",
   "sleep_summary": {
     "full_hunger": 70,
+    "min_gain": 0.05,
+    "starved_points": 15,
+    "starved_mult": 0.3,
     "reasons": {
+      "starved": "sleep_reason.starved",
       "full.chase": "sleep_reason.full_chase",
       "full.fight": "sleep_reason.full_fight",
       "ok.chase": "sleep_reason.ok_chase",
@@ -41,5 +45,25 @@
       "hungry.chase": "sleep_reason.hungry_chase",
       "hungry.fight": "sleep_reason.hungry_fight"
     }
+  },
+  "_adult_transition_comment": "成年卡片的身體描述：依次成年期成長最多的能力（stat）與主要狩獵傾向（tendency），取第一條符合的規則；沒寫的條件不限制。",
+  "adult_transition": {
+    "intro": "adult_body.intro",
+    "rules": [
+      { "stat": "speed", "tendency": "pursuit", "key": "adult_body.speed_pursuit" },
+      { "stat": "strength", "tendency": "assault", "key": "adult_body.strength_assault" },
+      { "stat": "perception", "tendency": "cautious", "key": "adult_body.perception_cautious" },
+      { "stat": "skill", "tendency": "stealth", "key": "adult_body.skill_stealth" },
+      { "stat": "speed", "key": "adult_body.speed" },
+      { "stat": "strength", "key": "adult_body.strength" },
+      { "stat": "skill", "key": "adult_body.skill" },
+      { "stat": "perception", "key": "adult_body.perception" },
+      { "stat": "health_max", "key": "adult_body.health_max" },
+      { "key": "adult_body.default" }
+    ]
+  },
+  "elder_transition": {
+    "body": "elder_body.text",
+    "growing": ["skill"]
   }
 }

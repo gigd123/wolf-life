@@ -78,6 +78,15 @@ func _ready() -> void:
 		for h in history:
 			parts.append(tr("tendency." + str(h["type"])) + tr("summary.at_age").replace("{age}", "%.1f" % float(h["age"])))
 		_add_line(box, tr("summary.tendency").replace("{list}", " → ".join(parts)))
+	# 成年時的身體與巔峰上限（1.6 第 2 步）
+	var potential: Dictionary = log_data.get("potential", {})
+	if not potential.is_empty():
+		if str(log_data.get("adult_body", "")) != "":
+			_add_line(box, tr("summary.adult_body").replace("{text}", tr(str(log_data["adult_body"]))))
+		var caps: Array[String] = []
+		for stat in Growth.ALL_STATS:
+			caps.append(tr("stat." + stat) + " " + str(int(round(float(potential.get(stat, 0.0))))))
+		_add_line(box, tr("summary.potential").replace("{list}", "　".join(caps)))
 
 	var regions_visited: Array = log_data.get("regions_visited", [])
 	_add_line(box, tr("summary.regions_visited").replace("{count}", str(regions_visited.size())))

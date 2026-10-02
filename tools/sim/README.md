@@ -8,6 +8,7 @@
 | `hunt_outcomes` | 每種獵物各狩獵 400 次的反應分布與成功率，並檢查文字是否都有翻譯 | 獵物反應、狩獵深度分級 |
 | `explore_distribution` | 各區域的發現種類、來源、線索類型、新鮮度；「什麼都沒發現」不超過 15% | 探索系統 |
 | `event_frequency` | 主動事件每天的次數、被驅趕、暴雨對線索的影響 | 主動事件、暴雨 |
+| `growth_sim` | 七種玩法（平均、偏追獵、偏強攻、偏潛伏、偏謹慎、只吃小獵物、以鹿為主）各 RUNS 隻狼的次成年期成長與成年時的巔峰上限；`ADULT=1` 時再玩到 5 歲，看各年齡離上限多遠。機器人是 `scripts/core/AutoPlayer.gd` | 1.6 成長系統、潛力結算 |
 
 ## 執行
 
@@ -16,6 +17,8 @@ bash tools/run_sim.sh balance_sim 20 60   # 20 天 × 60 次
 bash tools/run_sim.sh hunt_outcomes
 bash tools/run_sim.sh explore_distribution
 bash tools/run_sim.sh event_frequency
+bash tools/run_sim.sh growth_sim 0 20          # 每種玩法 20 隻
+ADULT=1 bash tools/run_sim.sh growth_sim 0 8  # 再玩到 5 歲（較慢）
 ```
 
 本機請先設定 `GODOT=<Godot console 執行檔路徑>`。數值調整後重跑，對照 `docs/progress.md` 裡的「步驟 N 後的模擬」紀錄。

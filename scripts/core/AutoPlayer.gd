@@ -3,15 +3,32 @@ extends RefCounted
 
 # 除錯「模擬到死亡」：依選定的獵物偏好與風格，自動玩完一隻狼的一生（規則同 tools/sim 的機器人）。
 # 由畫面層每個 frame 呼叫 step()，一次推進幾天；GameState.auto_playing 期間不產生提示卡片。
-# prey："small_only" 只吃小獵物、"deer_focus" 以鹿為主（餓了才吃小獵物）。
-# style："cautious" 謹慎（觀察、潛伏、追不到就放棄、避開灰熊）、"assault" 強攻（正面接近、直取咽喉、迎戰灰熊）。
+# prey："all" 遇到什麼吃什麼、"small_only" 只吃小獵物、"deer_focus" 以鹿為主（餓了才吃小獵物）。
+# style："average" 每步選成功率最高、"pursuit" 偏追獵（不觀察、追擊選衝刺或跟隨）、
+# "stealth" 偏潛伏（觀察、潛近選繞下風、伏低、伏擊等）、"cautious" 謹慎（觀察、潛伏、追不到就放棄、避開灰熊）、
+# "assault" 強攻（正面接近、直取咽喉、迎戰灰熊）。
+# 除錯「跳到次成年期最後一天」用 start_from_current() + stop_before_adult。
 
 const MAX_YEARS := 15.0
 const MAX_ACTIONS_PER_DAY := 80
 
 var prey: String
 var style: String
+var stop_before_adult: bool = false
+var _finished: bool = false
 var _encounter: Dictionary = {}
+
+# 偏好的選項依順序，有就選（不看成功率）；都沒有才從其餘選項挑成功率最高的。
+const PREFER := {
+	"pursuit": ["skip_observe", "pounce", "sprint", "follow"],
+	"stealth": ["observe", "creep_pounce", "ambush", "wait", "downwind", "upstream", "edge_strike", "bite_leg", "dodge"],
+	"cautious": ["observe", "creep_pounce", "wait", "downwind", "upstream", "ambush", "edge_strike", "dodge"],
+	"assault": ["skip_observe", "pounce", "direct", "attack_standing", "bite_throat"],
+}
+const AVOID := {
+	"stealth": ["direct", "bite_throat"],
+	"cautious": ["direct", "attack_standing", "bite_throat"],
+}
 
 func _init(prey_policy: String, style_policy: String) -> void:
 	prey = prey_policy
@@ -20,6 +37,14 @@ func _init(prey_policy: String, style_policy: String) -> void:
 func start(den: String) -> void:
 	GameState.auto_playing = true
 	GameState.new_game(den)
+	_connect()
+
+# 從目前這隻狼接著玩（不開新局）。
+func start_from_current() -> void:
+	GameState.auto_playing = true
+	_connect()
+
+func _connect() -> void:
 	if not GameState.encounter_triggered.is_connected(_on_encounter):
 		GameState.encounter_triggered.connect(_on_encounter)
 
@@ -30,11 +55,14 @@ func finish() -> void:
 	GameState.auto_playing = false
 
 func done() -> bool:
-	return GameState.wolf == null or not GameState.wolf.alive
+	return _finished or GameState.wolf == null or not GameState.wolf.alive
 
 func step(days: int) -> void:
 	for i in days:
 		if done():
+			return
+		if stop_before_adult and GameState.is_last_subadult_day():
+			_finished = true
 			return
 		if GameState.wolf.age_years >= MAX_YEARS:
 			GameState.debug_end_life("old_age")
@@ -91,10 +119,10 @@ func _explore_once() -> void:
 		return
 	match d.get("source_kind", ""):
 		"threat":
-			if style == "cautious":
-				GameState.action_avoid()
-			else:
+			if style == "assault":
 				GameState.clear_discovery()
+			else:
+				GameState.action_avoid()
 			return
 		"gather":
 			GameState.action_gather_discovered()
@@ -136,36 +164,44 @@ func _play_hunt(hunt: HuntSystem) -> void:
 		var fr: Dictionary = GameState.feed_once()
 		var ev: String = str(fr.get("event", ""))
 		if ev == "bear":
-			GameState.resolve_scavenger(ev, "guard" if style == "assault" else "abandon")
+			GameState.resolve_scavenger(ev, {"assault": "guard", "cautious": "abandon"}.get(style, "grab"))
 		elif ev != "":
 			GameState.resolve_scavenger(ev, "drive")
 
-# 依風格挑選項；回傳空字典代表放棄。
+# 依風格挑選項（見 PREFER）；回傳空字典代表放棄。
 func _pick_option(hunt: HuntSystem) -> Dictionary:
 	var opts: Array = hunt.options()
-	var by_id: Dictionary = {}
-	for o in opts:
-		by_id[o["id"]] = o
-	var prefer: Array = []
-	var avoid: Array = []
-	if style == "assault":
-		prefer = ["skip_observe", "direct", "attack_standing", "bite_throat"]
-	else:
-		prefer = ["observe"]
-		avoid = ["direct", "attack_standing", "bite_throat"]
-	for id in prefer:
-		if by_id.has(id):
-			return by_id[id]
+	var prefer: Array = PREFER.get(style, []).duplicate()
+	# 閃避不連續用（否則會一直閃避拖下去）
+	if not hunt.decisions.is_empty() and hunt.decisions[-1] == "fight.dodge":
+		prefer.erase("dodge")
+	var avoid: Array = AVOID.get(style, [])
 	var best: Dictionary = {}
-	for o in opts:
-		if not o.has("chance") or avoid.has(o["id"]):
-			continue
-		if best.is_empty() or float(o["chance"]) > float(best["chance"]):
-			best = o
+	for id in prefer:
+		for o in opts:
+			if o["id"] == id:
+				best = o
+				break
+		if not best.is_empty():
+			break
+	if best.is_empty():
+		best = _best(opts.filter(func(o): return not avoid.has(o["id"])))
 	if best.is_empty():
 		return opts[0] if not opts.is_empty() else {}
 	# 謹慎：追擊勝算太低或體力見底就放棄。
-	if style == "cautious" and hunt.stage == HuntSystem.Stage.CHASE \
+	if style == "cautious" and hunt.stage == HuntSystem.Stage.CHASE and best.has("chance") \
 			and (float(best["chance"]) < 0.3 or GameState.wolf.stamina < 25.0):
 		return {}
+	return best
+
+# 有成功率的選項取最高；都沒有成功率（例如「不觀察」）就取第一個。
+func _best(opts: Array) -> Dictionary:
+	var best: Dictionary = {}
+	for o in opts:
+		if not o.has("chance"):
+			if best.is_empty():
+				best = o
+			continue
+		if best.is_empty() or not best.has("chance") or float(o["chance"]) > float(best["chance"]):
+			best = o
 	return best

@@ -48,7 +48,9 @@ var prey_hunger_value: float
 var is_night: bool = false
 var wind_dir: int = 0 # 全域風向（0～3），狩獵途中可能轉變
 var prey_dir: int = 0 # 獵物相對於狼的方位（0～3）
-var experience: Array[String] = [] # 這次狩獵累積經驗的能力值（不重複）
+# 這次狩獵每一步的練習（Growth.apply_practice）：{stat, success, streak, kind}；streak = 這一步之前連續失敗的次數。
+var practice: Array = []
+var fail_streak: int = 0
 
 var observed: bool = false # 觀察成功，得知獵物狀態
 var stalk_bonus: float = 0.0 # 觀察帶到潛近的加成
@@ -266,10 +268,8 @@ func _annotate(opt: Dictionary) -> void:
 		opt["prey_drain"] = float(cfg["prey_drain"])
 	if cfg.has("trains"):
 		opt["trains"] = cfg["trains"]
-
-func _gain_trains(opt: Dictionary) -> void:
-	for stat in opt.get("trains", []):
-		_gain(str(stat))
+		opt["train_mult"] = float(cfg.get("train_mult", 1.0))
+		opt["train_weights"] = cfg.get("train_weights", {})
 
 func _pounce_option(id: String) -> Dictionary:
 	var cfg: Dictionary = _tuning().get("pounce", {})
@@ -483,9 +483,14 @@ static func reason_from_factor(factor: Dictionary) -> String:
 		return ""
 	return "reason." + str(factor["key"]).trim_prefix("factor.").replace(".", "_")
 
-func _gain(stat: String) -> void:
-	if not experience.has(stat):
-		experience.append(stat)
+# 每一步都算練習：成功與失敗都記下，失敗的份量由 Growth 依連續失敗次數遞減。
+func _practice(opt: Dictionary, success: bool) -> void:
+	for stat in opt.get("trains", []):
+		var repeat: int = practice.filter(func(p): return p["stat"] == str(stat)).size()
+		practice.append({"stat": str(stat), "success": success, "streak": 0 if success else fail_streak, "repeat": repeat,
+			"mult": float(opt.get("train_mult", 1.0)) * float(opt.get("train_weights", {}).get(stat, 1.0))})
+	if not opt.get("trains", []).is_empty():
+		fail_streak = 0 if success else fail_streak + 1
 
 func _find_option(id: String) -> Dictionary:
 	for opt in options():
@@ -532,6 +537,7 @@ func choose(id: String) -> Dictionary:
 		Stage.FIGHT: res = _do_fight(opt)
 		_: res = {"success": false}
 	res["turns"] = int(res.get("turns", 0)) + int(opt.get("turns", 0))
+	_practice(opt, bool(res.get("success", false)))
 	return res
 
 func _roll(chance_value: float) -> bool:
@@ -548,7 +554,6 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 		notes.append("hunt.mother.charge")
 	pounce_bonus = 0.0
 	if _roll(float(opt["chance"])):
-		_gain_trains(opt)
 		var won := _kill("hunt.pounce.success")
 		won["notes"] = notes
 		won["damage"] = damage
@@ -574,7 +579,6 @@ func _do_search(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		hiding = false
 		pounce_bonus = float(_reaction_cfg().get("search", {}).get("pounce_bonus", 0.1))
-		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.hide.found"}
 	# 找不到就失去目標，沒有足跡可追。
 	stage = Stage.DONE
@@ -584,7 +588,6 @@ func _do_search(opt: Dictionary) -> Dictionary:
 func _do_harass(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		reaction = "flee"
-		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.harass.success"}
 	var cfg := _reaction_cfg()
 	var damage: float = 0.0
@@ -617,7 +620,6 @@ func _do_observe(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		observed = true
 		stalk_bonus = float(cfg.get("stalk_bonus", 0.06))
-		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.observe.success", "prey_state": prey_state_keys()}
 	# 觀察失敗：獵物察覺到動靜，變得更警覺，但還沒逃。
 	prey_detection += float(cfg.get("fail_alert", 10))
@@ -629,7 +631,6 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		stage = Stage.CHASE
 		chase_bonus = float(stalk_opt.get("chase_bonus", 0.0))
-		_gain_trains(opt)
 		return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted}
 	# 選擇繞到下風處時，已經依當下風向重新站位，不算「風向轉了」。
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
@@ -639,7 +640,6 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	chase_round += 1
 	prey_stamina_cur = max(0.0, prey_stamina_cur - float(opt.get("prey_drain", 15)))
 	if _roll(float(opt["chance"])):
-		_gain_trains(opt)
 		successful_options.append(str(opt["id"]))
 		if depth == "full":
 			stage = Stage.FIGHT
@@ -662,11 +662,8 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 
 func _do_fight(opt: Dictionary) -> Dictionary:
 	var r := FightRules.resolve_round(wolf, prey_counter_attack, opt["id"], fight_state)
-	if r["success"]:
-		_gain_trains(opt)
 	match r["outcome"]:
 		"kill":
-			_gain("strength")
 			return _kill("hunt.fight.success")
 		"escape":
 			var escaped := _flee("hunt.fight.escape", r["factors"], false)
@@ -681,9 +678,9 @@ func _do_fight(opt: Dictionary) -> Dictionary:
 	return {"success": r["success"], "text_key": key, "damage": r.get("damage", 0.0),
 		"turns": int(_tuning().get("fight", {}).get("extra_round_turns", 1)), "wounds": int(fight_state.get("wounds", 0))}
 
-# 制伏獵物一定是力氣活，任何深度的成功都累積力量經驗。
+# 制伏獵物一定是力氣活，任何深度的成功都累積力量的鍛鍊點。
 func _kill(text_key: String) -> Dictionary:
-	_gain("strength")
+	practice.append({"stat": "strength", "success": true, "kind": "takedown"})
 	stage = Stage.DONE
 	result = Result.SUCCESS
 	# 大型獵物分段吃（GameState 開始進食），小型獵物當場吃完。

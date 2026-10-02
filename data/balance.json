@@ -68,26 +68,26 @@
   "hunt": {
     "_comment": "狩獵深度分級與各階段選項（SPEC「狩獵深度分級」「地形」）。選項的 terrain 表示只在該地形出現。",
     "depth_turns": { "simple": 1, "standard": 2, "full": 3 },
-    "_trains_comment": "trains：成功時練到的能力（也顯示在選項的代價列「練：…」）。1.6 第 2 步改為新的成長系統時沿用這份對應。",
+    "_trains_comment": "trains：這一步練到的能力（顯示在選項的代價列「練：…」）；技巧、感知當下成長，速度、力量記鍛鍊點（Growth.gd）。train_mult：這一步練習的份量倍率（沒寫是 1）；train_weights：個別能力再乘的倍率。讓不同打法練出不同的身體。",
     "wind_shift_chance_per_stage": 0.08,
     "pounce": {
       "base": 0.7, "divisor": 200, "wind_mult": 0.5, "terrain_mult": 0.5,
       "options": {
-        "pounce": { "bonus": 0.0, "stamina": 8, "trains": ["skill", "speed"] },
-        "creep_pounce": { "bonus": 0.1, "stamina": 10, "turns": 1, "trains": ["skill", "speed"] }
+        "pounce": { "bonus": 0.0, "stamina": 8, "trains": ["speed", "skill"], "train_weights": { "skill": 0.5 } },
+        "creep_pounce": { "bonus": 0.1, "stamina": 10, "turns": 1, "train_mult": 1.2, "trains": ["skill", "speed"], "train_weights": { "speed": 0.3 } }
       }
     },
-    "observe": { "base": 0.65, "perception_divisor": 140, "stalk_bonus": 0.06, "fail_alert": 10, "trains": ["perception"] },
+    "observe": { "base": 0.65, "perception_divisor": 140, "stalk_bonus": 0.06, "fail_alert": 10, "train_mult": 2.0, "trains": ["perception"] },
     "stalk": {
       "base": 0.58, "skill_divisor": 110,
       "wind_bonus": { "headwind": 0.12, "crosswind": 0.0, "tailwind": -0.2 },
       "downwind_turns": { "headwind": 0, "crosswind": 1, "tailwind": 2 },
       "options": {
-        "direct": { "bonus": -0.1, "stamina": 3, "chase_bonus": 0.0, "trains": ["skill"] },
-        "downwind": { "bonus": 0.0, "stamina": 6, "chase_bonus": 0.08, "as_headwind": true, "trains": ["skill"] },
-        "wait": { "bonus": 0.05, "stamina": 1, "chase_bonus": 0.0, "turns": 1, "trains": ["skill"] },
+        "direct": { "bonus": -0.1, "stamina": 3, "chase_bonus": 0.0, "trains": ["strength", "skill"], "train_weights": { "skill": 0.4 } },
+        "downwind": { "bonus": 0.0, "stamina": 6, "chase_bonus": 0.08, "as_headwind": true, "train_mult": 1.2, "trains": ["skill"] },
+        "wait": { "bonus": 0.05, "stamina": 1, "chase_bonus": 0.0, "turns": 1, "train_mult": 1.5, "trains": ["skill"] },
         "upstream": { "bonus": 0.06, "stamina": 8, "chase_bonus": 0.05, "terrain": ["stream"], "trains": ["skill"] },
-        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest"], "trains": ["skill"] },
+        "ambush": { "bonus": 0.1, "stamina": 2, "chase_bonus": 0.05, "turns": 1, "terrain": ["dense_forest"], "train_mult": 1.5, "trains": ["skill"] },
         "edge_strike": { "bonus": 0.0, "stamina": 5, "chase_bonus": 0.15, "terrain": ["forest_edge"], "trains": ["skill"] }
       }
     },
@@ -98,8 +98,8 @@
       "escape_base": 0.3, "escape_per_round": 0.1,
       "prey_tired_bonus": 0.25, "precise_perception": 60,
       "options": {
-        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15, "trains": ["speed"] },
-        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25, "trains": ["speed"] },
+        "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15, "train_mult": 1.6, "trains": ["speed"] },
+        "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25, "train_mult": 0.8, "trains": ["speed"] },
         "flank": { "bonus": 0.05, "stamina": 17, "stat": "skill", "fight_bonus": 0.15, "prey_drain": 10, "trains": ["skill", "speed"] },
         "drive_forest": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.12, "terrain": ["dense_forest", "forest_edge"], "prey_drain": 15, "trains": ["speed"] },
         "drive_stream": { "bonus": 0.02, "stamina": 13, "stat": "speed_half", "fight_bonus": 0.15, "turns": 1, "terrain": ["stream"], "prey_drain": 20, "trains": ["speed"] },
@@ -130,7 +130,7 @@
       "counter_damage_min": 5, "counter_damage_max": 15, "counter_injury_damage": 12,
       "moves": {
         "bite_leg": { "bonus": 0.1, "strength_weight": 1.2, "wound": 1, "counter_mult": 0.4, "trains": ["strength", "skill"] },
-        "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4, "trains": ["skill", "strength"] },
+        "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4, "train_mult": 1.5, "trains": ["skill", "strength"] },
         "dodge": { "bonus": 0.1, "strength_weight": 0.2, "next_bonus": 0.1, "counter_reduction": 0.5, "counter_mult": 0.2, "trains": ["skill"] }
       }
     }
@@ -147,11 +147,41 @@
     "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2,
     "guard": { "base": 0.25, "divisor": 250, "min": 0.03, "max": 0.4, "damage_min": 20, "damage_max": 45, "heavy_damage": 25, "win_stamina": 20 }
   },
+  "start_health_max": 80,
   "growth": {
-    "subadult_gain": { "speed": 0.6, "strength": 0.6, "skill": 0.5, "perception": 0.5 },
-    "adult_gain_before_peak": { "speed": 0.15, "strength": 0.15, "skill": 0.15, "perception": 0.15 },
-    "peak_age": 4.0,
-    "elder_decay_per_season": { "speed": 1.0, "strength": 0.5, "skill": 0.0 }
+    "_comment": "SPEC 1.6「成長系統」，規則在 scripts/core/Growth.gd。learn_per_unit：技巧、感知每次成功的當下成長（失敗 × fail_mult，同一場狩獵連續失敗再 × fail_streak_decay 的次方）。training_points：鍛鍊點，action = 狩獵中練到速度或力量的一步（追擊一回合、撲抓、搏鬥一回合），takedown = 制伏獵物，guard = 守住獵物或打贏灰熊，另外 health_share 比例記到血量上限；gather、explore 三項平均。stat_per_point × 飽食倍率 × 生命階段倍率 = 睡覺時每點鍛鍊點的成長量。",
+    "learn_per_unit": { "skill": 0.25, "perception": 0.25 },
+    "fail_mult": 0.25,
+    "fail_streak_decay": 0.5,
+    "_repeat_comment": "同一場狩獵裡，同一項能力第 repeat_free 次之後的練習，每次再 × repeat_decay。",
+    "repeat_free": 3,
+    "repeat_decay": 0.7,
+    "explore_perception": 0.03,
+    "track_perception": 0.06,
+    "observe_distant_perception": 0.25,
+    "avoid_perception": 0.3,
+    "gather_perception": 0.01,
+    "training_points": { "action": 3, "takedown": 3, "guard": 4, "gather": 2, "explore": 1, "health_share": 0.3 },
+    "immediate_body_per_point": 0.003,
+    "stat_per_point": { "speed": 0.06, "strength": 0.06, "health_max": 0.08 },
+    "_hunger_mult_comment": "睡覺時飽食度 → 倍率（折線）；fed_streak：連續 N 天睡覺時飽食度 ≥ threshold，第二天起每天加 bonus_per_day，最多 max_bonus。",
+    "hunger_mult": [[0, 0.0], [30, 0.05], [50, 0.4], [70, 0.8], [100, 1.0], [150, 1.1]],
+    "fed_streak": { "threshold": 100, "bonus_per_day": 0.05, "max_bonus": 0.3 },
+    "stage_mult": {
+      "subadult": { "body": 2.0, "mind": 1.2 },
+      "adult": { "body": 0.7, "mind": 0.7 },
+      "elder": { "body": 0.0, "skill": 0.3, "perception": 0.0 }
+    },
+    "approach_range": 12,
+    "_potential_comment": "潛力結算（進入成年）：上限 = base_cap + 次成年期成長 × growth_mult，最高 max。base_cap 依 tools/sim/growth_sim.gd 的模擬決定（見 progress.md）。",
+    "potential": {
+      "base_cap": { "speed": 55, "strength": 55, "skill": 55, "perception": 55, "health_max": 90 },
+      "growth_mult": 1.5,
+      "_reference_comment": "一般玩法（模擬的平均）次成年期的成長量。成年描述用「成長 ÷ 這個值」挑最突出的能力，避免總是挑到絕對值最大的力量。",
+      "reference_growth": { "speed": 8, "strength": 10, "skill": 7, "perception": 6, "health_max": 8 },
+      "max": { "speed": 100, "strength": 100, "skill": 100, "perception": 100, "health_max": 120 }
+    },
+    "elder_decay_per_season": { "speed": 1.0, "strength": 0.5, "skill": 0.0, "perception": 0.5, "health_max": 1.0 }
   },
   "_pending_review": "數值為 Phase 1 起點，待試玩後依 DESIGN.md 待討論事項調整"
 }

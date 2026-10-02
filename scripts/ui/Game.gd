@@ -7,6 +7,8 @@ const STATUS_ICON_KINDS := ["injury", "poison", "hunger"]
 const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
+var stats_labels: Dictionary = {}
+var portrait_stage: String = "?"
 var region_buttons: Dictionary = {}
 var action_buttons: Dictionary = {}
 var status_icons: Dictionary = {}
@@ -47,6 +49,7 @@ var debug_spins: Dictionary = {}
 var card_overlay: Panel
 var card_bg: TextureRect
 var card_title: Label
+var card_wolf: AnimatedIcon
 var card_body: RichTextLabel
 var card_buttons_box: HBoxContainer
 var toast: RichTextLabel
@@ -57,6 +60,9 @@ var tendency_button: Button
 var auto_player: AutoPlayer = null
 var auto_status: Label
 const AUTO_DAYS_PER_FRAME := 2
+# 除錯「跳到次成年期最後一天」的玩法：[名稱, 獵物偏好, 打法]（見 AutoPlayer）
+const DEBUG_GROWTH_PROFILES := [["average", "all", "average"], ["pursuit", "all", "pursuit"], ["assault", "all", "assault"],
+	["stealth", "all", "stealth"], ["cautious", "all", "cautious"], ["small_only", "small_only", "average"]]
 
 func _ready() -> void:
 	anchor_right = 1.0
@@ -164,6 +170,7 @@ func _build_ui() -> void:
 		var l := Label.new()
 		l.text = tr("stat." + key)
 		col.add_child(l)
+		stats_labels[key] = l
 		var bar := ProgressBar.new()
 		bar.min_value = 0
 		bar.max_value = float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else 100.0
@@ -294,13 +301,14 @@ func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, ac
 		icon.show_static(PixelArt.make_animal_sprite(fallback_id, Vector2i(72, 48), _animal_scale(life_stage)))
 
 func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
+	var stage: String = _wolf_stage_key()
 	if pose == "walk":
-		if ArtLibrary.setup_wolf(icon, "walk", 8.0):
+		if ArtLibrary.setup_wolf(icon, "walk", 8.0, stage):
 			return
-	var tex: Texture2D = ArtLibrary.wolf_pose(pose)
+	var tex: Texture2D = ArtLibrary.wolf_pose(pose, stage)
 	if tex != null:
 		icon.show_static(tex)
-	elif not ArtLibrary.setup_wolf(icon, "idle"):
+	elif not ArtLibrary.setup_wolf(icon, "idle", 5.0, stage):
 		icon.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
@@ -448,7 +456,7 @@ func _build_debug_overlay() -> void:
 	left.add_theme_constant_override("separation", 2)
 	columns.add_child(left)
 	left.add_child(_debug_section_label("debug.section.stats"))
-	for key in ["health", "stamina", "speed", "strength", "skill", "perception", "hunger", "health_value", "age_years"]:
+	for key in ["health", "health_max", "stamina", "speed", "strength", "skill", "perception", "hunger", "health_value", "age_years"]:
 		var row := HBoxContainer.new()
 		left.add_child(row)
 		var l := Label.new()
@@ -457,7 +465,7 @@ func _build_debug_overlay() -> void:
 		row.add_child(l)
 		var spin := SpinBox.new()
 		spin.min_value = 0
-		spin.max_value = 20 if key == "age_years" else (float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else 100)
+		spin.max_value = 20 if key == "age_years" else (float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else (120 if key == "health_max" else 100))
 		spin.step = 0.1 if key == "age_years" else 1
 		spin.custom_minimum_size = Vector2(90, 0)
 		row.add_child(spin)
@@ -481,8 +489,8 @@ func _build_debug_overlay() -> void:
 	_debug_button(time_grid, tr("debug.add_year"), func(): GameState.debug_add_age(1.0); _sync_debug_spins())
 	_debug_button(time_grid, tr("debug.jump_stage").replace("{stage}", tr("stage.adult")),
 		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ADULT); _sync_debug_spins())
-	_debug_button(time_grid, tr("debug.jump_stage").replace("{stage}", tr("stage.elder")),
-		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ELDER); _sync_debug_spins())
+	_debug_button(time_grid, tr("debug.jump_elder_eve"),
+		func(): GameState.debug_jump_to_elder_eve(); _sync_debug_spins())
 	_debug_button(right, tr("debug.toggle_time_mode"), func():
 		GameTime.time_mode = "test" if GameTime.time_mode == "normal" else "normal"
 		_log("time_mode = " + GameTime.time_mode)
@@ -546,6 +554,34 @@ func _build_debug_overlay() -> void:
 		GameState.pending_events.append({"type": "bear_passing", "health": 0.0, "stamina": 0.0})
 		_refresh()
 	)
+	# 成長（1.6 第 2 步）：模擬一段次成年期、強制轉變卡片、匯出試玩紀錄
+	right.add_child(_debug_section_label("debug.section.growth"))
+	var growth_row := HBoxContainer.new()
+	right.add_child(growth_row)
+	var profile_pick := OptionButton.new()
+	for prof in DEBUG_GROWTH_PROFILES:
+		profile_pick.add_item(tr("debug.profile." + str(prof[0])))
+	growth_row.add_child(profile_pick)
+	_debug_button(growth_row, tr("debug.jump_subadult_end"), func():
+		var prof: Array = DEBUG_GROWTH_PROFILES[profile_pick.selected]
+		_start_auto_to_adult(str(prof[1]), str(prof[2]))
+	)
+	var growth_row2 := HBoxContainer.new()
+	right.add_child(growth_row2)
+	_debug_button(growth_row2, tr("debug.force_adult"), func():
+		debug_overlay.visible = false
+		GameState.debug_force_transition("adult")
+	)
+	_debug_button(growth_row2, tr("debug.force_elder"), func():
+		debug_overlay.visible = false
+		GameState.debug_force_transition("elder")
+	)
+	_debug_button(growth_row2, tr("debug.export_log"), func():
+		var path: String = GameState.debug_export_playtest_log()
+		auto_status.text = tr("debug.exported").replace("{path}", path)
+		_log(auto_status.text)
+	)
+
 	# 模擬到死亡（1.6 第 1 步，驗收 1.5 的「兩隻風格相反的狼」）
 	right.add_child(_debug_section_label("debug.section.auto"))
 	var auto_row := HBoxContainer.new()
@@ -616,6 +652,7 @@ func _get_wolf_stat(key: String) -> float:
 	var w: Wolf = GameState.wolf
 	match key:
 		"health": return w.health
+		"health_max": return w.health_max
 		"stamina": return w.stamina
 		"speed": return w.speed
 		"strength": return w.strength
@@ -648,7 +685,11 @@ func _refresh() -> void:
 	region_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
 	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period())
 	_process_events.call_deferred()
+	# 血量顯示「血量 72／90」，條的上限是血量上限（SPEC 1.6「血量上限成為能力值」）
+	stats_bars["health"].max_value = w.health_max
 	stats_bars["health"].value = w.health
+	stats_labels["health"].text = tr("ui.stat_with_max").replace("{name}", tr("stat.health")) \
+		.replace("{value}", str(int(ceil(w.health)))).replace("{max}", str(int(round(w.health_max))))
 	stats_bars["stamina"].value = w.stamina
 	stats_bars["hunger"].value = w.hunger
 	stats_bars["health_value"].value = w.health_value
@@ -657,8 +698,12 @@ func _refresh() -> void:
 	stats_bars["skill"].value = w.skill
 	stats_bars["perception"].value = w.perception
 
-	var is_elder: bool = w.life_stage() == Wolf.LifeStage.ELDER
-	wolf_portrait.modulate = Color(0.82, 0.82, 0.85) if is_elder else Color(1, 1, 1)
+	# 成年、老年換外貌（data/art.json 的 wolf.stages）
+	var stage_key: String = _wolf_stage_key()
+	if stage_key != portrait_stage:
+		portrait_stage = stage_key
+		if not ArtLibrary.setup_wolf(wolf_portrait, "idle", 5.0, stage_key):
+			wolf_portrait.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE
 	status_icons["poison"].visible = w.poison_days_remaining > 0
@@ -691,6 +736,15 @@ func _refresh() -> void:
 	action_buttons["explore"].text = tr("action.explore") + _explore_hint()
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
+
+# 外貌用的生命階段：""（次成年）、"adult"、"elder"。
+func _wolf_stage_key() -> String:
+	if GameState.wolf == null:
+		return ""
+	match GameState.wolf.life_stage():
+		Wolf.LifeStage.ADULT: return "adult"
+		Wolf.LifeStage.ELDER: return "elder"
+	return ""
 
 func _stage_key(stage: int) -> String:
 	match stage:
@@ -1078,6 +1132,12 @@ func _process_events() -> void:
 			return
 		"tendency_changed":
 			_show_tendency_changed(event)
+			return
+		"adult_transition":
+			_show_adult_transition()
+			return
+		"elder_transition":
+			_show_elder_transition()
 			return
 	_refresh()
 
@@ -1612,6 +1672,14 @@ func _build_card_overlay() -> void:
 	box.custom_minimum_size = Vector2(420, 0)
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
+	var card_sprite_center := CenterContainer.new()
+	box.add_child(card_sprite_center)
+	card_wolf = AnimatedIcon.new()
+	card_wolf.custom_minimum_size = Vector2(96, 64)
+	card_wolf.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	card_wolf.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	card_wolf.visible = false
+	card_sprite_center.add_child(card_wolf)
 	card_title = Label.new()
 	card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_title.add_theme_font_size_override("font_size", 20)
@@ -1628,6 +1696,7 @@ func _build_card_overlay() -> void:
 
 # bg 為 null 時沿用目前區域的背景。關閉後繼續處理佇列裡的下一個事件。
 func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
+	card_wolf.visible = false
 	card_title.text = title
 	card_body.text = body
 	card_bg.texture = bg if bg != null else ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
@@ -1642,6 +1711,10 @@ func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
 	card_buttons_box.add_child(btn)
 	card_overlay.visible = true
 	btn.grab_focus.call_deferred()
+
+# 卡片上方放狼的外貌（成年、老年轉變用）。
+func _set_card_wolf(stage: String) -> void:
+	card_wolf.visible = ArtLibrary.setup_wolf(card_wolf, "idle", 5.0, stage)
 
 func _notice_lines(lines: Array) -> String:
 	var texts: Array[String] = []
@@ -1676,6 +1749,40 @@ func _show_tendency_changed(event: Dictionary) -> void:
 	var body: String = text + "\n\n" + _icon_bb("tendency." + type, 16) + " " + tr("tendency." + type) \
 		+ "　" + _tendency_effect_text(type, GameState.tendency_effect(type))
 	_show_card(tr("tendency_change.title"), body)
+
+# 成年卡片：成年外貌、身體描述、各項能力的巔峰上限（SPEC 1.6「成年轉變」）。
+func _show_adult_transition() -> void:
+	var w: Wolf = GameState.wolf
+	var cfg: Dictionary = GameData.notices.get("adult_transition", {})
+	var key: String = str(GameState.life_log.get("adult_body", ""))
+	if key == "":
+		key = GameState.adult_body_key()
+	var body: String = tr(str(cfg.get("intro", ""))) + tr(key)
+	_log(tr(str(cfg.get("intro", ""))))
+	var caps: Array[String] = []
+	for stat in Growth.ALL_STATS:
+		caps.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " " + str(int(round(float(w.potential.get(stat, Growth.get_stat(w, stat)))))))
+	body += "\n\n" + tr("adult_transition.caps") + "\n" + "　".join(caps)
+	_show_card(tr("adult_transition.title"), body)
+	_set_card_wolf("adult")
+
+# 老年卡片：老年外貌、身體描述、之後每季會衰退的能力，以及仍會微幅成長的技巧。
+func _show_elder_transition() -> void:
+	var cfg: Dictionary = GameData.notices.get("elder_transition", {})
+	var text: String = tr(str(cfg.get("body", "")))
+	_log(text)
+	var decline: Array[String] = []
+	for stat in Growth.cfg().get("elder_decay_per_season", {}).keys():
+		if float(Growth.cfg()["elder_decay_per_season"][stat]) > 0.0:
+			decline.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)))
+	var growing: Array[String] = []
+	for stat in cfg.get("growing", []):
+		growing.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)))
+	var body: String = text + "\n\n" + tr("elder_transition.decline").replace("{list}", "、".join(decline))
+	if not growing.is_empty():
+		body += "\n" + tr("elder_transition.growing").replace("{list}", "、".join(growing))
+	_show_card(tr("elder_transition.title"), body)
+	_set_card_wolf("elder")
 
 func _show_tendency_panel() -> void:
 	if _overlay_busy():
@@ -1751,15 +1858,16 @@ func _show_day_toast() -> void:
 # 睡覺結算：上次睡覺到這次提升的能力；速度或力量提升時附一句原因（也寫進行動紀錄）。
 func _show_sleep_summary(summary: Dictionary) -> void:
 	var gains: Array = summary.get("gains", [])
-	if gains.is_empty():
+	var reason_only: bool = gains.is_empty()
+	if reason_only and str(summary.get("reason", "")) == "":
 		return
 	var parts: Array[String] = []
 	for stat in gains:
 		parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=#9be38a]▲[/color]")
-	var text: String = tr("sleep_summary.today") + "　".join(parts)
+	var text: String = "" if reason_only else tr("sleep_summary.today") + "　".join(parts)
 	var reason: String = str(summary.get("reason", ""))
 	if reason != "":
-		text += "\n" + tr(reason)
+		text += ("" if reason_only else "\n") + tr(reason)
 		_log(tr(reason))
 	_show_toast(text, 3.0)
 
@@ -1774,6 +1882,20 @@ func _start_auto_play(den: String, prey: String, style: String) -> void:
 	auto_player = AutoPlayer.new(prey, style)
 	auto_player.start(den)
 
+# 從目前這隻狼開始自動玩到次成年期最後一天（之後交還給玩家）。
+func _start_auto_to_adult(prey: String, style: String) -> void:
+	if auto_player != null:
+		return
+	if GameState.wolf == null or GameState.wolf.life_stage() != Wolf.LifeStage.SUBADULT:
+		auto_status.text = tr("debug.already_adult")
+		return
+	current_hunt = null
+	for overlay in [encounter_overlay, hunt_overlay, rest_overlay, region_info_overlay, card_overlay]:
+		overlay.visible = false
+	auto_player = AutoPlayer.new(prey, style)
+	auto_player.stop_before_adult = true
+	auto_player.start_from_current()
+
 func _process(_delta: float) -> void:
 	if auto_player == null:
 		return
@@ -1782,9 +1904,15 @@ func _process(_delta: float) -> void:
 		auto_status.text = tr("debug.auto.running").replace("{age}", "%.1f" % GameState.wolf.age_years) \
 			.replace("{n}", str(int(GameState.life_log.get("days_lived", 1))))
 	if auto_player.done():
-		# 死亡時 GameState 已發出 wolf_died，畫面會切到一生回顧。
+		# 死亡時 GameState 已發出 wolf_died，畫面會切到一生回顧；活著（跳到次成年期最後一天）就交還給玩家。
 		auto_player.finish()
 		auto_player = null
+		if GameState.wolf != null and GameState.wolf.alive:
+			GameState.pending_events.clear()
+			GameState.clear_discovery()
+			auto_status.text = tr("debug.auto.done")
+			_sync_debug_spins()
+			_refresh()
 
 # --- Lifecycle ---
 
