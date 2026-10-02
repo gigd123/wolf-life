@@ -191,7 +191,8 @@
   "feeding": {
     "_comment": "分段進食與搶食（SPEC「狩獵後續事件」）。沒列在 segments 的獵物一次吃完。",
     "segments": {
-      "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 }
+      "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
+      "caribou": { "adult": 3, "juvenile": 2 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

@@ -726,3 +726,22 @@ fire.result.safe.other_map,你一路往北跑，衝出了林子，逃進了{regi
 summary.fire.escape.other_map,逃進{region}
 bio.fire.other_map,{age} 歲那年的大火裡，你一路往北逃進了苔原
 summary.maps,去過的地方：{list}
+animal.snowshoe_hare,雪兔
+animal.caribou,北美馴鹿
+prey_name.caribou.adult,北美馴鹿
+prey_name.caribou.juvenile,小馴鹿
+explore.sign.trampled,一大片被踩亂的雪與苔蘚
+factor.snow_camouflage,雪地保護色
+factor.herd,鹿群（觀察能找出跑得慢的那一隻）
+factor.herd_weak,盯住跑得慢的那一隻
+hunt.herd.found_weak,你在鹿群裡盯上了一隻腳步有些拖沓的{animal}。
+factor.terrain.treeline,林線
+factor.terrain.open_tundra,開闊苔原
+factor.terrain.river_willow,河谷柳叢
+factor.terrain.rocky,岩石區
+factor.terrain.esker,沙脊
+reason.terrain_open_tundra,風從空曠的苔原上吹過，你無處可藏。
+reason.terrain_rocky,岩石絆住了你的腳步。
+reason.terrain_esker,沙脊上太顯眼了。
+reason.snow_camouflage,雪白的身影一閃，就融進了雪地裡。
+hunt.stage.observe_herd,觀察階段：遠處有一群{animal}

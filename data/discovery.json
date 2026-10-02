@@ -13,11 +13,15 @@
   "clue_weights": {
     "white_tailed_deer": { "scent": 3, "track": 3, "sound": 1, "sign": 2, "sight": 1 },
     "hare": { "scent": 1, "track": 3, "sound": 1, "sign": 2, "sight": 2 },
-    "red_fox": { "scent": 3, "track": 2, "sound": 1, "sign": 1, "sight": 1 }
+    "red_fox": { "scent": 3, "track": 2, "sound": 1, "sign": 1, "sight": 1 },
+    "snowshoe_hare": { "scent": 1, "track": 3, "sound": 1, "sign": 2, "sight": 2 },
+    "caribou": { "scent": 2, "track": 3, "sound": 2, "sign": 1, "sight": 2 }
   },
+  "_clue_icon_overrides_comment": "特定動物的線索圖示（1.6 第 6b 步）：{動物.線索類型: 圖示鍵}，沒有的用 clue_icon_path 的通用圖示。",
+  "clue_icon_overrides": { "snowshoe_hare.track": "track_snowhare", "caribou.track": "track_caribou" },
   "always_fresh_clues": ["sound", "sight"],
   "scent_wind_mult": { "headwind": 2.0, "crosswind": 1.0, "tailwind": 0.4 },
-  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch" },
+  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch", "snowshoe_hare": "droppings", "caribou": "trampled" },
   "track": {
     "turns": 1,
     "base": 0.6,

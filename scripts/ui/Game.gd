@@ -1113,6 +1113,7 @@ func _show_discovery_sprite(d: Dictionary) -> void:
 			icon_key = "claw" if clue == "claw" else ("scent" if clue.ends_with("scent") else ("sight" if clue == "sight" else "track"))
 		else:
 			icon_key = CLUE_ICON_FOR.get(clue, "track")
+			icon_key = str(GameData.discovery.get("clue_icon_overrides", {}).get(str(d["source"]) + "." + clue, icon_key))
 	encounter_sprite.show_static(ArtLibrary.texture(str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", icon_key)))
 
 # --- 分段進食與搶食 ---
@@ -1511,6 +1512,10 @@ func _render_hunt_stage() -> void:
 	var animal_name: String = _hunt_prey_name()
 	# 追擊時獵物在跑；狼的姿勢依階段：觀察、潛近伏低，追擊奔跑，撲抓、搏鬥撲擊
 	var prey_action: String = "move" if current_hunt.stage == HuntSystem.Stage.CHASE else "idle"
+	# 成群的獵物（北美馴鹿）在觀察階段顯示整群
+	var herd: bool = bool(GameData.animals.get(current_hunt.animal_id, {}).get("herd", false)) and current_hunt.life_stage != "juvenile"
+	if herd and current_hunt.stage == HuntSystem.Stage.OBSERVE:
+		prey_action = "herd"
 	_set_creature(hunt_sprite, current_hunt.animal_id, current_hunt.life_stage, prey_action)
 	var pose: String = "stalk"
 	match current_hunt.stage:
@@ -1518,7 +1523,10 @@ func _render_hunt_stage() -> void:
 		HuntSystem.Stage.FIGHT, HuntSystem.Stage.POUNCE: pose = "pounce"
 	_set_wolf_pose(hunt_wolf_sprite, pose)
 	_set_terrain_bg(hunt_bg, current_hunt.terrain)
-	var header: String = tr("hunt.stage." + current_hunt.stage_name()).replace("{animal}", animal_name)
+	var stage_key: String = "hunt.stage." + current_hunt.stage_name()
+	if herd and current_hunt.stage == HuntSystem.Stage.OBSERVE:
+		stage_key = "hunt.stage.observe_herd"
+	var header: String = tr(stage_key).replace("{animal}", animal_name)
 	var context: Array[String] = [tr("factor.wind." + current_hunt.wind_state())]
 	if current_hunt.terrain != "":
 		context.append(tr("explore.location." + current_hunt.terrain))

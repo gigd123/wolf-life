@@ -73,6 +73,7 @@ var successful_options: Array[String] = [] # 這次狩獵成功過的選項（�
 var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風向每個階段都可能改變
 var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
+var herd_weak: float = 0.0 # 觀察鹿群時找出跑得慢的那一隻（北美馴鹿）：追擊加成
 var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
@@ -301,6 +302,8 @@ func _observe_option() -> Dictionary:
 	var factors: Array = []
 	var diff: float = (wolf.effective_perception() - prey_detection) / float(cfg.get("perception_divisor", 140))
 	_add_alert_factor(factors, diff)
+	if bool(GameData.animals.get(animal_id, {}).get("herd", false)):
+		factors.append({"key": "factor.herd", "good": true, "weight": 0.0, "info": true})
 	var t: float = _terrain_mod("observe")
 	_add_terrain_factor(factors, t)
 	var cautious: float = _tendency_effect("cautious")
@@ -362,6 +365,9 @@ func _chase_option(id: String) -> Dictionary:
 	_add_terrain_factor(factors, t)
 	if chase_bonus > 0.0:
 		factors.append({"key": "factor.close_start", "good": true, "weight": chase_bonus})
+	if herd_weak > 0.0:
+		factors.append({"key": "factor.herd_weak", "good": true, "weight": herd_weak})
+		t += herd_weak
 	# 追太久成功率逐回合下降；獵物體力下降則較容易追上。
 	var fatigue: float = max(0, chase_round + 1 - int(cfg.get("free_rounds", 2))) * float(cfg.get("fatigue_per_round", 0.1))
 	if fatigue > 0.0:
@@ -387,6 +393,12 @@ func _chase_option(id: String) -> Dictionary:
 		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0)),
 		"prey_drain": float(opt.get("prey_drain", 15))}
 
+# 冬季的保護色（雪兔）：在雪地裡很難發現，發現、追蹤、搜尋都降低。
+static func camouflage(animal: String) -> float:
+	if GameTime.current_season() != "winter":
+		return 0.0
+	return float(GameData.animals.get(animal, {}).get("winter_camouflage", 0.0))
+
 func _search_option() -> Dictionary:
 	var cfg: Dictionary = _reaction_cfg().get("search", {})
 	var factors: Array = []
@@ -395,6 +407,10 @@ func _search_option() -> Dictionary:
 		factors.append({"key": "factor.sharp_nose", "good": true, "weight": diff})
 	else:
 		factors.append({"key": "factor.faint_trail", "good": false, "weight": -diff})
+	var camo: float = camouflage(animal_id)
+	if camo > 0.0:
+		factors.append({"key": "factor.snow_camouflage", "good": false, "weight": camo})
+		diff -= camo
 	_add_common_factors(factors)
 	return {"id": "search", "label_key": "hunt.option.search", "chance": clamp_chance(float(cfg.get("base", 0.5)) + diff),
 		"factors": factors, "turns": 0, "stamina": 0.0}
@@ -618,6 +634,10 @@ func _do_observe(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		observed = true
 		stalk_bonus = float(cfg.get("stalk_bonus", 0.06))
+		# 鹿群：看出哪一隻跑得慢
+		if bool(GameData.animals.get(animal_id, {}).get("herd", false)):
+			herd_weak = float(GameData.animals.get(animal_id, {}).get("herd_weak_bonus", 0.15))
+			return {"success": true, "text_key": "hunt.herd.found_weak", "prey_state": prey_state_keys()}
 		return {"success": true, "text_key": "hunt.observe.success", "prey_state": prey_state_keys()}
 	# 觀察失敗：獵物察覺到動靜，變得更警覺，但還沒逃。
 	prey_detection += float(cfg.get("fail_alert", 10))

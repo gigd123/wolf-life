@@ -181,7 +181,10 @@ static func track_chance(discovery: Dictionary, perception: float, knowledge_bon
 		factors.append({"key": "factor.knowledge", "good": true, "weight": knowledge_bonus})
 	if weather_penalty > 0.0:
 		factors.append({"key": "factor.storm_scent", "good": false, "weight": weather_penalty})
-	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w + knowledge_bonus - weather_penalty), "factors": factors}
+	var camo: float = HuntSystem.camouflage(str(discovery["source"]))
+	if camo > 0.0:
+		factors.append({"key": "factor.snow_camouflage", "good": false, "weight": camo})
+	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.6)) + diff + w + knowledge_bonus - weather_penalty - camo), "factors": factors}
 
 # 「確定」的知識：預估此時此地探索發現某種獵物（線索或目擊）的機率，給畫面顯示。
 static func estimate_prey_chance(ctx: Dictionary, animal_id: String) -> float:

@@ -29,6 +29,10 @@ static func frame_size() -> Vector2i:
 static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle") -> bool:
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var entry: Dictionary = table.get(life_stage, table.get("adult", {}))
+	# 季節外觀（例如雪兔冬季變白）：有 life_stage@season 就用那一版
+	var seasonal: String = life_stage + "@" + GameTime.current_season()
+	if table.has(seasonal):
+		entry = table[seasonal]
 	# 單張姿勢（例如陌生灰狼的威嚇、撲咬、示弱）優先於 spritesheet 的列
 	if entry.get("poses", {}).has(action):
 		var pose := texture(str(entry["poses"][action]))

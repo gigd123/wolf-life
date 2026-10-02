@@ -15,6 +15,17 @@
       "adult": { "sheet": "res://assets/art/sprites/animals/fox_adult_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/fox_kit_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "snowshoe_hare": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/snowhare_summer_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "adult@winter": { "sheet": "res://assets/art/sprites/animals/snowhare_winter_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/snowhare_summer_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile@winter": { "sheet": "res://assets/art/sprites/animals/snowhare_winter_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "caribou": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "herd": "res://assets/art/sprites/animals/caribou_herd.png" } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
     "grizzly_bear": {
       "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },

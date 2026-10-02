@@ -150,10 +150,11 @@ func _explore_once() -> void:
 			GameState.action_gather_discovered()
 			return
 	var animal: String = str(d.get("source", ""))
-	if prey == "small_only" and animal == "white_tailed_deer":
+	var big: bool = str(GameData.animals.get(animal, {}).get("size", "small")) != "small"
+	if prey == "small_only" and big:
 		GameState.clear_discovery()
 		return
-	if prey == "deer_focus" and animal != "white_tailed_deer" and GameState.wolf.hunger > 40:
+	if prey == "deer_focus" and not big and GameState.wolf.hunger > 40:
 		GameState.clear_discovery()
 		return
 	var hunt: HuntSystem = null

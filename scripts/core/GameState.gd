@@ -1586,6 +1586,11 @@ func burn_state(region_id: String) -> String:
 # 獵物出現率的倍率：資源消耗 × 火後（焦黑時稀少、草木新生時鹿變多）。
 func prey_mults(region_id: String) -> Dictionary:
 	var result: Dictionary = region_depletion.get(region_id, {}).duplicate()
+	# 冬季的保護色：雪兔在雪地裡比較難被發現
+	for animal_id in GameData.animals.keys():
+		var camo: float = HuntSystem.camouflage(animal_id)
+		if camo > 0.0:
+			result[animal_id] = float(result.get(animal_id, 1.0)) * (1.0 - camo)
 	var after: Dictionary = _fire_cfg().get("after", {})
 	match burn_state(region_id):
 		"burning", "ash":

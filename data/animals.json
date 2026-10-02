@@ -29,6 +29,30 @@
     "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "hunger_value": 11 },
     "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "hunger_value": 18 }
   },
+  "snowshoe_hare": {
+    "type": "prey",
+    "size": "small",
+    "name_key": "animal.snowshoe_hare",
+    "_comment": "雪兔（1.6 第 6b 步）：沿用野兔的系統。winter_camouflage：冬季毛色變白，在雪地裡很難發現（發現、追蹤、搜尋都降低這個比例）。",
+    "winter_camouflage": 0.15,
+    "depth": { "juvenile": "simple", "adult": "simple" },
+    "reactions": { "adult": { "hide": 0.5 }, "juvenile": { "hide": 0.6 } },
+    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 7 },
+    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 12 }
+  },
+  "caribou": {
+    "type": "prey",
+    "size": "medium",
+    "name_key": "animal.caribou",
+    "_comment": "北美馴鹿（1.6 第 6b 步）：成群遷徙，只在春秋出現在開闊苔原。herd：觀察鹿群成功時找出跑得慢的那一隻（追擊 + herd_weak_bonus）。",
+    "herd": true,
+    "herd_weak_bonus": 0.15,
+    "period_activity": { "dawn": 1.5, "day": 1.0, "dusk": 1.5 },
+    "depth": { "juvenile": "simple", "adult": "standard" },
+    "reactions": {},
+    "juvenile": { "detection": 45, "stamina": 45, "speed": 55, "counter_attack": 0, "hunger_value": 45 },
+    "adult": { "detection": 60, "stamina": 70, "speed": 66, "counter_attack": 10, "hunger_value": 80 }
+  },
   "grizzly_bear": {
     "type": "competitor",
     "size": "large",

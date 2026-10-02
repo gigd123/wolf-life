@@ -1,7 +1,7 @@
 {
   "_comment": "知識系統（SPEC「知識系統」「辨識與規律」）。同一類線索累積 1／2／3 次 = 似乎／通常／確定。",
   "confirm_count": 3,
-  "identified_at_start": ["white_tailed_deer", "hare", "red_fox"],
+  "identified_at_start": ["white_tailed_deer", "hare", "red_fox", "snowshoe_hare", "caribou"],
   "prey_confirmed_weight_mult": 1.2,
   "prey_confirmed_track_bonus": 0.1,
   "weakness_bonus_per_level": 0.04,
