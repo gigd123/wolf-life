@@ -488,6 +488,9 @@ func cold_cost(region_id: String = "") -> Dictionary:
 		region_id = current_region
 	var table: Dictionary = GameData.maps().get(GameData.map_of(region_id), {}).get("cold", {}).get(GameTime.current_season(), {})
 	var mult: float = float(EncounterSystem.region_data(region_id).get("cold_mult", 1.0))
+	# 沙脊的巢穴：又深又乾燥，待在巢穴這一區時比較不冷
+	if region_id == den_region:
+		mult *= float(den_bonus().get("cold_mult", 1.0))
 	# 暴風雪：沒躲的話消耗 ×3，挖雪洞照常，巢穴或沙脊減半
 	if blizzard_active() and GameData.map_of(region_id) == _blizzard_map():
 		var shelter: String = str(blizzard.get("shelter", "")) if blizzard.get("shelter_region", "") == region_id else ""
@@ -2004,6 +2007,10 @@ func can_make_den_here() -> bool:
 	return current_region != den_region and bool(EncounterSystem.region_data(current_region).get("can_den", false)) \
 		and burn_state(current_region) not in ["burning"]
 
+# 巢穴所在區域的加成（regions.json 的 den_bonus，例如遠北的沙脊）。
+func den_bonus() -> Dictionary:
+	return EncounterSystem.region_data(den_region).get("den_bonus", {})
+
 func action_make_den() -> void:
 	if not can_make_den_here():
 		return
@@ -2014,6 +2021,8 @@ func action_make_den() -> void:
 	life_log["den_moves"] = list
 	den_region = current_region
 	log_message.emit(tr("log.made_den").replace("{region}", tr("region." + current_region)))
+	if not den_bonus().is_empty():
+		log_message.emit(tr("log.made_den.bonus." + current_region))
 	state_changed.emit()
 
 # --- 陌生灰狼（SPEC 1.6「陌生灰狼」；牠的資料在 NpcWolf.gd） ---
@@ -2285,6 +2294,8 @@ func _blizzard_option(kind: String, target: String = "") -> Dictionary:
 		danger += float(e.get("low_hunger", 0.2))
 	if wolf.health < wolf.health_max * 0.5:
 		danger += float(e.get("low_health", 0.2))
+	if kind == "den" and current_region == den_region:
+		danger *= float(den_bonus().get("blizzard_danger_mult", 1.0))
 	danger = clamp(danger, 0.05, 1.5)
 	var o: Dictionary = _blizzard_cfg().get("outcome", {})
 	var heavy: float = float(o.get("heavy", 0.3)) * danger

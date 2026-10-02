@@ -1616,6 +1616,8 @@ func _show_region_info() -> void:
 		lines.append("")
 		lines.append(tr("region." + region_id) + "：" + main)
 		lines.append("　" + tr("ui.region_info.features") + "：" + "、".join(parts))
+		if visited and data.has("den_bonus"):
+			lines.append("　" + tr("ui.region_info.den_bonus." + region_id))
 	region_info_text.text = "\n".join(lines)
 	region_info_overlay.visible = true
 

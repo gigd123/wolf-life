@@ -912,3 +912,5 @@ ice.feel.solid,你踏上冰面試了試。冰面有點滑，但感到很安全�
 ice.feel.thin,你踏上冰面試了試。冰面有點滑，但你有種不穩定感。
 ice.prompt.go,走過去（{n} 回合到{region}）
 ice.prompt.back,還是繞路
+log.made_den.bonus.tundra_north,沙脊的沙土鬆軟乾燥，你挖得又深又暖。待在這一帶時，寒冷不再那麼難熬。
+ui.region_info.den_bonus.tundra_north,沙脊的沙土適合挖巢穴：在這裡安家，待在這一帶時嚴寒的消耗減半，暴風雪時躲進巢穴也更安全

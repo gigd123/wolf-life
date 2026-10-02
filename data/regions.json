@@ -190,6 +190,8 @@
       "secondary_features": ["good_sleep_spot"],
       "adjacent": ["tundra_central", "tundra_east"],
       "can_den": true,
+      "_den_bonus_comment": "沙脊的巢穴（使用者決定）：沙土鬆軟乾燥、挖得深。巢穴在這一區時，待在這一區的嚴寒消耗 × cold_mult；暴風雪躲進巢穴的危險度 × blizzard_danger_mult。",
+      "den_bonus": { "cold_mult": 0.5, "blizzard_danger_mult": 0.5 },
       "terrain_stamina_modifier": 5,
       "sleep_find_chance": 0.35,
       "cold_mult": 1.5,
