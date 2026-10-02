@@ -18,10 +18,15 @@
     "fight.bite_throat": "assault",
     "give_up": "cautious",
     "avoid": "cautious",
-    "scavenger.guard": "assault",
     "scavenger.abandon": "cautious",
-    "bear.fight": "assault",
-    "bear.retreat": "cautious",
-    "bear.flee": "cautious"
+    "combat.attack": "assault",
+    "combat.bite": "assault",
+    "combat.lunge": "assault",
+    "combat.threaten": "assault",
+    "combat.retreat": "cautious",
+    "combat.yield": "cautious",
+    "combat.abandon": "cautious",
+    "combat.grab": "cautious",
+    "combat.submit": "cautious"
   }
 }

@@ -21,6 +21,9 @@ func randf() -> float:
 func randi_range(from: int, to: int) -> int:
 	return rng.randi_range(from, to)
 
+func randf_range(from: float, to: float) -> float:
+	return rng.randf_range(from, to)
+
 func chance(probability: float) -> bool:
 	return rng.randf() < probability
 

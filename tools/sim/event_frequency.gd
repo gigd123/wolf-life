@@ -6,6 +6,8 @@ extends SceneTree
 
 func _process(_d):
 	var GS = root.get_node("GameState"); var GT = root.get_node("GameTime")
+	# 只算世界主動找上門的事件，不算轉變與回饋的提示卡片（1.6）
+	GS.auto_playing = true
 	for mode in ["roam", "stay_in_territory"]:
 		var counts := {}; var days := 0
 		for run in 10:

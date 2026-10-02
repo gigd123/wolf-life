@@ -28,6 +28,7 @@
     "heavy_healed": "day_summary.heavy_healed",
     "heavy_healed_speed": "day_summary.heavy_healed_speed",
     "heavy_healed_strength": "day_summary.heavy_healed_strength",
+    "heavy_healed_perception": "day_summary.heavy_healed_perception",
     "poison_healed": "day_summary.poison_healed"
   },
   "_sleep_summary_comment": "睡覺結算的原因句：速度或力量提升時顯示，鍵為「飽食.活動」。飽食：full（飽食度 ≥ full_hunger）、ok、hungry（飢餓懲罰中）；活動：chase（追擊較多）、fight（搏鬥較多）。",

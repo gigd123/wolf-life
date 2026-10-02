@@ -109,6 +109,8 @@ func _ready() -> void:
 	_add_line(box, tr("summary.scavenged").replace("{count}", str(int(log_data.get("scavenged", 0)))))
 	if wolf != null:
 		_add_line(box, tr("summary.heavy_injuries").replace("{count}", str(wolf.heavy_injury_count)))
+		for record in wolf.old_injuries:
+			_add_line(box, _old_injury_line(record))
 
 	# 學會的知識：總數，加上幾條「確定」的內容
 	var confirmed: Array = []
@@ -143,6 +145,25 @@ func _add_line(box: VBoxContainer, text: String) -> void:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(l)
 
+# 死因的敘述；戰死時依對手與情境（例如「為了守住獵物，死在灰熊掌下」）。
+func _death_bio(log_data: Dictionary) -> String:
+	var cause: String = str(log_data.get("death_cause", "unknown"))
+	if cause == "combat":
+		var d: Dictionary = log_data.get("death_detail", {})
+		var key: String = "death_bio.combat.%s.%s" % [d.get("animal", ""), d.get("context", "")]
+		if tr(key) != key:
+			return tr(key)
+	return tr("death_bio." + cause)
+
+# 舊傷：部位、年齡、來源（例如「左後腿的舊傷，是 2.3 歲那年和灰熊搶食時留下的」）。
+func _old_injury_line(record: Dictionary) -> String:
+	var source: String = str(record.get("source", ""))
+	var key: String = "injury_source." + source
+	if tr(key) == key:
+		key = "injury_source.hunt"
+	return tr("summary.old_injury").replace("{part}", tr(str(record.get("part_key", "")))) \
+		.replace("{age}", "%.1f" % float(record.get("age", 0.0))).replace("{source}", tr(key))
+
 # 依模板組成的生平：年輕時的經歷 → 狩獵方式（與變化）→ 死亡。
 func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 	var parts: Array[String] = []
@@ -161,5 +182,5 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 	elif history.size() == 1:
 		parts.append(tr("bio.was").replace("{desc}", tr("tendency_desc." + str(history[0]["type"]))))
 	var age: String = "%.1f" % (wolf.age_years if wolf != null else 0.0)
-	parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", tr("death_bio." + str(log_data.get("death_cause", "unknown")))))
+	parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", _death_bio(log_data)))
 	return "，".join(parts) + "。"

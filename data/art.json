@@ -32,7 +32,12 @@
       "stalk": "res://assets/art/sprites/wolf/wolf_stalk.png",
       "pounce": "res://assets/art/sprites/wolf/wolf_pounce.png",
       "eat": "res://assets/art/sprites/wolf/wolf_eat.png",
-      "sleep": "res://assets/art/sprites/wolf/wolf_sleep.png"
+      "sleep": "res://assets/art/sprites/wolf/wolf_sleep.png",
+      "threaten": "res://assets/art/sprites/wolf/wolf_threaten.png",
+      "bite": "res://assets/art/sprites/wolf/wolf_bite.png",
+      "dodge": "res://assets/art/sprites/wolf/wolf_dodge.png",
+      "hurt": "res://assets/art/sprites/wolf/wolf_hurt.png",
+      "submit": "res://assets/art/sprites/wolf/wolf_submit.png"
     },
     "_stages_comment": "成年、老年的外貌（1.6 第 2 步，佔位圖）。格式同上，沒有的項目沿用次成年期的圖。",
     "stages": {

@@ -26,14 +26,43 @@
   "factor_display": { "base_count": 2, "extra_count_perception": 55 },
   "region_depletion": { "per_hunt": 0.2, "recovery_per_day": 0.05, "min_mult": 0.2 },
   "bear_encounter": {
-    "_comment": "灰熊遭遇（DESIGN.md「灰熊行為」）：辨識前一律遠距目擊；辨識後才可能直接攻擊與打鬥。",
-    "fight": { "base": 0.25, "divisor": 250, "min": 0.03, "max": 0.4 },
-    "lose_damage_min": 20, "lose_damage_max": 45, "heavy_damage": 25, "win_stamina": 15,
+    "_comment": "灰熊遭遇（DESIGN.md「灰熊行為」）：辨識前一律遠距目擊；辨識後進入戰鬥模式（combat）。direct：次成年與老年的狼、或護幼的母熊，可能不示威直接攻擊（戰鬥從交鋒開始）。",
     "direct_attack_chance": 0.25, "direct_damage_min": 10, "direct_damage_max": 25,
-    "mother_chance_spring": 0.4, "mother_direct_mult": 2.0, "mother_power_bonus": 15,
-    "flee": { "base": 0.6, "speed_divisor": 150, "fail_damage_min": 10, "fail_damage_max": 20, "stamina": 15 },
-    "retreat_stamina": 5,
+    "mother_chance_spring": 0.4, "mother_direct_mult": 2.0,
     "observe_turns": 1
+  },
+  "combat": {
+    "_comment": "戰鬥模式（SPEC 1.6「戰鬥模式」，規則在 FightRules.gd、流程在 Combat.gd）。力量值（power）的尺度與狼一致：狼的力量值 = 力量 × strength_weight + 技巧 × (2 − strength_weight)，約是能力值的兩倍。",
+    "danger_ratio": 0.25,
+    "attack": { "base": 0.55, "divisor": 200, "min": 0.05, "max": 0.95, "initiative": 0.1 },
+    "wolf_damage": { "base": 6, "strength_mult": 0.12, "spread": 3 },
+    "opponent_hit": { "base": 0.45, "divisor": 200, "min": 0.05, "max": 0.9 },
+    "moves": {
+      "bite": { "bonus": 0.0, "strength_weight": 1.0, "damage_mult": 1.0, "hit_mult": 1.0, "stamina": 6, "trains": ["strength", "skill"] },
+      "lunge": { "bonus": -0.15, "strength_weight": 1.3, "damage_mult": 1.7, "hit_mult": 1.3, "stamina": 10, "train_mult": 1.3, "trains": ["strength"] },
+      "dodge": { "hit_mult": 0.35, "next_bonus": 0.12, "stamina": 4, "trains": ["skill"] },
+      "retreat": { "base": 0.55, "speed_divisor": 150, "danger_bonus": 0.25, "leg_injury_penalty": 0.15, "stamina": 8, "trains": ["speed"] }
+    },
+    "standoff": {
+      "threaten": { "base": 0.3, "divisor": 200, "stamina": 3 },
+      "probe": { "stamina": 4, "bonus": 0.08, "swipe_chance": 0.15 }
+    },
+    "_stake_comment": "對手為什麼在這裡：stake 倍率越高，越不容易被威嚇、越晚放棄。",
+    "stake_mult": { "carcass": 1.0, "encounter": 0.85, "mother": 1.6 },
+    "win": { "clean_ratio": 0.15, "clean_mult": 1.5, "costly_ratio": 0.4 },
+    "injury": { "light_damage": 8, "heavy_damage": 22, "light_days": 2, "heavy_days_min": 3, "heavy_days_max": 5 },
+    "part_stat": { "leg": "speed", "shoulder": "strength", "face": "perception" },
+    "old_injury": { "chance": 0.25, "flare_chance_winter": 0.08, "flare_chance_elder": 0.08, "flare_days_min": 1, "flare_days_max": 2, "flare_mult": 0.9 },
+    "_opponents_comment": "對手：power 力量值、hp 耐力、damage 傷害範圍、parts 打中狼的部位比例、give_up_ratio 耐力低於這個比例（÷ stake 倍率）就放棄、threat_resist 抗威嚇。",
+    "opponents": {
+      "grizzly_bear": {
+        "adult": { "power": 170, "hp": 110, "damage": [14, 30], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.28, "threat_resist": 0.45 },
+        "juvenile": { "power": 75, "hp": 45, "damage": [5, 12], "parts": { "shoulder": 0.4, "leg": 0.4, "face": 0.2 }, "give_up_ratio": 0.6, "threat_resist": 0.1 }
+      },
+      "red_fox": {
+        "adult": { "power": 30, "hp": 18, "damage": [1, 4], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.9, "threat_resist": -0.4 }
+      }
+    }
   },
   "sleep": {
     "_comment": "野外過夜（SPEC「野外過夜與回巢」）：回復 = 缺少的血量與體力 × 倍率。",
@@ -128,6 +157,8 @@
       "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2,
       "escape_chance_on_fail": 0.25, "extra_round_turns": 1,
       "counter_damage_min": 5, "counter_damage_max": 15, "counter_injury_damage": 12,
+      "_parts_comment": "獵物反擊打中狼的部位（1.6 傷勢）：被踢中腿影響速度、搏鬥中受傷影響力量。狩獵中其他反擊（母鹿衝撞、受傷個體反撲）也用這個比例。",
+      "parts": { "leg": 0.6, "shoulder": 0.4 },
       "moves": {
         "bite_leg": { "bonus": 0.1, "strength_weight": 1.2, "wound": 1, "counter_mult": 0.4, "trains": ["strength", "skill"] },
         "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4, "train_mult": 1.5, "trains": ["skill", "strength"] },
@@ -144,8 +175,7 @@
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,
     "fox_chance": 0.12,
     "carcass_days": 2, "carcass_loss_per_period": 0.15,
-    "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2,
-    "guard": { "base": 0.25, "divisor": 250, "min": 0.03, "max": 0.4, "damage_min": 20, "damage_max": 45, "heavy_damage": 25, "win_stamina": 20 }
+    "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2
   },
   "start_health_max": 80,
   "growth": {

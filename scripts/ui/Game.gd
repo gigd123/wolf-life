@@ -36,6 +36,11 @@ var hunt_message: Label
 var hunt_sprite: AnimatedIcon
 var hunt_buttons_box: VBoxContainer
 var current_hunt: HuntSystem = null
+# 戰鬥模式（1.6 第 3 步）：和狩獵共用同一個畫面（hunt_overlay）。
+var current_combat: Combat = null
+var combat_notes: Array[String] = []
+var combat_wolf_pose: String = "threaten"
+var combat_opp_action: String = "idle"
 
 var rest_overlay: Panel
 var rest_buttons_box: VBoxContainer
@@ -608,6 +613,23 @@ func _build_debug_overlay() -> void:
 	)
 	auto_status = Label.new()
 	right.add_child(auto_status)
+	# 戰鬥（1.6 第 3 步）
+	var combat_row := HBoxContainer.new()
+	right.add_child(combat_row)
+	_debug_button(combat_row, tr("debug.event.fox_scavenge"), func():
+		debug_overlay.visible = false
+		GameState.start_feeding("white_tailed_deer", "adult", "stream")
+		_show_scavenger("fox", false)
+	)
+	_debug_button(combat_row, tr("debug.event.mother_bear"), func():
+		debug_overlay.visible = false
+		GameState.identify("grizzly_bear")
+		_on_encounter_triggered({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "mother": true})
+	)
+	_debug_button(combat_row, tr("debug.event.old_injury"), func():
+		debug_overlay.visible = false
+		GameState.debug_old_injury_flare()
+	)
 	_debug_button(right, tr("debug.playtest_stats"), func():
 		debug_overlay.visible = false
 		_show_playtest_stats()
@@ -1035,25 +1057,21 @@ func _show_scavenger(event: String, returning: bool) -> void:
 	var key: String = "scavenger.%s.%s" % [event, "returning" if returning else "arrive"]
 	if not bear_known:
 		key = "scavenger.bear_unknown"
-	encounter_message.text = tr(key)
 	_log(tr(key))
+	# 認得的灰熊與狐狸：進入戰鬥模式（守住、叼走一塊、放棄、不理都在對峙畫面選）
+	if bear_known:
+		_begin_combat(GameState.start_combat("grizzly_bear" if event == "bear" else "red_fox", "adult", "carcass"), "move")
+		return
+	encounter_message.text = tr(key)
 	encounter_detail.text = ""
 	if event == "bear":
 		_set_creature(encounter_sprite, "grizzly_bear", "adult" if bear_known else "distant", "move")
 	else:
 		_set_creature(encounter_sprite, "red_fox", "adult", "move")
 	_clear_children(encounter_buttons_box)
-	if event == "bear":
-		# 辨識前不能守住（第一次遇到灰熊不該就被打死）
-		if bear_known:
-			_add_encounter_button(tr("scavenger.guard").replace("{n}", str(int(round(GameState.guard_win_chance() * 100.0)))),
-				_on_scavenger_choice.bind("bear", "guard"))
-		_add_encounter_button(tr("scavenger.grab"), _on_scavenger_choice.bind("bear", "grab"))
-		_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
-		encounter_detail.text = tr("scavenger.guard_warning") if bear_known else ""
-	else:
-		_add_encounter_button(tr("scavenger.drive"), _on_scavenger_choice.bind("fox", "drive"))
-		_add_encounter_button(tr("scavenger.ignore"), _on_scavenger_choice.bind("fox", "ignore"))
+	# 辨識前不能守住（第一次遇到灰熊不該就被打死）
+	_add_encounter_button(tr("scavenger.grab"), _on_scavenger_choice.bind("bear", "grab"))
+	_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
 	encounter_overlay.visible = true
 
 func _on_scavenger_choice(event: String, choice: String) -> void:
@@ -1097,7 +1115,7 @@ func _build_rain() -> void:
 	add_child(rain)
 
 func _overlay_busy() -> bool:
-	return current_hunt != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
+	return current_hunt != null or current_combat != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
 		or debug_overlay.visible or region_info_overlay.visible or card_overlay.visible
 
 # 目前的行動結束、沒有其他畫面開著時，依序處理世界主動找上門的事件。
@@ -1296,7 +1314,7 @@ func _explore_hint() -> String:
 
 func _show_knowledge() -> void:
 	var lines: Array[String] = [tr("ui.knowledge.title")]
-	var order := ["prey", "danger", "weakness", "overhunt"]
+	var order := ["prey", "danger", "opponent", "weakness", "overhunt"]
 	var entries: Array = GameState.knowledge.values()
 	entries.sort_custom(func(a, b):
 		if a["type"] != b["type"]:
@@ -1403,6 +1421,8 @@ func _render_hunt_stage() -> void:
 		var wounds: int = int(current_hunt.fight_state.get("wounds", 0))
 		if wounds > 0:
 			header += "\n" + tr("hunt.fight.wounds").replace("{n}", str(wounds))
+		if FightRules.in_danger(GameState.wolf):
+			header += "\n" + tr("combat.danger")
 	if not hunt_notes.is_empty():
 		header += "\n" + "　".join(hunt_notes)
 	hunt_message.text = header
@@ -1516,7 +1536,7 @@ func _format_factors(factors: Array) -> String:
 	return "　".join(parts)
 
 func _resolve_stage(stage_result: Dictionary) -> void:
-	GameState.spend_hunt_turns(int(stage_result.get("turns", 0)))
+	GameState.spend_hunt_turns(int(stage_result.get("turns", 0)), current_hunt)
 	var animal_name: String = _hunt_prey_name()
 	for note in stage_result.get("notes", []):
 		_log(tr(note).replace("{animal}", animal_name))
@@ -1580,25 +1600,13 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		key = "encounter.mother"
 	if encounter.get("direct", false):
 		key = "encounter.direct"
-	var text: String = tr(key).replace("{animal}", tr("animal." + animal_id)).replace("{n}", str(int(encounter.get("damage", 0))))
-	_log(text)
+	_log(tr(key).replace("{animal}", tr("animal." + animal_id)))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
 		return
-	encounter_message.text = text
-	encounter_detail.text = tr("encounter.fight_warning")
-	_set_creature(encounter_sprite, animal_id, life_stage, "attack" if encounter.get("direct", false) else "idle")
-	_set_terrain_bg(encounter_bg, "")
-	_clear_children(encounter_buttons_box)
-	_add_encounter_button(tr("encounter.fight_option").replace("{n}", str(int(round(GameState.bear_fight_chance(encounter) * 100.0)))),
-		func(): _resolve_encounter("fight", encounter))
-	if encounter.get("direct", false):
-		_add_encounter_button(tr("encounter.flee_option").replace("{n}", str(int(round(GameState.bear_flee_chance() * 100.0)))),
-			func(): _resolve_encounter("flee", encounter))
-	else:
-		_add_encounter_button(tr("ui.retreat"), func(): _resolve_encounter("retreat", encounter))
-	encounter_overlay.visible = true
+	_begin_combat(GameState.start_combat(animal_id, life_stage, "encounter", encounter),
+		"attack" if encounter.get("direct", false) else "idle")
 
 # 遠距目擊：灰熊或陌生灰狼在遠處，沒有發現狼。可以觀察（建立辨識、累積知識）或離開。
 func _show_distant(encounter: Dictionary) -> void:
@@ -1625,24 +1633,81 @@ func _show_distant(encounter: Dictionary) -> void:
 	)
 	encounter_overlay.visible = true
 
-func _resolve_encounter(choice: String, encounter: Dictionary) -> void:
-	var result := GameState.resolve_competitor_encounter(choice, encounter)
-	var animal_id: String = encounter.get("animal_id", "")
-	match result.get("outcome", ""):
-		"win":
-			_log(tr("encounter.result.win").replace("{animal}", tr("animal." + animal_id)))
-		"lose":
-			_log(tr("encounter.result.lose").replace("{animal}", tr("animal." + animal_id)))
-		"retreat":
-			_log(tr("encounter.result.retreat"))
-		"flee":
-			_log(tr("encounter.result.flee"))
-		"flee_hurt":
-			_log(tr("encounter.result.flee_hurt").replace("{n}", str(int(result.get("damage", 0)))))
+# --- 戰鬥模式（SPEC 1.6「戰鬥模式」）：對峙 → 交鋒 → 結束 ---
+
+func _begin_combat(c: Combat, opp_action: String = "idle") -> void:
 	encounter_overlay.visible = false
+	current_combat = c
+	combat_notes = []
+	combat_wolf_pose = "hurt" if opp_action == "attack" else "threaten"
+	combat_opp_action = opp_action
+	_render_combat()
+
+func _render_combat() -> void:
+	var c := current_combat
+	if c == null:
+		hunt_overlay.visible = false
+		return
+	hunt_overlay.visible = true
+	_clear_children(hunt_buttons_box)
+	var name: String = tr("animal." + c.animal_id)
+	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action)
+	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose)
+	_set_terrain_bg(hunt_bg, c.terrain)
+	var lines: Array[String] = []
+	if c.phase == Combat.Phase.STANDOFF:
+		lines.append(tr("combat.standoff.title").replace("{animal}", name))
+		lines.append(tr("combat.stake." + ("mother" if c.mother else c.context + "." + c.animal_id)).replace("{animal}", name))
+		if GameState.knowledge_level(GameState.opponent_knowledge(c.animal_id, c.life_stage)) > 0:
+			lines.append(tr("combat.remember").replace("{animal}", name))
+	else:
+		lines.append(tr("combat.exchange.title").replace("{animal}", name) + "　" + tr(c.opp_condition_key()))
+		if c.mother:
+			lines.append(tr("combat.stake.mother"))
+	if not combat_notes.is_empty():
+		lines.append("　".join(combat_notes))
+	if FightRules.in_danger(GameState.wolf):
+		lines.append(tr("combat.danger"))
+	hunt_message.text = "\n".join(lines)
+	for opt in c.options():
+		var id: String = opt["id"]
+		_add_hunt_choice(tr(opt["label_key"]), opt, func(): _on_combat_choice(id))
+
+func _on_combat_choice(id: String) -> void:
+	var c := current_combat
+	var res := c.choose(id)
+	if id in ["bite", "lunge", "attack"]:
+		Audio.play_bite()
+	var name: String = tr("animal." + c.animal_id)
+	combat_notes = []
+	for n in res.get("notes", []):
+		var text: String = tr(str(n)).replace("{animal}", name)
+		combat_notes.append(text)
+		_log(text)
+	combat_wolf_pose = str(res.get("wolf_pose", "threaten"))
+	combat_opp_action = str(res.get("opp_action", "idle"))
+	_refresh()
+	if c.phase == Combat.Phase.DONE:
+		_finish_combat_ui()
+	else:
+		_render_combat()
+
+func _finish_combat_ui() -> void:
+	var c := current_combat
+	current_combat = null
+	var r := GameState.finish_combat(c)
+	hunt_overlay.visible = false
+	var name: String = tr("animal." + c.animal_id)
+	if c.outcome != "died":
+		_log(tr("combat.result." + c.outcome).replace("{animal}", name))
+		if str(r.get("grow", "")) != "":
+			_log(tr("combat.grow." + str(r["grow"])))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	if c.context == "carcass" and GameState.is_feeding():
+		_show_feeding()
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 
@@ -1734,7 +1799,7 @@ func _show_season_card(event: Dictionary) -> void:
 func _show_day_summary(event: Dictionary) -> void:
 	var texts: Array[String] = []
 	for line in event.get("lines", []):
-		var text: String = tr(str(line.get("key", "")))
+		var text: String = tr(str(line.get("key", ""))).replace("{part}", tr(str(line.get("part", ""))))
 		texts.append(text)
 		_log(text)
 	_show_card(tr("ui.day_summary.title").replace("{n}", str(int(event.get("day", GameState.life_log.get("days_lived", 1))))), "\n".join(texts))

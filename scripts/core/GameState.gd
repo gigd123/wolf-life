@@ -200,13 +200,16 @@ func _queue_day_summary(before_injury: int, before_injury_stat: String, before_p
 	if tier != last_tier:
 		lines.append({"key": str(cfg.get("hunger_tier_%d" % tier, ""))})
 		life_log["hunger_tier"] = tier
-	if before_injury != Wolf.Injury.NONE and wolf.injury == Wolf.Injury.NONE:
+	var old_formed: bool = _day_events.any(func(e): return e.get("replaces_heal", false))
+	if before_injury != Wolf.Injury.NONE and wolf.injury == Wolf.Injury.NONE and not old_formed:
 		if before_injury == Wolf.Injury.HEAVY:
 			lines.append({"key": str(cfg.get("heavy_healed_" + before_injury_stat, cfg.get("heavy_healed", "")))})
 		else:
 			lines.append({"key": str(cfg.get("light_healed", ""))})
 	if before_poison > 0 and wolf.poison_days_remaining <= 0:
 		lines.append({"key": str(cfg.get("poison_healed", ""))})
+	lines.append_array(_day_events)
+	_day_events = []
 	if not lines.is_empty():
 		_queue_notice({"type": "day_summary", "lines": lines, "day": int(life_log.get("days_lived", 1))})
 
@@ -290,15 +293,58 @@ func adult_body_key() -> String:
 func _process_daily_recovery() -> void:
 	if wolf == null:
 		return
+	_day_events = []
 	if wolf.poison_days_remaining > 0:
 		wolf.poison_days_remaining -= 1
 		wolf.health_value -= float(GameData.balance.get("poison_health_value_loss_per_day", 1))
 	if wolf.injury_days_remaining > 0:
 		wolf.injury_days_remaining -= 1
 		if wolf.injury_days_remaining <= 0:
+			if wolf.injury == Wolf.Injury.HEAVY:
+				_maybe_old_injury()
 			wolf.clear_injury()
+	_update_old_injury_flare()
 	wolf.clamp_stats()
 	_check_death()
+
+# 換日摘要要顯示的舊傷變化（_queue_day_summary 取用後清空）。
+var _day_events: Array = []
+
+# 重傷痊癒時有機率留下永久的舊傷（SPEC 1.6「傷勢與舊傷」），記下部位、來源與年齡。
+func _maybe_old_injury() -> void:
+	var c: Dictionary = GameData.balance.get("combat", {}).get("old_injury", {})
+	if not RNGService.chance(float(c.get("chance", 0.35))):
+		return
+	var part: String = wolf.injury_part if wolf.injury_part != "" else "shoulder"
+	var side: String = "" if part == "face" else ("left" if RNGService.chance(0.5) else "right")
+	var record := {"part": part, "part_key": "injury_part.%s%s" % [part, ("." + side) if side != "" else ""],
+		"stat": wolf.injury_stat, "source": wolf.injury_source, "age": snapped(wolf.age_years, 0.1)}
+	# 同一個部位只留一個舊傷（記最早的那次）
+	if wolf.old_injuries.any(func(o): return o.get("part_key", "") == record["part_key"]):
+		return
+	wolf.old_injuries.append(record)
+	_day_events.append({"key": "day_summary.old_injury_new", "part": record["part_key"], "replaces_heal": true})
+
+# 舊傷平常沒有影響；冬季或老年之後偶爾發作 1～2 天（對應能力 −10%）。
+func _update_old_injury_flare() -> void:
+	if wolf.old_injuries.is_empty():
+		return
+	if wolf.flare_index >= 0:
+		wolf.flare_days -= 1
+		if wolf.flare_days <= 0:
+			_day_events.append({"key": "day_summary.old_injury_calm", "part": str(wolf.old_injuries[wolf.flare_index].get("part_key", ""))})
+			wolf.flare_index = -1
+		return
+	var c: Dictionary = GameData.balance.get("combat", {}).get("old_injury", {})
+	var chance_value: float = 0.0
+	if GameTime.current_season() == "winter":
+		chance_value += float(c.get("flare_chance_winter", 0.08))
+	if wolf.life_stage() == Wolf.LifeStage.ELDER:
+		chance_value += float(c.get("flare_chance_elder", 0.08))
+	if chance_value > 0.0 and RNGService.chance(chance_value):
+		wolf.flare_index = RNGService.randi_range(0, wolf.old_injuries.size() - 1)
+		wolf.flare_days = RNGService.randi_range(int(c.get("flare_days_min", 1)), int(c.get("flare_days_max", 2)))
+		_day_events.append({"key": "day_summary.old_injury_flare", "part": str(wolf.old_injuries[wolf.flare_index].get("part_key", ""))})
 
 # 三段式飢餓懲罰，每天結算一次（以換日當下的飽食度判定）。段數累進：歸零時也算「低於 10」。
 func _apply_daily_hunger_penalty() -> void:
@@ -357,6 +403,11 @@ func _maybe_elder_death_check() -> void:
 func _check_death() -> void:
 	if wolf != null and wolf.alive and wolf.health <= 0.0:
 		_die("starvation" if wolf.hunger <= 0.0 else "injury")
+
+# 戰死：記下對手與情境，一生回顧用（例如「為了守住獵物，死在灰熊掌下」）。
+func die_in_combat(animal_id: String, life_stage: String, context: String) -> void:
+	life_log["death_detail"] = {"animal": animal_id, "life_stage": life_stage, "context": context, "age": snapped(wolf.age_years, 0.1)}
+	_die("combat")
 
 func _die(cause: String) -> void:
 	if wolf == null or not wolf.alive:
@@ -588,11 +639,10 @@ func prepare_bear_encounter(encounter: Dictionary) -> Dictionary:
 		direct = max(direct, float(cfg.get("direct_attack_chance", 0.25))) * float(cfg.get("mother_direct_mult", 2.0))
 	if RNGService.chance(direct):
 		var dmg: float = float(RNGService.randi_range(int(cfg.get("direct_damage_min", 10)), int(cfg.get("direct_damage_max", 25))))
-		wolf.health -= dmg
-		wolf.clamp_stats()
+		var parts: Dictionary = FightRules.opponent_profile(animal_id, str(e.get("life_stage", "adult"))).get("parts", {})
+		var hit := FightRules.hurt_wolf(wolf, dmg, parts, animal_id + ".encounter", false)
 		e["direct"] = true
-		e["damage"] = dmg
-		_check_death()
+		e["damage"] = hit["damage"]
 		state_changed.emit()
 	return e
 
@@ -619,19 +669,6 @@ func leave_distant(encounter: Dictionary) -> void:
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 
-func bear_fight_chance(encounter: Dictionary) -> float:
-	var cfg: Dictionary = _bear_cfg().get("fight", {})
-	var stats: Dictionary = GameData.animals.get(encounter.get("animal_id", "grizzly_bear"), {}).get(encounter.get("life_stage", "adult"), {})
-	var power: float = float(stats.get("power", 95))
-	if encounter.get("mother", false):
-		power += float(_bear_cfg().get("mother_power_bonus", 15))
-	return clamp(float(cfg.get("base", 0.25)) + (wolf.effective_strength() + wolf.effective_skill() - power) / float(cfg.get("divisor", 250)),
-		float(cfg.get("min", 0.03)), float(cfg.get("max", 0.4)))
-
-func bear_flee_chance() -> float:
-	var cfg: Dictionary = _bear_cfg().get("flee", {})
-	return HuntSystem.clamp_chance(float(cfg.get("base", 0.6)) + (wolf.effective_speed() - 40.0) / float(cfg.get("speed_divisor", 150)))
-
 # --- 知識系統 ---
 
 static func knowledge_key(entry: Dictionary) -> String:
@@ -642,6 +679,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"overhunt": return "overhunt|%s|%s" % [entry["animal"], entry["region"]]
 		"stranger": return "stranger|%s|%s" % [entry["animal"], entry["region"]]
 		"territory": return "territory|%s|%s" % [entry["animal"], entry["region"]]
+		"opponent": return "opponent|%s|%s" % [entry["animal"], entry["life_stage"]]
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -869,6 +907,7 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	_on_hunt_started(hunt)
 	hunt.tendency = current_tendency()
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
+	hunt.fight_state["source"] = animal_id + ".hunt"
 	return hunt
 
 func _random_terrain(region_id: String) -> String:
@@ -878,7 +917,11 @@ func _random_terrain(region_id: String) -> String:
 	return terrains[RNGService.randi_range(0, terrains.size() - 1)]
 
 # 狩獵中花費額外回合（例如繞到下風處）。
-func spend_hunt_turns(turns: int) -> void:
+# hunt：搏鬥中瀕危仍繼續而倒下時，死因記為戰死（SPEC 1.6「戰鬥中的死亡」）。
+func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
+	if hunt != null and wolf.alive and wolf.health <= 0.0:
+		die_in_combat(hunt.animal_id, hunt.life_stage, "hunt")
+		return
 	if turns <= 0:
 		return
 	GameTime.advance_turns(turns)
@@ -1081,7 +1124,8 @@ func _update_territory() -> void:
 # 實際執行被驅趕（畫面層處理事件時呼叫）。回傳被趕到的區域。
 func apply_drive_off() -> String:
 	var cfg: Dictionary = _events_cfg().get("howl", {})
-	wolf.health -= float(RNGService.randi_range(int(cfg.get("drive_off_damage_min", 5)), int(cfg.get("drive_off_damage_max", 12))))
+	FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(cfg.get("drive_off_damage_min", 5)), int(cfg.get("drive_off_damage_max", 12)))),
+		{"leg": 0.5, "shoulder": 0.5}, "stranger_wolf.encounter", false)
 	wolf.apply_injury(Wolf.Injury.LIGHT, 2)
 	identify("stranger_wolf")
 	learn({"type": "territory", "animal": "stranger_wolf", "region": current_region})
@@ -1218,18 +1262,16 @@ func leave_feeding() -> void:
 	current_feeding = {}
 	state_changed.emit()
 
-# 灰熊搶食：guard 守住（打鬥，風險極高）、grab 叼走一部分（多一段後撤退）、abandon 放棄。
-# 狐狸偷食：drive 驅趕、ignore 不理（少一段）。
+# 還沒辨識的大型動物搶食（不能守住）：grab 叼走一部分、abandon 放棄。
+# 辨識後的灰熊與狐狸改走戰鬥模式（start_combat，context = "carcass"）。
 func resolve_scavenger(event: String, choice: String) -> Dictionary:
-	var cfg := _feeding_cfg()
 	var result := {"outcome": choice}
 	if event == "bear":
 		identify("grizzly_bear")
 		_learn_danger("grizzly_bear")
 		record_decision("scavenger." + choice)
-		if choice != "guard":
-			life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
-			life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
+		life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
+		life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
 	elif choice == "ignore":
 		life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
 	if event == "fox":
@@ -1240,25 +1282,6 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 		state_changed.emit()
 		return result
 	match choice:
-		"guard":
-			var g: Dictionary = cfg.get("guard", {})
-			if RNGService.chance(guard_win_chance()):
-				wolf.stamina -= float(g.get("win_stamina", 20))
-				Growth.train_activity(wolf, "guard", "strength")
-				Growth.learn(wolf, "skill", 1.0)
-				result["outcome"] = "guard_win"
-			else:
-				var dmg: float = float(RNGService.randi_range(int(g.get("damage_min", 20)), int(g.get("damage_max", 45))))
-				wolf.health -= dmg
-				if dmg >= float(g.get("heavy_damage", 25)):
-					var b: Dictionary = GameData.balance
-					wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(b.get("heavy_injury_days_min", 3)), int(b.get("heavy_injury_days_max", 5))),
-						"speed" if RNGService.chance(0.5) else "strength")
-				else:
-					wolf.apply_injury(Wolf.Injury.LIGHT, 2)
-				result["outcome"] = "guard_lose"
-				result["damage"] = dmg
-				current_feeding = {}
 		"grab":
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
 			current_feeding = {}
@@ -1268,12 +1291,6 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 	_check_death()
 	state_changed.emit()
 	return result
-
-func guard_win_chance() -> float:
-	var g: Dictionary = _feeding_cfg().get("guard", {})
-	var power: float = float(GameData.animals.get("grizzly_bear", {}).get("adult", {}).get("power", 95))
-	return clamp(float(g.get("base", 0.25)) + (wolf.effective_strength() + wolf.effective_skill() - power) / float(g.get("divisor", 250)),
-		float(g.get("min", 0.03)), float(g.get("max", 0.4)))
 
 func carcass_index_here() -> int:
 	for i in carcasses.size():
@@ -1342,46 +1359,87 @@ func _prey_rank(animal_id: String, life_stage: String) -> int:
 	var stats: Dictionary = animal_data.get(life_stage, {})
 	return int(stats.get("hunger_value", 0))
 
-func resolve_competitor_encounter(choice: String, encounter: Dictionary) -> Dictionary:
-	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
-	identify(animal_id)
-	_learn_danger(animal_id)
-	record_decision("bear." + choice)
-	var cfg := _bear_cfg()
-	if choice == "flee":
-		# 被直接攻擊後逃跑：看速度，失敗會再受傷。
-		var flee: Dictionary = cfg.get("flee", {})
-		wolf.stamina -= float(flee.get("stamina", 15))
-		if RNGService.chance(bear_flee_chance()):
-			wolf.clamp_stats()
-			return {"outcome": "flee"}
-		var hit: float = float(RNGService.randi_range(int(flee.get("fail_damage_min", 10)), int(flee.get("fail_damage_max", 20))))
-		wolf.health -= hit
-		wolf.clamp_stats()
-		_check_death()
-		return {"outcome": "flee_hurt", "damage": hit}
-	if choice == "fight":
-		# 單狼對成年灰熊極度不利（DESIGN.md「灰熊行為」）。
-		if RNGService.chance(bear_fight_chance(encounter)):
-			wolf.stamina -= float(cfg.get("win_stamina", 15))
+# --- 戰鬥模式（SPEC 1.6「戰鬥模式」；規則在 FightRules.gd、流程在 Combat.gd） ---
+
+# 開始一場戰鬥。encounter 是灰熊遭遇的資料（mother、direct）；direct 時對手已經先撲上來，從交鋒開始。
+func start_combat(animal_id: String, life_stage: String, context: String, encounter: Dictionary = {}) -> Combat:
+	if animal_id == "grizzly_bear":
+		identify(animal_id)
+		_learn_danger(animal_id)
+	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
+	c.tendency = current_tendency()
+	c.terrain = str(current_feeding.get("terrain", "")) if context == "carcass" else str(encounter.get("location", ""))
+	if c.terrain == "":
+		c.terrain = _random_terrain(current_region)
+	match context:
+		"carcass":
+			c.yields = ["grab", "abandon"] if animal_id == "grizzly_bear" else ["ignore"]
+		_:
+			c.yields = ["yield"]
+	if encounter.get("direct", false):
+		c.phase = Combat.Phase.EXCHANGE
+		c.damage_taken = float(encounter.get("damage", 0.0))
+	_stat_inc("combat", animal_id + ".started")
+	return c
+
+# 這一筆「對手」知識：撤退或退讓後，記得「現在的自己還不是對手」。
+func opponent_knowledge(animal_id: String, life_stage: String) -> Dictionary:
+	return {"type": "opponent", "animal": animal_id, "life_stage": life_stage}
+
+# 戰鬥結束：記錄決策、成長、知識，處理獵物的去留。回傳 {"outcome", "grow": "clean"|"costly"|""}。
+func finish_combat(c: Combat) -> Dictionary:
+	for d in c.decisions:
+		record_decision(d)
+	_stat_inc("combat", c.animal_id + "." + c.outcome)
+	var result := {"outcome": c.outcome, "grow": ""}
+	if c.outcome == "died":
+		die_in_combat(c.animal_id, c.life_stage, c.context)
+		return result
+	Growth.apply_practice(wolf, c.practice)
+	var w: Dictionary = GameData.balance.get("combat", {}).get("win", {})
+	if c.won():
+		# 幾乎沒受傷就獲勝：成長較大；慘勝：偏向技巧、感知與戰鬥的知識（SPEC「戰鬥的成長與知識」）。
+		var taken: float = c.damage_taken / max(1.0, wolf.health_max)
+		if taken <= float(w.get("clean_ratio", 0.15)):
+			Growth.train_activity(wolf, "guard", "strength", float(w.get("clean_mult", 1.5)))
+			Growth.learn(wolf, "skill", float(w.get("clean_mult", 1.5)))
+			result["grow"] = "clean"
+		else:
 			Growth.train_activity(wolf, "guard", "strength")
 			Growth.learn(wolf, "skill", 1.0)
-			wolf.clamp_stats()
-			return {"outcome": "win"}
-		var dmg: float = float(RNGService.randi_range(int(cfg.get("lose_damage_min", 20)), int(cfg.get("lose_damage_max", 45))))
-		wolf.health -= dmg
-		if dmg >= float(cfg.get("heavy_damage", 25)):
-			var b: Dictionary = GameData.balance
-			var days := RNGService.randi_range(int(b.get("heavy_injury_days_min", 3)), int(b.get("heavy_injury_days_max", 5)))
-			wolf.apply_injury(Wolf.Injury.HEAVY, days, "speed" if RNGService.chance(0.5) else "strength")
-		else:
-			wolf.apply_injury(Wolf.Injury.LIGHT, 2)
-		wolf.clamp_stats()
-		_check_death()
-		return {"outcome": "lose", "damage": dmg}
-	wolf.stamina -= float(cfg.get("retreat_stamina", 5))
+			if taken >= float(w.get("costly_ratio", 0.4)):
+				Growth.learn(wolf, "perception", 1.0)
+				result["grow"] = "costly"
+	elif c.outcome in ["retreated", "submit"] or (c.outcome in ["yield", "abandon", "grab"] and (c.rounds > 1 or c.probed)):
+		# 撤退與示弱不算失敗：知道現在的自己還不是對手
+		learn(opponent_knowledge(c.animal_id, c.life_stage))
+	if c.context == "carcass":
+		_carcass_after_combat(c)
+	GameTime.advance_turns(1)
 	wolf.clamp_stats()
-	return {"outcome": choice}
+	_check_death()
+	state_changed.emit()
+	return result
+
+# 搶食後獵物的去留：趕走對手就繼續吃；叼走一塊、不理狐狸、退讓、撤退都會失去部分或全部。
+func _carcass_after_combat(c: Combat) -> void:
+	var by_bear: bool = c.animal_id == "grizzly_bear"
+	match c.outcome:
+		"drove_off":
+			return
+		"grab":
+			wolf.hunger += float(current_feeding.get("segment_value", 0))
+			current_feeding = {}
+		"ignore":
+			if not current_feeding.is_empty():
+				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+				if int(current_feeding["segments_left"]) <= 0:
+					current_feeding = {}
+		_:
+			current_feeding = {}
+	life_log["scavenged"] = int(life_log.get("scavenged", 0)) + 1
+	if by_bear:
+		life_log["scavenged_by_bear"] = int(life_log.get("scavenged_by_bear", 0)) + 1
 
 # --- Debug helpers (see DESIGN.md "測試與除錯") ---
 
@@ -1465,6 +1523,19 @@ func debug_force_transition(stage: String) -> void:
 		_settle_adulthood()
 	else:
 		_queue_notice({"type": "elder_transition"})
+	state_changed.emit()
+
+# 舊傷發作：沒有舊傷就先加一個（左後腿），然後發作兩天並顯示換日摘要卡片。
+func debug_old_injury_flare() -> void:
+	if wolf == null:
+		return
+	if wolf.old_injuries.is_empty():
+		wolf.old_injuries.append({"part": "leg", "part_key": "injury_part.leg.left", "stat": "speed",
+			"source": "grizzly_bear.carcass", "age": snapped(wolf.age_years, 0.1)})
+	wolf.flare_index = 0
+	wolf.flare_days = 2
+	_queue_notice({"type": "day_summary", "day": int(life_log.get("days_lived", 1)),
+		"lines": [{"key": "day_summary.old_injury_flare", "part": str(wolf.old_injuries[0]["part_key"])}]})
 	state_changed.emit()
 
 func debug_export_playtest_log() -> String:

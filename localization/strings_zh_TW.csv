@@ -259,13 +259,8 @@ encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過 牠�
 encounter.observe,觀察（1 回合）
 encounter.observed.grizzly_bear,你屏住氣息看清楚了 那是一頭灰熊 巨大的爪子和肩上的隆起讓人不敢靠近
 encounter.observed.stranger_wolf,你遠遠看著牠 那是一隻和你一樣獨自生活的成年灰狼
-encounter.mother,一頭帶著幼熊的母熊擋在前面 牠非常激動
-encounter.direct,{animal}沒有示威 直接衝了過來 你受了 {n} 點傷
-encounter.fight_option,戰鬥（勝算 {n}%）
-encounter.flee_option,逃跑（{n}%）
-encounter.fight_warning,單獨對上成年灰熊極度不利
-encounter.result.flee,你拚命跑開 甩掉了牠
-encounter.result.flee_hurt,你逃開了 但被牠抓傷（傷害 {n}）
+encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
+encounter.direct,{animal}沒有示威，直接撲了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物 正朝你的獵物走來
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
@@ -279,18 +274,10 @@ scavenger.bear.arrive,一頭灰熊被氣味吸引過來了
 scavenger.bear.returning,你回來時 一頭灰熊正在吃你的獵物
 scavenger.fox.arrive,一隻狐狸偷偷靠近想分一口
 scavenger.fox.returning,你回來時 一隻狐狸正在偷吃
-scavenger.guard,守住獵物（勝算 {n}%）
 scavenger.grab,叼走一部分
 scavenger.abandon,直接放棄
-scavenger.guard_warning,守住獵物風險極高 輸了可能重傷甚至死亡
-scavenger.drive,驅趕
-scavenger.ignore,不理會（少一段）
-scavenger.result.guard_win,你守住了獵物 灰熊悻悻離開
-scavenger.result.guard_lose,灰熊重重拍倒了你 你失去了獵物（傷害 {n}）
 scavenger.result.grab,你叼走一大塊肉 迅速撤退
 scavenger.result.abandon,你放棄了獵物 退到安全的地方
-scavenger.result.drive,你把狐狸趕走了
-scavenger.result.ignore,狐狸叼走了一塊肉
 explore.injured,受傷的
 hunt.option.search,找出牠
 hunt.option.harass,騷擾驅趕
@@ -396,10 +383,7 @@ region_main.stream_valley,一條溪流從山區流進林緣
 region_main.deep_forest,樹林茂密 溪水從林間穿過
 region_main.forest_edge_meadow,樹林在這裡漸漸稀疏 外面是開闊的空地
 region_main.fallen_log_slope,最深的老林 坡上到處是倒木
-encounter.competitor,你遇到了一隻{animal}
-encounter.result.win,你擊退了對方
-encounter.result.lose,你受傷了
-encounter.result.retreat,你選擇了撤退
+encounter.competitor,你遇到了一頭{animal}。
 summary.title,一生回顧
 summary.days_lived,存活了 {days} 天
 summary.age,死亡時年齡 {age} 歲
@@ -537,3 +521,89 @@ debug.already_adult,已經不是次成年期了
 debug.auto.done,模擬完成，已交還給你
 summary.adult_body,成年時：{text}
 summary.potential,巔峰上限：{list}
+combat.option.attack,直接攻擊
+combat.option.threaten,威嚇
+combat.option.probe,試探
+combat.option.yield,退讓
+combat.option.grab,叼一塊再退
+combat.option.abandon,放棄獵物
+combat.option.ignore,不理牠
+combat.option.bite,撲咬
+combat.option.lunge,猛撲
+combat.option.dodge,閃避
+combat.option.retreat,撤退
+combat.option.submit,示弱
+cost.stage.attack,攻擊
+combat.standoff.title,對峙：{animal}
+combat.exchange.title,交鋒：{animal}
+combat.stake.carcass.grizzly_bear,牠想要你的獵物。
+combat.stake.carcass.red_fox,牠想從你的獵物上偷一口。
+combat.stake.encounter.grizzly_bear,你們在林間撞見了彼此，牠壓低了頭。
+combat.stake.mother,牠身後有幼熊，牠會拚命。
+combat.remember,你記得：上次你還不是牠的對手。
+combat.opp.strong,牠還很有力。
+combat.opp.hurt,牠身上帶著傷，動作慢了些。
+combat.opp.wavering,牠喘著氣，似乎想退了。
+combat.danger,你傷得很重，再打下去可能會死。
+combat.threaten.success,你豎起頸毛、露出牙齒，{animal}退開了。
+combat.threaten.fail,{animal}沒有被嚇住，反而撲了過來。
+combat.probe.resolute,你繞著牠試探，牠寸步不讓，看來是鐵了心。
+combat.probe.wavering,你繞著牠試探，牠的目光有些游移。
+combat.probe.swipe,試探時離得太近了。
+combat.hit.bite,你咬中了{animal}。
+combat.hit.lunge,你猛撲上去，狠狠咬住了{animal}。
+combat.miss,你撲空了。
+combat.opp_hit,{animal}打中了你。
+combat.opp_hit.leg,{animal}擊中了你的腿。
+combat.opp_hit.shoulder,{animal}打中了你的肩膀。
+combat.opp_hit.face,{animal}擦過你的臉。
+combat.heavy_injury,這一下傷得很深。
+combat.dodge.success,你閃開了，看見了牠的破綻。
+combat.retreat.success,你轉身跑開，牠沒有追來。
+combat.retreat.fail,你沒能脫身。
+combat.opp_gives_up,{animal}放棄了，轉身離開。
+combat.result.drove_off,你趕走了{animal}。
+combat.result.retreated,你撤退了。
+combat.result.yield,你退開了，{animal}沒有追來。
+combat.result.abandon,你放棄了獵物，退到安全的地方。
+combat.result.grab,你叼走一大塊肉，迅速退開。
+combat.result.ignore,{animal}叼走了一塊肉。
+combat.result.submit,你低下頭，夾起了尾巴。
+combat.grow.clean,這一仗幾乎沒受傷，你打得越來越熟練。
+combat.grow.costly,這一仗贏得辛苦，你記住了牠的每一個動作。
+factor.combat.next_bonus,抓到破綻
+factor.combat.initiative,先手
+factor.combat.tendency_bonus,強攻的習慣
+factor.combat.probe_bonus,試探過
+factor.combat.fast,跑得快
+factor.combat.slow,跑得慢
+factor.combat.they_let_go,牠只想趕走你
+factor.combat.leg_injury,腿傷
+factor.combat.determined,牠不肯退
+factor.combat.danger,瀕危
+factor.combat.opening,閃開就有破綻
+knowledge.opponent,{animal}：現在的你還不是牠的對手
+day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
+day_summary.old_injury_flare,{part}的舊傷又隱隱作痛。
+day_summary.old_injury_calm,{part}的舊傷平息了。
+day_summary.heavy_healed_perception,臉上的傷終於癒合，眼睛不再發疼。
+injury_part.leg.left,左後腿
+injury_part.leg.right,右後腿
+injury_part.shoulder.left,左肩
+injury_part.shoulder.right,右肩
+injury_part.face,臉上
+death.combat,戰死
+death_bio.combat,死於一場搏鬥
+death_bio.combat.grizzly_bear.carcass,為了守住獵物，死在灰熊掌下
+death_bio.combat.grizzly_bear.encounter,在一場和灰熊的衝突中死去
+death_bio.combat.white_tailed_deer.hunt,在和雄鹿的搏鬥中倒下
+summary.old_injury,{part}的舊傷，是 {age} 歲那年{source}時留下的
+injury_source.grizzly_bear.carcass,和灰熊搶食
+injury_source.grizzly_bear.encounter,和灰熊衝突
+injury_source.white_tailed_deer.hunt,獵鹿
+injury_source.red_fox.carcass,驅趕狐狸
+injury_source.stranger_wolf.encounter,被陌生灰狼驅趕
+injury_source.hunt,狩獵
+debug.event.fox_scavenge,狐狸偷食
+debug.event.mother_bear,母熊
+debug.event.old_injury,舊傷發作

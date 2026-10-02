@@ -98,10 +98,8 @@ func _handle_pending() -> void:
 				GameState.action_observe_distant(e)
 			else:
 				GameState.leave_distant(e)
-		elif style == "assault":
-			GameState.resolve_competitor_encounter("fight", e)
 		else:
-			GameState.resolve_competitor_encounter("flee" if e.get("direct", false) else "retreat", e)
+			play_combat(GameState.start_combat(str(e.get("animal_id", "grizzly_bear")), str(e.get("life_stage", "adult")), "encounter", e))
 	while not done():
 		var event := GameState.pop_event()
 		if event.is_empty():
@@ -156,17 +154,39 @@ func _play_hunt(hunt: HuntSystem) -> void:
 			hunt.give_up()
 			break
 		var sr: Dictionary = hunt.choose(str(opt["id"]))
-		GameState.spend_hunt_turns(int(sr.get("turns", 0)))
+		GameState.spend_hunt_turns(int(sr.get("turns", 0)), hunt)
 	if done():
 		return
 	GameState.finish_hunt(hunt)
 	while GameState.is_feeding() and not done():
 		var fr: Dictionary = GameState.feed_once()
 		var ev: String = str(fr.get("event", ""))
-		if ev == "bear":
-			GameState.resolve_scavenger(ev, {"assault": "guard", "cautious": "abandon"}.get(style, "grab"))
+		if ev == "bear" and not GameState.is_identified("grizzly_bear"):
+			GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
 		elif ev != "":
-			GameState.resolve_scavenger(ev, "drive")
+			play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
+
+# 戰鬥：強攻型會打（灰熊搶食時守住），打到瀕危就撤退；其他打法對灰熊退讓（叼走一塊或放棄），
+# 對狐狸先威嚇再咬。
+func play_combat(c: Combat) -> void:
+	var guard := 0
+	while c.phase != Combat.Phase.DONE and not done() and guard < 30:
+		guard += 1
+		c.choose(_combat_choice(c))
+	GameState.finish_combat(c)
+
+func _combat_choice(c: Combat) -> String:
+	var ids: Array = c.options().map(func(o): return o["id"])
+	var fights: bool = style == "assault" or c.animal_id == "red_fox"
+	if c.phase == Combat.Phase.STANDOFF:
+		if not fights:
+			for y in ["yield", "abandon" if style == "cautious" else "grab", "grab", "abandon"]:
+				if ids.has(y):
+					return y
+		return "threaten" if c.animal_id == "red_fox" else "attack"
+	if FightRules.in_danger(GameState.wolf) or (not fights and ids.has("retreat")):
+		return "retreat"
+	return "bite"
 
 # 依風格挑選項（見 PREFER）；回傳空字典代表放棄。
 func _pick_option(hunt: HuntSystem) -> Dictionary:

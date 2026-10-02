@@ -1,9 +1,13 @@
 class_name FightRules
 extends RefCounted
 
-# 搏鬥的勝負判定集中在這裡。Phase 1.6 要改用戰鬥規則（SPEC「戰鬥模式」）時，
-# 只替換這個檔案的 chance() / resolve_round()，HuntSystem 與畫面層不需要改。
+# 戰鬥規則集中在這裡（SPEC 1.6「戰鬥模式」：狩獵的搏鬥、灰熊、守住獵物、驅趕狐狸都用同一套）。
+# - 共用：狼受傷（部位 → 傷勢影響哪項能力）、瀕危與戰鬥中的死亡（hurt_wolf／in_danger）。
+# - 狩獵的搏鬥（獵物）：chance()／counter_chance()／resolve_round()，跨回合狀態在 HuntSystem.fight_state。
+# - 與競爭者的戰鬥（灰熊、狐狸，之後的陌生灰狼）：attack_chance()／opponent_hit_chance()／retreat_chance()／
+#   threaten_chance()，流程與狀態在 Combat.gd。
 #
+# 狩獵搏鬥的 state：
 # state：一場搏鬥跨回合保留的狀態
 #   wounds：獵物累積的傷（咬後腿每次 +1，到 wounds_to_kill 即制伏）
 #   next_bonus：閃避等待破綻後，下一招的加成
@@ -13,6 +17,36 @@ extends RefCounted
 
 static func _cfg() -> Dictionary:
 	return GameData.balance.get("hunt", {}).get("fight", {})
+
+static func combat_cfg() -> Dictionary:
+	return GameData.balance.get("combat", {})
+
+# --- 共用：受傷、瀕危、死亡 ---
+
+# 目前血量低於上限的 danger_ratio 就是「瀕危」。
+static func in_danger(wolf: Wolf) -> bool:
+	return wolf.health <= wolf.health_max * float(combat_cfg().get("danger_ratio", 0.25))
+
+# 狼受到一次傷害。parts：部位比例（leg／shoulder／face），決定重傷影響哪項能力。
+# lethal = false 時這一擊不會致死（血量最少留 1）：SPEC「未進入瀕危前的一次攻擊不會直接致死」，
+# 只有瀕危後仍選擇繼續戰鬥，才傳 lethal = true。回傳 {"damage", "part", "severity"}。
+static func hurt_wolf(wolf: Wolf, dmg: float, parts: Dictionary, source: String, lethal: bool) -> Dictionary:
+	var c: Dictionary = combat_cfg().get("injury", {})
+	if not lethal:
+		dmg = min(dmg, max(0.0, wolf.health - 1.0))
+	wolf.health -= dmg
+	var part: String = RNGService.weighted_pick(parts) if not parts.is_empty() else ""
+	var severity: int = Wolf.Injury.NONE
+	if dmg >= float(c.get("heavy_damage", 22)):
+		severity = Wolf.Injury.HEAVY
+		var stat: String = str(combat_cfg().get("part_stat", {}).get(part, "strength"))
+		wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(c.get("heavy_days_min", 3)), int(c.get("heavy_days_max", 5))),
+			stat, part, source)
+	elif dmg >= float(c.get("light_damage", 8)):
+		severity = Wolf.Injury.LIGHT
+		wolf.apply_injury(Wolf.Injury.LIGHT, int(c.get("light_days", 2)))
+	wolf.clamp_stats()
+	return {"damage": dmg, "part": part, "severity": severity}
 
 static func move_ids() -> Array:
 	return _cfg().get("moves", {}).keys()
@@ -62,6 +96,7 @@ static func resolve_round(wolf: Wolf, prey_counter: float, move: String, state: 
 	var m: Dictionary = cfg.get("moves", {}).get(move, {})
 	var info := chance(wolf, prey_counter, move, state)
 	var counter := counter_chance(prey_counter, move, state)
+	state["lethal"] = in_danger(wolf)
 	# 閃避的加成只用一次
 	state["next_bonus"] = 0.0
 	state["counter_reduction"] = 0.0
@@ -78,10 +113,87 @@ static func resolve_round(wolf: Wolf, prey_counter: float, move: String, state: 
 	var result := {"outcome": "continue", "success": false, "damage": 0.0, "factors": info["factors"]}
 	if RNGService.chance(counter):
 		var dmg: float = float(RNGService.randi_range(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 15))))
-		wolf.health -= dmg
-		if dmg >= float(cfg.get("counter_injury_damage", 12)):
-			wolf.apply_injury(Wolf.Injury.LIGHT, 2)
-		result["damage"] = dmg
+		# 瀕危時仍選擇繼續搏鬥，這一擊才可能致死
+		var hit := hurt_wolf(wolf, dmg, cfg.get("parts", {}), str(state.get("source", "")), bool(state.get("lethal", false)))
+		result["damage"] = hit["damage"]
 	if RNGService.chance(float(cfg.get("escape_chance_on_fail", 0.3))):
 		result["outcome"] = "escape"
 	return result
+
+# --- 與競爭者的戰鬥（Combat.gd 使用） ---
+
+static func opponent_profile(animal_id: String, life_stage: String) -> Dictionary:
+	var table: Dictionary = combat_cfg().get("opponents", {}).get(animal_id, {})
+	return table.get(life_stage, table.get("adult", {}))
+
+static func move_cfg(move: String) -> Dictionary:
+	return combat_cfg().get("moves", {}).get(move, {})
+
+static func wolf_power(wolf: Wolf, strength_weight: float = 1.0) -> float:
+	return wolf.effective_strength() * strength_weight + wolf.effective_skill() * (2.0 - strength_weight)
+
+# 狼的防守（躲開對手攻擊的能力）：技巧＋速度。
+static func wolf_defense(wolf: Wolf) -> float:
+	return wolf.effective_skill() + wolf.effective_speed()
+
+static func _power_factor(diff: float) -> Dictionary:
+	return {"key": "factor.stronger" if diff >= 0.0 else "factor.weaker", "good": diff >= 0.0, "weight": absf(diff)}
+
+# 攻擊命中率：state 帶 next_bonus（閃避後的破綻）、initiative（先手）、tendency_bonus（強攻型）。
+static func attack_chance(wolf: Wolf, opp_power: float, move: String, state: Dictionary) -> Dictionary:
+	var a: Dictionary = combat_cfg().get("attack", {})
+	var m := move_cfg(move)
+	var diff: float = (wolf_power(wolf, float(m.get("strength_weight", 1.0))) - opp_power) / float(a.get("divisor", 200))
+	var factors: Array = [_power_factor(diff)]
+	var value: float = float(a.get("base", 0.55)) + diff + float(m.get("bonus", 0.0))
+	for key in ["next_bonus", "initiative", "tendency_bonus", "probe_bonus"]:
+		var v: float = float(state.get(key, 0.0))
+		if v > 0.0:
+			value += v
+			factors.append({"key": "factor.combat." + key, "good": true, "weight": v})
+	_add_wolf_condition(wolf, factors)
+	return {"chance": clamp(value, float(a.get("min", 0.05)), float(a.get("max", 0.95))), "factors": factors}
+
+# 對手這一回合打中狼的機率；dodge 大幅降低，猛撲提高。
+static func opponent_hit_chance(wolf: Wolf, opp_power: float, move: String) -> float:
+	var h: Dictionary = combat_cfg().get("opponent_hit", {})
+	var value: float = float(h.get("base", 0.45)) + (opp_power - wolf_defense(wolf)) / float(h.get("divisor", 200))
+	value *= float(move_cfg(move).get("hit_mult", 1.0))
+	return clamp(value, float(h.get("min", 0.05)), float(h.get("max", 0.9)))
+
+static func wolf_damage(wolf: Wolf, move: String) -> float:
+	var d: Dictionary = combat_cfg().get("wolf_damage", {})
+	var spread: float = float(d.get("spread", 3))
+	return (float(d.get("base", 6)) + wolf.effective_strength() * float(d.get("strength_mult", 0.12)) + RNGService.randf_range(-spread, spread)) \
+		* float(move_cfg(move).get("damage_mult", 1.0))
+
+# 撤退：看速度與腿傷；瀕危時對手多半只想把你趕走，成功率提高；謹慎型加成。
+static func retreat_chance(wolf: Wolf, cautious: float) -> Dictionary:
+	var m := move_cfg("retreat")
+	var diff: float = (wolf.effective_speed() - 40.0) / float(m.get("speed_divisor", 150))
+	var factors: Array = [{"key": "factor.combat.fast" if diff >= 0.0 else "factor.combat.slow", "good": diff >= 0.0, "weight": absf(diff)}]
+	var value: float = float(m.get("base", 0.55)) + diff
+	if in_danger(wolf):
+		value += float(m.get("danger_bonus", 0.25))
+		factors.append({"key": "factor.combat.they_let_go", "good": true, "weight": float(m.get("danger_bonus", 0.25))})
+	if wolf.injury == Wolf.Injury.HEAVY and wolf.injury_stat == "speed":
+		value -= float(m.get("leg_injury_penalty", 0.15))
+		factors.append({"key": "factor.combat.leg_injury", "good": false, "weight": float(m.get("leg_injury_penalty", 0.15))})
+	if cautious > 0.0:
+		value += cautious
+		factors.append({"key": "factor.tendency.cautious", "good": true, "weight": cautious})
+	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
+
+# 威嚇：力量差、對手抗威嚇 × 這場的利害（搶獵物、護幼時更難嚇走）。
+static func threaten_chance(wolf: Wolf, opp: Dictionary, stake_mult: float) -> Dictionary:
+	var t: Dictionary = combat_cfg().get("standoff", {}).get("threaten", {})
+	var diff: float = (wolf_power(wolf) - float(opp.get("power", 100))) / float(t.get("divisor", 200))
+	var resist: float = float(opp.get("threat_resist", 0.3)) * stake_mult
+	var factors: Array = [_power_factor(diff)]
+	if resist > 0.0:
+		factors.append({"key": "factor.combat.determined", "good": false, "weight": resist})
+	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.3)) + diff - resist), "factors": factors}
+
+static func _add_wolf_condition(wolf: Wolf, factors: Array) -> void:
+	if in_danger(wolf):
+		factors.append({"key": "factor.combat.danger", "good": false, "weight": 0.0, "info": true})

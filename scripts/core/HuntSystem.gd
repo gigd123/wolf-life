@@ -605,12 +605,10 @@ func _do_attack_standing() -> Dictionary:
 	fight_state["counter_mult_extra"] = float(cfg.get("counter_mult", 1.5))
 	return {"success": true, "text_key": "hunt.stand.attack"}
 
+# 狩獵中的反擊（母鹿衝撞、受傷個體反撲、騷擾失敗）：一次攻擊，不會致死（見 FightRules.hurt_wolf）。
 func _hurt_wolf(min_dmg: int, max_dmg: int) -> float:
 	var dmg: float = float(RNGService.randi_range(min_dmg, max_dmg))
-	wolf.health -= dmg
-	if dmg >= float(_tuning().get("fight", {}).get("counter_injury_damage", 12)):
-		wolf.apply_injury(Wolf.Injury.LIGHT, 2)
-	return dmg
+	return float(FightRules.hurt_wolf(wolf, dmg, _tuning().get("fight", {}).get("parts", {}), animal_id + ".hunt", false)["damage"])
 
 func _do_observe(opt: Dictionary) -> Dictionary:
 	stage = Stage.STALK
