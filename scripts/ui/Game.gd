@@ -1456,7 +1456,7 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 		# 戰鬥選項標出成功指的是什麼（嚇退／命中／閃開／脫身），狩獵選項只顯示成功率
 		var prefix: String = tr(str(info["chance_key"])) + " " if info.has("chance_key") else ""
 		btn.text += "　" + prefix + "%d%%" % int(round(float(info["chance"]) * 100.0))
-	btn.custom_minimum_size = Vector2(170, 0)
+	btn.custom_minimum_size = Vector2(185, 0)
 	btn.pressed.connect(callback)
 	row.add_child(btn)
 	var cost: String = _format_cost(info)

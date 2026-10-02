@@ -429,7 +429,7 @@ cost.stamina,體力 -{n}
 cost.turns,多 {n} 回合
 cost.next_bonus,{stage} +{n}%
 cost.trains,練：{list}
-cost.injury_risk,你被打中 {n}%
+cost.injury_risk,你被打中率 {n}%
 cost.prey_drain,獵物體力 -{n}
 cost.stage.stalk,潛近
 cost.stage.chase,追擊
@@ -606,7 +606,7 @@ injury_source.hunt,狩獵
 debug.event.fox_scavenge,狐狸偷食
 debug.event.mother_bear,母熊
 debug.event.old_injury,舊傷發作
-chance_label.hit,命中
-chance_label.dodge,閃開
-chance_label.escape,脫身
-chance_label.drive_off,嚇退
+chance_label.hit,命中率
+chance_label.dodge,閃開率
+chance_label.escape,脫身率
+chance_label.drive_off,嚇退率
