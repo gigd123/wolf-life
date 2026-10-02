@@ -866,16 +866,18 @@ func _refresh() -> void:
 			.replace("{n}", str(int(link["turns"])))
 		go.pressed.connect(_on_region_button.bind(target))
 		cross_map_box.add_child(go)
-		# 冬春的冰面捷徑：少 1 回合，春季河冰變薄
-		var ice: Dictionary = GameState.ice_shortcut(target)
-		if not ice.is_empty():
-			var ice_btn := Button.new()
-			ice_btn.text = tr("ui.go_map_ice." + ("thin" if float(ice.get("break_chance", {}).get(season, 0.0)) > 0.0 else "solid")) \
-				.replace("{n}", str(int(ice.get("turns", 2))))
-			ice_btn.pressed.connect(func():
-				_on_region_button(target, true)
-			)
-			cross_map_box.add_child(ice_btn)
+	# 冬春的冰面捷徑：走過那種冰之後才直接顯示冰厚、冰薄；之前要先踩上去試，由玩家判斷
+	for ice in GameState.ice_shortcuts():
+		var ice_target: String = str(ice["to"])
+		var ice_btn := Button.new()
+		var known: bool = GameState.ice_known(bool(ice["thin"]))
+		ice_btn.text = tr("ui.ice_path" + (".known" if known else "")).replace("{region}", tr("region." + ice_target)) \
+			.replace("{n}", str(int(ice["turns"]))).replace("{state}", tr("ice.state." + ("thin" if ice["thin"] else "solid")))
+		if known:
+			ice_btn.pressed.connect(func(): _on_region_button(ice_target, true))
+		else:
+			ice_btn.pressed.connect(func(): _show_ice_feel(ice))
+		cross_map_box.add_child(ice_btn)
 
 	for region_id in region_buttons.keys():
 		var btn: Button = region_buttons[region_id]
@@ -2039,6 +2041,25 @@ func _show_blizzard_over(event: Dictionary) -> void:
 		body += "\n\n" + tr("blizzard.over.kills")
 	_log(tr("blizzard.over"))
 	_show_card(tr("blizzard.over.title"), body, ArtLibrary.region_background(GameState.current_region, "winter"))
+
+# 第一次走這種冰：先踩上去試，只描述腳下的感覺，由玩家決定要不要走。
+func _show_ice_feel(ice: Dictionary) -> void:
+	var text: String = tr("ice.feel." + ("thin" if ice["thin"] else "solid"))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "walk")
+	_set_terrain_bg(encounter_bg, "river_willow")
+	_clear_children(encounter_buttons_box)
+	var target: String = str(ice["to"])
+	_add_encounter_button(tr("ice.prompt.go").replace("{region}", tr("region." + target)).replace("{n}", str(int(ice["turns"]))), func():
+		encounter_overlay.visible = false
+		_on_region_button(target, true)
+	)
+	_add_encounter_button(tr("ice.prompt.back"), func():
+		encounter_overlay.visible = false
+	)
+	encounter_overlay.visible = true
 
 func _show_ice_break(event: Dictionary = {}) -> void:
 	var text: String = tr("ice.here.shortcut" if event.get("shortcut", false) else "ice.here")

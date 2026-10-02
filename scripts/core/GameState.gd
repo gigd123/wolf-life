@@ -502,28 +502,65 @@ func adjacent_regions() -> Array:
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	return region.get("adjacent", [])
 
-# 冰面捷徑（跨地圖連接的 ice）：這個季節能不能走（break_chance 有這一季才能走）。
+# 冰面捷徑（regions.json maps.<map>.ice）：和冰原地圖接壤的跨地圖連接少 turns_saved 回合，加上地圖內的冰面直通路線。
+# 只列出這一季能走的：[{to, turns, thin（冰薄）, break（河冰裂開的機率）}]。
+func ice_shortcuts() -> Array:
+	var list: Array = []
+	var season: String = GameTime.current_season()
+	for link in GameData.links_from(current_region):
+		var ice := _map_ice(current_map())
+		if ice.is_empty():
+			ice = _map_ice(GameData.map_of(str(link["to"])))
+		if ice.get("break_chance", {}).has(season):
+			list.append(_ice_entry(str(link["to"]), max(1, int(link["turns"]) - int(ice.get("turns_saved", 1))), ice))
+	for map_id in GameData.maps().keys():
+		var ice := _map_ice(map_id)
+		if not ice.get("break_chance", {}).has(season):
+			continue
+		for p in ice.get("paths", []):
+			if str(p["from"]) == current_region:
+				list.append(_ice_entry(str(p["to"]), int(p.get("turns", 1)), ice))
+			elif str(p["to"]) == current_region:
+				list.append(_ice_entry(str(p["from"]), int(p.get("turns", 1)), ice))
+	return list
+
+func _map_ice(map_id: String) -> Dictionary:
+	return GameData.maps().get(map_id, {}).get("ice", {})
+
+func _ice_entry(target: String, turns: int, ice: Dictionary) -> Dictionary:
+	var chance_value: float = float(ice.get("break_chance", {}).get(GameTime.current_season(), 0.0))
+	return {"to": target, "turns": turns, "thin": chance_value > 0.0, "break": chance_value}
+
 func ice_shortcut(target_region: String) -> Dictionary:
-	var ice: Dictionary = _link_to(target_region).get("ice", {})
-	if ice.is_empty() or not ice.get("break_chance", {}).has(GameTime.current_season()):
-		return {}
-	return ice
+	for e in ice_shortcuts():
+		if e["to"] == target_region:
+			return e
+	return {}
+
+# 走過冰厚或冰薄的冰面之後，捷徑按鈕才直接顯示「冰厚」「冰薄」；之前只能憑腳下的感覺判斷。
+func ice_known(thin: bool) -> bool:
+	return bool(life_log.get("ice_known", {}).get("thin" if thin else "solid", false))
+
+func _learn_ice(thin: bool) -> void:
+	var known: Dictionary = life_log.get("ice_known", {})
+	known["thin" if thin else "solid"] = true
+	life_log["ice_known"] = known
 
 # via_ice：沿著結冰的河面走捷徑（回合較少，春季可能踩破河冰）。
 func action_move(target_region: String, via_ice: bool = false) -> void:
 	_record_action("move")
 	var link := _link_to(target_region)
 	var ice: Dictionary = ice_shortcut(target_region) if via_ice else {}
-	if not adjacent_regions().has(target_region) and link.is_empty():
+	if not adjacent_regions().has(target_region) and link.is_empty() and ice.is_empty():
 		return
 	# 白矇天：看不清方向，可能走到另一個相鄰區域
 	var lost_from: String = ""
-	if link.is_empty() and whiteout_here() and RNGService.chance(float(_events_cfg().get("whiteout", {}).get("lost_chance", 0.3))):
+	if link.is_empty() and ice.is_empty() and whiteout_here() and RNGService.chance(float(_events_cfg().get("whiteout", {}).get("lost_chance", 0.3))):
 		var others: Array = adjacent_regions().filter(func(r): return r != target_region and GameData.map_of(r) == current_map())
 		if not others.is_empty():
 			lost_from = target_region
 			target_region = others[RNGService.randi_range(0, others.size() - 1)]
-	var ice_check: bool = link.is_empty() and (current_region == _ice_cfg().get("region", "") or target_region == _ice_cfg().get("region", ""))
+	var ice_check: bool = link.is_empty() and ice.is_empty() and (current_region == _ice_cfg().get("region", "") or target_region == _ice_cfg().get("region", ""))
 	current_region = target_region
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
 	if not link.is_empty():
@@ -536,10 +573,12 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	var turns: int = int(link["turns"]) if not link.is_empty() else int(costs.get("move_region", 1))
 	if not ice.is_empty():
 		record_decision("move.ice_shortcut")
-		link["turns"] = int(ice.get("turns", link["turns"]))
-	GameTime.advance_turns(int(link["turns"]) if not link.is_empty() else int(costs.get("move_region", 1)))
+		turns = int(ice["turns"])
+		_learn_ice(bool(ice["thin"]))
+	GameTime.advance_turns(turns)
 	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
 	if lost_from != "":
 		log_message.emit(tr("log.whiteout_lost").replace("{target}", tr("region." + lost_from)).replace("{region}", tr("region." + target_region)))
@@ -565,7 +604,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		_check_blizzard_here()
 		if ice_check:
 			_maybe_ice_break()
-		elif not ice.is_empty() and RNGService.chance(float(ice.get("break_chance", {}).get(GameTime.current_season(), 0.0))):
+		elif not ice.is_empty() and RNGService.chance(float(ice["break"])):
 			pending_events.append({"type": "ice_break", "shortcut": true})
 	state_changed.emit()
 
@@ -2401,6 +2440,7 @@ func _maybe_ice_break() -> void:
 	if GameTime.current_season() != str(cfg.get("season", "spring")) or not wolf.alive:
 		return
 	if RNGService.chance(float(cfg.get("move_chance", 0.2))):
+		_learn_ice(true)
 		pending_events.append({"type": "ice_break"})
 
 # 選項：跳回岸上（看速度）、趴低慢慢爬回（較穩，多花回合）。

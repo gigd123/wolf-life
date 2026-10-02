@@ -43,9 +43,9 @@ func links_from(region_id: String) -> Array:
 	var list: Array = []
 	for link in regions_root.get("links", []):
 		if str(link["from"]) == region_id:
-			list.append({"to": str(link["to"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0)), "ice": link.get("ice", {})})
+			list.append({"to": str(link["to"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
 		elif str(link["to"]) == region_id:
-			list.append({"to": str(link["from"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0)), "ice": link.get("ice", {})})
+			list.append({"to": str(link["from"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
 	return list
 
 func region_features() -> Dictionary:

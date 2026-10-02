@@ -871,8 +871,6 @@ debug.tundra_wolf.meet,苔原狼相遇
 debug.tundra_wolf.howl,苔原狼嚎叫
 debug.tundra_wolf.carcass,苔原狼爭食
 factor.combat.partner,另一隻在旁邊伺機而動
-ui.go_map_ice.solid,冰面捷徑（{n} 回合）
-ui.go_map_ice.thin,冰面捷徑（{n} 回合・冰薄）
 log.ice_shortcut,你沿著結冰的河面走，冰上沒有積雪，走得很快。
 ice.here.shortcut,走到河中央時，腳下的冰發出一聲悶響，裂開了！
 tundra.mob.known,兩隻苔原狼正圍著一隻狼獾。狼獾背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
@@ -906,3 +904,11 @@ tundra.wait.shared,你往旁邊挪了挪，牠們走過來，安靜地撕下一�
 summary.tundra_outcome.approached,走近牠們
 summary.tundra_outcome.shared,一起吃你的獵物
 summary.tundra_outcome.kept,讓牠們在旁邊等
+ui.ice_path,冰面捷徑：{region}（{n} 回合）
+ui.ice_path.known,冰面捷徑：{region}（{n} 回合・{state}）
+ice.state.solid,冰厚
+ice.state.thin,冰薄
+ice.feel.solid,你踏上冰面試了試。冰面有點滑，但感到很安全。
+ice.feel.thin,你踏上冰面試了試。冰面有點滑，但你有種不穩定感。
+ice.prompt.go,走過去（{n} 回合到{region}）
+ice.prompt.back,還是繞路

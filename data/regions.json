@@ -5,13 +5,14 @@
     "forest": { "name_key": "map.forest", "layout": ["forest_north", "forest_east", "forest_west", "forest_south"], "fire": true },
     "tundra": {
       "name_key": "map.tundra", "layout": ["tundra_north", "tundra_east", "tundra_central", "tundra_south"], "fire": false,
-      "cold": { "winter": { "hunger": 3, "stamina": 4 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
+      "cold": { "winter": { "hunger": 3, "stamina": 4 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } },
+      "_ice_comment": "冰面捷徑（冬春）：和這張地圖接壤的跨地圖連接都少 turns_saved 回合；paths 是地圖內沿著結冰河面的直通路線（林線 ↔ 遠北 1 回合，平常要經過兩區）。break_chance：各季走到一半河冰裂開（跳出河冰事件）的機率，沒有列出的季節不能走；冬季冰厚、春季冰薄。",
+      "ice": { "turns_saved": 1, "break_chance": { "winter": 0.0, "spring": 0.35 },
+        "paths": [ { "from": "tundra_south", "to": "tundra_north", "turns": 1 } ] }
     }
   },
   "links": [
-    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 8,
-      "_ice_comment": "冰面捷徑：冬春沿著結冰的河面走，少 1 回合；break_chance 是各季河冰裂開（跳出河冰事件）的機率，春融時冰變薄。",
-      "ice": { "turns": 2, "break_chance": { "winter": 0.0, "spring": 0.35 } } }
+    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 8 }
   ],
   "features": {
     "good_sleep_spot": { "sleep_spot": true },
