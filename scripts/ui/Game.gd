@@ -2668,6 +2668,9 @@ func _process(_delta: float) -> void:
 # --- Lifecycle ---
 
 func _on_wolf_died(_cause: String) -> void:
+	# wolf_died 訊號已經切換過場景時，這個畫面會立刻離開場景樹；之後主動呼叫的就略過。
+	if not is_inside_tree():
+		return
 	get_tree().change_scene_to_file("res://scenes/LifeSummary.tscn")
 
 func _on_save_and_exit() -> void:
