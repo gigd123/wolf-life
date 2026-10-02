@@ -87,7 +87,10 @@
         "_mob_comment": "圍攻狼獾（兩隻苔原狼都在、狼獾還活著）：在牠們所在的區域探索時 mob_chance 遇上。幫忙時從交鋒開始，狼獾的耐力只剩 start_hp_ratio，每回合 ally_chance 的機率苔原狼咬中牠（ally_damage）。旁觀時 watch_drive_off 的機率狼獾被趕走、watch_kill 的機率被咬死。幫忙趕走後牠們分你 share_segments 段。",
         "mob": { "mob_chance": 0.05, "start_hp_ratio": 0.7, "ally_chance": 0.5, "ally_damage": [6, 10], "watch_drive_off": 0.7, "watch_kill": 0.1, "share_segments": 1 },
         "relation": { "howl_reply": 1, "avoid": 1, "yield": 1, "let_eat": 2, "guard_together": 1, "fight": -2, "killed": -5, "help_won": 3, "help_tried": 1,
-          "levels": { "hostile": -3, "familiar": 3, "friendly": 6 } }
+          "levels": { "hostile": -3, "familiar": 3, "friendly": 6 } },
+        "_effects_comment": "關係值影響牠們的反應。敵視：遇上時 hostile_charge 的機率直接撲上來，爭食機率 × hostile_carcass_mult，另一隻插進來的機率變 hostile_partner_chance，回應嚎叫會把牠們引來（howl_come_chance）。熟悉：爭食時 stake 倍率 × familiar_stake_mult（比較容易被嚇退）。友善：爭食時不動手、在旁邊等；遇上時可以「走近牠們」，friendly_lead_chance 的機率帶你找到馴鹿（馴鹿在這一區出沒的季節）；回應嚎叫時 howl_come_chance 的機率牠們過來找你。避開只在關係低於「熟悉」時加分。",
+        "effects": { "hostile_charge": 0.35, "hostile_carcass_mult": 2.0, "hostile_partner_chance": 0.3, "familiar_stake_mult": 0.7,
+          "friendly_lead_chance": 0.5, "howl_come_chance": 0.3 }
       }
     },
     "tundra_wolf_mate": {

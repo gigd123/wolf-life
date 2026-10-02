@@ -1427,8 +1427,8 @@ func feed_once() -> Dictionary:
 			event = "bear"
 		elif RNGService.chance(float(chances["wolverine"])):
 			event = "wolverine"
-		elif _tundra_wolves_here() and RNGService.chance(float(_tundra_cfg().get("carcass_chance", 0.1))):
-			event = "tundra_wolves"
+		elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
+			event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
 		elif RNGService.chance(float(chances["fox"])):
 			event = "fox"
 	else:
@@ -1514,8 +1514,8 @@ func action_return_to_carcass() -> Dictionary:
 	elif _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")) \
 			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25))):
 		event = "wolverine"
-	elif _tundra_wolves_here() and RNGService.chance(float(_tundra_cfg().get("carcass_chance", 0.1))):
-		event = "tundra_wolves"
+	elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
+		event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
 	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
 		event = "fox"
 	state_changed.emit()
@@ -2556,6 +2556,13 @@ func _roam_tundra_wolves(force: bool = false) -> void:
 	for npc in tundra_pair():
 		npc.territory = region
 
+# 牠們來爭食的機率（敵視時更常來）。
+func _tundra_carcass_chance() -> float:
+	var c: float = float(_tundra_cfg().get("carcass_chance", 0.1))
+	if tundra_relation_key() == "hostile":
+		c *= float(_tundra_effects().get("hostile_carcass_mult", 2.0))
+	return c
+
 func tundra_relation() -> int:
 	var leader := tundra_leader()
 	return leader.relation if leader != null else 0
@@ -2572,8 +2579,14 @@ func tundra_relation_key() -> String:
 		return "familiar"
 	return "wary"
 
+func _tundra_effects() -> Dictionary:
+	return _tundra_cfg().get("effects", {})
+
 func _tundra_relation_add(kind: String) -> void:
 	var delta: int = int(_tundra_cfg().get("relation", {}).get(kind, 0))
+	# 避開只在還不熟的時候加分（一直避開不會變成好朋友）
+	if kind == "avoid" and tundra_relation_key() in ["familiar", "friendly"]:
+		delta = 0
 	for npc in tundra_pair():
 		npc.relation += delta
 
@@ -2602,8 +2615,15 @@ func _maybe_tundra_howl() -> void:
 func tundra_howl_reply(reply: bool) -> void:
 	record_decision("tundra.howl." + ("reply" if reply else "silent"))
 	if reply:
-		_tundra_relation_add("howl_reply")
+		var key := tundra_relation_key()
+		# 敵視時回應嚎叫只會把牠們引來；友善時牠們可能過來找你
+		if key != "hostile":
+			_tundra_relation_add("howl_reply")
 		_tundra_record("howl", "replied")
+		if key in ["hostile", "friendly"] and RNGService.chance(float(_tundra_effects().get("howl_come_chance", 0.3))):
+			for npc in tundra_pair():
+				npc.territory = current_region
+			pending_events.append({"type": "tundra_come", "charge": key == "hostile"})
 	state_changed.emit()
 
 # 探索時在牠們所在的區域遇上。回傳 true 表示這次探索的發現換成遇上苔原狼。
@@ -2612,7 +2632,8 @@ func _maybe_meet_tundra_wolves() -> bool:
 		return false
 	if not RNGService.chance(float(_tundra_cfg().get("meet_chance", 0.1))):
 		return false
-	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf")}
+	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf"),
+		"charge": tundra_relation_key() == "hostile" and RNGService.chance(float(_tundra_effects().get("hostile_charge", 0.35)))}
 	identify("tundra_wolf")
 	return true
 
@@ -2641,15 +2662,49 @@ func tundra_follow() -> Dictionary:
 	return {"success": true, "assessment": a}
 
 # 和牠們對峙或戰鬥。context：meet（遇上、挑戰）、carcass（牠們來爭你的獵物）。
-func start_tundra_combat(context: String) -> Combat:
+# charge：牠們直接撲上來（敵視），從交鋒開始。
+func start_tundra_combat(context: String, charge: bool = false) -> Combat:
 	identify("tundra_wolf")
 	clear_discovery()
 	var c := start_combat("tundra_wolf", "adult", context)
 	c.set_npc(tundra_leader())
+	var key := tundra_relation_key()
 	if tundra_pair().size() > 1:
-		c.partner_chance = float(_tundra_cfg().get("partner_chance", 0.2))
+		c.partner_chance = float(_tundra_effects().get("hostile_partner_chance", 0.3)) if key == "hostile" else float(_tundra_cfg().get("partner_chance", 0.2))
 		c.partner_damage_mult = float(_tundra_cfg().get("partner_damage_mult", 0.6))
+	if key == "familiar" and context == "carcass":
+		c.stake_mult *= float(_tundra_effects().get("familiar_stake_mult", 0.7))
+	if charge:
+		c.phase = Combat.Phase.EXCHANGE
 	return c
+
+# 友善時遇上：走近牠們，陪牠們走一段（關係 +1）；馴鹿在這一區出沒的季節，牠們可能帶你找到馴鹿。
+# 回傳 {"lead": true} 時 current_discovery 是目擊到的馴鹿（接著可以狩獵）。
+func tundra_approach() -> Dictionary:
+	clear_discovery()
+	GameTime.advance_turns(1)
+	record_decision("tundra.approach")
+	_tundra_relation_add("howl_reply")
+	_tundra_record("meet", "approached")
+	var caribou_here: bool = float(EncounterSystem.region_data(current_region).get("prey_weights", {}).get("caribou", {}).get(GameTime.current_season(), 0)) > 0.0
+	if caribou_here and RNGService.chance(float(_tundra_effects().get("friendly_lead_chance", 0.5))):
+		current_discovery = {"kind": "clue", "source_kind": "prey", "source": "caribou", "clue": "sight", "location": "open_tundra",
+			"fresh": true, "fresh_known": true, "wind": "crosswind", "prey_dir": RNGService.randi_range(0, 3), "life_stage": "adult", "led": true}
+		state_changed.emit()
+		return {"lead": true}
+	state_changed.emit()
+	return {"lead": false}
+
+# 友善時爭食：牠們不動手，在旁邊等。share：讓牠們一起吃（失去 1 段，關係 +1）；否則繼續吃。
+func tundra_wait_choice(share: bool) -> void:
+	record_decision("tundra.wait." + ("share" if share else "keep"))
+	if share and not current_feeding.is_empty():
+		current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+		if int(current_feeding["segments_left"]) <= 0:
+			current_feeding = {}
+		_tundra_relation_add("guard_together")
+	_tundra_record("carcass", "shared" if share else "kept")
+	state_changed.emit()
 
 # 戰鬥後：關係值、紀錄、生死。威嚇或動手過就是起了衝突（關係 −）；讓牠們先吃、一起守著屍體、退開則是不起衝突。
 func _after_tundra_combat(c: Combat) -> void:

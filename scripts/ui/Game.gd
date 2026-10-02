@@ -1253,6 +1253,24 @@ func _on_feed() -> void:
 
 # 灰熊或狐狸來搶食。returning：回到殘骸時撞見。
 func _show_scavenger(event: String, returning: bool) -> void:
+	if event == "tundra_wait":
+		var text: String = tr("scavenger.tundra_wait")
+		_log(text)
+		encounter_message.text = text
+		encounter_detail.text = ""
+		_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
+		_clear_children(encounter_buttons_box)
+		_add_encounter_button(tr("tundra.wait.share"), func():
+			GameState.tundra_wait_choice(true)
+			_log(tr("tundra.wait.shared"))
+			_show_feeding()
+		)
+		_add_encounter_button(tr("tundra.wait.keep"), func():
+			GameState.tundra_wait_choice(false)
+			_show_feeding()
+		)
+		encounter_overlay.visible = true
+		return
 	if event == "tundra_wolves":
 		_log(tr("scavenger.tundra_wolves." + ("returning" if returning else "arrive")))
 		_begin_combat(GameState.start_tundra_combat("carcass"), "move")
@@ -1379,6 +1397,11 @@ func _process_events() -> void:
 			return
 		"tundra_howl":
 			_show_tundra_howl(event)
+			return
+		"tundra_come":
+			if not event.get("charge", false):
+				_log(tr("tundra.come"))
+			_show_tundra_meet({"charge": event.get("charge", false), "location": ""})
 			return
 		"prey_nearby":
 			_show_prey_nearby(event)
@@ -2078,6 +2101,11 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	if leader == null:
 		GameState.clear_discovery()
 		return
+	# 敵視：牠們一看到你就撲上來
+	if d.get("charge", false):
+		_log(tr("tundra.charge." + _pair_key()))
+		_begin_combat(GameState.start_tundra_combat("meet", true), "attack")
+		return
 	var lines: Array[String] = []
 	lines.append(tr("tundra.meet.%s.%s" % ["first" if d.get("first", false) else "again", _pair_key()]))
 	lines.append(tr("tundra.attitude." + GameState.tundra_relation_key()))
@@ -2097,6 +2125,17 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 		encounter_overlay.visible = false
 		_refresh()
 	)
+	if GameState.tundra_relation_key() == "friendly" and extra == "":
+		_add_encounter_button(tr("tundra.approach"), func():
+			var res := GameState.tundra_approach()
+			encounter_overlay.visible = false
+			if res.get("lead", false):
+				_log(tr("tundra.lead"))
+				_show_discovery(GameState.current_discovery)
+			else:
+				_log(tr("tundra.approached"))
+			_refresh()
+		)
 	if extra == "":
 		_add_encounter_button(tr("tundra.follow").replace("{n}", str(int(round(GameState.tundra_follow_chance() * 100.0)))), func():
 			var res := GameState.tundra_follow()

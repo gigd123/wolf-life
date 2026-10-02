@@ -129,6 +129,11 @@ func _handle_pending() -> void:
 				_pick_safest(GameState.blizzard_options(), "safe", func(id): GameState.blizzard_choose(id))
 			"tundra_howl":
 				GameState.tundra_howl_reply(style != "assault")
+			"tundra_come":
+				if event.get("charge", false):
+					play_combat(GameState.start_tundra_combat("meet", true))
+				else:
+					_meet_tundra()
 			"ice_break":
 				_pick_safest(GameState.ice_break_options(), "chance", func(id): GameState.ice_break_choose(id))
 			"ravens":
@@ -142,7 +147,7 @@ func _handle_pending() -> void:
 func _explore_once() -> void:
 	var d: Dictionary = GameState.action_explore()
 	if d.get("kind", "") == "tundra_wolves":
-		_meet_tundra()
+		_meet_tundra(bool(d.get("charge", false)))
 		return
 	if d.get("kind", "") == "tundra_mob":
 		# 強攻型幫苔原狼，謹慎型離開，其他在旁邊看
@@ -228,6 +233,8 @@ func _scavenger(ev: String) -> void:
 		play_combat(GameState.start_wolverine_combat())
 	elif ev == "tundra_wolves":
 		play_combat(GameState.start_tundra_combat("carcass"))
+	elif ev == "tundra_wait":
+		GameState.tundra_wait_choice(style != "assault")
 	else:
 		play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
 
@@ -273,7 +280,16 @@ func _meet_stranger() -> void:
 		GameState.stranger_avoid()
 
 # 遇上苔原狼：強攻型先跟隨看清楚，牠們不比自己強就挑戰；其他打法避開（不起衝突，關係慢慢變好）。
-func _meet_tundra() -> void:
+func _meet_tundra(charge: bool = false) -> void:
+	if charge:
+		play_combat(GameState.start_tundra_combat("meet", true))
+		return
+	if style != "assault" and GameState.tundra_relation_key() == "friendly":
+		if GameState.tundra_approach().get("lead", false) and GameState.wolf.hunger < 100.0:
+			_play_hunt(GameState.action_hunt_sighted())
+		else:
+			GameState.clear_discovery()
+		return
 	if style != "assault":
 		GameState.tundra_avoid()
 		return

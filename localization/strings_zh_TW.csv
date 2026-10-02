@@ -893,3 +893,16 @@ summary.tundra_outcome.watched_held,看著狼獾守住殘骸
 summary.wolverine_gen,（前後共 {n} 隻）
 debug.tundra_wolf.mob,圍攻狼獾
 factor.combat.ally,苔原狼在一旁助攻
+tundra.charge.pair,那對苔原狼一看到你，頸毛一豎，一左一右撲了上來！
+tundra.charge.single,那隻苔原狼一看到你，頸毛一豎，直直撲了上來！
+tundra.approach,走近牠們
+tundra.approached,你慢慢走近，牠們沒有走開。你們並肩走了一段路，牠們才轉往別的方向。
+tundra.lead,你跟著牠們走過一道雪坡，坡下是一群正在低頭吃苔蘚的馴鹿。
+tundra.come,嚎叫聲越來越近。那對苔原狼循著你的聲音找來了。
+scavenger.tundra_wait,那對苔原狼在不遠處趴了下來，看著你吃，沒有靠近。
+tundra.wait.share,讓牠們一起吃
+tundra.wait.keep,繼續吃
+tundra.wait.shared,你往旁邊挪了挪，牠們走過來，安靜地撕下一段肉。
+summary.tundra_outcome.approached,走近牠們
+summary.tundra_outcome.shared,一起吃你的獵物
+summary.tundra_outcome.kept,讓牠們在旁邊等
