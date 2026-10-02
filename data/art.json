@@ -1,10 +1,10 @@
 {
-  "_comment": "美術對應表。原始交付檔在 arts/（files/wolf_assets 為主、phase1.5_art 補充），程式只讀 assets/art/。sheet 是 48×32 一格的 spritesheet，rows 是動作所在的列；single 是單張圖。",
+  "_comment": "美術對應表。原始交付檔在 arts/（files/wolf_assets 為主、phase1.5_art 補充），程式只讀 assets/art/。sheet 是 48×32 一格的 spritesheet，rows 是動作所在的列（frame／frames 可以覆寫這個條目的格子大小與格數）；single 是單張圖；poses 是動作的單張圖；strips 是動作的橫向長條動畫 {sheet, frame: [寬, 高], frames}（1.5 遺留的走路動畫，每格比 48×32 大）。move 沒有對應時會用 walk。",
   "frame_size": [48, 32],
   "animals": {
     "white_tailed_deer": {
-      "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png" },
-      "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png" },
+      "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
+      "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/deer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
     "hare": {
@@ -27,13 +27,36 @@
       "juvenile": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
     "moose": {
-      "adult": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
+      "adult": { "single": "res://assets/art/sprites/animals/moose.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/moose_walk_strip.png", "frame": [82, 76], "frames": 4 } }, "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
       "juvenile": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png" } }
     },
     "grizzly_bear": {
       "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
-      "distant": { "single": "res://assets/art/sprites/animals/bear_distant.png" }
+      "distant": { "single": "res://assets/art/sprites/animals/bear_distant.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/bear_distant_walk_strip.png", "frame": [47, 24], "frames": 4 } } }
+    },
+    "wolverine": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/wolverine_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "attack": "res://assets/art/sprites/animals/wolverine_bite.png", "hurt": "res://assets/art/sprites/animals/wolverine_hurt.png" } }
+    },
+    "raven": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/raven_sheet.png", "rows": { "idle": 0 }, "frames": 2,
+        "poses": { "circling": "res://assets/art/sprites/animals/ravens_circling.png" } }
+    },
+    "tundra_wolf": {
+      "adult": {
+        "sheet": "res://assets/art/sprites/wolf/wolf_tundra_sheet.png",
+        "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
+        "poses": {
+          "threaten": "res://assets/art/sprites/wolf/wolf_tundra_threaten.png",
+          "attack": "res://assets/art/sprites/wolf/wolf_tundra_bite.png",
+          "dodge": "res://assets/art/sprites/wolf/wolf_tundra_dodge.png",
+          "hurt": "res://assets/art/sprites/wolf/wolf_tundra_hurt.png",
+          "submit": "res://assets/art/sprites/wolf/wolf_tundra_submit.png",
+          "stalk": "res://assets/art/sprites/wolf/wolf_tundra_stalk.png",
+          "pair": "res://assets/art/sprites/wolf/wolf_tundra_pair.png"
+        }
+      }
     },
     "stranger_wolf": {
       "adult": {
@@ -48,7 +71,7 @@
           "stalk": "res://assets/art/sprites/wolf/wolf_stranger_stalk.png"
         }
       },
-      "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png" }
+      "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_distant_walk_strip.png", "frame": [50, 28], "frames": 4 } } }
     }
   },
   "wolf": {
@@ -106,7 +129,15 @@
     "forest_south@burned": "res://assets/art/backgrounds/regions/forest_south_burned.png",
     "forest_west@burned": "res://assets/art/backgrounds/regions/forest_west_burned.png"
   },
+  "_events_comment": "事件圖（暴風雪徵兆、大火徵兆、苔原狼圍攻狼獾），顯示在事件畫面的中央。",
+  "events": {
+    "blizzard_sign": "res://assets/art/events/blizzard_sign.png",
+    "fire_sign": "res://assets/art/events/fire_sign.png",
+    "wolverine_mobbed": "res://assets/art/events/wolverine_mobbed.png"
+  },
   "terrain_backgrounds": {
+    "ice": "res://assets/art/backgrounds/terrain/ice.png",
+    "ice@spring": "res://assets/art/backgrounds/terrain/ice_thin.png",
     "stream": "res://assets/art/backgrounds/terrain/stream.png",
     "dense_forest": "res://assets/art/backgrounds/terrain/dense_forest.png",
     "forest_edge": "res://assets/art/backgrounds/terrain/forest_edge.png",
@@ -146,6 +177,7 @@
     "stat.health": "res://assets/art/icons/stat_health.png",
     "status.burn": "res://assets/art/icons/status_burn.png",
     "status.cold": "res://assets/art/icons/status_cold.png",
+    "status.frostbite": "res://assets/art/icons/status_frostbite.png",
     "region_tile.forest_east": "res://assets/art/icons/region_tile_forest_east.png",
     "region_tile.forest_north": "res://assets/art/icons/region_tile_forest_north.png",
     "region_tile.forest_south": "res://assets/art/icons/region_tile_forest_south.png",

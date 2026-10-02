@@ -62,10 +62,23 @@
 | `sprites/animals/carcass_{deer,caribou,moose}.png` | 獵物屍體（進食畫面） | 白尾鹿可隨時接上；其他 6 |
 | `icons/region_tile_{forest_*,tundra_*}.png` | 地圖按鈕的區域小圖，18×18（取代程式生成的小圖） | 森林可隨時接上；苔原 6 |
 
+2026-10-02 再加入 24 個 1.6 追加佔位素材（原始壓縮檔 `arts/1.6-new-animal.zip`，預覽圖 `arts/art_phase1.6_additions_preview.png`，清單在 `docs/art_phase1.6.md` 第五節），都已接上 `data/art.json`。
+
+| 路徑 | 內容 |
+| --- | --- |
+| `sprites/animals/wolverine_sheet.png`、`wolverine_{bite,hurt}.png` | 狼獾：4 欄 × 2 列（待機、走路），撲咬、受傷 |
+| `sprites/animals/raven_sheet.png`、`ravens_circling.png` | 渡鴉：2 格拍翅；三隻盤旋（渡鴉事件） |
+| `sprites/wolf/wolf_tundra_sheet.png`、`wolf_tundra_{threaten,bite,dodge,hurt,submit,stalk,pair}.png` | 苔原狼：格式同 `wolf_sheet.png`；戰鬥姿勢、潛近、兩隻並排 |
+| `backgrounds/terrain/ice.png`、`ice_thin.png` | 冰面（`terrain_backgrounds.ice`、`ice@spring`），320×180 |
+| `icons/status_frostbite.png` | 凍傷 |
+| `events/{blizzard_sign,fire_sign,wolverine_mobbed}.png` | 事件圖（`art.json` 的 `events`） |
+| `sprites/animals/{deer_buck,deer_doe,moose,bear_distant}_walk_strip.png`、`sprites/wolf/wolf_stranger_distant_walk_strip.png` | 1.5 遺留的走路動畫：橫向 4 格，每格比 48×32 大（`art.json` 的 `strips`，各自寫 `frame`） |
+
 ## 顯示方式
 
 - 主畫面：區域背景依季節換圖、依時段調色，上面蓋一層 45% 的暗色讓文字好讀。
-- 遭遇、探索畫面：動物用原始像素大小顯示（遠處的灰熊因此比較小），背景是當下的地形。
+- 遭遇、探索畫面：動物用原始像素大小顯示（遠處的灰熊因此比較小），背景是當下的地形。目擊時有走路動畫的動物（雄鹿、母鹿、駝鹿、遠距灰熊與陌生灰狼）播走路。
+- `art.json` 的動物條目：`sheet`＋`rows` 是 48×32 的 spritesheet（`frame`／`frames` 可以覆寫格子大小與格數），`single` 是單張，`poses` 是動作的單張圖，`strips` 是動作的橫向長條動畫 `{sheet, frame, frames}`；`move` 沒有對應時用 `walk`。
 - 狩獵畫面：左邊是狼（觀察、潛近 = 潛近姿勢；追擊 = 走路動畫；撲抓、搏鬥 = 撲擊），右邊是獵物（追擊時播跑動），統一縮到 40 像素高。
 - 進食畫面：狼的進食姿勢。
 - 一生回顧：灰狼「倒下」那一列的最後一格。

@@ -39,12 +39,17 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 		if pose != null:
 			icon.show_static(pose)
 			return true
+	# 動作的橫向長條動畫（自訂格子大小）；move 沒有對應時用 walk
+	var strips: Dictionary = entry.get("strips", {})
+	var strip_key: String = action if strips.has(action) else ("walk" if action == "move" and strips.has("walk") else "")
+	if strip_key != "" and _setup_strip(icon, strips[strip_key]):
+		return true
 	if entry.has("sheet"):
 		var tex := texture(str(entry["sheet"]))
 		if tex == null:
 			return false
 		var rows: Dictionary = entry.get("rows", {})
-		icon.setup(tex, frame_size(), int(rows.get(action, rows.get("idle", 0))), 4, 6.0)
+		icon.setup(tex, _entry_frame(entry), int(rows.get(action, rows.get("idle", 0))), int(entry.get("frames", 4)), 6.0)
 		return true
 	if entry.has("single"):
 		var single := texture(str(entry["single"]))
@@ -53,6 +58,22 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 		icon.show_static(single)
 		return true
 	return false
+
+static func _entry_frame(entry: Dictionary) -> Vector2i:
+	if entry.has("frame"):
+		return Vector2i(int(entry["frame"][0]), int(entry["frame"][1]))
+	return frame_size()
+
+static func _setup_strip(icon: AnimatedIcon, strip: Dictionary) -> bool:
+	var tex := texture(str(strip.get("sheet", "")))
+	if tex == null:
+		return false
+	icon.setup(tex, _entry_frame(strip), 0, int(strip.get("frames", 4)), float(strip.get("fps", 5.0)))
+	return true
+
+# 事件圖（art.json 的 events）；沒有對應的圖回傳 null。
+static func event_image(key: String) -> Texture2D:
+	return texture(str(_cfg().get("events", {}).get(key, "")))
 
 # 主角灰狼：idle／walk／howl／down 是 spritesheet 的列。stage：""（次成年）、"adult"、"elder"。
 static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0, stage: String = "") -> bool:

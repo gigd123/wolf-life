@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
-const STATUS_ICON_KINDS := ["injury", "burn", "poison", "hunger", "cold"]
+const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
@@ -838,8 +838,10 @@ func _refresh() -> void:
 			wolf_portrait.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 	var burned: bool = w.injury != Wolf.Injury.NONE and w.injury_source == "fire"
-	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE and not burned
+	var frostbitten: bool = w.injury != Wolf.Injury.NONE and w.injury_source == "blizzard"
+	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE and not burned and not frostbitten
 	status_icons["burn"].visible = burned
+	status_icons["frostbite"].visible = frostbitten
 	status_icons["poison"].visible = w.poison_days_remaining > 0
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
@@ -1183,7 +1185,7 @@ func _show_discovery_sprite(d: Dictionary) -> void:
 	var kind: String = d.get("kind", "")
 	var source_kind: String = d.get("source_kind", "")
 	if kind == "clue" and d.get("clue", "") == "sight" and source_kind == "prey":
-		_set_creature(encounter_sprite, d["source"], d.get("life_stage", "adult"))
+		_set_creature(encounter_sprite, d["source"], d.get("life_stage", "adult"), "walk")
 		return
 	if kind == "clue" and source_kind == "gather":
 		var item_tex: Texture2D = ArtLibrary.icon("item." + str(d["source"]))
@@ -1371,7 +1373,7 @@ func _process_events() -> void:
 			return
 		"fire_warning":
 			_show_event_message(tr("fire.warning." + ("late" if event.get("late", false) else "early")) \
-				.replace("{origin}", tr("region." + str(event.get("origin", "")))), "white_tailed_deer")
+				.replace("{origin}", tr("region." + str(event.get("origin", "")))), "white_tailed_deer", "fire_sign")
 			return
 		"fire_here":
 			_show_fire_escape(event)
@@ -1380,7 +1382,7 @@ func _process_events() -> void:
 			_show_fire_over(event)
 			return
 		"blizzard_warning":
-			_show_event_message(tr("blizzard.warning." + ("late" if event.get("late", false) else "early")), "caribou")
+			_show_event_message(tr("blizzard.warning." + ("late" if event.get("late", false) else "early")), "caribou", "blizzard_sign")
 			return
 		"blizzard_far":
 			_log(tr("blizzard.far"))
@@ -1429,11 +1431,16 @@ func _process_events() -> void:
 			return
 	_refresh()
 
-func _show_event_message(text: String, sprite_id: String) -> void:
+# image_key：art.json 的 events（例如暴風雪徵兆），有圖就用圖，沒有才用動物。
+func _show_event_message(text: String, sprite_id: String, image_key: String = "") -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	_set_creature(encounter_sprite, sprite_id, "adult")
+	var event_tex: Texture2D = ArtLibrary.event_image(image_key) if image_key != "" else null
+	if event_tex != null:
+		encounter_sprite.show_static(event_tex)
+	else:
+		_set_creature(encounter_sprite, sprite_id, "adult")
 	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("ui.continue"), func():
@@ -1906,7 +1913,7 @@ func _show_distant(encounter: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	_set_creature(encounter_sprite, animal_id, "distant")
+	_set_creature(encounter_sprite, animal_id, "distant", "walk")
 	_set_terrain_bg(encounter_bg, location)
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("encounter.observe"), func():
@@ -2052,7 +2059,7 @@ func _show_ice_feel(ice: Dictionary) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_wolf_pose(encounter_sprite, "walk")
-	encounter_bg.texture = ArtLibrary.terrain_background("river_willow", "winter") # 結冰的河面：一律用冬季版
+	encounter_bg.texture = ArtLibrary.terrain_background("ice", GameTime.current_season()) # 結冰的河面（春季是冰薄版）
 	_clear_children(encounter_buttons_box)
 	var target: String = str(ice["to"])
 	_add_encounter_button(tr("ice.prompt.go").replace("{region}", tr("region." + target)).replace("{n}", str(int(ice["turns"]))), func():
@@ -2070,7 +2077,7 @@ func _show_ice_break(event: Dictionary = {}) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_wolf_pose(encounter_sprite, "walk")
-	encounter_bg.texture = ArtLibrary.terrain_background("river_willow", "winter") # 結冰的河面：一律用冬季版
+	encounter_bg.texture = ArtLibrary.terrain_background("ice", GameTime.current_season()) # 結冰的河面（春季是冰薄版）
 	_clear_children(encounter_buttons_box)
 	for opt in GameState.ice_break_options():
 		var id: String = opt["id"]
@@ -2090,7 +2097,7 @@ func _show_ravens(event: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	_set_creature(encounter_sprite, "raven", "adult")
+	_set_creature(encounter_sprite, "raven", "adult", "circling")
 	encounter_bg.texture = ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("ravens.follow"), func():
@@ -2140,7 +2147,7 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	_log(lines[0])
 	encounter_message.text = "\n".join(lines)
 	encounter_detail.text = ""
-	_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
+	_set_creature(encounter_sprite, "tundra_wolf", "adult", "pair" if GameState.tundra_pair().size() > 1 else "idle")
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("stranger.avoid"), func():
@@ -2186,7 +2193,11 @@ func _show_tundra_mob(d: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	_set_creature(encounter_sprite, "wolverine", "adult", "attack")
+	var mob_tex: Texture2D = ArtLibrary.event_image("wolverine_mobbed")
+	if mob_tex != null:
+		encounter_sprite.show_static(mob_tex)
+	else:
+		_set_creature(encounter_sprite, "wolverine", "adult", "attack")
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("tundra.mob.help"), func():

@@ -140,3 +140,49 @@
 ### 正式美術的優先順序
 
 駝鹿與北美馴鹿最需要正式繪製，牠們是苔原的主角，目前的佔位是由白尾鹿改造而來。其次是苔原的四張區域背景。
+
+## 五、1.6 追加（狼獾、渡鴉、苔原狼、冰面等）
+
+`art_phase1.6_additions.zip`，對應 progress.md「需要補充的美術」（2026-10-02 整理）。一樣是佔位素材，解開後合併進 `assets/art/`，不會覆蓋現有檔案。
+
+### 檔案
+
+| 檔案 | 尺寸 | 用途 | `art.json` 建議 |
+| --- | --- | --- | --- |
+| `sprites/animals/wolverine_sheet.png` | 192×64 | 狼獾：4 欄 × 2 列，列 = 待機、走路 | `animals.wolverine.adult.sheet`，rows `{idle:0, move:1}` |
+| `sprites/animals/wolverine_bite.png`、`wolverine_hurt.png` | 單張 | 狼獾的撲咬、受傷 | `poses.attack`、`poses.hurt` |
+| `sprites/animals/raven_sheet.png` | 96×32 | 渡鴉：2 欄 × 1 列，拍翅（翅膀上、下） | rows `{idle:0}`，2 格循環 |
+| `sprites/animals/ravens_circling.png` | 單張 | 三隻渡鴉在空中盤旋 | 渡鴉事件的整體圖 |
+| `sprites/wolf/wolf_tundra_sheet.png` | 192×128 | 苔原狼：格式同 `wolf_sheet.png`，毛色偏淺、體型約 90% | `animals.tundra_wolf.adult.sheet`，rows 同陌生灰狼 |
+| `sprites/wolf/wolf_tundra_{threaten,bite,dodge,hurt,submit,stalk}.png` | 單張 | 苔原狼的戰鬥姿勢與潛近 | `poses`，鍵名同陌生灰狼（`bite` 對應 `attack`） |
+| `sprites/wolf/wolf_tundra_pair.png` | 單張 | 兩隻苔原狼並排（相遇、圍攻狼獾時用） | 由程式決定 |
+| `backgrounds/terrain/ice.png` | 320×180 | 結冰的河面 | `terrain_backgrounds.ice` |
+| `backgrounds/terrain/ice_thin.png` | 320×180 | 春季冰薄：顏色較深，有裂縫與開口的水面 | `terrain_backgrounds["ice@spring"]` |
+| `icons/status_frostbite.png` | 16×16 | 凍傷 | `icons["status.frostbite"]` |
+| `events/blizzard_sign.png` | 112×56 | 暴風雪徵兆：壓低的雲牆與橫飛的雪 | 事件圖 |
+| `events/fire_sign.png` | 72×64 | 大火徵兆：林後升起的煙柱與火光 | 事件圖 |
+| `events/wolverine_mobbed.png` | 約 150×40 | 兩隻苔原狼包夾狼獾 | 事件圖 |
+
+### 1.5 遺留的走路動畫
+
+這幾種動物原本只有單張圖，而且比 48×32 的格子大，所以做成**橫向長條**：4 格走路循環，每格大小如下。`art.json` 目前的 sheet 只支援全域的 48×32，需要讓程式支援每個條目自訂格子大小（例如加一個 `frame` 欄位）。
+
+| 檔案 | 每格大小 | 備註 |
+| --- | --- | --- |
+| `sprites/animals/deer_buck_walk_strip.png` | 57×61 | 雄鹿 |
+| `sprites/animals/deer_doe_walk_strip.png` | 57×52 | 母鹿 |
+| `sprites/animals/moose_walk_strip.png` | 82×76 | 駝鹿 |
+| `sprites/animals/bear_distant_walk_strip.png` | 47×24 | 遠距灰熊 |
+| `sprites/wolf/wolf_stranger_distant_walk_strip.png` | 50×28 | 遠距的陌生灰狼（沿用原本 `wolf_stranger.png` 的毛色） |
+
+陌生灰狼近距離的走路動畫原本就有：`wolf_stranger_sheet.png` 的第 2 列。
+
+### 佔位做法與限制
+
+- **狼獾**：由灰熊的動畫縮小、改色，加上淺褐色的側帶與蓬鬆的尾巴。
+- **渡鴉**：手繪的 2 格拍翅。
+- **苔原狼**：由主角灰狼改色（偏淺的米灰色）並縮小到約 90%；戰鬥姿勢沿用主角的佔位姿勢。
+- **冰面**：程式繪製，河面以透視的帶狀表現，正式版可以畫得更自然。
+- **走路動畫**：把單張圖的腿部前後錯開做出循環，動作比較生硬。
+
+正式美術的優先順序建議：苔原狼（會和玩家長期互動）→ 狼獾 → 冰面。
