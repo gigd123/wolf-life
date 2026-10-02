@@ -13,7 +13,7 @@ var region_buttons: Dictionary = {}
 # 地圖按鈕的四個位置：依目前所在的大地圖（森林、苔原）換成那張地圖的區域（1.6 第 6 步）。
 var map_slots: Array[Button] = []
 var map_title: Label
-var cross_map_box: HBoxContainer
+var cross_map_box: HFlowContainer
 var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var status_icons: Dictionary = {}
@@ -227,8 +227,8 @@ func _build_ui() -> void:
 		map_grid.add_child(btn)
 		map_slots.append(btn)
 	# 跨地圖的移動（例如森林北部 → 苔原）
-	cross_map_box = HBoxContainer.new()
-	cross_map_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	cross_map_box = HFlowContainer.new()
+	cross_map_box.alignment = FlowContainer.ALIGNMENT_CENTER
 	map_panel.add_child(cross_map_box)
 
 	# 行動按鈕之後會變多，放在自己的捲動區，不會把行動紀錄擠出畫面。
@@ -862,6 +862,16 @@ func _refresh() -> void:
 			.replace("{n}", str(int(link["turns"])))
 		go.pressed.connect(_on_region_button.bind(target))
 		cross_map_box.add_child(go)
+		# 冬春的冰面捷徑：少 1 回合，春季河冰變薄
+		var ice: Dictionary = GameState.ice_shortcut(target)
+		if not ice.is_empty():
+			var ice_btn := Button.new()
+			ice_btn.text = tr("ui.go_map_ice." + ("thin" if float(ice.get("break_chance", {}).get(season, 0.0)) > 0.0 else "solid")) \
+				.replace("{n}", str(int(ice.get("turns", 2))))
+			ice_btn.pressed.connect(func():
+				_on_region_button(target, true)
+			)
+			cross_map_box.add_child(ice_btn)
 
 	for region_id in region_buttons.keys():
 		var btn: Button = region_buttons[region_id]
@@ -928,12 +938,14 @@ func _all_regions() -> Array:
 		list.append_array(GameData.map_regions(map_id))
 	return list
 
-func _on_region_button(region_id: String) -> void:
+func _on_region_button(region_id: String, via_ice: bool = false) -> void:
 	if region_id == GameState.current_region:
 		return
 	for entry in GameState.known_dangers(region_id, GameTime.current_season()):
 		_log(tr("log.danger_warning") + _knowledge_text(entry))
-	GameState.action_move(region_id)
+	if via_ice:
+		_log(tr("log.ice_shortcut"))
+	GameState.action_move(region_id, via_ice)
 
 # --- Actions ---
 
@@ -1353,7 +1365,7 @@ func _process_events() -> void:
 		"whiteout":
 			_log(tr("event.whiteout"))
 		"ice_break":
-			_show_ice_break()
+			_show_ice_break(event)
 			return
 		"ravens":
 			_show_ravens(event)
@@ -1998,8 +2010,8 @@ func _show_blizzard_over(event: Dictionary) -> void:
 	_log(tr("blizzard.over"))
 	_show_card(tr("blizzard.over.title"), body, ArtLibrary.region_background(GameState.current_region, "winter"))
 
-func _show_ice_break() -> void:
-	var text: String = tr("ice.here")
+func _show_ice_break(event: Dictionary = {}) -> void:
+	var text: String = tr("ice.here.shortcut" if event.get("shortcut", false) else "ice.here")
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""

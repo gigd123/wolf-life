@@ -871,3 +871,7 @@ debug.tundra_wolf.meet,苔原狼相遇
 debug.tundra_wolf.howl,苔原狼嚎叫
 debug.tundra_wolf.carcass,苔原狼爭食
 factor.combat.partner,另一隻在旁邊伺機而動
+ui.go_map_ice.solid,冰面捷徑（{n} 回合）
+ui.go_map_ice.thin,冰面捷徑（{n} 回合・冰薄）
+log.ice_shortcut,你沿著結冰的河面走，冰上沒有積雪，走得很快。
+ice.here.shortcut,走到河中央時，腳下的冰發出一聲悶響，裂開了！

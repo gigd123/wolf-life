@@ -502,9 +502,18 @@ func adjacent_regions() -> Array:
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	return region.get("adjacent", [])
 
-func action_move(target_region: String) -> void:
+# 冰面捷徑（跨地圖連接的 ice）：這個季節能不能走（break_chance 有這一季才能走）。
+func ice_shortcut(target_region: String) -> Dictionary:
+	var ice: Dictionary = _link_to(target_region).get("ice", {})
+	if ice.is_empty() or not ice.get("break_chance", {}).has(GameTime.current_season()):
+		return {}
+	return ice
+
+# via_ice：沿著結冰的河面走捷徑（回合較少，春季可能踩破河冰）。
+func action_move(target_region: String, via_ice: bool = false) -> void:
 	_record_action("move")
 	var link := _link_to(target_region)
+	var ice: Dictionary = ice_shortcut(target_region) if via_ice else {}
 	if not adjacent_regions().has(target_region) and link.is_empty():
 		return
 	# 白矇天：看不清方向，可能走到另一個相鄰區域
@@ -527,6 +536,9 @@ func action_move(target_region: String) -> void:
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	if not ice.is_empty():
+		record_decision("move.ice_shortcut")
+		link["turns"] = int(ice.get("turns", link["turns"]))
 	GameTime.advance_turns(int(link["turns"]) if not link.is_empty() else int(costs.get("move_region", 1)))
 	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
 	if lost_from != "":
@@ -553,6 +565,8 @@ func action_move(target_region: String) -> void:
 		_check_blizzard_here()
 		if ice_check:
 			_maybe_ice_break()
+		elif not ice.is_empty() and RNGService.chance(float(ice.get("break_chance", {}).get(GameTime.current_season(), 0.0))):
+			pending_events.append({"type": "ice_break", "shortcut": true})
 	state_changed.emit()
 
 # --- 探索（取代「尋找獵物蹤跡」） ---
