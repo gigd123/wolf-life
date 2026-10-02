@@ -61,10 +61,8 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var m: Dictionary = cfg.get("moves", {}).get(move, {})
 	var factors: Array = []
 	var diff: float = (power(wolf, move) - 40.0 - prey_counter) / float(cfg.get("power_divisor", 130))
-	if diff >= 0.0:
-		factors.append({"key": "factor.stronger", "good": true, "weight": diff})
-	else:
-		factors.append({"key": "factor.weaker", "good": false, "weight": -diff})
+	# 標籤把體型差（difficulty，例如駝鹿）一起算進去，免得對駝鹿也顯示「力量佔優」
+	factors.append(_power_factor(diff - float(state.get("difficulty", 0.0))))
 	var chase_bonus: float = float(state.get("chase_bonus", 0.0))
 	if chase_bonus > 0.0:
 		factors.append({"key": "factor.chase_bonus", "good": true, "weight": chase_bonus})
@@ -142,8 +140,14 @@ static func wolf_power(wolf: Wolf, strength_weight: float = 1.0) -> float:
 static func wolf_defense(wolf: Wolf) -> float:
 	return wolf.effective_skill() + wolf.effective_speed()
 
+# 力量的比較只是顯示用的標籤（成功率照公式）：明顯佔優才寫「力量佔優」，中間是「勢均力敵」（balance.json 的 power_label）。
 static func _power_factor(diff: float) -> Dictionary:
-	return {"key": "factor.stronger" if diff >= 0.0 else "factor.weaker", "good": diff >= 0.0, "weight": absf(diff)}
+	var label: Dictionary = GameData.balance.get("power_label", {})
+	if diff >= float(label.get("stronger", 0.15)):
+		return {"key": "factor.stronger", "good": true, "weight": diff}
+	if diff <= float(label.get("weaker", -0.05)):
+		return {"key": "factor.weaker", "good": false, "weight": -diff}
+	return {"key": "factor.even", "good": diff >= 0.0, "weight": 0.0, "info": true}
 
 # 攻擊命中率：state 帶 next_bonus（閃避後的破綻）、initiative（先手）、tendency_bonus（強攻型）。
 static func attack_chance(wolf: Wolf, opp_power: float, move: String, state: Dictionary) -> Dictionary:

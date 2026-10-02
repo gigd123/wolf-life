@@ -31,6 +31,8 @@
     "mother_chance_spring": 0.4, "mother_direct_mult": 2.0,
     "observe_turns": 1
   },
+  "_power_label_comment": "搏鬥與戰鬥的「力量佔優／勢均力敵／牠很難纏」標籤：力量差（換算後的 diff）≥ stronger 才顯示佔優，≤ weaker 顯示難纏，中間是勢均力敵。只影響顯示，不影響成功率（2026-10-02 使用者同意）。",
+  "power_label": { "stronger": 0.15, "weaker": -0.05 },
   "npc_wolves": {
     "_comment": "具名 NPC 狼（SPEC 1.6「陌生灰狼」，NpcWolf.gd）。能力值的尺度同玩家；開局約 3～4 歲、正值壯年。",
     "stranger_wolf": {
