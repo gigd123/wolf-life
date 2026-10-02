@@ -42,6 +42,9 @@ var terrain: String = "" # 在哪裡打（畫面背景）
 var npc: NpcWolf = null # 對手是具名 NPC 狼時（陌生灰狼）
 var opp_submitted: bool = false # 對手示弱了：之後可以放牠走或追擊
 var desperate: bool = false # 追擊示弱的對手：牠臨死前的反擊特別危險
+# 對手有同伴（苔原狼一對）：每回合 partner_chance 的機率另一隻也插進來咬一口（傷害 × partner_damage_mult）
+var partner_chance: float = 0.0
+var partner_damage_mult: float = 0.6
 
 # 對手是具名 NPC 狼：能力、目前血量都來自牠；雙方都可以示弱。
 func set_npc(p_npc: NpcWolf) -> void:
@@ -137,8 +140,15 @@ func _attack_state(initiative: bool) -> Dictionary:
 func _attack_option(move: String, initiative: bool) -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), move, _attack_state(initiative))
 	var label: String = "combat.option.attack" if initiative else "combat.option." + move
-	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "chance_key": "chance_label.hit", "factors": info["factors"],
-		"injury_risk": FightRules.opponent_hit_chance(wolf, opp_power(), move)}
+	var risk: float = FightRules.opponent_hit_chance(wolf, opp_power(), move)
+	var factors: Array = info["factors"]
+	if partner_chance > 0.0:
+		# 另一隻也可能插進來：被打中的機率 = 1 − 兩下都沒中
+		risk = 1.0 - (1.0 - risk) * (1.0 - partner_chance * risk)
+		factors = factors.duplicate()
+		factors.append({"key": "factor.combat.partner", "good": false, "weight": 0.0, "info": true})
+	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
+		"injury_risk": risk}
 	return _move_trains(opt, move)
 
 func _dodge_option() -> Dictionary:
@@ -267,6 +277,9 @@ func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
 		return
 	if not _opponent_strikes(move, lethal, res) and float(res.get("opp_damage", 0.0)) > 0.0:
 		res["opp_action"] = "hurt"
+	if partner_chance > 0.0 and phase != Phase.DONE and RNGService.chance(partner_chance):
+		res["notes"].append("combat.partner_joins")
+		_opponent_strikes(move, lethal, res, -1.0, partner_damage_mult)
 
 func _do_threaten(opt: Dictionary, res: Dictionary) -> void:
 	res["wolf_pose"] = "threaten"

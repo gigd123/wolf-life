@@ -110,6 +110,9 @@ static func make_animal_sprite(species_id: String, size: Vector2i = Vector2i(48,
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.72, 0.36, 0.18), "pointed", "bushy_low", 0.75, false, false)
 		"grizzly_bear":
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.35, 0.27, 0.18), "round", "stub", 1.6, false, false)
+		"tundra_wolf":
+			# 苔原狼（佔位）：毛色偏淺、體型略小
+			_draw_quadruped(img, cx, ground_y, scale * 0.92, Color(0.72, 0.70, 0.64), "pointed", "bushy_up", 0.95, false, false)
 		"wolverine":
 			# 狼獾（佔位）：深褐、矮壯、圓耳、蓬鬆的短尾
 			_draw_quadruped(img, cx, ground_y, scale, Color(0.24, 0.17, 0.12), "round", "bushy_low", 0.85, false, false)

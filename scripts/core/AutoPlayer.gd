@@ -127,6 +127,8 @@ func _handle_pending() -> void:
 				GameState.resolve_bear_passing(event, "leave")
 			"blizzard_here":
 				_pick_safest(GameState.blizzard_options(), "safe", func(id): GameState.blizzard_choose(id))
+			"tundra_howl":
+				GameState.tundra_howl_reply(style != "assault")
 			"ice_break":
 				_pick_safest(GameState.ice_break_options(), "chance", func(id): GameState.ice_break_choose(id))
 			"ravens":
@@ -139,6 +141,9 @@ func _handle_pending() -> void:
 
 func _explore_once() -> void:
 	var d: Dictionary = GameState.action_explore()
+	if d.get("kind", "") == "tundra_wolves":
+		_meet_tundra()
+		return
 	if d.get("kind", "") != "clue":
 		GameState.clear_discovery()
 		return
@@ -210,6 +215,8 @@ func _scavenger(ev: String) -> void:
 		GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
 	elif ev == "wolverine":
 		play_combat(GameState.start_wolverine_combat())
+	elif ev == "tundra_wolves":
+		play_combat(GameState.start_tundra_combat("carcass"))
 	else:
 		play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
 
@@ -254,6 +261,17 @@ func _meet_stranger() -> void:
 	else:
 		GameState.stranger_avoid()
 
+# 遇上苔原狼：強攻型先跟隨看清楚，牠們不比自己強就挑戰；其他打法避開（不起衝突，關係慢慢變好）。
+func _meet_tundra() -> void:
+	if style != "assault":
+		GameState.tundra_avoid()
+		return
+	var res := GameState.tundra_follow()
+	if not res.get("success", false) or str(res["assessment"]["compare"]) in ["even", "weaker", "much_weaker"]:
+		play_combat(GameState.start_tundra_combat("meet"))
+	else:
+		GameState.tundra_avoid()
+
 func _combat_choice(c: Combat) -> String:
 	var ids: Array = c.options().map(func(o): return o["id"])
 	# 牠示弱了：強攻型血量還夠就追擊，否則放牠走
@@ -265,7 +283,7 @@ func _combat_choice(c: Combat) -> String:
 	var fights: bool = style == "assault" or c.animal_id == "red_fox"
 	if c.phase == Combat.Phase.STANDOFF:
 		if not fights:
-			for y in ["yield", "share", "abandon" if style == "cautious" else "grab", "grab", "abandon"]:
+			for y in ["yield", "guard_together", "share", "abandon" if style == "cautious" else "grab", "grab", "abandon"]:
 				if ids.has(y):
 					return y
 		return "threaten" if c.animal_id == "red_fox" else "attack"

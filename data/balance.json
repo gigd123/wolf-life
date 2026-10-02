@@ -58,6 +58,41 @@
       "heal_per_day": 10,
       "combat": { "damage_per_strength": 0.12, "parts": { "leg": 0.5, "face": 0.3, "shoulder": 0.2 }, "give_up_ratio": 0.15, "threat_resist": 0.5, "can_submit": false, "never_lethal": true, "desperate_hit": 0.25, "desperate_damage": 1.3 },
       "interaction": { "map": "tundra", "feed_chance": 0.1, "return_chance": 0.25, "carcass_loss_mult": 2.0 }
+    },
+    "tundra_wolf": {
+      "_comment": "苔原狼（1.6 第 6e 步）：跟著馴鹿遷徙的一對狼（tundra_wolf 與 tundra_wolf_mate），和玩家同種；比灰狼小一些（能力約 85%，速度略快），比郊狼強很多。之後（Phase 3）依關係值決定能不能配對或加入狼群，1.6 只記錄關係值。",
+      "sex": "male",
+      "start_age": [2.5, 4.0],
+      "start_stats": { "speed": [70, 76], "strength": [60, 66], "skill": [60, 66], "perception": [58, 64], "health_max": [90, 100] },
+      "ages": { "peak_end": 5.0, "elder": 6.5 },
+      "elder_decay_per_season": { "speed": 1.5, "strength": 1.0, "skill": 0.3, "perception": 0.5, "health_max": 1.5 },
+      "old_age_death": { "base": 0.03, "per_year": 0.05 },
+      "other_death_per_season": 0.012,
+      "heal_per_day": 10,
+      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.45, "shoulder": 0.35, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.25, "desperate_hit": 0.2, "desperate_damage": 1.5 },
+      "_interaction_comment": "map：活動的地圖；roam：各季在哪些區域（權重），每天 roam_change_per_day 的機率換地方，換季時一定重選。meet_chance：在牠們所在的區域探索時遇上的機率；howl_night_chance：深夜在牠們所在或相鄰的區域聽到牠們嚎叫的機率；carcass_chance：在牠們所在的區域進食（每段）或回到殘骸時牠們找上門的機率。partner_chance／partner_damage_mult：打起來時另一隻插進來咬一口的機率與傷害倍率。relation：各種互動對關係值的增減，levels 是「敵視／熟悉／友善」的門檻。let_eat_segments：讓牠們先吃會失去的段數。",
+      "interaction": {
+        "map": "tundra",
+        "roam": {
+          "spring": { "tundra_central": 3, "tundra_east": 2 },
+          "summer": { "tundra_north": 1 },
+          "autumn": { "tundra_central": 3, "tundra_east": 2 },
+          "winter": { "tundra_south": 2, "tundra_central": 1, "tundra_east": 1 }
+        },
+        "roam_change_per_day": 0.4,
+        "meet_chance": 0.1, "howl_night_chance": 0.25, "carcass_chance": 0.1,
+        "follow_base": 0.45, "follow_divisor": 150, "submit_damage_mult": 0.6,
+        "partner_chance": 0.2, "partner_damage_mult": 0.6,
+        "let_eat_segments": 2,
+        "relation": { "howl_reply": 1, "avoid": 1, "yield": 1, "let_eat": 2, "guard_together": 1, "fight": -2, "killed": -5,
+          "levels": { "hostile": -3, "familiar": 3, "friendly": 6 } }
+      }
+    },
+    "tundra_wolf_mate": {
+      "_comment": "苔原狼的另一隻（母狼）：其餘設定同 tundra_wolf（base）。",
+      "base": "tundra_wolf",
+      "sex": "female",
+      "start_stats": { "speed": [70, 76], "strength": [56, 62], "skill": [60, 66], "perception": [60, 66], "health_max": [85, 95] }
     }
   },
   "combat": {

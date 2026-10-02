@@ -143,6 +143,15 @@ func _ready() -> void:
 			w_entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
 				.replace("{outcome}", tr("summary.wolverine_outcome." + str(m.get("outcome", "")))))
 		_add_line(box, tr("summary.wolverine").replace("{n}", str(wolverine_meetings.size())).replace("{list}", "、".join(w_entries)))
+	# 和苔原狼的相遇（1.6 第 6e 步）：嚎叫的回應不列入，只列見面的經過
+	var tundra_meetings: Array = log_data.get("tundra_meetings", []).filter(func(m): return str(m.get("kind", "")) != "howl")
+	if not tundra_meetings.is_empty():
+		var t_entries: Array[String] = []
+		for m in tundra_meetings:
+			t_entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
+				.replace("{outcome}", tr("summary.tundra_outcome." + str(m.get("outcome", "")))))
+		_add_line(box, tr("summary.tundra").replace("{n}", str(tundra_meetings.size())).replace("{list}", "、".join(t_entries)) \
+			.replace("{relation}", tr("summary.tundra.relation." + _tundra_relation_key(int(log_data.get("tundra_relation", 0))))))
 	if int(log_data.get("fell_through_ice", 0)) > 0:
 		_add_line(box, tr("summary.fell_through_ice").replace("{n}", str(int(log_data["fell_through_ice"]))))
 
@@ -188,6 +197,16 @@ func _death_bio(log_data: Dictionary) -> String:
 		if tr(key) != key:
 			return tr(key)
 	return tr("death_bio." + cause)
+
+func _tundra_relation_key(r: int) -> String:
+	var levels: Dictionary = NpcWolf.cfg("tundra_wolf").get("interaction", {}).get("relation", {}).get("levels", {})
+	if r <= int(levels.get("hostile", -3)):
+		return "hostile"
+	if r >= int(levels.get("friendly", 6)):
+		return "friendly"
+	if r >= int(levels.get("familiar", 3)):
+		return "familiar"
+	return "wary"
 
 func _region_names(list: Array) -> String:
 	var names: Array[String] = []

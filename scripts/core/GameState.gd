@@ -100,6 +100,8 @@ func new_game(start_den: String) -> void:
 	blizzard_at = -1
 	whiteout_until = -1
 	npcs["wolverine"] = NpcWolf.create("wolverine", "")
+	for id in TUNDRA_WOLF_IDS:
+		npcs[id] = NpcWolf.create(id, "")
 	life_log = {
 		"regions_visited": [start_den],
 		"prey_count": {},
@@ -114,6 +116,7 @@ func new_game(start_den: String) -> void:
 	GameTime.setup(start_season, "normal")
 	_connect_time_signals()
 	_maybe_schedule_blizzard()
+	_roam_tundra_wolves(true)
 	_snapshot_sleep_stats()
 	_queue_season_card()
 	SaveSystem.save_game()
@@ -158,6 +161,7 @@ func _on_day_changed(_day: int) -> void:
 	_queue_day_summary(before_injury, before_injury_stat, before_poison)
 	_recover_region_depletion()
 	_heal_npcs()
+	_roam_tundra_wolves()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
 
@@ -172,6 +176,7 @@ func _on_season_changed(_season_index: int) -> void:
 		_age_npcs()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
+		_roam_tundra_wolves(true)
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -575,6 +580,10 @@ func action_explore() -> Dictionary:
 	# 暴風雪中什麼都看不見，也不能狩獵
 	if blizzard_here():
 		current_discovery = {"kind": "nothing", "blizzard": true, "location": _random_terrain(current_region)}
+		state_changed.emit()
+		return current_discovery
+	# 苔原狼：在牠們這陣子待的區域探索，有機會遇上
+	if _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -1404,6 +1413,8 @@ func feed_once() -> Dictionary:
 			event = "bear"
 		elif RNGService.chance(float(chances["wolverine"])):
 			event = "wolverine"
+		elif _tundra_wolves_here() and RNGService.chance(float(_tundra_cfg().get("carcass_chance", 0.1))):
+			event = "tundra_wolves"
 		elif RNGService.chance(float(chances["fox"])):
 			event = "fox"
 	else:
@@ -1489,6 +1500,8 @@ func action_return_to_carcass() -> Dictionary:
 	elif _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")) \
 			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25))):
 		event = "wolverine"
+	elif _tundra_wolves_here() and RNGService.chance(float(_tundra_cfg().get("carcass_chance", 0.1))):
+		event = "tundra_wolves"
 	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
 		event = "fox"
 	state_changed.emit()
@@ -1551,6 +1564,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 			match animal_id:
 				"grizzly_bear": c.yields = ["grab", "abandon"]
 				"wolverine": c.yields = ["share", "abandon"]
+				"tundra_wolf": c.yields = ["let_eat", "guard_together", "abandon"]
 				_: c.yields = ["ignore"]
 		_:
 			c.yields = ["yield"]
@@ -1573,8 +1587,10 @@ func finish_combat(c: Combat) -> Dictionary:
 	if c.npc != null:
 		c.npc.health = c.opp_hp
 	if c.outcome == "died":
-		if c.npc != null:
+		if c.npc != null and c.npc.id == "stranger_wolf":
 			_stranger_record("drive_off" if c.context == "territory" else "meet", "died", c.damage_taken, c.opp_hp_max - c.opp_hp)
+		elif c.npc != null and TUNDRA_WOLF_IDS.has(c.npc.id):
+			_tundra_record(c.context, "died", c.damage_taken, c.opp_hp_max - c.opp_hp)
 		die_in_combat(c.animal_id, c.life_stage, c.context)
 		return result
 	Growth.apply_practice(wolf, c.practice)
@@ -1601,6 +1617,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		_after_stranger_combat(c)
 	elif c.npc != null and c.npc.id == "wolverine":
 		_wolverine_record(c)
+	elif c.npc != null and TUNDRA_WOLF_IDS.has(c.npc.id):
+		_after_tundra_combat(c)
 	GameTime.advance_turns(1)
 	wolf.clamp_stats()
 	_check_death()
@@ -1620,6 +1638,14 @@ func _carcass_after_combat(c: Combat) -> void:
 				if int(current_feeding["segments_left"]) <= 0:
 					current_feeding = {}
 			life_log["shared_with_wolverine"] = int(life_log.get("shared_with_wolverine", 0)) + 1
+			return
+		"let_eat", "guard_together":
+			# 讓苔原狼先吃（失去 2 段）或保持距離一起守著（牠們吃掉 1 段），之後可以繼續吃
+			var lost: int = int(_tundra_cfg().get("let_eat_segments", 2)) if c.outcome == "let_eat" else 1
+			if not current_feeding.is_empty():
+				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - lost
+				if int(current_feeding["segments_left"]) <= 0:
+					current_feeding = {}
 			return
 		"grab":
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
@@ -1973,7 +1999,9 @@ func _on_npc_died(npc: NpcWolf) -> void:
 
 # 和牠相比：依力量值差與牠的年紀，給出「牠比你強壯得多／不相上下／已經不如你」這類判斷。
 func stranger_assessment() -> Dictionary:
-	var npc := stranger()
+	return npc_assessment(stranger())
+
+func npc_assessment(npc: NpcWolf) -> Dictionary:
 	var diff: float = npc.power() - FightRules.wolf_power(wolf)
 	var key: String = "even"
 	if diff > 25.0:
@@ -2086,6 +2114,7 @@ func _update_tundra_events() -> void:
 	_update_blizzard()
 	_update_whiteout()
 	_maybe_ravens()
+	_maybe_tundra_howl()
 
 # 冬季開始時擲一次：這個冬天會不會有暴風雪，會的話排定在冬季中的某個時段（留下風雪持續的天數）。
 func _maybe_schedule_blizzard() -> void:
@@ -2455,6 +2484,160 @@ func _wolverine_record(c: Combat) -> void:
 	list.append(entry)
 	life_log["wolverine_meetings"] = list
 
+# --- 苔原狼（1.6 第 6e 步；一對跟著馴鹿遷徙的狼，沿用 NpcWolf） ---
+
+const TUNDRA_WOLF_IDS := ["tundra_wolf", "tundra_wolf_mate"]
+
+func _tundra_cfg() -> Dictionary:
+	return NpcWolf.cfg("tundra_wolf").get("interaction", {})
+
+# 還活著的苔原狼（0～2 隻），第一隻是帶頭的那隻。
+func tundra_pair() -> Array:
+	var list: Array = []
+	for id in TUNDRA_WOLF_IDS:
+		var npc: NpcWolf = npcs.get(id, null)
+		if npc != null and npc.alive:
+			list.append(npc)
+	return list
+
+func tundra_leader() -> NpcWolf:
+	var pair := tundra_pair()
+	return pair[0] if not pair.is_empty() else null
+
+# 牠們現在在哪一區（死光了是空字串）。
+func tundra_wolves_region() -> String:
+	var leader := tundra_leader()
+	return leader.territory if leader != null else ""
+
+func _tundra_wolves_here() -> bool:
+	return tundra_wolves_region() != "" and tundra_wolves_region() == current_region
+
+# 依季節選牠們這陣子待的區域（兩隻一起行動）。
+func _roam_tundra_wolves(force: bool = false) -> void:
+	if tundra_pair().is_empty():
+		return
+	if not force and not RNGService.chance(float(_tundra_cfg().get("roam_change_per_day", 0.4))):
+		return
+	var weights: Dictionary = _tundra_cfg().get("roam", {}).get(GameTime.current_season(), {})
+	if weights.is_empty():
+		return
+	var region: String = RNGService.weighted_pick(weights)
+	for npc in tundra_pair():
+		npc.territory = region
+
+func tundra_relation() -> int:
+	var leader := tundra_leader()
+	return leader.relation if leader != null else 0
+
+# 關係的程度：hostile（敵視）、wary（戒備）、familiar（熟悉）、friendly（友善）。
+func tundra_relation_key() -> String:
+	var levels: Dictionary = _tundra_cfg().get("relation", {}).get("levels", {})
+	var r := tundra_relation()
+	if r <= int(levels.get("hostile", -3)):
+		return "hostile"
+	if r >= int(levels.get("friendly", 6)):
+		return "friendly"
+	if r >= int(levels.get("familiar", 3)):
+		return "familiar"
+	return "wary"
+
+func _tundra_relation_add(kind: String) -> void:
+	var delta: int = int(_tundra_cfg().get("relation", {}).get(kind, 0))
+	for npc in tundra_pair():
+		npc.relation += delta
+
+func _tundra_record(kind: String, outcome: String, wolf_damage: float = 0.0, npc_damage: float = 0.0) -> void:
+	var entry := {"age": snapped(wolf.age_years, 0.1), "kind": kind, "outcome": outcome, "region": current_region,
+		"wolf_damage": snapped(wolf_damage, 1.0), "npc_damage": snapped(npc_damage, 1.0), "pair": tundra_pair().size()}
+	for npc in tundra_pair():
+		npc.add_record(entry.duplicate())
+	var list: Array = life_log.get("tundra_meetings", [])
+	list.append(entry)
+	life_log["tundra_meetings"] = list
+	life_log["tundra_relation"] = tundra_relation()
+
+# 深夜聽到牠們的嚎叫：牠們在同一區或相鄰的區域時。
+func _maybe_tundra_howl() -> void:
+	if GameTime.current_period() != "night" or tundra_pair().is_empty():
+		return
+	if not _tundra_wolves_here() and not adjacent_regions().has(tundra_wolves_region()):
+		return
+	if blizzard_active() or not _can_trigger_event():
+		return
+	if RNGService.chance(float(_tundra_cfg().get("howl_night_chance", 0.3))):
+		_queue_event({"type": "tundra_howl", "region": tundra_wolves_region()})
+
+# 回應嚎叫（關係 +）或保持安靜。
+func tundra_howl_reply(reply: bool) -> void:
+	record_decision("tundra.howl." + ("reply" if reply else "silent"))
+	if reply:
+		_tundra_relation_add("howl_reply")
+		_tundra_record("howl", "replied")
+	state_changed.emit()
+
+# 探索時在牠們所在的區域遇上。回傳 true 表示這次探索的發現換成遇上苔原狼。
+func _maybe_meet_tundra_wolves() -> bool:
+	if not _tundra_wolves_here() or blizzard_here():
+		return false
+	if not RNGService.chance(float(_tundra_cfg().get("meet_chance", 0.1))):
+		return false
+	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf")}
+	identify("tundra_wolf")
+	return true
+
+# 避開：不起衝突的相遇，牠們會慢慢熟悉你。
+func tundra_avoid() -> void:
+	record_decision("avoid")
+	_tundra_relation_add("avoid")
+	_tundra_record("meet", "avoided")
+	clear_discovery()
+	state_changed.emit()
+
+func tundra_follow_chance() -> float:
+	var cfg := _tundra_cfg()
+	return HuntSystem.clamp_chance(float(cfg.get("follow_base", 0.45)) + (wolf.effective_perception() - tundra_leader().perception) / float(cfg.get("follow_divisor", 150)))
+
+# 跟隨：看清楚牠們和你相比的強弱；失敗被牠們發現，帶頭的那隻轉身對峙。
+func tundra_follow() -> Dictionary:
+	GameTime.advance_turns(1)
+	var ok: bool = RNGService.chance(tundra_follow_chance())
+	Growth.learn_flat(wolf, "perception", "track_perception", 1.0 if ok else float(Growth.cfg().get("fail_mult", 0.25)))
+	if not ok:
+		return {"success": false}
+	var a := npc_assessment(tundra_leader())
+	_tundra_record("follow", "assessed")
+	state_changed.emit()
+	return {"success": true, "assessment": a}
+
+# 和牠們對峙或戰鬥。context：meet（遇上、挑戰）、carcass（牠們來爭你的獵物）。
+func start_tundra_combat(context: String) -> Combat:
+	identify("tundra_wolf")
+	clear_discovery()
+	var c := start_combat("tundra_wolf", "adult", context)
+	c.set_npc(tundra_leader())
+	if tundra_pair().size() > 1:
+		c.partner_chance = float(_tundra_cfg().get("partner_chance", 0.2))
+		c.partner_damage_mult = float(_tundra_cfg().get("partner_damage_mult", 0.6))
+	return c
+
+# 戰鬥後：關係值、紀錄、生死。威嚇或動手過就是起了衝突（關係 −）；讓牠們先吃、一起守著屍體、退開則是不起衝突。
+func _after_tundra_combat(c: Combat) -> void:
+	var leader: NpcWolf = c.npc
+	leader.health = c.opp_hp
+	var fought: bool = c.decisions.any(func(d): return d in ["combat.threaten", "combat.attack", "combat.bite", "combat.lunge", "combat.pursue"])
+	_tundra_record(c.context, c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
+	if fought:
+		_tundra_relation_add("fight")
+	elif c.outcome in ["let_eat", "guard_together", "yield"]:
+		_tundra_relation_add(c.outcome)
+	if c.outcome == "killed":
+		_tundra_relation_add("killed")
+	# 先記下關係值（兩隻都死了之後就讀不到了）
+	life_log["tundra_relation"] = tundra_relation()
+	if c.outcome == "killed":
+		leader.die("killed_by_player")
+		_on_npc_died(leader)
+
 # 回家的下一步（自動遊玩用）：往 target 走的相鄰區域（含跨地圖連接），已經在 target 或走不到就回傳空字串。
 func next_step_toward(target: String) -> String:
 	if current_region == target:
@@ -2611,6 +2794,20 @@ func debug_ravens() -> void:
 func debug_ice_break() -> void:
 	pending_events.append({"type": "ice_break"})
 
+# 苔原狼（除錯）：把牠們移到目前的區域。meet 直接遇上；howl 深夜的嚎叫。
+func debug_tundra_wolves_here() -> void:
+	for npc in tundra_pair():
+		npc.territory = current_region
+
+func debug_tundra_meet() -> Dictionary:
+	debug_tundra_wolves_here()
+	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf")}
+	identify("tundra_wolf")
+	return current_discovery
+
+func debug_tundra_howl() -> void:
+	pending_events.append({"type": "tundra_howl", "region": tundra_wolves_region()})
+
 # 狼獾搶食（除錯）：先在這裡擺一具馴鹿讓狼吃。
 func debug_wolverine_feed() -> void:
 	start_feeding("caribou", "adult", _random_terrain(current_region))
@@ -2710,6 +2907,9 @@ func load_from_dict(data: Dictionary) -> void:
 		npcs["stranger_wolf"] = NpcWolf.create("stranger_wolf", stranger_territory)
 	if not npcs.has("wolverine"):
 		npcs["wolverine"] = NpcWolf.create("wolverine", "")
+	for id in TUNDRA_WOLF_IDS:
+		if not npcs.has(id):
+			npcs[id] = NpcWolf.create(id, "")
 	blizzard = data.get("blizzard", {})
 	blizzard_at = int(data.get("blizzard_at", -1))
 	whiteout_until = int(data.get("whiteout_until", -1))

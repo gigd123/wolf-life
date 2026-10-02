@@ -20,11 +20,19 @@ var death_cause: String = ""
 var territory: String = "" # 牠占據的那一帶（區域 id）；被玩家趕走後會換地方
 var dominance: int = 0 # 玩家輸給牠或向牠示弱的次數：越高越常把玩家趕走
 var yielded_to_player: bool = false # 輸給玩家、示弱離開後，就不再驅趕玩家
+var relation: int = 0 # 對玩家的關係值（苔原狼）：越高越熟悉、友善，負的是敵視；Phase 3 用來決定能不能配對或加入狼群
 # 每次相遇：{age（玩家年齡）, npc_age, kind（meet／drive_off／follow）, outcome, wolf_damage, npc_damage, region}
 var record: Array = []
 
+# base：沿用另一個 NPC 的設定，只覆寫有寫的欄位（例如苔原狼的另一隻）。
 static func cfg(npc_id: String) -> Dictionary:
-	return GameData.balance.get("npc_wolves", {}).get(npc_id, {})
+	var table: Dictionary = GameData.balance.get("npc_wolves", {})
+	var c: Dictionary = table.get(npc_id, {})
+	if c.has("base"):
+		var merged: Dictionary = table.get(str(c["base"]), {}).duplicate()
+		merged.merge(c, true)
+		return merged
+	return c
 
 # 開局時建立：年齡與能力在設定的範圍內隨機。
 static func create(npc_id: String, territory_region: String) -> NpcWolf:
@@ -100,7 +108,7 @@ func add_record(entry: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {"id": id, "sex": sex, "age_years": age_years, "speed": speed, "strength": strength, "skill": skill,
 		"perception": perception, "health_max": health_max, "health": health, "alive": alive, "death_cause": death_cause,
-		"territory": territory, "dominance": dominance, "yielded_to_player": yielded_to_player, "record": record}
+		"territory": territory, "dominance": dominance, "yielded_to_player": yielded_to_player, "relation": relation, "record": record}
 
 static func from_dict(data: Dictionary) -> NpcWolf:
 	var n := NpcWolf.new()
@@ -110,6 +118,7 @@ static func from_dict(data: Dictionary) -> NpcWolf:
 		n.set(key, float(data.get(key, n.get(key))))
 	n.alive = bool(data.get("alive", true))
 	n.dominance = int(data.get("dominance", 0))
+	n.relation = int(data.get("relation", 0))
 	n.yielded_to_player = bool(data.get("yielded_to_player", false))
 	n.record = data.get("record", [])
 	return n
