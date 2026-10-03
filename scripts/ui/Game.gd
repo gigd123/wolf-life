@@ -1922,7 +1922,7 @@ func _show_find_result(result: Dictionary) -> void:
 	var life_stage: String = result["life_stage"]
 	var prey_dir: int = int(result.get("prey_dir", -1))
 	var wind_text: String = tr("factor.wind." + str(result.get("wind", "crosswind")))
-	_log(tr("log.find_tracks.success") + " " + tr("animal." + animal_id) + "（" + wind_text + "）")
+	_log(tr("log.find_tracks.success") + "：" + tr("animal." + animal_id) + "（" + wind_text + "）")
 	encounter_message.text = tr("log.find_tracks.success") + "\n" + tr("animal." + animal_id) + "　" + wind_text
 	encounter_detail.text = ""
 	_set_creature(encounter_sprite, animal_id, life_stage)
@@ -2121,7 +2121,7 @@ func _resolve_stage(stage_result: Dictionary) -> void:
 		hunt_notes.clear()
 		for key in stage_result["prey_state"]:
 			hunt_notes.append(tr(key))
-		_log(tr("hunt.observe.success") + " " + "　".join(hunt_notes))
+		_log(tr("hunt.observe.success") + "　".join(hunt_notes))
 		stage_result["text_key"] = ""
 	if float(stage_result.get("damage", 0.0)) > 0.0:
 		_log(tr("log.counter_damage").replace("{n}", str(int(stage_result["damage"]))))

@@ -5,10 +5,10 @@ menu.continue,繼續遊戲
 menu.quit,離開遊戲
 menu.main_menu,回到主選單
 den.select_title,選擇你的第一個巢穴
-den.forest_east.desc,靠近山地 地形起伏 交通方便
-den.forest_north.desc,靠近苔原 冬季鹿群聚集 較寒冷
-den.forest_south.desc,林緣開闊 野兔狐狸多
-den.forest_west.desc,最深的老林 食物豐富但灰熊出沒
+den.forest_east.desc,靠近山地，地形起伏，交通方便
+den.forest_north.desc,靠近苔原，冬季鹿群聚集，較寒冷
+den.forest_south.desc,林緣開闊，野兔、狐狸多
+den.forest_west.desc,最深的老林，食物豐富，但灰熊出沒
 region.forest_east,森林東部
 region.forest_north,森林北部
 region.forest_south,森林南部
@@ -63,7 +63,7 @@ item.blueberries,藍莓
 item.mushroom,蘑菇
 item.beehive,蜂巢
 log.starving,飢餓正在侵蝕你的身體
-log.hungry,長期吃不飽 身體漸漸變差
+log.hungry,長期吃不飽，身體漸漸變差。
 log.season_changed,季節變換了
 log.moved,你移動到了{region}
 log.poisoned,你中毒了
@@ -72,14 +72,14 @@ log.find_tracks.success,發現了蹤跡
 log.gather.success,採集到了{item}
 log.gather.fail,這裡沒有可採集的東西
 log.sleep_spot.normal,找到了可以睡覺的地方
-log.sleep_spot.good,找到了一處好睡處 之後在這裡不用再找
+log.sleep_spot.good,你找到了一處好睡處，之後在這裡不用再找。
 log.sleep_spot.fail,沒有找到適合睡覺的地方
-log.short_rest,你稍作休息 恢復了一些體力
+log.short_rest,你稍作休息，恢復了一些體力。
 log.rest_until,你休息到了{period}
 log.slept.den,你在巢穴裡安穩地睡了一覺
 log.slept.good,你在好睡處睡得很好
 log.slept.normal,你在找到的地方睡了一覺
-log.slept.rough,你勉強睡了一覺 睡得不太好
+log.slept.rough,你勉強睡了一覺，睡得不太好。
 log.sleep_interrupted,夜裡你被驚醒了
 sleep_spot.den,巢穴
 sleep_spot.good,好睡處
@@ -104,11 +104,11 @@ hunt.stage.stalk,潛近階段：小心接近{animal}
 hunt.stage.chase,追擊階段：{animal}察覺到你了
 hunt.stage.fight,搏鬥階段：你撲向了{animal}
 hunt.stalk.success,你悄悄縮短了距離
-hunt.stalk.fail,獵物發現了你 逃走了
+hunt.stalk.fail,獵物發現了你，逃走了。
 hunt.chase.success,你追上了獵物
 hunt.chase.fail,獵物甩開了你
 hunt.fight.success,你成功制伏了獵物
-hunt.fight.counter,獵物反擊 你受了傷
+hunt.fight.counter,獵物反擊，你受了傷。
 hunt.result.success,你獵到了{animal}。
 hunt.result.fail,這次狩獵失敗了。
 hunt.stage.observe,觀察階段：遠處有一隻{animal}
@@ -135,11 +135,11 @@ hunt.option.dodge,閃避等待
 hunt.pounce.success,你一撲就抓住了{animal}
 hunt.pounce.fail,{animal}閃開了
 hunt.observe.success,你仔細觀察了牠：
-hunt.observe.fail,{animal}好像察覺到什麼 變得更警覺了
+hunt.observe.fail,{animal}好像察覺到什麼，變得更警覺了。
 hunt.chase.catch,你追上並制伏了{animal}
 hunt.fight.escape,{animal}掙脫逃走了
 hunt.fight.hit_bite_leg,你咬住了{animal}的後腿
-hunt.fight.hit_dodge,你閃過攻擊 看到了破綻
+hunt.fight.hit_dodge,你閃過攻擊，看到了破綻。
 hunt.fight.miss,這一擊沒有得手
 hunt.fight.wounds,牠受了傷（{n}）
 factor.terrain.stream,溪流旁
@@ -160,12 +160,12 @@ prey_state.alert,牠非常警覺
 prey_state.calm,牠在專心吃東西
 prey_state.strong,精力充沛
 prey_state.tired,看起來有點累
-prey_state.dangerous,鹿角很大 正面攻擊很危險
+prey_state.dangerous,鹿角很大，正面攻擊很危險
 prey_name.white_tailed_deer.adult,白尾鹿母鹿
 prey_name.white_tailed_deer.buck,白尾鹿雄鹿
 prey_name.white_tailed_deer.juvenile,小鹿
 prey_name.grizzly_bear.juvenile,幼熊
-explore.fled,{animal}往{location}逃了 留下新鮮的足跡
+explore.fled,{animal}往{location}逃了，留下新鮮的足跡。
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
 debug.event.bear_distant,灰熊遠距目擊
@@ -188,25 +188,25 @@ stats.after_deer,　{days} 天：{actions}
 ui.continue,繼續
 weather.storm,暴雨
 weather.after_rain,雨停
-event.storm,下起了暴雨 雨聲蓋過了一切 氣味和舊足跡都被沖散了
-event.rain_stopped,雨停了 泥地上的新足跡特別清楚
+event.storm,下起了暴雨。雨聲蓋過了一切，氣味和舊足跡都被沖散了。
+event.rain_stopped,雨停了。泥地上的新足跡特別清楚。
 event.howl.1,深夜，遠方傳來狼嚎。這附近似乎還有別的狼。
 event.howl.2,深夜，狼嚎又從{region}的方向傳來。
 event.howl.3,深夜，又是那熟悉的狼嚎。{region}是那隻狼的範圍。
 event.driven_off,一隻黑狼從林間走了出來，對你齜牙低吼，把你趕出了牠的範圍。你被迫逃到{region}。
-event.prey_nearby,你伏低休息時 一隻{animal}慢慢靠近 沒有發現你
+event.prey_nearby,你伏低休息時，一隻{animal}慢慢靠近，沒有發現你。
 event.bear_passing,一頭灰熊從你休息的地方旁邊經過
 event.bear_passing.hide,保持不動躲藏（{n}%）
 event.bear_passing.leave,立刻離開（失去這次休息）
-event.bear_passing.hidden,你一動也不動 灰熊沒有發現你 慢慢走遠了
-event.bear_passing.spotted,灰熊停下腳步 轉頭看見了你
-event.bear_passing.left,你悄悄離開 這一覺算是白睡了
+event.bear_passing.hidden,你一動也不動。灰熊沒有發現你，慢慢走遠了。
+event.bear_passing.spotted,灰熊停下腳步，轉頭看見了你。
+event.bear_passing.left,你悄悄離開，這一覺算是白睡了。
 knowledge.territory.1,似乎有其他狼在附近
 knowledge.territory.2,常聽見狼嚎從{region}傳來
-knowledge.territory.3,{region}是其他狼的範圍 待太久會被趕走
+knowledge.territory.3,{region}是其他狼的範圍，待太久會被趕走
 factor.storm_cover,雨聲掩護
 factor.storm_scent,雨水沖散氣味
-reason.storm_scent,雨水沖散了氣味 你跟丟了
+reason.storm_scent,雨水沖散了氣味，你跟丟了。
 action.return_to_carcass,回到獵物殘骸
 ui.knowledge,知識
 ui.log_history,紀錄
@@ -229,75 +229,75 @@ knowledge.option.drive_logs,逼向倒木區
 knowledge.option.flank,切側翼
 knowledge.option.follow,長距離跟隨
 log.knowledge_learned,你學到：
-log.identified,你認出來了 那是{animal}
+log.identified,你認出來了，那是{animal}。
 log.danger_warning,你記得：
-explore.known,{period}的{location} 你知道{animal}會來
+explore.known,{period}的{location}，你知道{animal}會來
 animal_unknown.grizzly_bear,未知的大型掠食者
 animal_unknown.stranger_wolf,陌生的狼
 factor.knowledge,你知道這件事
 ui.avoid,避開
-log.avoided,你避開了線索的方向 這個時段在這一帶比較不會撞見牠
+log.avoided,你避開了線索的方向，這個時段在這一帶比較不會撞見牠。
 knowledge.stranger,{region}有{animal}的蹤跡
-explore.threat,{location} {clue}
+explore.threat,{location}，{clue}
 explore.threat_fresh,（還很新）
 explore.threat_stale,（已經有點舊了）
 explore.threat_track_warning,追蹤可能會遇上牠
 clue.grizzly_bear.claw.unknown,樹上有一組巨大銳利的爪痕
-clue.grizzly_bear.claw.known,灰熊留下的爪痕 附近可能是牠的活動範圍
+clue.grizzly_bear.claw.known,灰熊留下的爪痕，附近可能是牠的活動範圍
 clue.grizzly_bear.danger_scent.unknown,一股陌生而危險的氣味
 clue.grizzly_bear.danger_scent.known,灰熊的氣味
 clue.grizzly_bear.flipped_log.unknown,一截沉重的倒木被翻了過來
 clue.grizzly_bear.flipped_log.known,灰熊翻找食物的痕跡
 clue.grizzly_bear.sight.unknown,遠處有一頭陌生的大型動物在翻找食物
-clue.grizzly_bear.sight.known,遠處有一頭灰熊 牠沒有發現你
-clue.stranger_wolf.wolf_track.unknown,一個和自己體型相近 但不是家人的腳印
+clue.grizzly_bear.sight.known,遠處有一頭灰熊，牠沒有發現你
+clue.stranger_wolf.wolf_track.unknown,一個和自己體型相近、但不是家人的腳印
 clue.stranger_wolf.wolf_track.known,黑狼的腳印
-clue.stranger_wolf.similar_scent.unknown,和家人相似 但完全陌生的氣味
+clue.stranger_wolf.similar_scent.unknown,和家人相似、但完全陌生的氣味
 clue.stranger_wolf.similar_scent.known,黑狼的氣味
 clue.stranger_wolf.sight.unknown,遠處有一隻和你很像的狼走過
 clue.stranger_wolf.sight.known,遠處有那隻黑狼
 animal.stranger_wolf,黑狼
 encounter.far_away,遠處
-encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食物 牠沒有發現你
-encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過 牠沒有注意到你
+encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食物，牠沒有發現你。
+encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過，牠沒有注意到你。
 encounter.observe,觀察（1 回合）
-encounter.observed.grizzly_bear,你屏住氣息看清楚了 那是一頭灰熊 巨大的爪子和肩上的隆起讓人不敢靠近
+encounter.observed.grizzly_bear,你屏住氣息看清楚了。那是一頭灰熊，巨大的爪子和肩上的隆起讓人不敢靠近。
 encounter.observed.stranger_wolf,你遠遠看著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
 encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
 encounter.direct,{animal}沒有示威，直接撲了過來。
-scavenger.bear_unknown,遠處出現一頭陌生的大型動物 正朝你的獵物走來
+scavenger.bear_unknown,遠處出現一頭陌生的大型動物，正朝你的獵物走來。
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
 feeding.eat,吃一段（+{v}）
 feeding.leave,離開（留下殘骸）
-log.feeding_ate,你吃了一段 飽食度 +{v}
+log.feeding_ate,你吃了一段，飽食度 +{v}。
 log.feeding_done,你把獵物吃完了
-log.feeding_left,你離開了 剩下的殘骸還留在原地
-log.carcass_gone,殘骸已經不見了 可能被搶走或腐壞了
+log.feeding_left,你離開了，剩下的殘骸還留在原地。
+log.carcass_gone,殘骸已經不見了，可能被搶走或腐壞了。
 scavenger.bear.arrive,一頭灰熊被氣味吸引過來了
-scavenger.bear.returning,你回來時 一頭灰熊正在吃你的獵物
+scavenger.bear.returning,你回來時，一頭灰熊正在吃你的獵物。
 scavenger.fox.arrive,一隻狐狸偷偷靠近想分一口
-scavenger.fox.returning,你回來時 一隻狐狸正在偷吃
+scavenger.fox.returning,你回來時，一隻狐狸正在偷吃。
 scavenger.grab,叼走一部分
 scavenger.abandon,直接放棄
-scavenger.result.grab,你叼走一大塊肉 迅速撤退
-scavenger.result.abandon,你放棄了獵物 退到安全的地方
+scavenger.result.grab,你叼走一大塊肉，迅速撤退。
+scavenger.result.abandon,你放棄了獵物，退到安全的地方。
 explore.injured,受傷的
 hunt.option.search,找出牠
 hunt.option.harass,騷擾驅趕
 hunt.option.attack_standing,直接攻擊
-hunt.chase.continue,{animal}拉開了距離 但還在視線內
+hunt.chase.continue,{animal}拉開了距離，但還在視線內。
 hunt.chase.round,第 {n} 回合
 hunt.hide.start,{animal}躲了起來
 hunt.hide.found,你找到了躲起來的{animal}
 hunt.hide.lost,你找不到{animal} 失去了目標
 hunt.harass.success,{animal}被逼得轉身逃跑
-hunt.harass.fail,{animal}低頭擺出鹿角 不肯退
-hunt.stand.start,{animal}背靠障礙物 轉身站定
+hunt.harass.fail,{animal}低頭擺出鹿角，不肯退。
+hunt.stand.start,{animal}背靠障礙物，轉身站定。
 hunt.stand.attack,你正面撲向站定的{animal}
-hunt.mother.charge,母鹿衝了過來 撞了你一下
-hunt.counter.hit,{animal}拼命反撲 你受了傷
-hunt.counter.miss,{animal}被逼到角落 不肯就範
+hunt.mother.charge,母鹿衝了過來，撞了你一下。
+hunt.counter.hit,{animal}拼命反撲，你受了傷。
+hunt.counter.miss,{animal}被逼到角落，不肯就範。
 stamina.wolf.fresh,你還有餘力
 stamina.wolf.panting,你開始喘
 stamina.wolf.exhausted,你快撐不住了
@@ -317,7 +317,7 @@ factor.prey_tiring,牠開始累了
 factor.standing_danger,牠站定迎戰
 factor.counter_risk,可能被反擊
 reason.mother_nearby,母鹿擋在前面
-reason.long_chase,追得太久 你的腳步慢了下來
+reason.long_chase,追得太久，你的腳步慢了下來。
 reason.standing_danger,牠站定的位置太難攻
 factor.wind.headwind,逆風
 factor.wind.crosswind,側風
@@ -334,21 +334,21 @@ factor.chase_bonus,已佔好位置
 factor.hungry,飢餓虛弱
 factor.overfed,吃太撐
 factor.injured,重傷未癒
-reason.wind_turned,風向轉了 {animal}聞到了你
-reason.wind_tailwind,你在上風處 {animal}聞到了你
+reason.wind_turned,風向轉了，{animal}聞到了你。
+reason.wind_tailwind,你在上風處，{animal}聞到了你。
 reason.prey_alert,{animal}太警覺了
 reason.slower,{animal}跑得比你快
 reason.tired,你體力不支
 reason.weaker,{animal}掙扎得太厲害
 reason.hungry,飢餓讓你使不上力
-reason.overfed,吃得太撐 跑不動
+reason.overfed,吃得太撐，跑不動。
 reason.injured,傷勢拖累了你
-log.wind_shifted,風向轉了 現在是{wind}
+log.wind_shifted,風向轉了，現在是{wind}。
 log.track.success,你循著線索找到了{animal}
 log.track.fail,你跟丟了線索
 log.region_first_visit,第一次來到{region}：{main}
-reason.stale,線索太舊了 {animal}早就離開了
-reason.faint_trail,線索太模糊 你分辨不出方向
+reason.stale,線索太舊了，{animal}早就離開了。
+reason.faint_trail,線索太模糊，你分辨不出方向。
 factor.sharp_nose,感知敏銳
 factor.faint_trail,線索模糊
 factor.fresh_unknown,不確定新不新鮮
@@ -364,17 +364,17 @@ explore.location.dense_forest,密林裡
 explore.location.forest_edge,林緣
 explore.location.clearing,空地上
 explore.location.fallen_logs,倒木區
-explore.clue.scent,{location} 你聞到{fresh}{animal}的氣味
-explore.clue.track,{location} 你發現{fresh}{animal}足跡
-explore.clue.sound,{location} 你聽見{animal}的動靜
-explore.clue.sign,{location} 你發現{fresh}{sign} 是{animal}留下的
-explore.clue.sight,{location} 你看見一隻{animal}
-explore.gather,{location} 你發現了{item}
-explore.nothing,{location} 什麼也沒發現 這裡最近沒有{animal}來過
-explore.feature,{location} 你發現了{feature}
+explore.clue.scent,{location}，你聞到{fresh}{animal}的氣味
+explore.clue.track,{location}，你發現{fresh}{animal}足跡
+explore.clue.sound,{location}，你聽見{animal}的動靜
+explore.clue.sign,{location}，你發現{fresh}{sign}，是{animal}留下的
+explore.clue.sight,{location}，你看見一隻{animal}
+explore.gather,{location}，你發現了{item}
+explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
+explore.feature,{location}，你發現了{feature}
 explore.fresh,新鮮的
 explore.stale,陳舊的
-explore.fresh_unknown,（{wind} 聞不出新不新鮮）
+explore.fresh_unknown,（{wind}，聞不出新不新鮮）
 explore.juvenile,小
 explore.sign.browse,啃食痕跡
 explore.sign.droppings,糞便
@@ -384,9 +384,9 @@ feature.game_trail,獵物常走的小徑
 feature.fox_den,狐狸洞穴
 feature.hidden_pool,隱蔽的水潭
 region_main.stream_valley,一條溪流從山區流進林緣
-region_main.deep_forest,樹林茂密 溪水從林間穿過
-region_main.forest_edge_meadow,樹林在這裡漸漸稀疏 外面是開闊的空地
-region_main.fallen_log_slope,最深的老林 坡上到處是倒木
+region_main.deep_forest,樹林茂密，溪水從林間穿過
+region_main.forest_edge_meadow,樹林在這裡漸漸稀疏，外面是開闊的空地
+region_main.fallen_log_slope,最深的老林，坡上到處是倒木
 encounter.competitor,你遇到了一頭{animal}。
 summary.title,一生回顧
 summary.days_lived,存活了 {days} 天
@@ -774,8 +774,8 @@ scavenger.wolverine.arrive.first,一隻你沒見過的動物從雪地另一頭�
 scavenger.wolverine.returning,你回來時，狼獾正趴在你的獵物上撕咬。
 scavenger.wolverine.returning.first,你回來時，一隻你沒見過的深色動物正趴在你的獵物上撕咬，看到你也不肯走。
 explore.blizzard,風雪裡什麼都看不見，連自己的腳印都很快被雪蓋住了。
-explore.carcass,{location} 雪裡露出一具{animal}的屍體，已經凍硬了。
-explore.carcass.frozen,{location} 雪堆底下埋著一具凍死的{animal}，是這場風雪留下的。
+explore.carcass,{location}，雪裡露出一具{animal}的屍體，已經凍硬了。
+explore.carcass.frozen,{location}，雪堆底下埋著一具凍死的{animal}，是這場風雪留下的。
 ui.eat_carcass,上前去吃
 blizzard.warning.early,風突然停了，天色發黃。雪兔都鑽進了雪裡，遠處的馴鹿背著風擠成一團。暴風雪要來了。
 blizzard.warning.late,北方的天空一下子暗了下來，風捲著雪橫著打過來。暴風雪來了。
