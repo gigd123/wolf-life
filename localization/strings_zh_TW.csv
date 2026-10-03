@@ -164,6 +164,7 @@ prey_state.dangerous,鹿角很大 正面攻擊很危險
 prey_name.white_tailed_deer.adult,白尾鹿母鹿
 prey_name.white_tailed_deer.buck,白尾鹿雄鹿
 prey_name.white_tailed_deer.juvenile,小鹿
+prey_name.grizzly_bear.juvenile,幼熊
 explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
@@ -189,10 +190,10 @@ weather.storm,暴雨
 weather.after_rain,雨停
 event.storm,下起了暴雨 雨聲蓋過了一切 氣味和舊足跡都被沖散了
 event.rain_stopped,雨停了 泥地上的新足跡特別清楚
-event.howl.1,深夜 遠方傳來狼嚎 似乎有其他狼
-event.howl.2,深夜 狼嚎又從{region}的方向傳來
-event.howl.3,深夜 熟悉的狼嚎 {region}是那隻狼的範圍
-event.driven_off,一隻陌生的灰狼出現了 對你齜牙低吼 把你趕出了牠的範圍 你被迫逃到{region}
+event.howl.1,深夜，遠方傳來狼嚎。這附近似乎還有別的狼。
+event.howl.2,深夜，狼嚎又從{region}的方向傳來。
+event.howl.3,深夜，又是那熟悉的狼嚎。{region}是那隻狼的範圍。
+event.driven_off,一隻黑狼從林間走了出來，對你齜牙低吼，把你趕出了牠的範圍。你被迫逃到{region}。
 event.prey_nearby,你伏低休息時 一隻{animal}慢慢靠近 沒有發現你
 event.bear_passing,一頭灰熊從你休息的地方旁邊經過
 event.bear_passing.hide,保持不動躲藏（{n}%）
@@ -541,6 +542,7 @@ combat.stake.carcass.red_fox,牠想從你的獵物上偷一口。
 combat.stake.encounter.grizzly_bear,你們在林間撞見了彼此，牠壓低了頭。
 combat.stake.mother,牠身後有幼熊，牠會拚命。
 combat.remember,你記得：上次你還不是牠的對手。
+combat.remember_won,你記得：上次你贏了牠。
 combat.opp.strong,牠還很有力。
 combat.opp.hurt,牠身上帶著傷，動作慢了些。
 combat.opp.wavering,牠喘著氣，似乎想退了。
@@ -558,11 +560,13 @@ combat.opp_hit.leg,{animal}擊中了你的腿。
 combat.opp_hit.shoulder,{animal}打中了你的肩膀。
 combat.opp_hit.face,{animal}擦過你的臉。
 combat.heavy_injury,這一下傷得很深。
-combat.dodge.success,你閃開了，看見了牠的破綻。
+combat.dodge.success,你閃開了{animal}的攻擊，看見了牠的破綻。
 combat.retreat.success,你轉身跑開，牠沒有追來。
 combat.retreat.fail,你沒能脫身。
 combat.opp_gives_up,{animal}放棄了，轉身離開。
 combat.result.drove_off,你趕走了{animal}。
+combat.result.mob.drove_off,{animal}撐不住了，丟下馴鹿殘骸，一跛一跛地逃進了雪坡後面。
+combat.result.mob.killed,{animal}死在馴鹿殘骸旁，苔原狼鬆開了嘴。
 combat.result.retreated,你撤退了。
 combat.result.yield,你退開了，{animal}沒有追來。
 combat.result.abandon,你放棄了獵物，退到安全的地方。
@@ -608,6 +612,7 @@ debug.event.mother_bear,母熊
 debug.event.old_injury,舊傷發作
 chance_label.hit,命中率
 chance_label.success,成功率
+ui.explore_hint,這次探索有 {n}% 機率發現{animal}（來自你確定的知識）
 chance_label.dodge,閃開率
 chance_label.escape,脫身率
 chance_label.drive_off,嚇退率

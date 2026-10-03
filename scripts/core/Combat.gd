@@ -335,8 +335,14 @@ func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) ->
 
 func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	res["wolf_pose"] = "dodge"
+	# 苔原狼的助攻先結算（可能直接把對手逼退），但文字排在你閃開之後：先交代你的動作，再交代隊友
 	_ally_turn(res)
+	var ally_hit: bool = not res["notes"].is_empty() and res["notes"].back() == "combat.ally_hits"
+	if ally_hit:
+		res["notes"].pop_back()
 	if ally_chance > 0.0 and opp_hp / opp_hp_max < opp_give_up_ratio():
+		if ally_hit:
+			res["notes"].append("combat.ally_hits")
 		res["notes"].append("combat.opp_gives_up")
 		_end("drove_off")
 		return
@@ -344,6 +350,8 @@ func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	if not was_hit:
 		state["next_bonus"] = float(FightRules.move_cfg("dodge").get("next_bonus", 0.1))
 		res["notes"].append("combat.dodge.success")
+	if ally_hit:
+		res["notes"].append("combat.ally_hits")
 	_practice(opt, not was_hit)
 
 func _do_retreat(opt: Dictionary, res: Dictionary) -> void:

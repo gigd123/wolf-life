@@ -1327,6 +1327,9 @@ func start_storm() -> void:
 func _maybe_howl() -> void:
 	if GameTime.current_period() != "night" or stranger_territory == "" or not _can_trigger_event():
 		return
+	# 只在同一張地圖聽得到（人在苔原聽不到森林那隻狼）
+	if GameData.map_of(stranger_territory) != current_map():
+		return
 	var chance_value: float = float(_events_cfg().get("howl", {}).get("night_chance", 0.35))
 	# 輸給你之後，遠方的狼嚎減少
 	if stranger() != null and stranger().yielded_to_player:
@@ -1655,6 +1658,24 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 func opponent_knowledge(animal_id: String, life_stage: String) -> Dictionary:
 	return {"type": "opponent", "animal": animal_id, "life_stage": life_stage}
 
+# 和這種對手最近一次交手的結果："beaten"（贏過牠）、"lost"（還不是牠的對手）、""（沒有紀錄）。
+# 打贏時清掉「還不是牠的對手」的知識；之後又輸了，再重新記下。
+func opponent_history(animal_id: String, life_stage: String) -> String:
+	if knowledge_level(opponent_knowledge(animal_id, life_stage)) > 0:
+		return "lost"
+	if life_log.get("beaten_opponents", []).has(animal_id + "|" + life_stage):
+		return "beaten"
+	return ""
+
+func _set_opponent_beaten(animal_id: String, life_stage: String, beaten: bool) -> void:
+	var key: String = animal_id + "|" + life_stage
+	var list: Array = life_log.get("beaten_opponents", [])
+	list.erase(key)
+	if beaten:
+		list.append(key)
+		knowledge.erase(knowledge_key(opponent_knowledge(animal_id, life_stage)))
+	life_log["beaten_opponents"] = list
+
 # 戰鬥結束：記錄決策、成長、知識，處理獵物的去留。回傳 {"outcome", "grow": "clean"|"costly"|""}。
 func finish_combat(c: Combat) -> Dictionary:
 	for d in c.decisions:
@@ -1673,6 +1694,7 @@ func finish_combat(c: Combat) -> Dictionary:
 	Growth.apply_practice(wolf, c.practice)
 	var w: Dictionary = GameData.balance.get("combat", {}).get("win", {})
 	if c.won():
+		_set_opponent_beaten(c.animal_id, c.life_stage, true)
 		# 幾乎沒受傷就獲勝：成長較大；慘勝：偏向技巧、感知與戰鬥的知識（SPEC「戰鬥的成長與知識」）。
 		var taken: float = c.damage_taken / max(1.0, wolf.health_max)
 		if taken <= float(w.get("clean_ratio", 0.15)):
@@ -1687,6 +1709,7 @@ func finish_combat(c: Combat) -> Dictionary:
 				result["grow"] = "costly"
 	elif c.outcome in ["retreated", "submit"] or (c.outcome in ["yield", "abandon", "grab"] and (c.rounds > 1 or c.probed)):
 		# 撤退與示弱不算失敗：知道現在的自己還不是對手
+		_set_opponent_beaten(c.animal_id, c.life_stage, false)
 		learn(opponent_knowledge(c.animal_id, c.life_stage))
 	if c.context == "carcass":
 		_carcass_after_combat(c)

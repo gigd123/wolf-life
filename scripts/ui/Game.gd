@@ -18,6 +18,7 @@ var cross_map_box: HFlowContainer
 var current_region_style: StyleBoxFlat
 var rendered_map: String = ""
 var action_buttons: Dictionary = {}
+var explore_hint_label: Label
 var status_icons: Dictionary = {}
 var log_box: RichTextLabel
 var top_label: Label
@@ -281,6 +282,12 @@ func _build_ui() -> void:
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		action_grid.add_child(btn)
 		action_buttons[action_id] = btn
+	# 「確定」的獵物出沒知識：在行動按鈕下面寫明這次探索發現某種獵物的機率
+	explore_hint_label = Label.new()
+	explore_hint_label.add_theme_font_size_override("font_size", 12)
+	explore_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	explore_hint_label.modulate = Color(0.95, 0.9, 0.75)
+	action_panel.add_child(explore_hint_label)
 
 	log_box = RichTextLabel.new()
 	# 高度取整數行，避免最上面一行只露出半截。
@@ -948,8 +955,9 @@ func _refresh() -> void:
 	for action_id in action_buttons.keys():
 		var btn: Button = action_buttons[action_id]
 		btn.visible = available.has(action_id)
-	# 「確定」的獵物出沒知識：探索按鈕直接顯示此時此地最可能發現的獵物機率
-	action_buttons["explore"].text = tr("action.explore") + _explore_hint()
+	# 「確定」的獵物出沒知識：寫明這次探索發現最可能的獵物的機率（按鈕上只寫名稱和百分比時，容易誤會成「去找這種獵物」）
+	explore_hint_label.text = _explore_hint()
+	explore_hint_label.visible = available.has("explore") and explore_hint_label.text != ""
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
 
@@ -1268,13 +1276,14 @@ func _show_discovery_sprite(d: Dictionary) -> void:
 func _feeding_prey_name() -> String:
 	return _prey_name(str(GameState.current_feeding.get("animal_id", "")), str(GameState.current_feeding.get("life_stage", "adult")))
 
-func _show_feeding() -> void:
+# intro：接在進食畫面最上面的前情（例如搶食的對手被趕走），讓畫面不會直接跳到剩下幾段肉。
+func _show_feeding(intro: String = "") -> void:
 	var f: Dictionary = GameState.current_feeding
 	if f.is_empty():
 		encounter_overlay.visible = false
 		return
 	var value: int = int(round(float(f["segment_value"])))
-	encounter_message.text = tr("feeding.status").replace("{animal}", _feeding_prey_name()) \
+	encounter_message.text = (intro + "\n" if intro != "" else "") + tr("feeding.status").replace("{animal}", _feeding_prey_name()) \
 		.replace("{n}", str(f["segments_left"])).replace("{v}", str(value))
 	var chances := GameState.scavenge_chances()
 	encounter_detail.text = tr("feeding.risk").replace("{bear}", str(int(round(float(chances["bear"]) * 100.0)))) \
@@ -1641,7 +1650,7 @@ func _explore_hint() -> String:
 			best_chance = c
 	if best == "":
 		return ""
-	return "（%s %d%%）" % [tr("animal." + best), int(round(best_chance * 100.0))]
+	return tr("ui.explore_hint").replace("{n}", str(int(round(best_chance * 100.0)))).replace("{animal}", tr("animal." + best))
 
 func _show_knowledge() -> void:
 	var lines: Array[String] = [tr("ui.knowledge.title")]
@@ -1950,7 +1959,7 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		key = "encounter.mother"
 	if encounter.get("direct", false):
 		key = "encounter.direct"
-	_log(tr(key).replace("{animal}", tr("animal." + animal_id)))
+	_log(tr(key).replace("{animal}", _prey_name(animal_id, life_stage)))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
@@ -2196,8 +2205,9 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	lines.append(tr("tundra.attitude." + GameState.tundra_relation_key()))
 	if extra != "":
 		lines.append(extra)
-	if GameState.knowledge_level(GameState.opponent_knowledge("tundra_wolf", "adult")) > 0:
-		lines.append(tr("combat.remember").replace("{animal}", tr("animal.tundra_wolf")))
+	var remember: String = _remember_line("tundra_wolf", "adult")
+	if remember != "":
+		lines.append(remember)
 	_log(lines[0])
 	encounter_message.text = "\n".join(lines)
 	encounter_detail.text = ""
@@ -2309,8 +2319,9 @@ func _show_stranger_meet(e: Dictionary, extra: String = "") -> void:
 	elif not a.is_empty():
 		lines.append(tr("stranger.last_assessment").replace("{age}", "%.1f" % float(a.get("wolf_age", 0.0))) \
 			.replace("{text}", tr("stranger.compare." + str(a["compare"]))))
-	if GameState.knowledge_level(GameState.opponent_knowledge("stranger_wolf", "adult")) > 0:
-		lines.append(tr("combat.remember").replace("{animal}", tr("animal.stranger_wolf")))
+	var remember: String = _remember_line("stranger_wolf", "adult")
+	if remember != "":
+		lines.append(remember)
 	_log(lines[0])
 	encounter_message.text = "\n".join(lines)
 	encounter_detail.text = ""
@@ -2380,7 +2391,7 @@ func _render_combat() -> void:
 		return
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
-	var name: String = tr("animal." + c.animal_id)
+	var name: String = _prey_name(c.animal_id, c.life_stage)
 	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action)
 	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose)
 	_set_terrain_bg(hunt_bg, c.terrain)
@@ -2388,8 +2399,9 @@ func _render_combat() -> void:
 	if c.phase == Combat.Phase.STANDOFF:
 		lines.append(tr("combat.standoff.title").replace("{animal}", name))
 		lines.append(tr("combat.stake." + ("mother" if c.mother else c.context + "." + c.animal_id)).replace("{animal}", name))
-		if GameState.knowledge_level(GameState.opponent_knowledge(c.animal_id, c.life_stage)) > 0:
-			lines.append(tr("combat.remember").replace("{animal}", name))
+		var remember: String = _remember_line(c.animal_id, c.life_stage)
+		if remember != "":
+			lines.append(remember)
 	else:
 		lines.append(tr("combat.exchange.title").replace("{animal}", name) + "　" + tr(c.opp_condition_key()))
 		if c.mother:
@@ -2408,7 +2420,7 @@ func _on_combat_choice(id: String) -> void:
 	var res := c.choose(id)
 	if id in ["bite", "lunge", "attack"]:
 		Audio.play_bite()
-	var name: String = tr("animal." + c.animal_id)
+	var name: String = _prey_name(c.animal_id, c.life_stage)
 	combat_notes = []
 	for n in res.get("notes", []):
 		var text: String = tr(str(n)).replace("{animal}", name)
@@ -2427,9 +2439,15 @@ func _finish_combat_ui() -> void:
 	current_combat = null
 	var r := GameState.finish_combat(c)
 	hunt_overlay.visible = false
-	var name: String = tr("animal." + c.animal_id)
+	var name: String = _prey_name(c.animal_id, c.life_stage)
+	var result_text: String = ""
 	if c.outcome != "died":
-		_log(tr("combat.result." + c.outcome).replace("{animal}", name))
+		# 依情境有專屬的結果文字（例如圍攻狼獾：combat.result.mob.drove_off）
+		var result_key: String = "combat.result.%s.%s" % [c.context, c.outcome]
+		if tr(result_key) == result_key:
+			result_key = "combat.result." + c.outcome
+		result_text = tr(result_key).replace("{animal}", name)
+		_log(result_text)
 		if str(r.get("grow", "")) != "":
 			_log(tr("combat.grow." + str(r["grow"])))
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.won():
@@ -2442,8 +2460,9 @@ func _finish_combat_ui() -> void:
 		return
 	if c.context == "mob" and GameState.is_feeding():
 		_log(tr("tundra.mob.share"))
+		result_text += tr("tundra.mob.share")
 	if c.context in ["carcass", "mob"] and GameState.is_feeding():
-		_show_feeding()
+		_show_feeding(result_text)
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 
@@ -2730,3 +2749,10 @@ func _on_wolf_died(_cause: String) -> void:
 func _on_save_and_exit() -> void:
 	SaveSystem.save_game()
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+# 遭遇時想起上一次交手的結果（輸過：還不是牠的對手；贏過：上次贏了牠）。
+func _remember_line(animal_id: String, life_stage: String) -> String:
+	match GameState.opponent_history(animal_id, life_stage):
+		"lost": return tr("combat.remember")
+		"beaten": return tr("combat.remember_won")
+	return ""
