@@ -563,6 +563,15 @@ combat.opp_hit.leg,{animal}擊中了你的腿。
 combat.opp_hit.shoulder,{animal}打中了你的肩膀。
 combat.opp_hit.face,{animal}擦過你的臉。
 combat.heavy_injury,這一下傷得很深。
+injury.card.heavy.title,重傷
+injury.card.heavy,這道傷口很深，需要時間慢慢癒合。
+injury.card.heavy.speed,你的腿傷得很深，每跨一步都在發疼，跑不快了。
+injury.card.heavy.strength,你的肩膀傷得很深，一用力撕咬就痛得發抖。
+injury.card.heavy.perception,你的臉傷得很深，一隻眼睛腫得睜不開，鼻子也不靈了。
+injury.card.hp_note,睡一覺血量就會回來，但傷口要等時間過去才會好。
+injury.effect.heavy,重傷：{stat} −{n}%，約 {days} 天痊癒
+injury.effect.light,輕傷：約 {days} 天痊癒，不影響行動
+injury.toast.light,輕傷：約 {days} 天痊癒，不影響行動
 combat.dodge.success,你閃開了{animal}的攻擊，看見了牠的破綻。
 combat.retreat.success,你轉身跑開，牠沒有追來。
 combat.retreat.fail,你沒能脫身。
@@ -676,6 +685,11 @@ debug.npc_dead,（已死）
 fire.warning.early,風裡有一股焦味。鳥群從{origin}那邊飛過來，林間的動物都往同一個方向逃。
 fire.warning.late,遠處的天空泛著紅光，濃煙已經從{origin}升起。
 fire.here,火燒到了{region}！濃煙從林間湧來，樹冠劈啪作響。
+fire.arrive.ash,{region}剛燒過。地上一片焦黑，踩下去全是灰，嗆人的煙味還沒散。
+fire.arrive.ash.den,巢穴還在地下，但四周一片焦黑，洞口滿是嗆鼻的焦味。
+fire.arrive.regrowth,{region}焦黑的地上冒出了新芽，鹿的足跡又多了起來。
+fire.region_out,{region}的火熄了，只剩焦黑的樹幹；火還在{list}燒著。
+fire.spread,火往{region}蔓延過去了。
 fire.option.flee,逃往{region}　平安率 {n}%
 fire.option.flee_unknown,逃往{region}（沒去過）　平安率 {n}%
 fire.option.stream,到溪邊避難　平安率 {n}%

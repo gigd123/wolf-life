@@ -605,6 +605,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		var main: String = str(EncounterSystem.region_data(target_region).get("main_feature", ""))
 		log_message.emit(tr("log.region_first_visit").replace("{region}", tr("region." + target_region))
 			.replace("{main}", tr("region_main." + main)))
+	_describe_burned_arrival(target_region)
 	var terrain_cost: float = float(EncounterSystem.region_data(target_region).get("terrain_stamina_modifier", 0))
 	wolf.stamina -= terrain_cost
 	wolf.clamp_stats()
@@ -1783,6 +1784,21 @@ func _maybe_schedule_fire() -> void:
 		fire_at = _abs_period() + RNGService.randi_range(per_day, dry_days * per_day - 1)
 
 # 區域的火況：burning 正在燒、ash 剛燒過一片焦黑、regrowth 草木新生、"" 平常。
+# 走進燒過的區域：焦黑、草木新生各描述一次（同一場火、同一個狀態只說一次；巢穴所在的區域另有一句）。
+# 正在燒的區域由 fire_here 事件處理。
+func _describe_burned_arrival(region_id: String) -> void:
+	var state: String = burn_state(region_id)
+	if not state in ["ash", "regrowth"]:
+		return
+	var seen: Dictionary = life_log.get("burn_seen", {})
+	var mark: String = "%s@%d" % [state, int(region_burn.get(region_id, 0))]
+	if str(seen.get(region_id, "")) == mark:
+		return
+	seen[region_id] = mark
+	life_log["burn_seen"] = seen
+	var key: String = "fire.arrive." + state + (".den" if state == "ash" and region_id == den_region else "")
+	log_message.emit(tr(key).replace("{region}", tr("region." + region_id)))
+
 func burn_state(region_id: String) -> String:
 	if fire.get("regions", {}).has(region_id):
 		return "burning"
@@ -1834,18 +1850,29 @@ func _update_fire() -> void:
 		return
 	# 燃燒：燒滿 burn_periods 的區域熄滅（記為燒過），其餘依機率延燒到相鄰區域。
 	var regions: Dictionary = fire["regions"]
+	var went_out: Array = []
+	var spread: Array = []
 	for region_id in regions.keys().duplicate():
 		if now - int(regions[region_id]) >= int(cfg.get("burn_periods", 3)):
 			regions.erase(region_id)
 			fire["burned"].append(region_id)
 			_region_burned(region_id)
+			went_out.append(region_id)
 	for region_id in regions.keys().duplicate():
 		for adj in EncounterSystem.region_data(region_id).get("adjacent", []):
 			if not regions.has(adj) and not fire["burned"].has(adj) and RNGService.chance(float(cfg.get("spread_chance", 0.55))):
 				regions[adj] = now
+				spread.append(adj)
 	if regions.is_empty():
 		_end_fire()
 		return
+	# 火勢的變化寫進紀錄（察覺到大火之後）：哪裡熄了、蔓延到哪裡，玩家才知道大火還沒結束
+	if bool(fire.get("noticed", false)):
+		var burning: Array = regions.keys().map(func(r): return tr("region." + str(r)))
+		for r in went_out:
+			log_message.emit(tr("fire.region_out").replace("{region}", tr("region." + str(r))).replace("{list}", "、".join(burning)))
+		for r in spread:
+			log_message.emit(tr("fire.spread").replace("{region}", tr("region." + str(r))))
 	_check_fire_here()
 
 # 起火前的徵兆：origin 空字串時隨機選一個森林區域。除錯可以指定起火區域。

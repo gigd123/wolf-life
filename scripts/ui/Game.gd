@@ -35,6 +35,7 @@ var session_check_pending: bool = false
 var session_result_mode: bool = false
 var encounter_strip: RichTextLabel
 var hunt_strip: RichTextLabel
+var last_injury_sig: String = "" # 受傷提示：上次看到的傷勢（嚴重度|能力）
 var choice_label_regex: RegEx
 const MAIN_LOG_SHOWN := 30
 const MAIN_LOG_KEEP := 400
@@ -193,6 +194,7 @@ func _build_ui() -> void:
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		icon_rect.visible = false
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
 
@@ -919,6 +921,11 @@ func _refresh() -> void:
 	var burned: bool = w.injury != Wolf.Injury.NONE and w.injury_source == "fire"
 	var frostbitten: bool = w.injury != Wolf.Injury.NONE and w.injury_source == "blizzard"
 	status_icons["injury"].visible = w.injury != Wolf.Injury.NONE and not burned and not frostbitten
+	# 滑鼠移到傷勢圖示上：影響哪項能力、還要幾天（血量睡覺會回來，傷勢要時間才會好）
+	var injury_tip: String = _injury_effect_text(w) if w.injury != Wolf.Injury.NONE else ""
+	for kind in ["injury", "burn", "frostbite"]:
+		status_icons[kind].tooltip_text = injury_tip
+	_check_new_injury(w)
 	status_icons["burn"].visible = burned
 	status_icons["frostbite"].visible = frostbitten
 	status_icons["poison"].visible = w.poison_days_remaining > 0
@@ -1707,6 +1714,10 @@ func _process_events() -> void:
 		"day_summary":
 			_show_day_summary(event)
 			return
+		"injury_notice":
+			_show_injury_notice(event)
+			if int(event.get("severity", 0)) == Wolf.Injury.HEAVY:
+				return
 		"tendency_changed":
 			_show_tendency_changed(event)
 			return
@@ -2776,6 +2787,41 @@ func _show_season_card(event: Dictionary) -> void:
 	if str(event.get("map", "forest")) != "forest":
 		bg = ArtLibrary.region_background(str(event.get("region", GameState.current_region)), season)
 	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, bg)
+
+# 受傷提示（QA-06）：受傷的當下只有戰鬥裡的一句，看不出傷在哪、影響什麼、要多久才好。
+# _refresh 發現傷勢變重時排入 injury_notice，等遭遇結束後才顯示：重傷用卡片，輕傷用淡入提示。
+func _check_new_injury(w: Wolf) -> void:
+	var sig: String = "%d|%s" % [w.injury, w.injury_stat]
+	if last_injury_sig == "":
+		last_injury_sig = sig # 剛載入遊戲時不提示
+		return
+	if sig == last_injury_sig:
+		return
+	var old_severity: int = int(last_injury_sig.split("|")[0])
+	last_injury_sig = sig
+	if w.injury > old_severity or (w.injury == Wolf.Injury.HEAVY and w.injury_stat != ""):
+		GameState.pending_events.append({"type": "injury_notice", "severity": w.injury})
+
+func _show_injury_notice(event: Dictionary) -> void:
+	var w: Wolf = GameState.wolf
+	if w == null or w.injury == Wolf.Injury.NONE:
+		return
+	if int(event.get("severity", 0)) == Wolf.Injury.HEAVY and w.injury == Wolf.Injury.HEAVY:
+		var stat: String = w.injury_stat
+		var body: String = tr("injury.card.heavy" + ("." + stat if stat != "" else ""))
+		body += "\n\n[color=%s]%s[/color]" % [LOG_COLOR_LABEL, _injury_effect_text(w)]
+		body += "\n" + tr("injury.card.hp_note")
+		_show_card(tr("injury.card.heavy.title"), body)
+	else:
+		_show_toast(tr("injury.toast.light").replace("{days}", str(w.injury_days_remaining)), 2.4)
+
+# 「速度 −20%，約 4 天痊癒」；輕傷沒有能力影響。
+func _injury_effect_text(w: Wolf) -> String:
+	if w.injury == Wolf.Injury.HEAVY and w.injury_stat != "":
+		var pct: int = int(round((1.0 - float(GameData.balance.get("heavy_injury_stat_mult", 0.8))) * 100.0))
+		return tr("injury.effect.heavy").replace("{stat}", tr("stat." + w.injury_stat)).replace("{n}", str(pct)) \
+			.replace("{days}", str(w.injury_days_remaining))
+	return tr("injury.effect.light").replace("{days}", str(w.injury_days_remaining))
 
 func _show_day_summary(event: Dictionary) -> void:
 	var texts: Array[String] = []
