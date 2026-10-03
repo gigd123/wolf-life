@@ -31,6 +31,10 @@ static func get_stat(wolf: Wolf, stat: String) -> float:
 	return float(wolf.get(stat))
 
 # 成長量套用到能力值：成年後越接近潛力上限越慢，不會超過上限；沒結算潛力前上限是 stat_max。
+# 外部直接加成長（例如成年時的一次成長），同樣受潛力上限限制。
+static func add(wolf: Wolf, stat: String, amount: float) -> float:
+	return _add(wolf, stat, amount)
+
 static func _add(wolf: Wolf, stat: String, amount: float) -> float:
 	if amount <= 0.0:
 		return 0.0

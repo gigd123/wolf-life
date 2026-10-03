@@ -321,6 +321,15 @@ func _check_life_stage_transition(prev_stage: int) -> void:
 func _settle_adulthood() -> void:
 	var potential := Growth.settle_potential(wolf)
 	life_log["potential"] = potential.duplicate()
+	# 成年的那一刻，身體再長一次（SPEC「成年轉變」），寫在成年卡片上
+	var bonus: Dictionary = {}
+	var table: Dictionary = GameData.balance.get("growth", {}).get("adult_bonus", {})
+	for stat in table.keys():
+		var g: float = Growth.add(wolf, str(stat), float(table[stat]))
+		if g > 0.0:
+			bonus[stat] = g
+	life_log["adult_bonus"] = bonus
+	wolf.clamp_stats()
 	life_log["adult_body"] = adult_body_key()
 	_queue_notice({"type": "adult_transition"})
 

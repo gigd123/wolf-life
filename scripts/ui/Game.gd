@@ -2854,6 +2854,14 @@ func _show_adult_transition() -> void:
 	var caps: Array[String] = []
 	for stat in Growth.ALL_STATS:
 		caps.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " " + str(int(round(float(w.potential.get(stat, Growth.get_stat(w, stat)))))))
+	# 成年的那一刻身體長了一次（GameState._settle_adulthood 的 adult_bonus）
+	var bonus: Dictionary = GameState.life_log.get("adult_bonus", {})
+	if not bonus.is_empty():
+		var gains: Array[String] = []
+		for stat in Growth.ALL_STATS:
+			if bonus.has(stat):
+				gains.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " ▲" + str(int(round(float(bonus[stat])))))
+		body += "\n\n" + tr("adult_transition.bonus") + "\n" + "　".join(gains)
 	body += "\n\n" + tr("adult_transition.caps") + "\n" + "　".join(caps)
 	_show_card(tr("adult_transition.title"), body)
 	_set_card_wolf("adult")

@@ -262,6 +262,8 @@
   "growth": {
     "_comment": "SPEC 1.6「成長系統」，規則在 scripts/core/Growth.gd。learn_per_unit：技巧、感知每次成功的當下成長（失敗 × fail_mult，同一場狩獵連續失敗再 × fail_streak_decay 的次方）。training_points：鍛鍊點，action = 狩獵中練到速度或力量的一步（追擊一回合、撲抓、搏鬥一回合），takedown = 制伏獵物，guard = 守住獵物或打贏灰熊，另外 health_share 比例記到血量上限；gather、explore 三項平均。stat_per_point × 飽食倍率 × 生命階段倍率 = 睡覺時每點鍛鍊點的成長量。",
     "learn_per_unit": { "skill": 0.25, "perception": 0.25 },
+    "_adult_bonus_comment": "成年的那一刻各成長一次（約次成年期一週的鍛鍊量），受潛力上限限制。",
+    "adult_bonus": { "speed": 3, "strength": 3, "health_max": 3 },
     "fail_mult": 0.25,
     "fail_streak_decay": 0.5,
     "_repeat_comment": "同一場狩獵裡，同一項能力第 repeat_free 次之後的練習，每次再 × repeat_decay。",
