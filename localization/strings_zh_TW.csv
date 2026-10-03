@@ -653,6 +653,9 @@ stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾�
 stranger.stand,對峙
 stranger.yielded,你退開了，往{region}走去。
 stranger.won_territory,{region}從此是你的了。
+stranger.first_win_growth,你第一次贏了那隻黑狼。牠的每一次閃身和撲咬，你都記在了心裡。
+stranger.killed_card.title,那隻黑狼
+stranger.killed_card,牠倒在{region}的落葉裡，再也沒有起來。那個從可怕氣味的主人爪下奪回一頭鹿的傳說，是真是假，已經沒有誰能說了。這一帶的狐狸不必再繞開牠的氣味；從今以後，{region}是你的範圍。
 combat.stake.meet.stranger_wolf,牠盯著你，尾巴高高舉起。
 combat.stake.territory.stranger_wolf,這裡是牠的地盤，牠會拚命守住。
 combat.option.let_go,放牠走

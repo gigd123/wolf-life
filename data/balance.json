@@ -264,6 +264,8 @@
     "learn_per_unit": { "skill": 0.25, "perception": 0.25 },
     "_adult_bonus_comment": "成年的那一刻各成長一次（約次成年期一週的鍛鍊量），受潛力上限限制。",
     "adult_bonus": { "speed": 3, "strength": 3, "health_max": 3 },
+    "_stranger_first_win_comment": "第一次打贏黑狼、這一戰沒有受重傷：技巧成長一次（只限第一次）。",
+    "stranger_first_win_skill": 4,
     "fail_mult": 0.25,
     "fail_streak_decay": 0.5,
     "_repeat_comment": "同一場狩獵裡，同一項能力第 repeat_free 次之後的練習，每次再 × repeat_decay。",

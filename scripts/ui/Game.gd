@@ -1714,6 +1714,12 @@ func _process_events() -> void:
 		"day_summary":
 			_show_day_summary(event)
 			return
+		"stranger_killed":
+			# 咬死黑狼的專屬卡片，接牠的傳說作結尾（SPEC「陌生灰狼」勝負的結果）
+			var region: String = tr("region." + str(event.get("region", "")))
+			_show_card(tr("stranger.killed_card.title"), tr("stranger.killed_card").replace("{region}", region),
+				ArtLibrary.region_background(str(event.get("region", GameState.current_region)), GameTime.current_season()))
+			return
 		"injury_notice":
 			_show_injury_notice(event)
 			if int(event.get("severity", 0)) == Wolf.Injury.HEAVY:
@@ -2683,6 +2689,8 @@ func _finish_combat_ui() -> void:
 		_log_result(result_text)
 		if str(r.get("grow", "")) != "":
 			_log_result(tr("combat.grow." + str(r["grow"])))
+		if float(r.get("first_win_skill", 0.0)) > 0.0:
+			_log_result(tr("stranger.first_win_growth"))
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.won():
 			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty():

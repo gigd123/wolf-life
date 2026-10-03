@@ -29,6 +29,7 @@ var probed: bool = false
 var probe_reading: String = "" # 試探後看出的態度："resolute"／"wavering"
 var damage_taken: float = 0.0
 var start_health: float = 0.0
+var start_heavy_count: int = 0 # 開打時的重傷次數：這一戰有沒有受重傷（打贏黑狼的成長用）
 # 跨回合的加成：next_bonus（閃避後的破綻）、initiative（先手）、tendency_bonus（強攻型）、probe_bonus（試探）
 var state: Dictionary = {}
 var tendency: Dictionary = {}
@@ -69,6 +70,7 @@ func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p
 	var stakes: Dictionary = FightRules.combat_cfg().get("stake_mult", {})
 	stake_mult = float(stakes.get("mother" if mother else context, 1.0))
 	start_health = wolf.health
+	start_heavy_count = wolf.heavy_injury_count
 
 func stage_name() -> String:
 	return PHASE_NAMES[phase]

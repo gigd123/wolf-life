@@ -1726,7 +1726,7 @@ func finish_combat(c: Combat) -> Dictionary:
 	if c.context == "carcass":
 		_carcass_after_combat(c)
 	if c.npc != null and c.npc.id == "stranger_wolf":
-		_after_stranger_combat(c)
+		result["first_win_skill"] = _after_stranger_combat(c)
 	elif c.npc != null and c.npc.id == "wolverine":
 		_wolverine_record(c)
 		if c.context == "mob":
@@ -2223,14 +2223,24 @@ func stranger_yield_territory() -> String:
 	return _leave_stranger_territory()
 
 # 戰鬥後：牠的血量、你們的紀錄、範圍的歸屬（SPEC「勝負的結果」）。
-func _after_stranger_combat(c: Combat) -> void:
+# 回傳第一次打贏牠時技巧的成長量（沒有就是 0）。
+func _after_stranger_combat(c: Combat) -> float:
 	var npc := stranger()
 	npc.health = c.opp_hp
 	_stranger_record("drive_off" if c.context == "territory" else "meet", c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
+	var skill_gain: float = 0.0
 	match c.outcome:
 		"drove_off", "killed":
+			# 第一次打贏牠、這一戰沒有受重傷：技巧大幅成長一次（SPEC「陌生灰狼」勝負的結果）。
+			# 只看第一次勝利，之後再打贏也不會有，避免反覆找牠打來刷成長。
+			if not bool(life_log.get("stranger_first_win", false)):
+				life_log["stranger_first_win"] = true
+				if wolf.heavy_injury_count == c.start_heavy_count:
+					skill_gain = Growth.add(wolf, "skill", float(GameData.balance.get("growth", {}).get("stranger_first_win_skill", 4)))
 			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕
 			life_log["own_territory"] = npc.territory
+			if c.outcome == "killed":
+				_queue_notice({"type": "stranger_killed", "region": npc.territory})
 			npc.yielded_to_player = true
 			npc.dominance = 0
 			if c.outcome == "killed":
@@ -2249,6 +2259,7 @@ func _after_stranger_combat(c: Combat) -> void:
 				npc.dominance += 1
 			if c.context == "territory" and current_region == npc.territory:
 				_leave_stranger_territory()
+	return skill_gain
 
 # 牠輸了之後搬到另一帶（不是你的巢穴，也不是剛讓出來的地方）。
 func _npc_new_territory(old: String) -> String:
