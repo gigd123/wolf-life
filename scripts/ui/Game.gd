@@ -21,6 +21,27 @@ var action_buttons: Dictionary = {}
 var explore_hint_label: Label
 var status_icons: Dictionary = {}
 var log_box: RichTextLabel
+
+# 行動訊息（試玩回饋後的改版）：
+# - 主畫面的紀錄一次行動一段（main_entries），最新一段亮、舊的變暗；「紀錄」按鈕看完整歷史。
+# - 遭遇、狩獵、戰鬥畫面下方有「這場遭遇的紀錄」（session）：每個選擇一段，戰鬥與多回合追擊加上編號。
+#   遭遇結束時先在畫面上交代結果、按「繼續」才關掉；主畫面的紀錄只留總結。
+var main_entries: Array = [] # [{"time": String, "lines": Array}]
+var main_entry_open: bool = false
+var session_active: bool = false
+var session_entries: Array = [] # [{"label": String, "num": int, "lines": Array}]
+var session_results: Array[String] = [] # 要留在主畫面總結裡的句子（狩獵與戰鬥的結果、學到的知識）
+var session_check_pending: bool = false
+var session_result_mode: bool = false
+var encounter_strip: RichTextLabel
+var hunt_strip: RichTextLabel
+var choice_label_regex: RegEx
+const MAIN_LOG_SHOWN := 30
+const MAIN_LOG_KEEP := 400
+const STRIP_LINES := 3
+const LOG_COLOR_NEW := "#f0eee4"
+const LOG_COLOR_OLD := "#8e978c"
+const LOG_COLOR_LABEL := "#d8c890"
 var top_label: Label
 var stage_label: Label
 var wolf_portrait: AnimatedIcon
@@ -89,7 +110,7 @@ func _ready() -> void:
 	GameState.wolf_died.connect(_on_wolf_died)
 	GameState.encounter_triggered.connect(_on_encounter_triggered)
 	GameState.growth_applied.connect(func(): if not GameState.auto_playing: Audio.play_level_up())
-	GameState.knowledge_learned.connect(func(entry): _log(tr("log.knowledge_learned") + _knowledge_text(entry)))
+	GameState.knowledge_learned.connect(func(entry): _log_result(tr("log.knowledge_learned") + _knowledge_text(entry)))
 	GameTime.day_changed.connect(func(_d): _show_day_toast.call_deferred())
 	_refresh()
 	Audio.play_bgm()
@@ -231,6 +252,10 @@ func _build_ui() -> void:
 	knowledge_btn.text = tr("ui.knowledge")
 	knowledge_btn.pressed.connect(_show_knowledge)
 	map_title_row.add_child(knowledge_btn)
+	var history_btn := Button.new()
+	history_btn.text = tr("ui.log_history")
+	history_btn.pressed.connect(_show_log_history)
+	map_title_row.add_child(history_btn)
 	var map_center := CenterContainer.new()
 	map_panel.add_child(map_center)
 	var map_grid := GridContainer.new()
@@ -302,8 +327,11 @@ func _build_ui() -> void:
 	var log_line_h := log_font.get_height(log_box.get_theme_font_size("normal_font_size")) + log_box.get_theme_constant("line_separation")
 	log_box.custom_minimum_size = Vector2(0, log_line_h * LOG_VISIBLE_LINES + 4)
 	log_box.scroll_following = true
-	log_box.bbcode_enabled = false
+	log_box.bbcode_enabled = true
 	root_vbox.add_child(log_box)
+	choice_label_regex = RegEx.new()
+	# 選項名稱後面的機率（「（35%）」「　成功率 41%」）不寫進紀錄
+	choice_label_regex.compile("[（(][^（()）]*%[^（()）]*[）)]|[　 ]+[^　 ]*\\s*\\d+%$")
 
 	_build_encounter_overlay()
 	_build_hunt_overlay()
@@ -406,6 +434,8 @@ func _build_encounter_overlay() -> void:
 	encounter_detail.add_theme_font_size_override("font_size", 12)
 	encounter_detail.modulate = Color(0.8, 0.85, 0.8)
 	box.add_child(encounter_detail)
+	encounter_strip = _make_session_strip()
+	box.add_child(encounter_strip)
 
 func _build_hunt_overlay() -> void:
 	hunt_overlay = Panel.new()
@@ -440,6 +470,8 @@ func _build_hunt_overlay() -> void:
 	hunt_buttons_box = VBoxContainer.new()
 	hunt_buttons_box.add_theme_constant_override("separation", 3)
 	box.add_child(hunt_buttons_box)
+	hunt_strip = _make_session_strip()
+	box.add_child(hunt_strip)
 
 func _build_rest_overlay() -> void:
 	rest_overlay = Panel.new()
@@ -984,7 +1016,196 @@ func _stage_key(stage: int) -> String:
 func _log(text: String) -> void:
 	if text == "" or GameState.auto_playing:
 		return
-	log_box.append_text(text + "\n")
+	if session_active:
+		if session_entries.is_empty():
+			session_entries.append({"label": "", "num": 0, "lines": []})
+		session_entries.back()["lines"].append(text)
+		_render_strips()
+	else:
+		_main_append(text)
+
+# 要留在主畫面總結裡的句子（狩獵與戰鬥的結果、學到的知識）。
+func _log_result(text: String) -> void:
+	_log(text)
+	if session_active and text != "" and not GameState.auto_playing:
+		session_results.append(text)
+
+# --- 主畫面的紀錄：一次行動一段 ---
+
+# 玩家在主畫面按下行動時開新的一段；之後的訊息（含遭遇的總結、行動後的事件）都接在這一段。
+func _new_main_entry() -> void:
+	main_entry_open = false
+
+func _main_append(text: String) -> void:
+	if not main_entry_open or main_entries.is_empty():
+		if main_entries.is_empty() or not main_entries.back()["lines"].is_empty():
+			main_entries.append({"time": "", "lines": []})
+		main_entries.back()["time"] = _time_label()
+		main_entry_open = true
+		if main_entries.size() > MAIN_LOG_KEEP:
+			main_entries = main_entries.slice(main_entries.size() - MAIN_LOG_KEEP)
+	main_entries.back()["lines"].append(text)
+	_render_main_log()
+
+func _render_main_log() -> void:
+	var parts: Array[String] = []
+	var start: int = max(0, main_entries.size() - MAIN_LOG_SHOWN)
+	for i in range(start, main_entries.size()):
+		var color: String = LOG_COLOR_NEW if i == main_entries.size() - 1 else LOG_COLOR_OLD
+		parts.append("[color=%s]%s[/color]" % [color, _bb(_join_sentences(main_entries[i]["lines"]))])
+	log_box.text = "\n".join(parts)
+	log_box.scroll_to_line.call_deferred(max(0, log_box.get_line_count() - 1))
+
+func _time_label() -> String:
+	return "%s D%d %s" % [tr("season." + GameTime.current_season()), GameTime.day, tr("period." + GameTime.current_period())]
+
+# 把幾行訊息接成一段：沒有句末標點的補上「。」。
+func _join_sentences(lines: Array) -> String:
+	var out: String = ""
+	for line in lines:
+		var t: String = str(line).strip_edges()
+		if t == "":
+			continue
+		if not t[t.length() - 1] in ["。", "！", "？", "…", "」"]:
+			t += "。"
+		out += t
+	return out
+
+func _bb(text: String) -> String:
+	return text.replace("[", "[lb]")
+
+func _show_log_history() -> void:
+	var lines: Array[String] = [tr("ui.log_history.title")]
+	for entry in main_entries:
+		if entry["lines"].is_empty():
+			continue
+		lines.append("[color=%s]%s[/color]　%s" % [LOG_COLOR_OLD, entry["time"], _bb(_join_sentences(entry["lines"]))])
+	if lines.size() == 1:
+		lines.append(tr("ui.log_history.empty"))
+	region_info_text.bbcode_enabled = true
+	region_info_text.text = "\n".join(lines)
+	region_info_text.scroll_to_line.call_deferred(max(0, region_info_text.get_line_count() - 1))
+	region_info_overlay.visible = true
+
+# --- 這場遭遇的紀錄（遭遇、狩獵、戰鬥畫面下方） ---
+
+func _make_session_strip() -> RichTextLabel:
+	var strip := RichTextLabel.new()
+	strip.bbcode_enabled = true
+	strip.scroll_following = true
+	strip.visible = false
+	strip.add_theme_font_size_override("normal_font_size", 12)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.35)
+	style.set_content_margin_all(3)
+	strip.add_theme_stylebox_override("normal", style)
+	strip.custom_minimum_size = Vector2(0, _strip_height(strip, STRIP_LINES))
+	return strip
+
+func _strip_height(strip: RichTextLabel, lines: int) -> float:
+	var line_h: float = strip.get_theme_font("normal_font").get_height(12) + strip.get_theme_constant("line_separation")
+	return line_h * lines + 6
+
+# 選項多（5 個以上）時，狩獵畫面的紀錄縮成 2 行、角色圖縮小，整個畫面才放得進 640×360。
+func _fit_hunt_layout(option_count: int) -> void:
+	var compact: bool = option_count >= 5
+	hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, 2 if compact else STRIP_LINES)
+	var h: float = 32.0 if compact else 40.0
+	for sprite in [hunt_wolf_sprite, hunt_sprite]:
+		sprite.custom_minimum_size = Vector2(h * 1.8, h)
+
+# 遭遇畫面上的選擇按鈕都經過這裡：按下時開新的一段紀錄，處理完再檢查遭遇是否結束。
+func _session_choice(label: String, callback: Callable) -> Callable:
+	return func():
+		_begin_session_entry(label)
+		callback.call()
+		if not session_check_pending:
+			session_check_pending = true
+			_check_session_end.call_deferred()
+
+func _begin_session_entry(label: String) -> void:
+	if not session_active:
+		session_active = true
+		session_entries = []
+		session_results = []
+	# 戰鬥與多回合追擊（含狩獵的搏鬥）才編號
+	var numbered: bool = current_combat != null or (current_hunt != null and current_hunt.stage in [HuntSystem.Stage.CHASE, HuntSystem.Stage.FIGHT])
+	var num: int = 0
+	if numbered:
+		num = 1
+		for e in session_entries:
+			if int(e["num"]) > 0:
+				num += 1
+	session_entries.append({"label": choice_label_regex.sub(label, "", true).strip_edges(), "num": num, "lines": []})
+
+# 選擇處理完後：遭遇畫面都關了就是這場遭遇結束。最後一個選擇有結果時先交代結果、按「繼續」才回到主畫面。
+func _check_session_end() -> void:
+	session_check_pending = false
+	if not session_active or session_result_mode:
+		return
+	if encounter_overlay.visible or hunt_overlay.visible or current_hunt != null or current_combat != null:
+		_render_strips()
+		return
+	if GameState.wolf == null or not GameState.wolf.alive or session_entries.is_empty() or session_entries.back()["lines"].is_empty():
+		_end_session()
+		return
+	session_result_mode = true
+	encounter_message.text = _join_sentences(session_entries.back()["lines"])
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "idle")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	var btn := Button.new()
+	btn.text = tr("ui.continue")
+	btn.pressed.connect(_end_session)
+	encounter_buttons_box.add_child(btn)
+	encounter_overlay.visible = true
+	_render_strips()
+
+# 遭遇結束：主畫面的紀錄只留總結（標記的結果＋最後一句），再處理排隊的事件。
+func _end_session() -> void:
+	if session_result_mode:
+		encounter_overlay.visible = false
+	session_result_mode = false
+	var all_lines: Array = []
+	for e in session_entries:
+		all_lines.append_array(e["lines"])
+	var summary: Array[String] = session_results.duplicate()
+	if not all_lines.is_empty() and not summary.has(all_lines.back()):
+		summary.append(all_lines.back())
+	session_active = false
+	session_entries = []
+	session_results = []
+	encounter_strip.visible = false
+	hunt_strip.visible = false
+	for s in summary:
+		_main_append(s)
+	_refresh()
+
+func _render_strips() -> void:
+	var shown: Array = []
+	for e in session_entries:
+		if not e["lines"].is_empty():
+			shown.append(e)
+	# 結果畫面：最後一段已經寫在上面的描述，紀錄只列之前的
+	if session_result_mode and not shown.is_empty():
+		shown.pop_back()
+	var parts: Array[String] = []
+	for i in shown.size():
+		var e: Dictionary = shown[i]
+		var color: String = LOG_COLOR_NEW if i == shown.size() - 1 and not session_result_mode else LOG_COLOR_OLD
+		var prefix: String = (_circled(int(e["num"])) + " ") if int(e["num"]) > 0 else ""
+		var label: String = ("[color=%s]%s：[/color]" % [LOG_COLOR_LABEL, _bb(str(e["label"]))]) if str(e["label"]) != "" else ""
+		parts.append("[color=%s]%s[/color]%s[color=%s]%s[/color]" % [color, prefix, label, color, _bb(_join_sentences(e["lines"]))])
+	var text: String = "\n".join(parts)
+	for strip in [encounter_strip, hunt_strip]:
+		strip.text = text
+		strip.visible = session_active and not parts.is_empty()
+		strip.scroll_to_line.call_deferred(max(0, strip.get_line_count() - 1))
+
+func _circled(n: int) -> String:
+	const CIRCLED := "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+	return CIRCLED[n - 1] if n >= 1 and n <= CIRCLED.length() else "(%d)" % n
 
 func _clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -1010,6 +1231,7 @@ func _all_regions() -> Array:
 	return list
 
 func _on_region_button(region_id: String, via_ice: bool = false) -> void:
+	_new_main_entry()
 	if region_id == GameState.current_region:
 		return
 	for entry in GameState.known_dangers(region_id, GameTime.current_season()):
@@ -1021,6 +1243,7 @@ func _on_region_button(region_id: String, via_ice: bool = false) -> void:
 # --- Actions ---
 
 func _on_action_button(action_id: String) -> void:
+	_new_main_entry()
 	match action_id:
 		"explore":
 			_show_discovery(GameState.action_explore())
@@ -1069,6 +1292,7 @@ func _show_rest_overlay() -> void:
 	rest_overlay.visible = true
 
 func _on_rest_until(period: String) -> void:
+	_new_main_entry()
 	rest_overlay.visible = false
 	var res := GameState.action_rest_until(period)
 	if not res.get("alive", false):
@@ -1195,7 +1419,7 @@ func _on_track() -> void:
 func _add_encounter_button(label: String, callback: Callable) -> void:
 	var btn := Button.new()
 	btn.text = label
-	btn.pressed.connect(callback)
+	btn.pressed.connect(_session_choice(label, callback))
 	encounter_buttons_box.add_child(btn)
 
 func _discovery_text(d: Dictionary) -> String:
@@ -1410,7 +1634,7 @@ func _build_rain() -> void:
 	add_child(rain)
 
 func _overlay_busy() -> bool:
-	return current_hunt != null or current_combat != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
+	return session_active or current_hunt != null or current_combat != null or encounter_overlay.visible or hunt_overlay.visible or rest_overlay.visible \
 		or debug_overlay.visible or region_info_overlay.visible or card_overlay.visible
 
 # 目前的行動結束、沒有其他畫面開著時，依序處理世界主動找上門的事件。
@@ -1653,6 +1877,7 @@ func _explore_hint() -> String:
 	return tr("ui.explore_hint").replace("{n}", str(int(round(best_chance * 100.0)))).replace("{animal}", tr("animal." + best))
 
 func _show_knowledge() -> void:
+	region_info_text.bbcode_enabled = false
 	var lines: Array[String] = [tr("ui.knowledge.title")]
 	var order := ["prey", "danger", "opponent", "weakness", "overhunt"]
 	var entries: Array = GameState.knowledge.values()
@@ -1671,6 +1896,7 @@ func _show_knowledge() -> void:
 	region_info_overlay.visible = true
 
 func _show_region_info() -> void:
+	region_info_text.bbcode_enabled = false
 	var unknown: String = tr("ui.unknown")
 	var lines: Array[String] = [tr("ui.region_info")]
 	for region_id in _all_regions():
@@ -1702,17 +1928,11 @@ func _show_find_result(result: Dictionary) -> void:
 	_set_creature(encounter_sprite, animal_id, life_stage)
 	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
-	var hunt_btn := Button.new()
-	hunt_btn.text = tr("ui.hunt")
-	hunt_btn.pressed.connect(func():
+	_add_encounter_button(tr("ui.hunt"), func():
 		encounter_overlay.visible = false
 		_begin_hunt(animal_id, life_stage, prey_dir)
 	)
-	encounter_buttons_box.add_child(hunt_btn)
-	var ignore_btn := Button.new()
-	ignore_btn.text = tr("ui.ignore")
-	ignore_btn.pressed.connect(func(): encounter_overlay.visible = false)
-	encounter_buttons_box.add_child(ignore_btn)
+	_add_encounter_button(tr("ui.ignore"), func(): encounter_overlay.visible = false)
 	encounter_overlay.visible = true
 
 # --- Hunting ---
@@ -1791,6 +2011,7 @@ func _render_hunt_stage() -> void:
 		current_hunt.give_up()
 		_finish_hunt()
 	)
+	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
 func _hunt_prey_name() -> String:
 	var name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
@@ -1811,7 +2032,7 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 		var prefix: String = tr(str(info["chance_key"])) + " " if info.has("chance_key") else ""
 		btn.text += "　" + prefix + "%d%%" % int(round(float(info["chance"]) * 100.0))
 	btn.custom_minimum_size = Vector2(215, 0)
-	btn.pressed.connect(callback)
+	btn.pressed.connect(_session_choice(label, callback))
 	row.add_child(btn)
 	var cost: String = _format_cost(info)
 	if cost == "" and not info.has("factors"):
@@ -1923,9 +2144,9 @@ func _finish_hunt() -> void:
 	var succeeded: bool = current_hunt.result == HuntSystem.Result.SUCCESS
 	GameState.finish_hunt(current_hunt)
 	if succeeded:
-		_log(tr("hunt.result.success").replace("{animal}", _hunt_prey_name()))
+		_log_result(tr("hunt.result.success").replace("{animal}", _hunt_prey_name()))
 	else:
-		_log(tr("hunt.result.fail"))
+		_log_result(tr("hunt.result.fail"))
 	hunt_overlay.visible = false
 	current_hunt = null
 	hunt_notes.clear()
@@ -2117,6 +2338,7 @@ func _show_blizzard_over(event: Dictionary) -> void:
 
 # 第一次走這種冰：先踩上去試，只描述腳下的感覺，由玩家決定要不要走。
 func _show_ice_feel(ice: Dictionary) -> void:
+	_new_main_entry()
 	var text: String = tr("ice.feel." + ("thin" if ice["thin"] else "solid"))
 	_log(text)
 	encounter_message.text = text
@@ -2406,14 +2628,14 @@ func _render_combat() -> void:
 		lines.append(tr("combat.exchange.title").replace("{animal}", name) + "　" + tr(c.opp_condition_key()))
 		if c.mother:
 			lines.append(tr("combat.stake.mother"))
-	if not combat_notes.is_empty():
-		lines.append("　".join(combat_notes))
+	# 每回合的結果寫在下方的遭遇紀錄（編號），描述只留雙方的狀態
 	if FightRules.in_danger(GameState.wolf):
 		lines.append(tr("combat.danger"))
 	hunt_message.text = "\n".join(lines)
 	for opt in c.options():
 		var id: String = opt["id"]
 		_add_hunt_choice(tr(opt["label_key"]), opt, func(): _on_combat_choice(id))
+	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
 func _on_combat_choice(id: String) -> void:
 	var c := current_combat
@@ -2447,11 +2669,11 @@ func _finish_combat_ui() -> void:
 		if tr(result_key) == result_key:
 			result_key = "combat.result." + c.outcome
 		result_text = tr(result_key).replace("{animal}", name)
-		_log(result_text)
+		_log_result(result_text)
 		if str(r.get("grow", "")) != "":
-			_log(tr("combat.grow." + str(r["grow"])))
+			_log_result(tr("combat.grow." + str(r["grow"])))
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.won():
-			_log(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
+			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty():
 			_log(tr("tundra.relation." + GameState.tundra_relation_key()))
 	_refresh()

@@ -109,8 +109,8 @@ hunt.chase.success,你追上了獵物
 hunt.chase.fail,獵物甩開了你
 hunt.fight.success,你成功制伏了獵物
 hunt.fight.counter,獵物反擊 你受了傷
-hunt.result.success,狩獵成功
-hunt.result.fail,這次狩獵失敗了
+hunt.result.success,你獵到了{animal}。
+hunt.result.fail,這次狩獵失敗了。
 hunt.stage.observe,觀察階段：遠處有一隻{animal}
 hunt.stage.pounce,{animal}就在附近
 hunt.option.pounce,撲抓
@@ -209,6 +209,9 @@ factor.storm_scent,雨水沖散氣味
 reason.storm_scent,雨水沖散了氣味 你跟丟了
 action.return_to_carcass,回到獵物殘骸
 ui.knowledge,知識
+ui.log_history,紀錄
+ui.log_history.title,最近的紀錄
+ui.log_history.empty,還沒有任何紀錄。
 ui.knowledge.title,這隻狼知道的事
 ui.knowledge.empty,還沒有累積任何知識
 ui.note,記下
