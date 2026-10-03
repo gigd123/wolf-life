@@ -607,6 +607,7 @@ debug.event.fox_scavenge,狐狸偷食
 debug.event.mother_bear,母熊
 debug.event.old_injury,舊傷發作
 chance_label.hit,命中率
+chance_label.success,成功率
 chance_label.dodge,閃開率
 chance_label.escape,脫身率
 chance_label.drive_off,嚇退率

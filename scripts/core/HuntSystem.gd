@@ -227,6 +227,10 @@ func options() -> Array:
 					"factors": info["factors"], "turns": 0, "stamina": 0.0})
 	for opt in list:
 		_annotate(opt)
+		# 按鈕上標出百分比指的是什麼：撲抓與搏鬥是命中率，其他是成功率
+		if opt.has("chance") and not opt.has("chance_key"):
+			var hit: bool = stage == Stage.FIGHT or (stage == Stage.POUNCE and opt["id"] != "search")
+			opt["chance_key"] = "chance_label.hit" if hit else "chance_label.success"
 	return list
 
 # 代價列（SPEC 1.6「選項的代價與收穫」）：除了體力與回合，再補上

@@ -5,6 +5,7 @@ const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "str
 const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
+const CURRENT_REGION_COLOR := Color(1.0, 0.86, 0.45) # 地圖上目前位置的字與框
 
 var stats_bars: Dictionary = {}
 var stats_labels: Dictionary = {}
@@ -14,11 +15,13 @@ var region_buttons: Dictionary = {}
 var map_slots: Array[Button] = []
 var map_title: Label
 var cross_map_box: HFlowContainer
+var current_region_style: StyleBoxFlat
 var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var status_icons: Dictionary = {}
 var log_box: RichTextLabel
 var top_label: Label
+var stage_label: Label
 var wolf_portrait: AnimatedIcon
 var last_rendered_season: String = ""
 
@@ -121,13 +124,21 @@ func _build_ui() -> void:
 	var header_box := HBoxContainer.new()
 	root_vbox.add_child(header_box)
 
+	# 狼的頭像，下面是生命階段（放在頂部列會被狩獵傾向、狀態圖示擠掉）
+	var portrait_box := VBoxContainer.new()
+	portrait_box.add_theme_constant_override("separation", 0)
+	header_box.add_child(portrait_box)
 	wolf_portrait = AnimatedIcon.new()
-	wolf_portrait.custom_minimum_size = Vector2(96, 64)
+	wolf_portrait.custom_minimum_size = Vector2(96, 40)
 	wolf_portrait.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	wolf_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if not ArtLibrary.setup_wolf(wolf_portrait, "idle"):
 		wolf_portrait.show_static(PixelArt.make_animal_sprite("gray_wolf"))
-	header_box.add_child(wolf_portrait)
+	portrait_box.add_child(wolf_portrait)
+	stage_label = Label.new()
+	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stage_label.add_theme_font_size_override("font_size", 13)
+	portrait_box.add_child(stage_label)
 
 	var header_text_box := VBoxContainer.new()
 	header_text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -196,9 +207,16 @@ func _build_ui() -> void:
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root_vbox.add_child(middle)
 
+	# 地圖也放在自己的捲動區：跨地圖、冰面捷徑的按鈕變多時只在這裡捲動，
+	# 不會撐高中間區域、把底部的行動紀錄擠出視窗。
+	var map_scroll := ScrollContainer.new()
+	map_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	middle.add_child(map_scroll)
 	var map_panel := VBoxContainer.new()
 	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	middle.add_child(map_panel)
+	map_panel.add_theme_constant_override("separation", 2)
+	map_scroll.add_child(map_panel)
 	var map_title_row := HBoxContainer.new()
 	map_panel.add_child(map_title_row)
 	map_title = Label.new()
@@ -217,9 +235,15 @@ func _build_ui() -> void:
 	var map_grid := GridContainer.new()
 	map_grid.columns = 2
 	map_center.add_child(map_grid)
+	current_region_style = StyleBoxFlat.new()
+	current_region_style.bg_color = Color(0.2, 0.18, 0.1, 0.75)
+	current_region_style.border_color = CURRENT_REGION_COLOR
+	current_region_style.set_border_width_all(1)
+	current_region_style.set_corner_radius_all(3)
+	current_region_style.set_content_margin_all(4)
 	for i in 4:
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(140, 46)
+		btn.custom_minimum_size = Vector2(150, 40)
 		# 標記變多時不要撐寬地圖（超出的字截掉）
 		btn.clip_text = true
 		btn.expand_icon = false
@@ -465,19 +489,23 @@ func _build_debug_overlay() -> void:
 	close_btn.pressed.connect(_toggle_debug)
 	title_row.add_child(close_btn)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
+	# 兩欄各自捲動：右欄很長，捲到下面時左欄的素質不會跟著捲走、留下一片空白
 	var columns := HBoxContainer.new()
-	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 16)
-	scroll.add_child(columns)
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 12)
+	root.add_child(columns)
+	var left_scroll := ScrollContainer.new()
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	columns.add_child(left_scroll)
+	var right_scroll := ScrollContainer.new()
+	right_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	columns.add_child(right_scroll)
 
 	# 左欄：素質
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 2)
-	columns.add_child(left)
+	left_scroll.add_child(left)
 	left.add_child(_debug_section_label("debug.section.stats"))
 	for key in ["health", "health_max", "stamina", "speed", "strength", "skill", "perception", "hunger", "health_value", "age_years"]:
 		var row := HBoxContainer.new()
@@ -488,7 +516,9 @@ func _build_debug_overlay() -> void:
 		row.add_child(l)
 		var spin := SpinBox.new()
 		spin.min_value = 0
-		spin.max_value = 20 if key == "age_years" else (float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else (120 if key == "health_max" else 100))
+		# 血量會超過 100（血量上限成長），兩格都用血量上限的潛力上限，避免顯示被截在 100
+		var health_cap: float = float(GameData.balance.get("growth", {}).get("potential", {}).get("max", {}).get("health_max", 120))
+		spin.max_value = 20 if key == "age_years" else (float(GameData.balance.get("hunger_max", 150)) if key == "hunger" else (health_cap if key in ["health", "health_max"] else 100))
 		spin.step = 0.1 if key == "age_years" else 1
 		spin.custom_minimum_size = Vector2(90, 0)
 		row.add_child(spin)
@@ -502,7 +532,7 @@ func _build_debug_overlay() -> void:
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 2)
-	columns.add_child(right)
+	right_scroll.add_child(right)
 	right.add_child(_debug_section_label("debug.section.time"))
 	var time_grid := GridContainer.new()
 	time_grid.columns = 2
@@ -521,7 +551,7 @@ func _build_debug_overlay() -> void:
 	)
 
 	right.add_child(_debug_section_label("debug.section.encounter"))
-	var enc_row := HBoxContainer.new()
+	var enc_row := _debug_row()
 	right.add_child(enc_row)
 	var animal_pick := OptionButton.new()
 	for animal_id in GameState.debug_animal_ids():
@@ -539,7 +569,7 @@ func _build_debug_overlay() -> void:
 			str(stage_pick.get_item_metadata(stage_pick.selected)))
 	)
 	# 1.5 新事件（其餘在各自步驟完成後再接上）
-	var event_row := HBoxContainer.new()
+	var event_row := _debug_row()
 	right.add_child(event_row)
 	_debug_button(event_row, tr("debug.event.bear_distant"), func():
 		debug_overlay.visible = false
@@ -549,7 +579,7 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		_show_distant({"encountered": true, "animal_id": "stranger_wolf", "life_stage": "adult", "distant": true})
 	)
-	var event_row2 := HBoxContainer.new()
+	var event_row2 := _debug_row()
 	right.add_child(event_row2)
 	_debug_button(event_row2, tr("debug.event.storm"), func():
 		debug_overlay.visible = false
@@ -566,7 +596,7 @@ func _build_debug_overlay() -> void:
 		GameState.pending_events.append({"type": "driven_off"})
 		_refresh()
 	)
-	var event_row3 := HBoxContainer.new()
+	var event_row3 := _debug_row()
 	right.add_child(event_row3)
 	_debug_button(event_row3, tr("debug.event.prey_nearby"), func():
 		debug_overlay.visible = false
@@ -580,7 +610,7 @@ func _build_debug_overlay() -> void:
 	)
 	# 成長（1.6 第 2 步）：模擬一段次成年期、強制轉變卡片、匯出試玩紀錄
 	right.add_child(_debug_section_label("debug.section.growth"))
-	var growth_row := HBoxContainer.new()
+	var growth_row := _debug_row()
 	right.add_child(growth_row)
 	var profile_pick := OptionButton.new()
 	for prof in DEBUG_GROWTH_PROFILES:
@@ -590,7 +620,7 @@ func _build_debug_overlay() -> void:
 		var prof: Array = DEBUG_GROWTH_PROFILES[profile_pick.selected]
 		_start_auto_to_adult(str(prof[1]), str(prof[2]))
 	)
-	var growth_row2 := HBoxContainer.new()
+	var growth_row2 := _debug_row()
 	right.add_child(growth_row2)
 	_debug_button(growth_row2, tr("debug.force_adult"), func():
 		debug_overlay.visible = false
@@ -608,7 +638,7 @@ func _build_debug_overlay() -> void:
 
 	# 模擬到死亡（1.6 第 1 步，驗收 1.5 的「兩隻風格相反的狼」）
 	right.add_child(_debug_section_label("debug.section.auto"))
-	var auto_row := HBoxContainer.new()
+	var auto_row := _debug_row()
 	right.add_child(auto_row)
 	var den_pick := OptionButton.new()
 	for region_id in REGION_ORDER:
@@ -631,9 +661,10 @@ func _build_debug_overlay() -> void:
 			str(prey_pick.get_item_metadata(prey_pick.selected)), str(style_pick.get_item_metadata(style_pick.selected)))
 	)
 	auto_status = Label.new()
+	auto_status.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	right.add_child(auto_status)
 	# 戰鬥（1.6 第 3 步）
-	var combat_row := HBoxContainer.new()
+	var combat_row := _debug_row()
 	right.add_child(combat_row)
 	_debug_button(combat_row, tr("debug.event.fox_scavenge"), func():
 		debug_overlay.visible = false
@@ -646,7 +677,7 @@ func _build_debug_overlay() -> void:
 		_on_encounter_triggered({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "mother": true})
 	)
 	# 森林大火（1.6 第 5 步）：指定起火區域
-	var fire_row := HBoxContainer.new()
+	var fire_row := _debug_row()
 	right.add_child(fire_row)
 	var fire_pick := OptionButton.new()
 	fire_pick.add_item(tr("debug.fire.random"))
@@ -661,7 +692,7 @@ func _build_debug_overlay() -> void:
 		_refresh()
 	)
 	# 苔原的事件（1.6 第 6d 步）
-	var tundra_row := HBoxContainer.new()
+	var tundra_row := _debug_row()
 	right.add_child(tundra_row)
 	_debug_button(tundra_row, tr("debug.tundra.blizzard"), func():
 		debug_overlay.visible = false
@@ -689,7 +720,7 @@ func _build_debug_overlay() -> void:
 		_refresh()
 	)
 	# 苔原狼（1.6 第 6e 步）
-	var tundra_wolf_row := HBoxContainer.new()
+	var tundra_wolf_row := _debug_row()
 	right.add_child(tundra_wolf_row)
 	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.meet"), func():
 		debug_overlay.visible = false
@@ -710,7 +741,7 @@ func _build_debug_overlay() -> void:
 		GameState.start_feeding("caribou", "adult", "open_tundra")
 		_show_scavenger("tundra_wolves", false)
 	)
-	var stranger_row := HBoxContainer.new()
+	var stranger_row := _debug_row()
 	right.add_child(stranger_row)
 	_debug_button(stranger_row, tr("debug.event.stranger_meet"), func():
 		debug_overlay.visible = false
@@ -723,6 +754,7 @@ func _build_debug_overlay() -> void:
 		_show_stranger_confront()
 	)
 	npc_status = Label.new()
+	npc_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	npc_status.add_theme_font_size_override("font_size", 12)
 	right.add_child(npc_status)
 	_debug_button(combat_row, tr("debug.event.old_injury"), func():
@@ -738,6 +770,13 @@ func _build_debug_overlay() -> void:
 		GameState.start_feeding("white_tailed_deer", "adult", "stream")
 		_show_scavenger("bear", false)
 	)
+
+# 右欄的一列按鈕：放不下時自動換行，不會把右欄撐寬到視窗外。
+func _debug_row() -> HFlowContainer:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 2)
+	row.add_theme_constant_override("v_separation", 2)
+	return row
 
 func _debug_section_label(key: String) -> Label:
 	var l := Label.new()
@@ -779,8 +818,8 @@ func _toggle_debug() -> void:
 func _get_wolf_stat(key: String) -> float:
 	var w: Wolf = GameState.wolf
 	match key:
-		"health": return w.health
-		"health_max": return w.health_max
+		"health": return _shown_health(w)
+		"health_max": return round(w.health_max)
 		"stamina": return w.stamina
 		"speed": return w.speed
 		"strength": return w.strength
@@ -795,14 +834,15 @@ func _refresh() -> void:
 	if GameState.wolf == null or GameState.auto_playing:
 		return
 	var w: Wolf = GameState.wolf
-	top_label.text = "%s   %s D%d %s%s   |   %s" % [
+	top_label.text = "%s  %s D%d %s%s" % [
 		tr("region." + GameState.current_region),
 		tr("season." + GameTime.current_season()),
 		GameTime.day,
 		tr("period." + GameTime.current_period()),
 		_weather_text(),
-		tr("stage." + _stage_key(w.life_stage())),
 	]
+	top_label.tooltip_text = top_label.text
+	stage_label.text = tr("stage." + _stage_key(w.life_stage()))
 	# 目前的主要狩獵方式（按鈕，點了看說明）
 	var tendency: Dictionary = GameState.current_tendency()
 	tendency_button.visible = not tendency.is_empty()
@@ -821,7 +861,7 @@ func _refresh() -> void:
 	stats_bars["health"].max_value = w.health_max
 	stats_bars["health"].value = w.health
 	stats_labels["health"].text = tr("ui.stat_with_max").replace("{name}", tr("stat.health")) \
-		.replace("{value}", str(int(ceil(w.health)))).replace("{max}", str(int(round(w.health_max))))
+		.replace("{value}", str(_shown_health(w))).replace("{max}", str(int(round(w.health_max))))
 	stats_bars["stamina"].value = w.stamina
 	stats_bars["hunger"].value = w.hunger
 	stats_bars["health_value"].value = w.health_value
@@ -888,12 +928,21 @@ func _refresh() -> void:
 		var is_current: bool = region_id == GameState.current_region
 		btn.disabled = not is_adjacent or is_current
 		var marker: String = " ★" if region_id == GameState.den_region else ""
-		var here: String = (" [" + tr("ui.here") + "]") if is_current else ""
 		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
 		var danger: String = " ⚠" if not GameState.known_dangers(region_id, GameTime.current_season()).is_empty() else ""
 		var burn: String = GameState.burn_state(region_id)
 		var fire_mark: String = tr("map." + burn) if burn != "" else ""
-		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark + here
+		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark
+		btn.tooltip_text = tr("ui.here") if is_current else ""
+		# 目前位置用亮框與亮字標出，不再在名稱後面加「[目前位置]」（按鈕寬度放不下，會被截掉）
+		if is_current:
+			btn.add_theme_stylebox_override("disabled", current_region_style)
+			btn.add_theme_color_override("font_disabled_color", CURRENT_REGION_COLOR)
+			btn.add_theme_color_override("icon_disabled_color", Color.WHITE)
+		else:
+			btn.remove_theme_stylebox_override("disabled")
+			btn.remove_theme_color_override("font_disabled_color")
+			btn.remove_theme_color_override("icon_disabled_color")
 
 	var available: Array[String] = GameState.available_actions()
 	for action_id in action_buttons.keys():
@@ -903,6 +952,11 @@ func _refresh() -> void:
 	action_buttons["explore"].text = tr("action.explore") + _explore_hint()
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
+
+# 顯示用的血量：無條件進位（還活著就不會顯示 0），但不超過顯示的上限
+# （血量 107.3／107.3 不會顯示成 108／107）。除錯選單也用這個值。
+func _shown_health(w: Wolf) -> int:
+	return mini(int(ceil(w.health)), int(round(w.health_max)))
 
 # 外貌用的生命階段：""（次成年）、"adult"、"elder"。
 func _wolf_stage_key() -> String:
@@ -1063,7 +1117,7 @@ func _show_discovery(d: Dictionary) -> void:
 			)
 		elif ExploreSystem.can_track(d):
 			var info := GameState.track_chance()
-			_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+			_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
 	if d.get("kind", "") == "clue" and (d.get("source_kind", "") == "threat" or (d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false))):
 		_add_encounter_button(tr("ui.note"), func():
@@ -1102,7 +1156,7 @@ func _add_threat_options(d: Dictionary) -> void:
 		return
 	if ExploreSystem.can_track(d):
 		var info := GameState.track_chance()
-		_add_encounter_button(tr("ui.track") + "　%d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+		_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 		encounter_detail.text = tr("explore.threat_track_warning")
 	if source == "grizzly_bear":
 		_add_encounter_button(tr("ui.avoid"), _on_avoid)
@@ -1744,10 +1798,10 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 	var btn := Button.new()
 	btn.text = label
 	if info.has("chance"):
-		# 戰鬥選項標出成功指的是什麼（嚇退／命中／閃開／脫身），狩獵選項只顯示成功率
+		# 標出成功指的是什麼（狩獵：命中／成功；戰鬥：嚇退／命中／閃開／脫身）
 		var prefix: String = tr(str(info["chance_key"])) + " " if info.has("chance_key") else ""
 		btn.text += "　" + prefix + "%d%%" % int(round(float(info["chance"]) * 100.0))
-	btn.custom_minimum_size = Vector2(185, 0)
+	btn.custom_minimum_size = Vector2(215, 0)
 	btn.pressed.connect(callback)
 	row.add_child(btn)
 	var cost: String = _format_cost(info)
