@@ -580,7 +580,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 	current_region = target_region
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
 	if not link.is_empty():
-		wolf.stamina -= float(link["stamina"])
+		wolf.stamina -= float(link["stamina"]) * wolf.injury_stamina_mult()
 		var maps_visited: Array = life_log.get("maps_visited", [GameData.map_of(den_region)])
 		if not maps_visited.has(GameData.map_of(target_region)):
 			maps_visited.append(GameData.map_of(target_region))
@@ -607,7 +607,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 			.replace("{main}", tr("region_main." + main)))
 	_describe_burned_arrival(target_region)
 	var terrain_cost: float = float(EncounterSystem.region_data(target_region).get("terrain_stamina_modifier", 0))
-	wolf.stamina -= terrain_cost
+	wolf.stamina -= terrain_cost * wolf.injury_stamina_mult()
 	wolf.clamp_stats()
 	_check_death()
 	if wolf.alive:

@@ -334,6 +334,7 @@ factor.chase_bonus,已佔好位置
 factor.hungry,飢餓虛弱
 factor.overfed,吃太撐
 factor.injured,重傷未癒
+factor.wounded,身上有傷：體力消耗增加
 reason.wind_turned,風向轉了，{animal}聞到了你。
 reason.wind_tailwind,你在上風處，{animal}聞到了你。
 reason.prey_alert,{animal}太警覺了
@@ -569,9 +570,9 @@ injury.card.heavy.speed,你的腿傷得很深，每跨一步都在發疼，跑�
 injury.card.heavy.strength,你的肩膀傷得很深，一用力撕咬就痛得發抖。
 injury.card.heavy.perception,你的臉傷得很深，一隻眼睛腫得睜不開，鼻子也不靈了。
 injury.card.hp_note,睡一覺血量就會回來，但傷口要等時間過去才會好。
-injury.effect.heavy,重傷：{stat} −{n}%，約 {days} 天痊癒
-injury.effect.light,輕傷：約 {days} 天痊癒，不影響行動
-injury.toast.light,輕傷：約 {days} 天痊癒，不影響行動
+injury.effect.heavy,重傷：{stat} −{n}%、體力消耗增加，約 {days} 天痊癒
+injury.effect.light,輕傷：體力消耗增加，約 {days} 天痊癒
+injury.toast.light,輕傷：體力消耗增加，約 {days} 天痊癒
 combat.dodge.success,你閃開了{animal}的攻擊，看見了牠的破綻。
 combat.retreat.success,你轉身跑開，牠沒有追來。
 combat.retreat.fail,你沒能脫身。

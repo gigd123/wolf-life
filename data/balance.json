@@ -20,6 +20,7 @@
   "heavy_injury_days_min": 3,
   "heavy_injury_days_max": 5,
   "heavy_injury_stat_mult": 0.8,
+  "injury_stamina_mult": 1.15,
   "rest_stamina_cap": 80,
   "night_prey_detection_mod": -10,
   "wind_change_chance_per_period": 0.15,

@@ -227,6 +227,13 @@ func options() -> Array:
 					"factors": info["factors"], "turns": 0, "stamina": 0.0})
 	for opt in list:
 		_annotate(opt)
+		# 身上有傷：體力消耗增加（SPEC「傷勢與舊傷」），顯示在因素欄
+		var stamina_mult: float = wolf.injury_stamina_mult()
+		if stamina_mult > 1.0 and float(opt.get("stamina", 0.0)) > 0.0:
+			opt["stamina"] = float(opt["stamina"]) * stamina_mult
+			var factors: Array = opt.get("factors", [])
+			factors.append({"key": "factor.wounded", "good": false, "weight": 0.0, "info": true})
+			opt["factors"] = factors
 		# 按鈕上標出百分比指的是什麼：撲抓與搏鬥是命中率，其他是成功率
 		if opt.has("chance") and not opt.has("chance_key"):
 			var hit: bool = stage == Stage.FIGHT or (stage == Stage.POUNCE and opt["id"] != "search")

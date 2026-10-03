@@ -107,6 +107,10 @@ func effective_skill() -> float:
 func effective_perception() -> float:
 	return perception * _hunger_stat_mult() * _injury_mult("perception") * env_perception_mult
 
+# 身上有傷時的體力消耗倍率（1.6 試玩回饋：輕傷原本沒有任何影響）。重傷也適用，重傷另外會降低能力。
+func injury_stamina_mult() -> float:
+	return float(GameData.balance.get("injury_stamina_mult", 1.15)) if injury != Injury.NONE else 1.0
+
 func is_overfed() -> bool:
 	return hunger > float(GameData.balance.get("overfed_threshold", 120))
 
