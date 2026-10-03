@@ -1095,7 +1095,9 @@ func action_sleep() -> Dictionary:
 	var settle := Growth.settle_sleep(wolf)
 	if not settle["gains"].is_empty():
 		growth_applied.emit()
-	wolf.health += (wolf.health_max - wolf.health) * mult
+	# 重傷期間血量回復減半（SPEC「傷勢與舊傷」）：重傷之後要休養幾天，體力照常回復
+	var health_mult: float = mult * (float(cfg.get("heavy_injury_health_mult", 0.5)) if wolf.injury == Wolf.Injury.HEAVY else 1.0)
+	wolf.health += (wolf.health_max - wolf.health) * health_mult
 	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。

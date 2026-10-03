@@ -569,7 +569,7 @@ injury.card.heavy,這道傷口很深，需要時間慢慢癒合。
 injury.card.heavy.speed,你的腿傷得很深，每跨一步都在發疼，跑不快了。
 injury.card.heavy.strength,你的肩膀傷得很深，一用力撕咬就痛得發抖。
 injury.card.heavy.perception,你的臉傷得很深，一隻眼睛腫得睜不開，鼻子也不靈了。
-injury.card.hp_note,睡一覺血量就會回來，但傷口要等時間過去才會好。
+injury.card.hp_note,重傷期間，睡一覺只能回復平常一半的血量；傷口本身要等時間過去才會好。
 injury.effect.heavy,重傷：{stat} −{n}%、體力消耗增加，約 {days} 天痊癒
 injury.effect.light,輕傷：體力消耗增加，約 {days} 天痊癒
 injury.toast.light,輕傷：體力消耗增加，約 {days} 天痊癒

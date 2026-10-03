@@ -141,7 +141,8 @@
     "recovery": { "den": 1.0, "good": 0.9, "normal": 0.7, "rough": 0.4 },
     "night_encounter": { "den": 0.0, "good": 0.03, "normal": 0.08, "rough": 0.15 },
     "good_spot_find_chance": 0.35,
-    "interrupted_mult": 0.5
+    "interrupted_mult": 0.5,
+    "heavy_injury_health_mult": 0.5
   },
   "short_rest_stamina": 15,
   "rest_until_stamina_per_turn": 7.5,
