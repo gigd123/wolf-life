@@ -169,7 +169,7 @@ explore.fled,{animal}往{location}逃了 留下新鮮的足跡
 log.counter_damage,你受到 {n} 點傷害
 debug.life_stage.buck,雄鹿
 debug.event.bear_distant,灰熊遠距目擊
-debug.event.stranger_distant,陌生灰狼遠距觀察
+debug.event.stranger_distant,黑狼遠距觀察
 debug.event.storm,暴雨
 debug.event.howl,狼嚎
 debug.event.driven_off,被驅趕
@@ -248,18 +248,18 @@ clue.grizzly_bear.flipped_log.known,灰熊翻找食物的痕跡
 clue.grizzly_bear.sight.unknown,遠處有一頭陌生的大型動物在翻找食物
 clue.grizzly_bear.sight.known,遠處有一頭灰熊 牠沒有發現你
 clue.stranger_wolf.wolf_track.unknown,一個和自己體型相近 但不是家人的腳印
-clue.stranger_wolf.wolf_track.known,陌生灰狼的腳印
+clue.stranger_wolf.wolf_track.known,黑狼的腳印
 clue.stranger_wolf.similar_scent.unknown,和家人相似 但完全陌生的氣味
-clue.stranger_wolf.similar_scent.known,陌生灰狼的氣味
+clue.stranger_wolf.similar_scent.known,黑狼的氣味
 clue.stranger_wolf.sight.unknown,遠處有一隻和你很像的狼走過
-clue.stranger_wolf.sight.known,遠處有那隻陌生的灰狼
-animal.stranger_wolf,陌生灰狼
+clue.stranger_wolf.sight.known,遠處有那隻黑狼
+animal.stranger_wolf,黑狼
 encounter.far_away,遠處
 encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食物 牠沒有發現你
 encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過 牠沒有注意到你
 encounter.observe,觀察（1 回合）
 encounter.observed.grizzly_bear,你屏住氣息看清楚了 那是一頭灰熊 巨大的爪子和肩上的隆起讓人不敢靠近
-encounter.observed.stranger_wolf,你遠遠看著牠 那是一隻和你一樣獨自生活的成年灰狼
+encounter.observed.stranger_wolf,你遠遠看著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
 encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
 encounter.direct,{animal}沒有示威，直接撲了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物 正朝你的獵物走來
@@ -605,7 +605,7 @@ injury_source.grizzly_bear.carcass,和灰熊搶食
 injury_source.grizzly_bear.encounter,和灰熊衝突
 injury_source.white_tailed_deer.hunt,獵鹿
 injury_source.red_fox.carcass,驅趕狐狸
-injury_source.stranger_wolf.encounter,被陌生灰狼驅趕
+injury_source.stranger_wolf.encounter,被黑狼驅趕
 injury_source.hunt,狩獵
 debug.event.fox_scavenge,狐狸偷食
 debug.event.mother_bear,母熊
@@ -666,9 +666,9 @@ death_bio.combat.stranger_wolf.meet,拒絕向那隻黑狼低頭，死在牠的�
 death_bio.combat.stranger_wolf.territory,拒絕向那隻黑狼低頭，死在牠的牙下
 injury_source.stranger_wolf.meet,和那隻黑狼打鬥
 injury_source.stranger_wolf.territory,和那隻黑狼爭地盤
-debug.event.stranger_meet,陌生灰狼直接互動
-debug.event.stranger_confront,陌生灰狼現身（範圍）
-debug.npc_status,陌生灰狼：{age} 歲　{stats}　{state}
+debug.event.stranger_meet,黑狼直接互動
+debug.event.stranger_confront,黑狼現身（範圍）
+debug.npc_status,黑狼：{age} 歲　{stats}　{state}
 debug.npc_dead,（已死）
 fire.warning.early,風裡有一股焦味。鳥群從{origin}那邊飛過來，林間的動物都往同一個方向逃。
 fire.warning.late,遠處的天空泛著紅光，濃煙已經從{origin}升起。
