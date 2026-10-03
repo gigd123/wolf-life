@@ -1289,6 +1289,12 @@ func _on_action_button(action_id: String) -> void:
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
 	_clear_children(rest_buttons_box)
+	# 暴風雪中待在巢穴或好睡處：可以一路休息到風雪結束
+	if GameState.can_rest_out_blizzard():
+		var blizzard_btn := Button.new()
+		blizzard_btn.text = tr("ui.rest_until.blizzard")
+		blizzard_btn.pressed.connect(_on_rest_out_blizzard)
+		rest_buttons_box.add_child(blizzard_btn)
 	var count := GameTime.PERIODS.size()
 	for offset in range(1, count):
 		var period: String = GameTime.PERIODS[(GameTime.period_index + offset) % count]
@@ -1308,6 +1314,20 @@ func _on_rest_until(period: String) -> void:
 		_log(tr("log.rest_interrupted"))
 	else:
 		_log(tr("log.rest_until").replace("{period}", tr("period." + period)))
+
+func _on_rest_out_blizzard() -> void:
+	_new_main_entry()
+	rest_overlay.visible = false
+	var res := GameState.action_rest_out_blizzard()
+	if not res.get("alive", false):
+		return
+	match str(res.get("interrupted", "")):
+		"":
+			_log(tr("log.rest_blizzard.done"))
+		"hungry":
+			_log(tr("log.rest_blizzard.hungry"))
+		_:
+			_log(tr("log.rest_interrupted"))
 
 func _animal_scale(life_stage: String) -> float:
 	return 0.7 if life_stage == "juvenile" else 1.0

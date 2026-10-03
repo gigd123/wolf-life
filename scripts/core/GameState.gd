@@ -1032,15 +1032,33 @@ func action_rest_until(target_period: String) -> Dictionary:
 	var target_index := GameTime.PERIODS.find(target_period)
 	if target_index < 0 or target_index == GameTime.period_index:
 		return {"alive": wolf.alive, "interrupted": ""}
+	return _rest_loop(func(): return GameTime.period_index == target_index, GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD)
+
+# 暴風雪中待在巢穴或好睡處：可以休息到風雪結束（SPEC 1.6「苔原的事件」）。
+func can_rest_out_blizzard() -> bool:
+	return blizzard_here() and str(blizzard.get("phase", "")) == "active" and sleep_quality() in ["den", "good"]
+
+# 一回合一回合休息到風雪停：照常扣飽食度、體力與受凍，被事件打斷就停；
+# 餓到門檻以下也會停下來（interrupted = "hungry"），不讓快轉直接把狼餓死。
+func action_rest_out_blizzard() -> Dictionary:
+	_record_action("rest_until")
+	var floor_hunger: float = float(GameData.balance.get("hunger_low_threshold", 20))
+	var max_turns: int = int(blizzard.get("days", 3)) * GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD
+	var res := _rest_loop(func(): return not blizzard_here() or wolf.hunger <= floor_hunger, max_turns)
+	if wolf.alive and str(res["interrupted"]) == "" and blizzard_here():
+		res["interrupted"] = "hungry"
+	return res
+
+# 快轉的共用迴圈：每回合休息回體力，每過一個時段判定快轉中的事件；stop 成立或被事件打斷就停。
+func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 	var cfg: Dictionary = _events_cfg().get("rest", {})
 	var interrupt: Array = cfg.get("interrupt", [])
 	var start_events: int = pending_events.size()
 	var stamina_per_turn: float = float(GameData.balance.get("rest_until_stamina_per_turn", 7.5))
-	var max_turns := GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD
 	var interrupted: String = ""
 	var gained_stamina: float = 0.0
 	for i in range(max_turns):
-		if not wolf.alive or GameTime.period_index == target_index:
+		if not wolf.alive or stop.call():
 			break
 		var period_before: int = GameTime.period_index
 		GameTime.advance_turns(1)
@@ -1327,7 +1345,8 @@ func _update_weather() -> void:
 		"after_rain":
 			if now > weather_until:
 				weather = "clear"
-	if weather == "clear" and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05))):
+	# 暴風雪期間不會同時下暴雨
+	if weather == "clear" and not blizzard_here() and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05))):
 		start_storm()
 
 func start_storm() -> void:
