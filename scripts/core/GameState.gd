@@ -1138,6 +1138,8 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 		prey_dir = RNGService.randi_range(0, 3)
 	if terrain == "":
 		terrain = _random_terrain(current_region)
+	# 狩獵進行中不換季（SPEC「季節轉換」），finish_hunt 時才換
+	GameTime.hold_season()
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
@@ -1167,6 +1169,7 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 # 狩獵結束（成功或失敗）：同步風向、結算各階段累積的經驗。
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
+	GameTime.release_season()
 	wind_dir = hunt.wind_dir
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
@@ -1646,6 +1649,8 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
+	# 戰鬥進行中不換季，finish_combat 時才換
+	GameTime.hold_season()
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
 	c.tendency = current_tendency()
 	c.terrain = str(current_feeding.get("terrain", "")) if context == "carcass" else str(encounter.get("location", ""))
@@ -1690,6 +1695,7 @@ func _set_opponent_beaten(animal_id: String, life_stage: String, beaten: bool) -
 
 # 戰鬥結束：記錄決策、成長、知識，處理獵物的去留。回傳 {"outcome", "grow": "clean"|"costly"|""}。
 func finish_combat(c: Combat) -> Dictionary:
+	GameTime.release_season()
 	for d in c.decisions:
 		record_decision(d)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
@@ -3226,6 +3232,8 @@ func load_from_dict(data: Dictionary) -> void:
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))
 	GameTime.day = int(t.get("day", 1))
+	GameTime.season_hold = 0
+	GameTime.season_pending = false
 	GameTime.period_index = int(t.get("period_index", 0))
 	GameTime.turn_in_period = int(t.get("turn_in_period", 0))
 	_connect_time_signals()
