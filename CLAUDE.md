@@ -19,6 +19,7 @@
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
 | `docs/progress.md` | 進度紀錄（由你維護） | 每次開始與結束時 |
+| `docs/progress-archive.md` | 從 progress.md 移出的已完成步驟細節、模擬結果、已解決的待確認 | 需要查過去的實作細節或決定時 |
 
 `SPEC.md` 與 `DESIGN.md` 衝突時，以 `SPEC.md` 為準；差異列在 `SPEC.md` 的「與 DESIGN.md 的差異」。
 
