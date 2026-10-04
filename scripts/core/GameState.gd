@@ -1668,6 +1668,14 @@ func _prey_rank(animal_id: String, life_stage: String) -> int:
 
 # --- 戰鬥模式（SPEC 1.6「戰鬥模式」；規則在 FightRules.gd、流程在 Combat.gd） ---
 
+# 一場遭遇（畫面上從第一個選擇到按「繼續」）期間不換季：狩獵前的追蹤、狩獵後的進食與搶食都算在內（QA-29）。
+# 狩獵、戰鬥本身另外也會暫緩（自動玩家沒有畫面上的遭遇）。
+func begin_encounter() -> void:
+	GameTime.hold_season()
+
+func end_encounter() -> void:
+	GameTime.release_season()
+
 # 開始一場戰鬥。encounter 是灰熊遭遇的資料（mother、direct）；direct 時對手已經先撲上來，從交鋒開始。
 func start_combat(animal_id: String, life_stage: String, context: String, encounter: Dictionary = {}) -> Combat:
 	if animal_id == "grizzly_bear":

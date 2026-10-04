@@ -32,6 +32,8 @@ var session_active: bool = false
 var session_entries: Array = [] # [{"label": String, "num": int, "lines": Array}]
 var session_results: Array[String] = [] # 要留在主畫面總結裡的句子（狩獵與戰鬥的結果、學到的知識）
 var session_check_pending: bool = false
+# 這場遭遇開始時請 GameState 暫緩換季，結束時放開（QA-29）
+var session_holds_season: bool = false
 var session_result_mode: bool = false
 var encounter_strip: RichTextLabel
 var hunt_strip: RichTextLabel
@@ -1133,6 +1135,9 @@ func _session_choice(label: String, callback: Callable) -> Callable:
 func _begin_session_entry(label: String) -> void:
 	if not session_active:
 		session_active = true
+		if not session_holds_season:
+			session_holds_season = true
+			GameState.begin_encounter()
 		session_entries = []
 		session_results = []
 	# 戰鬥與多回合追擊（含狩獵的搏鬥）才編號
@@ -1187,6 +1192,10 @@ func _end_session() -> void:
 	hunt_strip.visible = false
 	for s in summary:
 		_main_append(s)
+	# 遭遇的總結寫完才換季：季節卡片在回到主畫面之前跳出，主畫面已是新季節
+	if session_holds_season:
+		session_holds_season = false
+		GameState.end_encounter()
 	_refresh()
 
 func _render_strips() -> void:
