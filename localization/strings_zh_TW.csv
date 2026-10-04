@@ -443,6 +443,7 @@ cost.stage.stalk,潛近
 cost.stage.chase,追擊
 cost.stage.fight,搏鬥
 ui.day_toast,第 {n} 天・{season}
+ui.season_end,{season}末
 ui.day_summary.title,第 {n} 天
 sleep_summary.today,今天：
 season_card.title,{season}天

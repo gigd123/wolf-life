@@ -17,10 +17,6 @@ var season_index: int = 3
 var day: int = 1
 var period_index: int = 0
 var turn_in_period: int = 0
-# 狩獵、戰鬥進行中不換季（SPEC 1.6「季節轉換」）：到了換季的那天先記下，結束後才換。
-# 這段期間 day 會暫時超過這一季的天數（畫面被狩獵、戰鬥畫面蓋住）。
-var season_hold: int = 0
-var season_pending: bool = false
 
 func setup(start_season: String, mode: String) -> void:
 	time_mode = mode
@@ -30,18 +26,24 @@ func setup(start_season: String, mode: String) -> void:
 	day = 1
 	period_index = 0
 	turn_in_period = 0
-	season_hold = 0
-	season_pending = false
 
-func hold_season() -> void:
-	season_hold += 1
+# 換季（SPEC 1.6「季節轉換」）：天數到了不會自動換季，只記為到期；由 GameState 在下一次睡覺時呼叫 change_season()。
+# 到期後 day 會繼續往上數（超過一季的天數），畫面顯示季末字樣。
+func season_due() -> bool:
+	return day > _season_day_count()
 
-func release_season() -> void:
-	season_hold = max(0, season_hold - 1)
-	if season_hold == 0 and season_pending:
-		season_pending = false
-		day = max(1, day - _season_day_count())
-		_advance_season()
+# 到期後過了幾天（到期那天算 1）；沒到期是 0。
+func days_overdue() -> int:
+	return max(0, day - _season_day_count())
+
+# 再過 n 回合後是否已經到期（睡覺前用來判斷這一覺是不是換季睡眠）。
+func season_due_after(n: int) -> bool:
+	var turns_today: int = period_index * TURNS_PER_PERIOD + turn_in_period + n
+	return day + turns_today / (TURNS_PER_PERIOD * PERIODS.size()) > _season_day_count()
+
+func change_season() -> void:
+	day = 1
+	_advance_season()
 
 func advance_turns(n: int) -> void:
 	for i in range(n):
@@ -62,14 +64,6 @@ func _advance_period() -> void:
 
 func _advance_day() -> void:
 	day += 1
-	if day > _season_day_count():
-		# 狩獵、戰鬥中先不換季；最多延一天，避免卡住
-		if season_hold > 0 and day <= _season_day_count() + 1:
-			season_pending = true
-		else:
-			day = max(1, day - _season_day_count())
-			season_pending = false
-			_advance_season()
 	day_changed.emit(day)
 
 func _advance_season() -> void:

@@ -45,9 +45,9 @@ func _process(_d):
 			hunger_sum += w.hunger
 			for s in STATS:
 				growth[s].append(float(w.get(s)) - float(w.start_stats[s]))
-			# 跨過換季 → 成年，觸發潛力結算
+			# 換季 → 成年，觸發潛力結算（換季要睡覺才發生，這裡直接跳到下一季）
 			GS.auto_playing = true
-			GS.debug_skip_day()
+			GS.debug_skip_to_next_season()
 			GS.auto_playing = false
 			for s in STATS:
 				caps[s].append(float(w.potential.get(s, 0.0)))

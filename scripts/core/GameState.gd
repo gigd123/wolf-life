@@ -47,6 +47,8 @@ var npcs: Dictionary = {}
 # regions: {region_id: 起火的絕對時段}, burned: [燒完的區域], alerted: 已經提示過「火燒到這裡」的區域, sheltered: 躲在溪邊或巢穴的區域}。
 # region_burn：燒過的區域 {region_id: 燒完那天的 days_lived}，決定焦黑與草木新生。fire_at：排定的起火時段（-1 = 沒有）。
 var fire: Dictionary = {}
+# 換季睡眠的那幾回合：暫停隨機的世界事件（_on_period_changed）
+var quiet_sleep: bool = false
 var region_burn: Dictionary = {}
 var fire_at: int = -1
 var last_fire_abs: int = -100000
@@ -140,11 +142,13 @@ func _on_period_changed(_period_index: int) -> void:
 	wolf.stamina -= float(cold["stamina"])
 	wolf.clamp_stats()
 	_decay_carcasses()
-	_update_weather()
-	_maybe_howl()
-	_update_territory()
-	_update_fire()
-	_update_tundra_events()
+	# 換季睡眠期間暫停隨機的世界事件（SPEC「季節轉換」）；大火、暴風雪進行中不會是換季睡眠
+	if not quiet_sleep:
+		_update_weather()
+		_maybe_howl()
+		_update_territory()
+		_update_fire()
+		_update_tundra_events()
 	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
@@ -164,6 +168,20 @@ func _on_day_changed(_day: int) -> void:
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
+
+# --- 換季（SPEC 1.6「季節轉換」）：天數到了只記為到期，下一次睡覺時才換 ---
+
+# 大火或暴風雪進行中（含徵兆）不換季，等事件結束後的下一覺。
+func season_change_blocked() -> bool:
+	return not fire.is_empty() or not blizzard.is_empty()
+
+func _change_season() -> void:
+	GameTime.change_season()
+
+# 到期後滿一天還沒睡：短暫休息、「休息到…」也會換季（被事件打斷的那次不換）。
+func _maybe_rest_season_change() -> void:
+	if wolf.alive and GameTime.days_overdue() >= 2 and not season_change_blocked():
+		_change_season()
 
 func _on_season_changed(_season_index: int) -> void:
 	if wolf != null:
@@ -1026,7 +1044,10 @@ func action_short_rest() -> void:
 		bonus += float(GameData.region_features().get(f, {}).get("short_rest_stamina_bonus", 0))
 	_rest_stamina(float(GameData.balance.get("short_rest_stamina", 15)) + bonus)
 	wolf.clamp_stats()
+	var events_before: int = pending_events.size()
 	_maybe_prey_nearby()
+	if pending_events.size() == events_before:
+		_maybe_rest_season_change()
 	state_changed.emit()
 
 # 快轉：一回合一回合休息到指定時段開始，途中照常結算時段與每日變化；狼死亡就停止。
@@ -1081,6 +1102,8 @@ func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 				break
 		if interrupted != "":
 			break
+	if interrupted == "":
+		_maybe_rest_season_change()
 	state_changed.emit()
 	return {"alive": wolf.alive, "interrupted": interrupted}
 
@@ -1108,11 +1131,16 @@ func action_sleep() -> Dictionary:
 		life_log["wild_nights"] = int(life_log.get("wild_nights", 0)) + 1
 	else:
 		_stat_inc("nights", "den")
-	GameTime.advance_turns(int(costs.get("sleep", 3)))
+	var turns: int = int(costs.get("sleep", 3))
+	# 換季睡眠（SPEC「季節轉換」）：睡醒時已經到期、而且沒有大火或暴風雪，這一覺不會被打斷，睡醒時換季
+	var season_sleep: bool = GameTime.season_due_after(turns) and not season_change_blocked()
+	quiet_sleep = season_sleep
+	GameTime.advance_turns(turns)
+	quiet_sleep = false
 	if not wolf.alive:
 		return {}
 	var encounter: Dictionary = {}
-	if RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0)) * threat_mult()):
+	if not season_sleep and RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0)) * threat_mult()):
 		encounter = EncounterSystem.roll_competitor(current_region, GameTime.current_season(), true)
 	var mult: float = float(cfg.get("recovery", {}).get(quality, 0.4))
 	if encounter.get("encountered", false):
@@ -1133,10 +1161,12 @@ func action_sleep() -> Dictionary:
 	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
-	if not encounter.get("encountered", false) and quality != "rough":
+	if not season_sleep and not encounter.get("encountered", false) and quality != "rough":
 		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
 	sleep_spot_here = ""
 	var summary := sleep_summary(settle)
+	if season_sleep and wolf.alive:
+		_change_season()
 	_snapshot_sleep_stats()
 	SaveSystem.save_game()
 	state_changed.emit()
@@ -1161,8 +1191,6 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 		prey_dir = RNGService.randi_range(0, 3)
 	if terrain == "":
 		terrain = _random_terrain(current_region)
-	# 狩獵進行中不換季（SPEC「季節轉換」），finish_hunt 時才換
-	GameTime.hold_season()
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
@@ -1192,7 +1220,6 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 # 狩獵結束（成功或失敗）：同步風向、結算各階段累積的經驗。
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
-	GameTime.release_season()
 	wind_dir = hunt.wind_dir
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
@@ -1668,21 +1695,11 @@ func _prey_rank(animal_id: String, life_stage: String) -> int:
 
 # --- 戰鬥模式（SPEC 1.6「戰鬥模式」；規則在 FightRules.gd、流程在 Combat.gd） ---
 
-# 一場遭遇（畫面上從第一個選擇到按「繼續」）期間不換季：狩獵前的追蹤、狩獵後的進食與搶食都算在內（QA-29）。
-# 狩獵、戰鬥本身另外也會暫緩（自動玩家沒有畫面上的遭遇）。
-func begin_encounter() -> void:
-	GameTime.hold_season()
-
-func end_encounter() -> void:
-	GameTime.release_season()
-
 # 開始一場戰鬥。encounter 是灰熊遭遇的資料（mother、direct）；direct 時對手已經先撲上來，從交鋒開始。
 func start_combat(animal_id: String, life_stage: String, context: String, encounter: Dictionary = {}) -> Combat:
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
-	# 戰鬥進行中不換季，finish_combat 時才換
-	GameTime.hold_season()
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
 	c.tendency = current_tendency()
 	c.terrain = str(current_feeding.get("terrain", "")) if context == "carcass" else str(encounter.get("location", ""))
@@ -1727,7 +1744,6 @@ func _set_opponent_beaten(animal_id: String, life_stage: String, beaten: bool) -
 
 # 戰鬥結束：記錄決策、成長、知識，處理獵物的去留。回傳 {"outcome", "grow": "clean"|"costly"|""}。
 func finish_combat(c: Combat) -> Dictionary:
-	GameTime.release_season()
 	for d in c.decisions:
 		record_decision(d)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
@@ -3027,13 +3043,15 @@ func debug_skip_day() -> void:
 	state_changed.emit()
 
 func debug_skip_to_next_season() -> void:
-	var target_season := GameTime.season_index
+	# 跳到這一季的天數到期，再直接換季（除錯用，不必睡覺、不管大火或暴風雪）
 	var guard := 0
-	while GameTime.season_index == target_season and guard < 40:
+	while not GameTime.season_due() and guard < 40:
 		if wolf != null and not wolf.alive:
 			break
 		GameTime.advance_turns(GameTime.TURNS_PER_PERIOD * GameTime.PERIODS.size())
 		guard += 1
+	if wolf != null and wolf.alive:
+		_change_season()
 	state_changed.emit()
 
 # 跳年齡：以季為單位增加年齡，每季照常套用老年衰退，但不推進遊戲時間。
@@ -3267,8 +3285,6 @@ func load_from_dict(data: Dictionary) -> void:
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))
 	GameTime.day = int(t.get("day", 1))
-	GameTime.season_hold = 0
-	GameTime.season_pending = false
 	GameTime.period_index = int(t.get("period_index", 0))
 	GameTime.turn_in_period = int(t.get("turn_in_period", 0))
 	_connect_time_signals()
