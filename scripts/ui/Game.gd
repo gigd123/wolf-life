@@ -2687,7 +2687,7 @@ func _render_combat() -> void:
 func _on_combat_choice(id: String) -> void:
 	var c := current_combat
 	var res := c.choose(id)
-	if id in ["bite", "lunge", "attack"]:
+	if id in ["bite", "lunge", "attack", "harass"]:
 		Audio.play_bite()
 	var name: String = _prey_name(c.animal_id, c.life_stage)
 	combat_notes = []

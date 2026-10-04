@@ -1,6 +1,6 @@
 extends SceneTree
 # 戰鬥模擬（SPEC 1.6「戰鬥模式」「勝算基準」）：不同能力的狼 × 對手 × 打法，各打 RUNS 場。
-# 打法：fight＝一直撲咬、瀕危就撤退；lunge＝一直猛撲、瀕危就撤退；to_death＝瀕危也不退；threaten＝先威嚇再撲咬。
+# 打法：fight＝一直撲咬、瀕危就撤退；lunge＝一直猛撲、瀕危就撤退；harass＝一直騷擾、瀕危就撤退（只有灰熊有騷擾，其他對手同 fight）；to_death＝瀕危也不退；threaten＝先威嚇再撲咬。
 # 陌生灰狼：瀕危時示弱（「退」也包含示弱），牠示弱後放牠走；「7 歲」是老年衰退兩年後的牠。
 # 統計：趕走對手（勝）、撤退、戰死的比例，平均受傷，重傷率，回合數。
 # 用法：bash tools/run_sim.sh combat_sim 0 400
@@ -11,7 +11,7 @@ const OPPONENTS := [["灰熊（搶食）", "grizzly_bear", "adult", "carcass", f
 	["狐狸（偷食）", "red_fox", "adult", "carcass", false],
 	["陌生灰狼 壯年", "stranger_wolf", "prime", "meet", false], ["陌生灰狼 地盤", "stranger_wolf", "prime", "territory", false],
 	["陌生灰狼 7 歲", "stranger_wolf", "old", "meet", false]]
-const POLICIES := ["fight", "lunge", "threaten", "to_death"]
+const POLICIES := ["fight", "lunge", "harass", "threaten", "to_death"]
 var NPC
 
 func _env_int(key: String, fallback: int) -> int:
@@ -58,6 +58,8 @@ func _process(_d):
 							pick = "threaten" if pol == "threaten" and g == 1 else "attack"
 						elif FR.in_danger(w) and pol != "to_death":
 							pick = "submit" if ids.has("submit") else "retreat"
+						elif pol == "harass" and ids.has("harass"):
+							pick = "harass"
 						elif pol == "lunge":
 							pick = "lunge"
 						c.choose(pick)

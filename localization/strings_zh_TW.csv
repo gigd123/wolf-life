@@ -545,6 +545,7 @@ combat.option.ignore,不理牠
 combat.option.bite,撲咬
 combat.option.lunge,猛撲
 combat.option.dodge,閃避
+combat.option.harass,騷擾
 combat.option.retreat,撤退
 combat.option.submit,示弱
 cost.stage.attack,攻擊
@@ -559,6 +560,9 @@ combat.remember_won,你記得：上次你贏了牠。
 combat.opp.strong,牠還很有力。
 combat.opp.hurt,牠身上帶著傷，動作慢了些。
 combat.opp.wavering,牠喘著氣，似乎想退了。
+combat.opp.stamina.fresh,牠還精力充沛，每一掌都帶著風聲。
+combat.opp.stamina.tiring,牠喘著粗氣，揮掌慢了下來。
+combat.opp.stamina.spent,牠的動作越來越沉，好像快撐不住了。
 combat.danger,【你瀕危】你傷得很重，再打下去可能會死；現在撤退比較容易脫身。
 combat.threaten.success,你豎起頸毛、露出牙齒，{animal}退開了。
 combat.threaten.fail,{animal}沒有被嚇住，反而撲了過來。
@@ -568,6 +572,8 @@ combat.probe.swipe,試探時離得太近了。
 combat.hit.bite,你咬中了{animal}。
 combat.hit.lunge,你猛撲上去，狠狠咬住了{animal}。
 combat.miss,你撲空了。
+combat.harass.hit,你繞到{animal}側面咬了一口，立刻跳開。
+combat.harass.miss,你繞著{animal}打轉，牠追著你揮掌。
 combat.opp_hit,{animal}打中了你。
 combat.opp_hit.leg,{animal}擊中了你的腿。
 combat.opp_hit.shoulder,{animal}打中了你的肩膀。
@@ -586,6 +592,7 @@ combat.dodge.success,你閃開了{animal}的攻擊，看見了牠的破綻。
 combat.retreat.success,你轉身跑開，牠沒有追來。
 combat.retreat.fail,你沒能脫身。
 combat.opp_gives_up,{animal}放棄了，轉身離開。
+combat.opp_tired,{animal}累得喘不過氣，轉身走開了。
 combat.result.drove_off,你趕走了{animal}。
 combat.result.mob.drove_off,{animal}撐不住了，丟下馴鹿殘骸，一跛一跛地逃進了雪坡後面。
 combat.result.mob.killed,{animal}死在馴鹿殘骸旁，苔原狼鬆開了嘴。
@@ -607,6 +614,7 @@ factor.combat.they_let_go,牠只想趕走你
 factor.combat.leg_injury,腿傷
 factor.combat.determined,牠不肯退
 factor.combat.opening,閃開就有破綻
+factor.combat.tiring,消耗牠的體力
 knowledge.opponent,{animal}：現在的你還不是牠的對手
 day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
 day_summary.old_injury_flare,{part}的舊傷又隱隱作痛。

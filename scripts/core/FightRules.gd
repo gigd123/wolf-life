@@ -164,9 +164,10 @@ static func attack_chance(wolf: Wolf, opp_power: float, move: String, state: Dic
 	return {"chance": clamp(value, float(a.get("min", 0.05)), float(a.get("max", 0.95))), "factors": factors}
 
 # 對手這一回合打中狼的機率；dodge 大幅降低，猛撲提高。
-static func opponent_hit_chance(wolf: Wolf, opp_power: float, move: String) -> float:
+static func opponent_hit_chance(wolf: Wolf, opp_power: float, move: String, divisor: float = 0.0) -> float:
 	var h: Dictionary = combat_cfg().get("opponent_hit", {})
-	var value: float = float(h.get("base", 0.45)) + (opp_power - wolf_defense(wolf)) / float(h.get("divisor", 200))
+	# divisor：對手專屬的尺度（灰熊揮掌範圍大，狼的閃躲能力影響較小）；0 = 用共通的
+	var value: float = float(h.get("base", 0.45)) + (opp_power - wolf_defense(wolf)) / (divisor if divisor > 0.0 else float(h.get("divisor", 200)))
 	value *= float(move_cfg(move).get("hit_mult", 1.0))
 	return clamp(value, float(h.get("min", 0.05)), float(h.get("max", 0.9)))
 

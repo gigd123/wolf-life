@@ -113,6 +113,7 @@
       "bite": { "bonus": 0.0, "strength_weight": 1.0, "damage_mult": 1.0, "hit_mult": 1.0, "stamina": 6, "trains": ["strength", "skill"] },
       "lunge": { "bonus": -0.15, "strength_weight": 1.3, "damage_mult": 1.7, "hit_mult": 1.3, "stamina": 10, "train_mult": 1.3, "trains": ["strength"] },
       "dodge": { "hit_mult": 0.35, "next_bonus": 0.12, "stamina": 4, "trains": ["skill"] },
+      "harass": { "bonus": 0.25, "strength_weight": 1.0, "damage_mult": 0.35, "hit_mult": 0.45, "drain": 6, "stamina": 3, "trains": ["speed", "skill"] },
       "retreat": { "base": 0.55, "speed_divisor": 150, "danger_bonus": 0.25, "leg_injury_penalty": 0.15, "stamina": 8, "trains": ["speed"] }
     },
     "standoff": {
@@ -128,7 +129,7 @@
     "_opponents_comment": "對手：power 力量值、hp 耐力、damage 傷害範圍、parts 打中狼的部位比例、give_up_ratio 耐力低於這個比例（÷ stake 倍率）就放棄、threat_resist 抗威嚇。",
     "opponents": {
       "grizzly_bear": {
-        "adult": { "power": 170, "hp": 110, "damage": [14, 30], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.28, "threat_resist": 0.45 },
+        "adult": { "power": 170, "hp": 300, "damage": [36, 56], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.28, "threat_resist": 0.45, "stamina": 280, "swing_cost": 6, "hurt_drain": 0.5, "stamina_give_up": 0.2, "hit_divisor": 300 },
         "juvenile": { "power": 75, "hp": 45, "damage": [5, 12], "parts": { "shoulder": 0.4, "leg": 0.4, "face": 0.2 }, "give_up_ratio": 0.6, "threat_resist": 0.1 }
       },
       "red_fox": {

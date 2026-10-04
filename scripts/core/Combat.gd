@@ -21,6 +21,9 @@ var mother: bool = false
 var opp: Dictionary = {}
 var opp_hp: float = 0.0
 var opp_hp_max: float = 1.0
+# 對手的耐力（只有設定 stamina 的對手才有，例如灰熊）：每次出手、被咬傷都會消耗，耗光就離開
+var opp_stamina: float = 0.0
+var opp_stamina_max: float = 0.0
 var stake_mult: float = 1.0
 var phase: int = Phase.STANDOFF
 var outcome: String = ""
@@ -67,6 +70,8 @@ func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p
 	opp = FightRules.opponent_profile(animal_id, life_stage)
 	opp_hp_max = float(opp.get("hp", 50))
 	opp_hp = opp_hp_max
+	opp_stamina_max = float(opp.get("stamina", 0.0))
+	opp_stamina = opp_stamina_max
 	var stakes: Dictionary = FightRules.combat_cfg().get("stake_mult", {})
 	stake_mult = float(stakes.get("mother" if mother else context, 1.0))
 	start_health = wolf.health
@@ -85,8 +90,24 @@ func opp_power() -> float:
 func opp_give_up_ratio() -> float:
 	return float(opp.get("give_up_ratio", 0.4)) / max(0.1, stake_mult)
 
+# 耐力放棄的門檻（同樣 ÷ 利害倍率）；沒有耐力的對手永遠不會因為累而離開。
+func opp_tired() -> bool:
+	return opp_stamina_max > 0.0 and opp_stamina / opp_stamina_max < float(opp.get("stamina_give_up", 0.2)) / max(0.1, stake_mult)
+
+func _drain_opp(amount: float) -> void:
+	if opp_stamina_max > 0.0:
+		opp_stamina = max(0.0, opp_stamina - amount)
+
 # 對手的狀態描述鍵。
 func opp_condition_key() -> String:
+	# 有耐力的對手（灰熊）：血量幾乎不會掉，狀態看耐力，玩家才看得出騷擾有沒有用
+	if opp_stamina_max > 0.0:
+		var s: float = opp_stamina / opp_stamina_max
+		if s > 0.65:
+			return "combat.opp.stamina.fresh"
+		if s > float(opp.get("stamina_give_up", 0.2)) / max(0.1, stake_mult) + 0.2:
+			return "combat.opp.stamina.tiring"
+		return "combat.opp.stamina.spent"
 	var ratio: float = opp_hp / opp_hp_max
 	if ratio > 0.7:
 		return "combat.opp.strong"
@@ -118,6 +139,8 @@ func options() -> Array:
 			list.append(_attack_option("bite", false))
 			list.append(_attack_option("lunge", false))
 			list.append(_dodge_option())
+			if opp_stamina_max > 0.0:
+				list.append(_harass_option())
 			list.append(_retreat_option())
 			if context == "carcass" and yields.has("share"):
 				list.append({"id": "share", "label_key": "combat.option.share", "stamina": 0.0})
@@ -145,7 +168,7 @@ func _attack_state(initiative: bool) -> Dictionary:
 func _attack_option(move: String, initiative: bool) -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), move, _attack_state(initiative))
 	var label: String = "combat.option.attack" if initiative else "combat.option." + move
-	var risk: float = FightRules.opponent_hit_chance(wolf, opp_power(), move)
+	var risk: float = FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
 	var factors: Array = info["factors"]
 	if partner_chance > 0.0:
 		# 另一隻也可能插進來：被打中的機率 = 1 − 兩下都沒中
@@ -160,23 +183,32 @@ func _attack_option(move: String, initiative: bool) -> Dictionary:
 	return _move_trains(opt, move)
 
 func _dodge_option() -> Dictionary:
-	var hit: float = FightRules.opponent_hit_chance(wolf, opp_power(), "dodge")
+	var hit: float = FightRules.opponent_hit_chance(wolf, opp_power(), "dodge", float(opp.get("hit_divisor", 0.0)))
 	var opt := {"id": "dodge", "label_key": "combat.option.dodge", "chance": 1.0 - hit, "chance_key": "chance_label.dodge",
 		"factors": [{"key": "factor.combat.opening", "good": true, "weight": 0.0, "info": true}], "injury_risk": hit}
 	opt["next_bonus"] = {"stage": "attack", "value": float(FightRules.move_cfg("dodge").get("next_bonus", 0.1))}
 	return _move_trains(opt, "dodge")
 
+# 騷擾：繞著牠打轉、咬一口就跳開。容易咬中但傷害很低，主要是消耗牠的耐力；牠反擊打中的機率低，但一掌就很重（只對有耐力的對手）。
+func _harass_option() -> Dictionary:
+	var info := FightRules.attack_chance(wolf, opp_power(), "harass", _attack_state(false))
+	var factors: Array = info["factors"].duplicate()
+	factors.append({"key": "factor.combat.tiring", "good": true, "weight": 0.0, "info": true})
+	var opt := {"id": "harass", "label_key": "combat.option.harass", "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
+		"injury_risk": FightRules.opponent_hit_chance(wolf, opp_power(), "harass", float(opp.get("hit_divisor", 0.0)))}
+	return _move_trains(opt, "harass")
+
 func _retreat_option() -> Dictionary:
 	var info := FightRules.retreat_chance(wolf, _tendency_effect("cautious"))
 	var opt := {"id": "retreat", "label_key": "combat.option.retreat", "chance": info["chance"], "chance_key": "chance_label.escape", "factors": info["factors"],
-		"injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "retreat")}
+		"injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "retreat", float(opp.get("hit_divisor", 0.0)))}
 	return _move_trains(opt, "retreat")
 
 func _threaten_option() -> Dictionary:
 	var info := FightRules.threaten_chance(wolf, opp, stake_mult)
 	var t: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("threaten", {})
 	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": info["chance"], "chance_key": "chance_label.drive_off", "factors": info["factors"],
-		"stamina": float(t.get("stamina", 3)), "injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "bite")}
+		"stamina": float(t.get("stamina", 3)), "injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "bite", float(opp.get("hit_divisor", 0.0)))}
 
 func _probe_option() -> Dictionary:
 	var p: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("probe", {})
@@ -204,7 +236,7 @@ func choose(id: String) -> Dictionary:
 	wolf.clamp_stats()
 	# 瀕危後仍選擇繼續戰鬥（攻擊、閃避），這一回合才可能戰死。
 	# 不想殺狼的對手（狼獾）：任何一擊都不會致死。
-	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue"] \
+	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue", "harass"] \
 		and not bool(opp.get("never_lethal", false))
 	var res: Dictionary = {"notes": [], "wolf_damage": 0.0, "opp_damage": 0.0, "wolf_pose": "threaten", "opp_action": "idle"}
 	match id:
@@ -218,6 +250,7 @@ func choose(id: String) -> Dictionary:
 			res["notes"].append("combat.let_go")
 			_end("drove_off")
 		"dodge": _do_dodge(opt, lethal, res)
+		"harass": _do_harass(opt, lethal, res)
 		"retreat": _do_retreat(opt, res)
 		"submit":
 			# 示弱一定能活下來，代價是挨一下（不會致死）
@@ -246,10 +279,12 @@ func _practice(opt: Dictionary, success: bool) -> void:
 
 # 對手打狼一下（lethal 見 FightRules.hurt_wolf）。
 func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0, dmg_mult: float = 1.0) -> bool:
-	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move)
+	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
 	if desperate:
 		hit_chance = min(0.95, hit_chance + float(opp.get("desperate_hit", 0.2)))
 		dmg_mult *= float(opp.get("desperate_damage", 1.5))
+	# 對手每次出手都耗耐力（打不打中都一樣）
+	_drain_opp(float(opp.get("swing_cost", 0.0)))
 	if not RNGService.chance(hit_chance):
 		return false
 	var dmg_range: Array = opp.get("damage", [5, 10])
@@ -281,6 +316,10 @@ func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
 		res["notes"].append("combat.opp_killed")
 		res["opp_action"] = "down"
 		_end("killed")
+		return
+	if not desperate and opp_tired():
+		res["notes"].append("combat.opp_tired")
+		_end("drove_off")
 		return
 	if not desperate and opp_hp / opp_hp_max < opp_give_up_ratio():
 		# 會示弱的對手（陌生灰狼）：低頭示弱，由你決定放牠走或追擊
@@ -329,6 +368,7 @@ func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) ->
 		var dmg: float = FightRules.wolf_damage(wolf, move)
 		opp_hp = max(0.0, opp_hp - dmg)
 		res["opp_damage"] = dmg
+		_drain_opp(dmg * float(opp.get("hurt_drain", 0.0)))
 		res["notes"].append("combat.hit." + move)
 	else:
 		res["notes"].append("combat.miss")
@@ -355,6 +395,25 @@ func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	if ally_hit:
 		res["notes"].append("combat.ally_hits")
 	_practice(opt, not was_hit)
+
+func _do_harass(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
+	res["wolf_pose"] = "bite"
+	phase = Phase.EXCHANGE
+	state["next_bonus"] = 0.0
+	state["probe_bonus"] = 0.0
+	# 繞著牠打轉本身就讓牠追著消耗耐力；咬中再加一點傷害（被咬傷也會耗耐力）
+	_drain_opp(float(FightRules.move_cfg("harass").get("drain", 6.0)))
+	var hit: bool = RNGService.chance(float(opt["chance"]))
+	if hit:
+		var dmg: float = FightRules.wolf_damage(wolf, "harass")
+		opp_hp = max(0.0, opp_hp - dmg)
+		_drain_opp(dmg * float(opp.get("hurt_drain", 0.0)))
+		res["opp_damage"] = dmg
+		res["notes"].append("combat.harass.hit")
+	else:
+		res["notes"].append("combat.harass.miss")
+	_practice(opt, hit)
+	_opponent_turn("harass", lethal, res)
 
 func _do_retreat(opt: Dictionary, res: Dictionary) -> void:
 	if RNGService.chance(float(opt["chance"])):
