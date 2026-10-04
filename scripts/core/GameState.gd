@@ -51,6 +51,8 @@ var fire: Dictionary = {}
 var quiet_sleep: bool = false
 var region_burn: Dictionary = {}
 var fire_at: int = -1
+# 排到秋季的大火：秋季開始時才排定時段（"" = 沒有）
+var fire_season: String = ""
 var last_fire_abs: int = -100000
 # 苔原的暴風雪（1.6 第 6d 步）：blizzard 是進行中的風雪 {phase: "warning"|"active", start_at, end_at, days, noticed,
 # alerted: 已經提示過的區域, shelter: "dig"|"den"|"", shelter_region, in_tundra, choice, result}。blizzard_at：排定的時段（-1 = 沒有）。
@@ -97,6 +99,7 @@ func new_game(start_den: String) -> void:
 	fire = {}
 	region_burn = {}
 	fire_at = -1
+	fire_season = ""
 	last_fire_abs = -100000
 	blizzard = {}
 	blizzard_at = -1
@@ -1879,17 +1882,35 @@ func _carcass_after_combat(c: Combat) -> void:
 func _fire_cfg() -> Dictionary:
 	return _events_cfg().get("fire", {})
 
-# 夏季開始時擲一次：今年乾季（夏秋）會不會有大火，會的話排定在乾季中的某個時段。大火後冷卻 2 年。
+# 夏季開始時擲一次：今年乾季（夏秋）會不會有大火，會的話挑夏或秋，排在那一季的第 2～7 天（start_days），
+# 確保季末前燒完（SPEC「森林大火」）。換季要睡覺才發生、每季長度不固定，所以排到秋季時等秋季開始才決定時段（fire_season）。大火後冷卻 2 年。
 func _maybe_schedule_fire() -> void:
 	var cfg := _fire_cfg()
-	if GameTime.current_season() != str(cfg.get("dry_seasons", ["summer"])[0]) or not fire.is_empty() or fire_at >= 0:
+	var season: String = GameTime.current_season()
+	if fire_season != "":
+		if fire_season == season and fire.is_empty():
+			fire_at = _fire_time_this_season(cfg)
+			fire_season = ""
+		return
+	var dry: Array = cfg.get("dry_seasons", ["summer"])
+	if season != str(dry[0]) or not fire.is_empty() or fire_at >= 0:
 		return
 	var per_day: int = GameTime.PERIODS.size()
 	if _abs_period() - last_fire_abs < int(cfg.get("cooldown_days", 80)) * per_day:
 		return
 	if RNGService.chance(float(cfg.get("year_chance", 0.15))):
-		var dry_days: int = GameTime._season_day_count() * cfg.get("dry_seasons", ["summer"]).size()
-		fire_at = _abs_period() + RNGService.randi_range(per_day, dry_days * per_day - 1)
+		var pick: String = str(dry[RNGService.randi_range(0, dry.size() - 1)])
+		if pick == season:
+			fire_at = _fire_time_this_season(cfg)
+		else:
+			fire_season = pick
+
+# 這一季第 start_days[0]～start_days[1] 天中的某個時段（絕對時段）。
+func _fire_time_this_season(cfg: Dictionary) -> int:
+	var per_day: int = GameTime.PERIODS.size()
+	var days: Array = cfg.get("start_days", [2, 7])
+	var day_one: int = _abs_period() - GameTime.period_index - (GameTime.day - 1) * per_day
+	return max(_abs_period() + 1, day_one + RNGService.randi_range((int(days[0]) - 1) * per_day, int(days[1]) * per_day - 1))
 
 # 區域的火況：burning 正在燒、ash 剛燒過一片焦黑、regrowth 草木新生、"" 平常。
 # 走進燒過的區域：焦黑、草木新生各描述一次（同一場火、同一個狀態只說一次；巢穴所在的區域另有一句）。
@@ -3268,6 +3289,7 @@ func to_dict() -> Dictionary:
 		"fire": fire,
 		"region_burn": region_burn,
 		"fire_at": fire_at,
+		"fire_season": fire_season,
 		"last_fire_abs": last_fire_abs,
 		"blizzard": blizzard,
 		"blizzard_at": blizzard_at,
@@ -3306,6 +3328,7 @@ func load_from_dict(data: Dictionary) -> void:
 	fire = data.get("fire", {})
 	region_burn = data.get("region_burn", {})
 	fire_at = int(data.get("fire_at", -1))
+	fire_season = str(data.get("fire_season", ""))
 	last_fire_abs = int(data.get("last_fire_abs", -100000))
 	npcs = {}
 	for npc_id in data.get("npcs", {}).keys():

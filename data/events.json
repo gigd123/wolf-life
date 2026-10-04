@@ -23,6 +23,7 @@
   "_fire_comment": "森林大火（SPEC 1.6「森林大火」）。year_chance：每年乾季（夏秋）發生一次的機率，夏季開始時擲骰並排定時間；cooldown_days：大火後幾天內不再發生（2 年 = 80 天）。warning_periods：起火前的徵兆時段數；notice：每個徵兆時段察覺的機率 = base + (感知 − 40) × per_perception。spread_chance：燃燒中的區域每個時段延燒到每個相鄰區域的機率；burn_periods：一個區域燒多久。escape：各逃生方式的危險度（越高越危險），再依體力、血量、速度與是否熟悉目的地調整；outcome：危險度 1 時死亡／重度燒傷／輕度燒傷的機率。after：燒過的區域 ash_days 天內是一片焦黑（獵物 ×0.3、找不到好睡處與採集物），之後 regrowth_days 天草木新生（鹿 ×1.5）。",
   "fire": {
     "dry_seasons": ["summer", "autumn"],
+    "start_days": [2, 7],
     "year_chance": 0.12,
     "cooldown_days": 80,
     "warning_periods": 2,
