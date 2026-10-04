@@ -586,6 +586,11 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 			lost_from = target_region
 			target_region = others[RNGService.randi_range(0, others.size() - 1)]
 	var ice_check: bool = link.is_empty() and ice.is_empty() and (current_region == _ice_cfg().get("region", "") or target_region == _ice_cfg().get("region", ""))
+	# 大火：離開躲著的溪邊或巢穴就不算躲著；走回還在燒的區域要再提示一次（QA-28）
+	if not fire.is_empty():
+		if str(fire.get("sheltered", "")) == current_region and target_region != current_region:
+			fire["sheltered"] = ""
+		fire["alerted"].erase(target_region)
 	current_region = target_region
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
 	if not link.is_empty():
@@ -623,7 +628,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		var encounter := EncounterSystem.roll_competitor(current_region, GameTime.current_season())
 		if encounter.get("encountered", false) and RNGService.chance(threat_mult()):
 			encounter_triggered.emit(prepare_bear_encounter(encounter))
-	_check_fire_here()
+	_check_fire_here(true)
 	_note_den_smell()
 	if wolf.alive:
 		_apply_env_perception()
@@ -1829,6 +1834,9 @@ func _describe_burned_arrival(region_id: String) -> void:
 	var seen: Dictionary = life_log.get("burn_seen", {})
 	var mark: String = "%s@%d" % [state, int(region_burn.get(region_id, 0))]
 	if str(seen.get(region_id, "")) == mark:
+		# 已經描述過：還是焦黑的話每次回來補一句短的，草木新生就不再重複
+		if state == "ash":
+			log_message.emit(tr("fire.arrive.ash.again").replace("{region}", tr("region." + region_id)))
 		return
 	seen[region_id] = mark
 	life_log["burn_seen"] = seen
@@ -1936,14 +1944,14 @@ func _maybe_notice_fire() -> void:
 		fire["noticed"] = true
 		pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": false})
 
-# 火燒到你所在的區域：跳出逃生選擇（每個區域只提示一次；躲在溪邊或巢穴就不再提示）。
-func _check_fire_here() -> void:
+# 火燒到你所在的區域：跳出逃生選擇（待在同一區只提示一次；躲在溪邊或巢穴就不再提示）。entered：自己走進還在燒的區域。
+func _check_fire_here(entered: bool = false) -> void:
 	if fire.is_empty() or not wolf.alive or not fire.get("regions", {}).has(current_region):
 		return
 	if fire["alerted"].has(current_region) or fire["sheltered"] == current_region:
 		return
 	fire["alerted"].append(current_region)
-	pending_events.append({"type": "fire_here", "region": current_region})
+	pending_events.append({"type": "fire_here", "region": current_region, "entered": entered})
 
 func _region_burned(region_id: String) -> void:
 	region_burn[region_id] = int(life_log.get("days_lived", 1))

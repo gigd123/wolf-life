@@ -2257,7 +2257,7 @@ func _show_distant(encounter: Dictionary) -> void:
 # 火燒到你所在的區域：逃往還沒燒到的區域、到溪邊避難、躲進巢穴，各自附平安率。
 func _show_fire_escape(event: Dictionary) -> void:
 	var region: String = str(event.get("region", GameState.current_region))
-	var text: String = tr("fire.here").replace("{region}", tr("region." + region))
+	var text: String = tr("fire.here" + (".entered" if event.get("entered", false) else "")).replace("{region}", tr("region." + region))
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""

@@ -693,7 +693,9 @@ debug.npc_dead,（已死）
 fire.warning.early,風裡有一股焦味。鳥群從{origin}那邊飛過來，林間的動物都往同一個方向逃。
 fire.warning.late,遠處的天空泛著紅光，濃煙已經從{origin}升起。
 fire.here,火燒到了{region}！濃煙從林間湧來，樹冠劈啪作響。
+fire.here.entered,{region}的火還沒熄。濃煙從林間湧來，樹冠劈啪作響，熱氣撲在你臉上。
 fire.arrive.ash,{region}剛燒過。地上一片焦黑，踩下去全是灰，嗆人的煙味還沒散。
+fire.arrive.ash.again,{region}還是一片焦黑，空氣裡仍有焦味。
 fire.arrive.ash.den,巢穴還在地下，但四周一片焦黑，洞口滿是嗆鼻的焦味。
 fire.arrive.regrowth,{region}焦黑的地上冒出了新芽，鹿的足跡又多了起來。
 fire.region_out,{region}的火熄了，只剩焦黑的樹幹；火還在{list}燒著。
