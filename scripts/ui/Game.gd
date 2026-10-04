@@ -2820,11 +2820,37 @@ func _notice_lines(lines: Array) -> String:
 func _show_season_card(event: Dictionary) -> void:
 	var season: String = str(event.get("season", GameTime.current_season()))
 	var body: String = _notice_lines(event.get("lines", []))
+	var review: String = _season_review_text(event.get("review", {}))
+	if review != "":
+		body += "
+
+" + review
 	# 苔原的卡片用那一區的季節背景（森林用季節背景）
 	var bg: Texture2D = ArtLibrary.season_background(season)
 	if str(event.get("map", "forest")) != "forest":
 		bg = ArtLibrary.region_background(str(event.get("region", GameState.current_region)), season)
 	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, bg)
+
+# 換季字卡的成長回顧：這一季各能力的變化（含換季成長），挨餓的一季另外說明；老年有衰退時一起列出。
+func _season_review_text(review: Dictionary) -> String:
+	if review.is_empty():
+		return ""
+	var g: Dictionary = GameData.balance.get("growth", {})
+	var min_change: float = float(g.get("season_review_min", 0.5))
+	var starved: bool = float(review.get("fed_ratio", 1.0)) < float(g.get("season_starved_ratio", 0.3))
+	var parts: Array[String] = []
+	var declined: bool = false
+	for stat in GameState.SLEEP_SUMMARY_STATS:
+		var d: float = float(review.get("changes", {}).get(stat, 0.0))
+		if absf(d) < min_change:
+			continue
+		declined = declined or d < 0.0
+		parts.append(_icon_bb("stat." + stat) + tr("stat." + stat) + (" ▲" if d > 0.0 else " ▼") + str(maxi(1, int(round(absf(d))))))
+	if parts.is_empty():
+		return tr("season_card.review.starved") if starved else ""
+	var key: String = "declined" if declined else ("starved_some" if starved else "grew")
+	return tr("season_card.review." + key) + "
+" + "　".join(parts)
 
 # 受傷提示（QA-06）：受傷的當下只有戰鬥裡的一句，看不出傷在哪、影響什麼、要多久才好。
 # _refresh 發現傷勢變重時排入 injury_notice，等遭遇結束後才顯示：重傷用卡片，輕傷用淡入提示。

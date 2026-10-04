@@ -120,6 +120,7 @@ func new_game(start_den: String) -> void:
 	_maybe_schedule_blizzard()
 	_roam_tundra_wolves(true)
 	_snapshot_sleep_stats()
+	_start_season_review()
 	_queue_season_card()
 	SaveSystem.save_game()
 	state_changed.emit()
@@ -156,6 +157,7 @@ func _on_period_changed(_period_index: int) -> void:
 
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
+	_count_season_day()
 	events_today = 0
 	var before_injury: int = wolf.injury if wolf != null else Wolf.Injury.NONE
 	var before_injury_stat: String = wolf.injury_stat if wolf != null else ""
@@ -193,10 +195,48 @@ func _on_season_changed(_season_index: int) -> void:
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
 		_roam_tundra_wolves(true)
+		var fed_ratio: float = _season_fed_ratio()
+		Growth.settle_season(wolf, fed_ratio)
 		_apply_elder_decay()
 		_check_life_stage_transition(prev_stage)
+		var review: Dictionary = _season_review(fed_ratio)
+		_start_season_review()
 		log_message.emit(tr("log.season_changed"))
-		_queue_season_card()
+		_queue_season_card(review)
+
+# 這一季的成長回顧（SPEC「季節轉換」）：換季時和季初的能力比較，加上吃飽的天數比例。
+func _start_season_review() -> void:
+	var snap: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		snap[stat] = float(wolf.get(stat))
+	life_log["season_snapshot"] = snap
+	life_log["season_days"] = 0
+	life_log["season_fed_days"] = 0
+
+# 換日時記一天；飽食度夠高算吃飽的一天。
+func _count_season_day() -> void:
+	if wolf == null:
+		return
+	life_log["season_days"] = int(life_log.get("season_days", 0)) + 1
+	if wolf.hunger >= float(Growth.cfg().get("season_fed_hunger", 60)):
+		life_log["season_fed_days"] = int(life_log.get("season_fed_days", 0)) + 1
+
+func _season_fed_ratio() -> float:
+	var days: int = int(life_log.get("season_days", 0))
+	if days <= 0:
+		return 1.0 if wolf.hunger >= float(Growth.cfg().get("season_fed_hunger", 60)) else 0.0
+	return float(life_log.get("season_fed_days", 0)) / float(days)
+
+# 回傳 {"changes": {能力: 變化量}, "fed_ratio"}；舊存檔沒有季初紀錄時回傳空的（字卡不寫回顧）。
+func _season_review(fed_ratio: float) -> Dictionary:
+	var snap: Dictionary = life_log.get("season_snapshot", {})
+	if snap.is_empty():
+		return {}
+	var changes: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		if snap.has(stat):
+			changes[stat] = float(wolf.get(stat)) - float(snap[stat])
+	return {"changes": changes, "fed_ratio": fed_ratio}
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -208,7 +248,7 @@ func _queue_notice(event: Dictionary) -> void:
 
 # 季節卡片：第一次經歷某個季節顯示完整描述，之後顯示精簡版；變化依這隻狼的辨識與知識決定。
 # 人在苔原時用苔原的卡片（notices.json 的 season_cards_by_map），第一次與否分開記（seasons_seen 的 "tundra:winter"）。
-func _queue_season_card() -> void:
+func _queue_season_card(review: Dictionary = {}) -> void:
 	var season: String = GameTime.current_season()
 	var map_cards: Dictionary = GameData.notices.get("season_cards_by_map", {}).get(current_map(), {})
 	var seen_key: String = season if map_cards.is_empty() else current_map() + ":" + season
@@ -224,7 +264,7 @@ func _queue_season_card() -> void:
 			lines.append({"key": str(line["full"] if first else line["short"])})
 		elif _notice_condition(str(line.get("if", ""))):
 			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
-	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region})
+	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
 
 # 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
 func _maybe_map_season_card() -> void:

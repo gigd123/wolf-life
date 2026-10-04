@@ -40,6 +40,8 @@ var start_stats: Dictionary = {}
 var potential: Dictionary = {}
 var training: Dictionary = {}
 var fed_streak: int = 0
+# 換季成長：每晚保留的身體成長，換季時發放（SPEC 1.6「成長系統」）
+var season_reserve: Dictionary = {}
 # 環境對感知的倍率（苔原的白矇天），由 GameState 每個時段設定，不存檔。
 var env_perception_mult: float = 1.0
 
@@ -139,7 +141,7 @@ func to_dict() -> Dictionary:
 		"injury_part": injury_part, "injury_source": injury_source,
 		"old_injuries": old_injuries, "flare_index": flare_index, "flare_days": flare_days,
 		"alive": alive, "death_cause": death_cause,
-		"start_stats": start_stats, "potential": potential, "training": training, "fed_streak": fed_streak,
+		"start_stats": start_stats, "potential": potential, "training": training, "fed_streak": fed_streak, "season_reserve": season_reserve,
 	}
 
 static func from_dict(data: Dictionary) -> Wolf:
@@ -170,4 +172,5 @@ static func from_dict(data: Dictionary) -> Wolf:
 	w.potential = data.get("potential", {})
 	w.training = data.get("training", {})
 	w.fed_streak = int(data.get("fed_streak", 0))
+	w.season_reserve = data.get("season_reserve", {})
 	return w

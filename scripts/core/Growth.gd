@@ -123,17 +123,32 @@ static func settle_sleep(wolf: Wolf) -> Dictionary:
 		wolf.fed_streak = 0
 	var mult: float = hunger_mult(wolf.hunger, max(0, wolf.fed_streak - 1))
 	var per_point: Dictionary = cfg().get("stat_per_point", {})
+	var reserve: float = float(cfg().get("season_reserve", 0.0))
 	var gains: Dictionary = {}
 	var total: float = 0.0
 	for stat in BODY_STATS:
 		var points: float = float(wolf.training.get(stat, 0.0))
 		total += points
-		var g: float = _add(wolf, stat, points * float(per_point.get(stat, 0.02)) * mult * stage_mult(wolf, stat))
+		var amount: float = points * float(per_point.get(stat, 0.02)) * mult * stage_mult(wolf, stat)
+		# 一部分留到換季時發放（settle_season）
+		wolf.season_reserve[stat] = float(wolf.season_reserve.get(stat, 0.0)) + amount * reserve
+		var g: float = _add(wolf, stat, amount * (1.0 - reserve))
 		if g > 0.0:
 			gains[stat] = g
 	wolf.training = {}
 	wolf.clamp_stats()
 	return {"gains": gains, "points": total, "hunger_mult": mult}
+
+# 換季成長：這一季保留的成長 × 吃飽的天數比例（0～1），受潛力上限限制；沒拿到的部分不保留。回傳各項實際成長。
+static func settle_season(wolf: Wolf, fed_ratio: float) -> Dictionary:
+	var gains: Dictionary = {}
+	for stat in BODY_STATS:
+		var g: float = _add(wolf, stat, float(wolf.season_reserve.get(stat, 0.0)) * clamp(fed_ratio, 0.0, 1.0))
+		if g > 0.0:
+			gains[stat] = g
+	wolf.season_reserve = {}
+	wolf.clamp_stats()
+	return gains
 
 # 潛力結算（進入成年時）：巔峰上限 = 基礎上限 + 次成年期累積成長 × growth_mult，再限制在最高值。
 static func settle_potential(wolf: Wolf) -> Dictionary:

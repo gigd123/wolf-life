@@ -447,6 +447,10 @@ ui.season_end,{season}末
 ui.day_summary.title,第 {n} 天
 sleep_summary.today,今天：
 season_card.title,{season}天
+season_card.review.grew,這一季，你又變得比以前強壯一些：
+season_card.review.starved_some,這一季你常常挨餓，身體沒什麼長進：
+season_card.review.starved,這一季你瘦了，身體沒什麼長進。
+season_card.review.declined,這一季，你的身體有些地方不如從前了：
 season_card.spring.full,積雪一塊塊融化，溪水漲了起來，帶著泥土的氣味。在北方雲杉林避寒的鹿群散開了，回到各處的林地。
 season_card.spring.short,雪融了，鹿群從北方的雲杉林散開。
 season_card.spring.bear_known,灰熊醒了。餓了一整個冬天，牠們會在林間四處翻找食物。
