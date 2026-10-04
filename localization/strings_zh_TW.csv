@@ -405,7 +405,7 @@ summary.at_age,（{age} 歲）
 summary.wild_nights,在野外過夜 {count} 次
 summary.scavenged,被搶走獵物 {count} 次
 summary.heavy_injuries,受過重傷 {count} 次
-summary.knowledge,學會了 {count} 件事（確定 {confirmed} 件）
+summary.knowledge,學會的事：確定 {confirmed} 件（還不確定的：通常 {usual} 件、似乎 {maybe} 件）
 tendency.stealth,潛伏型
 tendency.pursuit,追獵型
 tendency.assault,強攻型

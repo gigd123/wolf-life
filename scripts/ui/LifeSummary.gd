@@ -158,12 +158,17 @@ func _ready() -> void:
 	if int(log_data.get("fell_through_ice", 0)) > 0:
 		_add_line(box, tr("summary.fell_through_ice").replace("{n}", str(int(log_data["fell_through_ice"]))))
 
-	# 學會的知識：總數，加上幾條「確定」的內容
+	# 學會的知識：確定的件數，另外列出還不確定的（通常、似乎），加上幾條「確定」的內容
 	var confirmed: Array = []
+	var by_level: Dictionary = {1: 0, 2: 0}
 	for entry in GameState.knowledge.values():
-		if GameState.knowledge_level(entry) >= int(GameData.knowledge.get("confirm_count", 3)):
+		var level: int = GameState.knowledge_level(entry)
+		if level >= int(GameData.knowledge.get("confirm_count", 3)):
 			confirmed.append(entry)
-	_add_line(box, tr("summary.knowledge").replace("{count}", str(GameState.knowledge.size())).replace("{confirmed}", str(confirmed.size())))
+		elif by_level.has(level):
+			by_level[level] += 1
+	_add_line(box, tr("summary.knowledge").replace("{confirmed}", str(confirmed.size())) \
+		.replace("{usual}", str(by_level[2])).replace("{maybe}", str(by_level[1])))
 	for i in min(MAX_KNOWLEDGE_LINES, confirmed.size()):
 		_add_line(box, "　" + TextFormat.knowledge_text(confirmed[i]))
 
