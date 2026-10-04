@@ -150,6 +150,24 @@ static func settle_season(wolf: Wolf, fed_ratio: float) -> Dictionary:
 	wolf.clamp_stats()
 	return gains
 
+# 重大勝利的成長：只受上限限制，不套用「越接近上限長得越慢」（要讓玩家完整拿到）。回傳實際成長。
+static func bonus(wolf: Wolf, stat: String, amount: float) -> float:
+	if amount <= 0.0:
+		return 0.0
+	var value: float = get_stat(wolf, stat)
+	var gained: float = max(0.0, min(cap_of(wolf, stat), value + amount) - value)
+	wolf.set(stat, value + gained)
+	return gained
+
+# 重大勝利提高潛力上限（成年後才有上限；次成年期上限是最高值，不用提高）。回傳實際提高的量。
+static func raise_cap(wolf: Wolf, stat: String, amount: float) -> float:
+	if not wolf.potential.has(stat) or amount <= 0.0:
+		return 0.0
+	var top: float = float(cfg().get("potential", {}).get("max", {}).get(stat, 100))
+	var old: float = float(wolf.potential[stat])
+	wolf.potential[stat] = min(top, old + amount)
+	return float(wolf.potential[stat]) - old
+
 # 潛力結算（進入成年時）：巔峰上限 = 基礎上限 + 次成年期累積成長 × growth_mult，再限制在最高值。
 static func settle_potential(wolf: Wolf) -> Dictionary:
 	var p: Dictionary = cfg().get("potential", {})

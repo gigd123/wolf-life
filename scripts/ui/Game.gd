@@ -1746,6 +1746,9 @@ func _process_events() -> void:
 			_show_card(tr("stranger.killed_card.title"), tr("stranger.killed_card").replace("{region}", region),
 				ArtLibrary.region_background(str(event.get("region", GameState.current_region)), GameTime.current_season()))
 			return
+		"bear_first_win":
+			_show_bear_first_win(event)
+			return
 		"injury_notice":
 			_show_injury_notice(event)
 			if int(event.get("severity", 0)) == Wolf.Injury.HEAVY:
@@ -2830,6 +2833,22 @@ func _show_season_card(event: Dictionary) -> void:
 	if str(event.get("map", "forest")) != "forest":
 		bg = ArtLibrary.region_background(str(event.get("region", GameState.current_region)), season)
 	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, bg)
+
+# 第一次獨自擊退成年灰熊的卡片：當下的成長與提高的上限（SPEC「灰熊：血量與耐力」）。
+func _show_bear_first_win(event: Dictionary) -> void:
+	var body: String = tr("bear.first_win.body")
+	_log(body)
+	for pair in [["gains", "bear.first_win.gains"], ["caps", "bear.first_win.caps"]]:
+		var parts: Array[String] = []
+		for stat in Growth.ALL_STATS:
+			if event.get(pair[0], {}).has(stat):
+				parts.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " ▲" + str(maxi(1, int(round(float(event[pair[0]][stat]))))))
+		if not parts.is_empty():
+			body += "
+
+" + tr(pair[1]) + "
+" + "　".join(parts)
+	_show_card(tr("bear.first_win.title"), body)
 
 # 換季字卡的成長回顧：這一季各能力的變化（含換季成長），挨餓的一季另外說明；老年有衰退時一起列出。
 func _season_review_text(review: Dictionary) -> String:

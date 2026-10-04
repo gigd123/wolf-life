@@ -155,6 +155,8 @@ func _ready() -> void:
 				.replace("{outcome}", tr("summary.tundra_outcome." + str(m.get("outcome", "")))))
 		_add_line(box, tr("summary.tundra").replace("{n}", str(tundra_meetings.size())).replace("{list}", "、".join(t_entries)) \
 			.replace("{relation}", tr("summary.tundra.relation." + _tundra_relation_key(int(log_data.get("tundra_relation", 0))))))
+	if log_data.has("bear_first_win"):
+		_add_line(box, tr("summary.bear_first_win").replace("{age}", str(log_data["bear_first_win"])))
 	if int(log_data.get("fell_through_ice", 0)) > 0:
 		_add_line(box, tr("summary.fell_through_ice").replace("{n}", str(int(log_data["fell_through_ice"]))))
 

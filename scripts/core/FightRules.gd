@@ -195,11 +195,14 @@ static func retreat_chance(wolf: Wolf, cautious: float) -> Dictionary:
 	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
 
 # 威嚇：力量差、對手抗威嚇 × 這場的利害（搶獵物、護幼時更難嚇走）。
-static func threaten_chance(wolf: Wolf, opp: Dictionary, stake_mult: float) -> Dictionary:
+static func threaten_chance(wolf: Wolf, opp: Dictionary, stake_mult: float, outclass_bonus: float = 0.0) -> Dictionary:
 	var t: Dictionary = combat_cfg().get("standoff", {}).get("threaten", {})
 	var diff: float = (wolf_power(wolf) - float(opp.get("power", 100))) / float(t.get("divisor", 200))
 	var resist: float = float(opp.get("threat_resist", 0.3)) * stake_mult
 	var factors: Array = [_power_factor(diff)]
 	if resist > 0.0:
 		factors.append({"key": "factor.combat.determined", "good": false, "weight": resist})
-	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.3)) + diff - resist), "factors": factors}
+	# 實力差距大時，牠看得出打不過你（Combat.morale_bonus）
+	if outclass_bonus > 0.0:
+		factors.push_front({"key": "factor.combat.outclassed", "good": true, "weight": outclass_bonus})
+	return {"chance": HuntSystem.clamp_chance(float(t.get("base", 0.3)) + diff - resist + outclass_bonus), "factors": factors}

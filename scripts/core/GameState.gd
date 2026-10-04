@@ -1788,6 +1788,24 @@ func _set_opponent_beaten(animal_id: String, life_stage: String, beaten: bool) -
 		knowledge.erase(knowledge_key(opponent_knowledge(animal_id, life_stage)))
 	life_log["beaten_opponents"] = list
 
+# 第一次獨自擊退成年灰熊（SPEC「灰熊：血量與耐力」）：提高潛力上限，再成長一次，跳一張卡片。只限第一次。
+func _after_bear_first_win() -> void:
+	if bool(life_log.get("bear_first_win", false)):
+		return
+	life_log["bear_first_win"] = snapped(wolf.age_years, 0.1)
+	var cfg: Dictionary = GameData.balance.get("growth", {}).get("bear_first_win", {})
+	var caps: Dictionary = {}
+	for stat in cfg.get("caps", {}).keys():
+		var raised: float = Growth.raise_cap(wolf, str(stat), float(cfg["caps"][stat]))
+		if raised > 0.0:
+			caps[stat] = raised
+	var gains: Dictionary = {}
+	for stat in cfg.get("gains", {}).keys():
+		var g: float = Growth.bonus(wolf, str(stat), float(cfg["gains"][stat]))
+		if g > 0.0:
+			gains[stat] = g
+	_queue_notice({"type": "bear_first_win", "caps": caps, "gains": gains})
+
 # 戰鬥結束：記錄決策、成長、知識，處理獵物的去留。回傳 {"outcome", "grow": "clean"|"costly"|""}。
 func finish_combat(c: Combat) -> Dictionary:
 	for d in c.decisions:
@@ -1833,6 +1851,8 @@ func finish_combat(c: Combat) -> Dictionary:
 			_after_mob_combat(c)
 	elif c.npc != null and TUNDRA_WOLF_IDS.has(c.npc.id):
 		_after_tundra_combat(c)
+	if c.won() and c.animal_id == "grizzly_bear" and c.life_stage == "adult" and c.ally_chance <= 0.0:
+		_after_bear_first_win()
 	GameTime.advance_turns(1)
 	wolf.clamp_stats()
 	_check_death()
@@ -2357,7 +2377,9 @@ func _after_stranger_combat(c: Combat) -> float:
 			if not bool(life_log.get("stranger_first_win", false)):
 				life_log["stranger_first_win"] = true
 				if wolf.heavy_injury_count == c.start_heavy_count:
-					skill_gain = Growth.add(wolf, "skill", float(GameData.balance.get("growth", {}).get("stranger_first_win_skill", 4)))
+					# 先提高技巧上限，成年後接近上限時也拿得到這次成長（SPEC「陌生灰狼」）
+					Growth.raise_cap(wolf, "skill", float(GameData.balance.get("growth", {}).get("stranger_first_win_cap", 4)))
+					skill_gain = Growth.bonus(wolf, "skill", float(GameData.balance.get("growth", {}).get("stranger_first_win_skill", 4)))
 			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕
 			life_log["own_territory"] = npc.territory
 			if c.outcome == "killed":

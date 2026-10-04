@@ -88,7 +88,15 @@ func opp_power() -> float:
 
 # 對手放棄的門檻：耐力低於 give_up_ratio ÷ 利害倍率（搶獵物、護幼時更晚放棄）。
 func opp_give_up_ratio() -> float:
-	return float(opp.get("give_up_ratio", 0.4)) / max(0.1, stake_mult)
+	return float(opp.get("give_up_ratio", 0.4)) / max(0.1, stake_mult) + morale_bonus()
+
+# 依實力差距提早示弱（同體型的對手：黑狼、苔原狼）：你的力量值比牠高越多，牠越早放棄、越容易被嚇退。灰熊不套用。
+func morale_bonus() -> float:
+	if not bool(opp.get("yields_to_stronger", false)):
+		return 0.0
+	var m: Dictionary = FightRules.combat_cfg().get("morale", {})
+	var ratio: float = FightRules.wolf_power(wolf) / max(1.0, opp_power())
+	return clamp((ratio - float(m.get("start", 1.05))) * float(m.get("slope", 2.5)), 0.0, float(m.get("max", 0.5)))
 
 # 耐力放棄的門檻（同樣 ÷ 利害倍率）；沒有耐力的對手永遠不會因為累而離開。
 func opp_tired() -> bool:
@@ -205,7 +213,7 @@ func _retreat_option() -> Dictionary:
 	return _move_trains(opt, "retreat")
 
 func _threaten_option() -> Dictionary:
-	var info := FightRules.threaten_chance(wolf, opp, stake_mult)
+	var info := FightRules.threaten_chance(wolf, opp, stake_mult, morale_bonus() * float(FightRules.combat_cfg().get("morale", {}).get("threaten_mult", 0.8)))
 	var t: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("threaten", {})
 	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": info["chance"], "chance_key": "chance_label.drive_off", "factors": info["factors"],
 		"stamina": float(t.get("stamina", 3)), "injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "bite", float(opp.get("hit_divisor", 0.0)))}

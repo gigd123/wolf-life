@@ -614,6 +614,7 @@ factor.combat.they_let_go,牠只想趕走你
 factor.combat.leg_injury,腿傷
 factor.combat.determined,牠不肯退
 factor.combat.opening,閃開就有破綻
+factor.combat.outclassed,牠看得出打不過你
 factor.combat.tiring,消耗牠的體力
 knowledge.opponent,{animal}：現在的你還不是牠的對手
 day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
@@ -671,6 +672,10 @@ stranger.yielded,你退開了，往{region}走去。
 stranger.won_territory,{region}從此是你的了。
 stranger.first_win_growth,你第一次贏了那隻黑狼。牠的每一次閃身和撲咬，你都記在了心裡。
 stranger.killed_card.title,那隻黑狼
+bear.first_win.title,那頭灰熊
+bear.first_win.body,你獨自和一頭成年灰熊周旋，閃過一掌又一掌，直到牠喘著粗氣轉身離開。很少有狼做得到。
+bear.first_win.gains,這一戰之後，你的身體和本事都不一樣了：
+bear.first_win.caps,能力的巔峰上限也提高了：
 stranger.killed_card,牠倒在{region}的落葉裡，再也沒有起來。那個從可怕氣味的主人爪下奪回一頭鹿的傳說，是真是假，已經沒有誰能說了。這一帶的狐狸不必再繞開牠的氣味；從今以後，{region}是你的範圍。
 combat.stake.meet.stranger_wolf,牠盯著你，尾巴高高舉起。
 combat.stake.territory.stranger_wolf,這裡是牠的地盤，牠會拚命守住。
@@ -858,6 +863,7 @@ summary.wolverine_outcome.share,讓牠吃了一段
 summary.wolverine_outcome.abandon,放棄了獵物
 summary.wolverine_outcome.retreated,撤退
 summary.fell_through_ice,春天在河谷踩破河冰落水 {n} 次
+summary.bear_first_win,{age} 歲那年，你獨自趕走了一頭成年灰熊。
 debug.tundra.blizzard,暴風雪
 debug.tundra.wolverine,狼獾搶食
 debug.tundra.ravens,渡鴉
