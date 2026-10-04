@@ -1286,7 +1286,9 @@ func _on_action_button(action_id: String) -> void:
 				_log(tr("log.slept." + str(res["quality"])))
 				if res.get("interrupted", false):
 					_log(tr("log.sleep_interrupted"))
-				_show_sleep_summary(res.get("summary", {}))
+				# 換季的那一覺不另外顯示睡覺結算，併入換季字卡（SPEC「睡覺結算」）
+				if not res.get("season_changed", false):
+					_show_sleep_summary(res.get("summary", {}))
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:

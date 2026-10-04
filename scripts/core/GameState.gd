@@ -183,18 +183,20 @@ func _maybe_rest_season_change() -> void:
 	if wolf.alive and GameTime.days_overdue() >= 2 and not season_change_blocked():
 		_change_season()
 
+# 換季的結算順序（SPEC「季節轉換」）：季節狀態、年齡、NPC、排定這一季的事件 → 老年衰退 → 成年、老年轉變 → 換季字卡。
+# 卡片依排入的順序顯示，所以轉變卡片在前、換季字卡最後，關掉後回到已更新的主畫面。
 func _on_season_changed(_season_index: int) -> void:
 	if wolf != null:
 		var prev_stage: int = wolf.life_stage()
 		wolf.age_years += 0.25
-		_apply_elder_decay()
-		log_message.emit(tr("log.season_changed"))
-		_queue_season_card()
-		_check_life_stage_transition(prev_stage)
 		_age_npcs()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
 		_roam_tundra_wolves(true)
+		_apply_elder_decay()
+		_check_life_stage_transition(prev_stage)
+		log_message.emit(tr("log.season_changed"))
+		_queue_season_card()
 
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
@@ -1165,14 +1167,15 @@ func action_sleep() -> Dictionary:
 		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
 	sleep_spot_here = ""
 	var summary := sleep_summary(settle)
-	if season_sleep and wolf.alive:
+	var season_changed: bool = season_sleep and wolf.alive
+	if season_changed:
 		_change_season()
 	_snapshot_sleep_stats()
 	SaveSystem.save_game()
 	state_changed.emit()
 	if encounter.get("encountered", false):
 		encounter_triggered.emit(prepare_bear_encounter(encounter))
-	return {"quality": quality, "interrupted": encounter.get("encountered", false), "summary": summary}
+	return {"quality": quality, "interrupted": encounter.get("encountered", false), "summary": summary, "season_changed": season_changed}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
 # from_tracking：經由追蹤找到獵物（追蹤的感知成長在 action_track 結算）。terrain：遭遇時的地形，空字串則隨機取區域的地形。
