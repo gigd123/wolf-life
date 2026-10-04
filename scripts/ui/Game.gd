@@ -1591,7 +1591,9 @@ func _show_scavenger(event: String, returning: bool) -> void:
 		encounter_overlay.visible = true
 		return
 	if event == "tundra_wolves":
-		_log(tr("scavenger.tundra_wolves." + ("returning" if returning else "arrive")))
+		# 認得之前寫「毛色偏淺的狼」；只剩一隻時用單數（start_tundra_combat 才記辨識，所以這裡要先判斷）
+		var suffix: String = ("" if GameState.tundra_pair().size() > 1 else ".single") + ("" if GameState.is_identified("tundra_wolf") else ".first")
+		_log(tr("scavenger.tundra_wolves." + ("returning" if returning else "arrive") + suffix))
 		_begin_combat(GameState.start_tundra_combat("carcass"), "move")
 		return
 	if event == "wolverine":
@@ -2512,7 +2514,11 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 
 # 兩隻苔原狼圍攻狼獾：幫苔原狼、在旁邊看、離開。
 func _show_tundra_mob(d: Dictionary) -> void:
-	var text: String = tr("tundra.mob." + ("known" if d.get("wolverine_known", false) else "unknown"))
+	# 文案依這一次之前認不認得苔原狼、狼獾（兩者都認得 known、都不認得 unknown）
+	var wolves_known: bool = d.get("tundra_known", false)
+	var wolverine_known: bool = d.get("wolverine_known", false)
+	var mob_key: String = "known" if wolves_known and wolverine_known else ("wolves_known" if wolves_known else ("wolverine_known" if wolverine_known else "unknown"))
+	var text: String = tr("tundra.mob." + mob_key)
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""

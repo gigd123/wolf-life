@@ -856,8 +856,14 @@ combat.result.guard_together,你們隔著屍體各據一邊，誰也沒有動手
 combat.stake.meet.tundra_wolf,帶頭的那隻擋在你面前，另一隻在牠身後不遠處盯著你。
 combat.stake.carcass.tundra_wolf,牠們聞到了肉味，一左一右慢慢靠近你的獵物。
 combat.partner_joins,另一隻也撲了上來！
-scavenger.tundra_wolves.arrive,兩隻毛色偏淺的狼從雪坡後面走出來，鼻子朝著你的獵物。
+scavenger.tundra_wolves.arrive,那對苔原狼從雪坡後面走出來，鼻子朝著你的獵物。
+scavenger.tundra_wolves.arrive.first,兩隻毛色偏淺的狼從雪坡後面走出來，鼻子朝著你的獵物。
+scavenger.tundra_wolves.arrive.single,那隻苔原狼從雪坡後面走出來，鼻子朝著你的獵物。
+scavenger.tundra_wolves.arrive.single.first,一隻毛色偏淺的狼從雪坡後面走出來，鼻子朝著你的獵物。
 scavenger.tundra_wolves.returning,你回來時，那對苔原狼正圍在你的獵物旁邊。
+scavenger.tundra_wolves.returning.first,你回來時，兩隻毛色偏淺的狼正圍在你的獵物旁邊。
+scavenger.tundra_wolves.returning.single,你回來時，那隻苔原狼正守在你的獵物旁邊。
+scavenger.tundra_wolves.returning.single.first,你回來時，一隻毛色偏淺的狼正守在你的獵物旁邊。
 tundra.meet.first.pair,兩隻毛色偏淺的狼從遠處的雪坡上看著你。牠們比你瘦小一些，腿卻很長，是跟著馴鹿群遷徙的苔原狼。
 tundra.meet.first.single,一隻毛色偏淺的狼從遠處的雪坡上看著你。牠比你瘦小一些，腿卻很長，是跟著馴鹿群遷徙的苔原狼。
 tundra.meet.again.pair,那對苔原狼又出現在你面前。
@@ -904,8 +910,10 @@ debug.tundra_wolf.carcass,苔原狼爭食
 factor.combat.partner,另一隻在旁邊伺機而動
 log.ice_shortcut,你沿著結冰的河面走，冰上沒有積雪，走得很快。
 ice.here.shortcut,走到河中央時，腳下的冰發出一聲悶響，裂開了！
-tundra.mob.known,兩隻苔原狼正圍著一隻狼獾。狼獾背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
+tundra.mob.known,那對苔原狼正圍著一隻狼獾。狼獾背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
 tundra.mob.unknown,兩隻毛色偏淺的狼正圍著一隻你沒見過的深色動物。牠背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
+tundra.mob.wolves_known,那對苔原狼正圍著一隻你沒見過的深色動物。牠背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
+tundra.mob.wolverine_known,兩隻毛色偏淺的狼正圍著一隻狼獾。狼獾背靠著一具馴鹿殘骸，弓著背嘶吼，誰靠近就撲誰。
 tundra.mob.help,幫苔原狼
 tundra.mob.watch,在旁邊看
 tundra.mob.watch.drove_off,狼獾終於撐不住，叼著一塊肉退走了。苔原狼低頭吃了起來。
