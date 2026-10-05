@@ -1333,14 +1333,29 @@ func _on_hunt_started(hunt: HuntSystem) -> void:
 		life_log["after_deer"] = {}
 
 # 死亡時把試玩紀錄寫成 JSON（user://playtest_logs/），方便比較兩隻狼。
+# 試玩紀錄：寫到 user://playtest_logs/。在 Godot 編輯器裡、有視窗地遊玩時（不是 headless、不是自動遊玩或模擬），
+# 另外存一份到專案的 playtest_logs/（資料夾有 .gdignore，Godot 不會匯入），commit 後 Claude Code 就讀得到。
+# life_log 含最近的戰鬥逐回合紀錄（recent_combats）與主畫面最後約 40 段訊息（recent_messages）。
 func _write_playtest_log() -> String:
 	DirAccess.make_dir_recursive_absolute("user://playtest_logs")
-	var path := "user://playtest_logs/wolf_%d.json" % int(Time.get_unix_time_from_system())
+	var name := "wolf_%s.json" % Time.get_datetime_string_from_system().replace(":", "-")
+	var path := "user://playtest_logs/" + name
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return ""
-	file.store_string(JSON.stringify({"life_log": life_log, "knowledge_count": knowledge.size(),
-		"age_years": wolf.age_years, "tendency": current_tendency(), "wolf": wolf.to_dict()}, "  "))
+	var text := JSON.stringify({"life_log": life_log, "knowledge": knowledge.values(), "age_years": wolf.age_years,
+		"tendency": current_tendency(), "wolf": wolf.to_dict(), "region": current_region, "den": den_region,
+		"time": {"season": GameTime.current_season(), "day": GameTime.day, "period": GameTime.current_period()}}, "  ")
+	file.store_string(text)
+	file.close()
+	if OS.has_feature("editor") and DisplayServer.get_name() != "headless" and not auto_playing:
+		var project_dir := ProjectSettings.globalize_path("res://playtest_logs")
+		DirAccess.make_dir_recursive_absolute(project_dir)
+		var copy := FileAccess.open(project_dir.path_join(name), FileAccess.WRITE)
+		if copy != null:
+			copy.store_string(text)
+			copy.close()
+			return project_dir.path_join(name)
 	return ProjectSettings.globalize_path(path)
 
 # --- 狩獵傾向（SPEC「經歷與一生回顧」） ---

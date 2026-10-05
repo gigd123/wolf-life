@@ -1066,6 +1066,20 @@ func _main_append(text: String) -> void:
 			main_entries = main_entries.slice(main_entries.size() - MAIN_LOG_KEEP)
 	main_entries.back()["lines"].append(text)
 	_render_main_log()
+	_store_recent_messages()
+
+# 主畫面最後約 40 段訊息存進 life_log（跟著存檔），死亡時隨試玩紀錄匯出，用來查文案與經過。
+const RECENT_MESSAGES_KEEP := 40
+
+func _store_recent_messages() -> void:
+	if GameState.auto_playing:
+		return
+	var list: Array = []
+	for i in range(max(0, main_entries.size() - RECENT_MESSAGES_KEEP), main_entries.size()):
+		var e: Dictionary = main_entries[i]
+		if not e["lines"].is_empty():
+			list.append(str(e["time"]) + "　" + _join_sentences(e["lines"]))
+	GameState.life_log["recent_messages"] = list
 
 func _render_main_log() -> void:
 	var parts: Array[String] = []
