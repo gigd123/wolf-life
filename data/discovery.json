@@ -22,7 +22,7 @@
   "clue_icon_overrides": { "snowshoe_hare.track": "track_snowhare", "caribou.track": "track_caribou", "moose.sign": "antler_rub" },
   "always_fresh_clues": ["sound", "sight"],
   "scent_wind_mult": { "headwind": 2.0, "crosswind": 1.0, "tailwind": 0.4 },
-  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch", "snowshoe_hare": "droppings", "caribou": "trampled", "moose": "antler_rub" },
+  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch", "snowshoe_hare": "droppings", "caribou": "trampled", "moose": "antler_rub", "moose.juvenile": "browse" },
   "track": {
     "turns": 1,
     "base": 0.6,

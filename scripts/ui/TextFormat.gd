@@ -20,6 +20,9 @@ static func prey_name(animal_id: String, life_stage: String) -> String:
 
 static func knowledge_text(entry: Dictionary) -> String:
 	var level: String = t("knowledge.level.%d" % GameState.knowledge_level(entry))
+	# 狼嚎的知識本身就分三句寫出把握程度，不再加【似乎】（免得「【似乎】似乎有其他狼」）
+	if entry["type"] == "territory":
+		level = ""
 	var text: String = t("knowledge." + str(entry["type"]))
 	if entry["type"] == "territory":
 		# 狼嚎的知識逐步成形：似乎有其他狼 → 常從某處傳來 → 這一帶是其他狼的範圍

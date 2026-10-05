@@ -78,6 +78,7 @@ var rest_buttons_box: VBoxContainer
 
 var rain: CPUParticles2D
 var snow: CPUParticles2D # 苔原的暴風雪、白矇天
+var _knowledge_buffer: Array[String] = [] # 這次行動學到的知識，行動的訊息寫完後再補上
 var _found_intro: String = "" # 跟著渡鴉發現殘骸的句子，殘骸旁有搶食者時一起放在字卡上（QA-43）
 
 var debug_overlay: Panel
@@ -112,7 +113,10 @@ func _ready() -> void:
 	GameState.wolf_died.connect(_on_wolf_died)
 	GameState.encounter_triggered.connect(_on_encounter_triggered)
 	GameState.growth_applied.connect(func(): if not GameState.auto_playing: Audio.play_level_up())
-	GameState.knowledge_learned.connect(func(entry): _log_result(tr("log.knowledge_learned") + _knowledge_text(entry)))
+	# 學到的知識等這次行動的訊息（例如探索的發現）寫完再補上，順序才是「看到 → 學到」（QA-39）
+	GameState.knowledge_learned.connect(func(entry):
+		_knowledge_buffer.append(tr("log.knowledge_learned") + _knowledge_text(entry))
+		_flush_knowledge.call_deferred())
 	GameTime.day_changed.connect(func(_d): _show_day_toast.call_deferred())
 	_refresh()
 	Audio.play_bgm()
@@ -1034,6 +1038,12 @@ func _log(text: String) -> void:
 	else:
 		_main_append(text)
 
+func _flush_knowledge() -> void:
+	var lines := _knowledge_buffer.duplicate()
+	_knowledge_buffer.clear()
+	for line in lines:
+		_log_result(line)
+
 # 要留在主畫面總結裡的句子（狩獵與戰鬥的結果、學到的知識）。
 func _log_result(text: String) -> void:
 	_log(text)
@@ -1457,6 +1467,11 @@ func _add_encounter_button(label: String, callback: Callable) -> void:
 	btn.pressed.connect(_session_choice(label, callback))
 	encounter_buttons_box.add_child(btn)
 
+# 痕跡：先找「動物.生命階段」（例如小駝鹿不會磨角），再找動物（discovery.json 的 signs）。
+func _sign_of(animal_id: String, life_stage: String) -> String:
+	var signs: Dictionary = GameData.discovery.get("signs", {})
+	return str(signs.get(animal_id + "." + life_stage, signs.get(animal_id, "browse")))
+
 func _discovery_text(d: Dictionary) -> String:
 	var location: String = tr("explore.location." + str(d.get("location", "")))
 	match d.get("kind", ""):
@@ -1495,8 +1510,10 @@ func _discovery_text(d: Dictionary) -> String:
 	if d.get("fled", false):
 		return tr("explore.fled").replace("{animal}", _prey_name(d["source"], d.get("life_stage", "adult"))).replace("{location}", location)
 	var clue: String = str(d.get("clue", "track"))
-	var text: String = tr("explore.clue." + clue).replace("{location}", location).replace("{animal}", animal) \
-		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + str(GameData.discovery.get("signs", {}).get(d["source"], "browse"))))
+	# 有寫新不新鮮時，氣味用「陳舊的野兔氣味」，避免「陳舊的野兔的氣味」
+	var clue_key: String = "explore.clue." + clue + ("_fresh" if clue == "scent" and fresh != "" else "")
+	var text: String = tr(clue_key).replace("{location}", location).replace("{animal}", animal) \
+		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + _sign_of(str(d["source"]), str(d.get("life_stage", "adult")))))
 	if not d.get("fresh_known", true):
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
 	return text

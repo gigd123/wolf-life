@@ -224,7 +224,7 @@ knowledge.level.3,【確定】
 knowledge.prey,{period}的{region}常有{animal}
 knowledge.danger,{season}季的{region}有{animal}出沒
 knowledge.weakness,{prey}被{option}時比較容易得手
-knowledge.overhunt,在{region}連續獵{animal} 牠們會離開好幾天
+knowledge.overhunt,在{region}連續獵{animal}，牠們會離開好幾天
 knowledge.feature,{region}有{feature}
 knowledge.option.drive_forest,驅趕向密林
 knowledge.option.drive_stream,逼向溪流
@@ -246,19 +246,19 @@ explore.threat_fresh,（還很新）
 explore.threat_stale,（已經有點舊了）
 explore.threat_track_warning,追蹤可能會遇上牠
 clue.grizzly_bear.claw.unknown,樹上有一組巨大銳利的爪痕
-clue.grizzly_bear.claw.known,灰熊留下的爪痕，附近可能是牠的活動範圍
-clue.grizzly_bear.danger_scent.unknown,一股陌生而危險的氣味
-clue.grizzly_bear.danger_scent.known,灰熊的氣味
+clue.grizzly_bear.claw.known,樹上有灰熊留下的爪痕，附近可能是牠的活動範圍
+clue.grizzly_bear.danger_scent.unknown,你聞到一股陌生而危險的氣味
+clue.grizzly_bear.danger_scent.known,你聞到灰熊的氣味
 clue.grizzly_bear.flipped_log.unknown,一截沉重的倒木被翻了過來
-clue.grizzly_bear.flipped_log.known,灰熊翻找食物的痕跡
+clue.grizzly_bear.flipped_log.known,一截倒木被翻了過來，是灰熊翻找食物的痕跡
 clue.grizzly_bear.sight.unknown,遠處有一頭陌生的大型動物在翻找食物
 clue.grizzly_bear.sight.known,遠處有一頭灰熊，牠沒有發現你
-clue.stranger_wolf.wolf_track.unknown,一個和自己體型相近、但不是家人的腳印
-clue.stranger_wolf.wolf_track.known,黑狼的腳印
-clue.stranger_wolf.similar_scent.unknown,和家人相似、但完全陌生的氣味
-clue.stranger_wolf.similar_scent.known,黑狼的氣味
+clue.stranger_wolf.wolf_track.unknown,地上有一個和自己體型相近、但不是家人的腳印
+clue.stranger_wolf.wolf_track.known,地上有黑狼的腳印
+clue.stranger_wolf.similar_scent.unknown,你聞到一股和家人相似、但完全陌生的氣味
+clue.stranger_wolf.similar_scent.known,你聞到黑狼的氣味
 clue.stranger_wolf.sight.unknown,遠處有一隻和你很像的狼走過
-clue.stranger_wolf.sight.known,遠處有那隻黑狼
+clue.stranger_wolf.sight.known,遠處有那隻黑狼走過
 animal.stranger_wolf,黑狼
 encounter.far_away,遠處
 encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食物，牠沒有發現你。
@@ -293,7 +293,7 @@ hunt.chase.continue,{animal}拉開了距離，但還在視線內。
 hunt.chase.round,第 {n} 回合
 hunt.hide.start,{animal}躲了起來
 hunt.hide.found,你找到了躲起來的{animal}
-hunt.hide.lost,你找不到{animal} 失去了目標
+hunt.hide.lost,你找不到{animal}，失去了目標
 hunt.harass.success,{animal}被逼得轉身逃跑
 hunt.harass.fail,{animal}低頭擺出鹿角，不肯退。
 hunt.stand.start,{animal}背靠障礙物，轉身站定。
@@ -398,7 +398,7 @@ summary.age,死亡時年齡 {age} 歲
 summary.death_cause,死因：{cause}
 summary.regions_visited,曾經去過 {count} 個區域
 summary.prey_total,總共成功狩獵 {count} 次
-summary.biggest_prey,最大的獵物是 {animal}
+summary.biggest_prey,最大的獵物是{animal}
 summary.new_life,展開新的一生
 summary.tendency,狩獵方式：{list}
 summary.at_age,（{age} 歲）
@@ -781,7 +781,7 @@ animal.snowshoe_hare,雪兔
 animal.caribou,北美馴鹿
 prey_name.caribou.adult,北美馴鹿
 prey_name.caribou.juvenile,小馴鹿
-explore.sign.trampled,一大片被踩亂的雪與苔蘚
+explore.sign.trampled,踩亂的雪地與苔蘚
 factor.snow_camouflage,雪地保護色
 factor.herd,鹿群（觀察能找出跑得慢的那一隻）
 factor.herd_weak,盯住跑得慢的那一隻
@@ -799,7 +799,7 @@ hunt.stage.observe_herd,觀察階段：遠處有一群{animal}
 animal.moose,駝鹿
 prey_name.moose.adult,駝鹿
 prey_name.moose.juvenile,小駝鹿
-explore.sign.antler_rub,樹幹上被磨掉一大片樹皮的痕跡
+explore.sign.antler_rub,磨角的痕跡（樹皮被磨掉了一大片）
 factor.huge_prey,牠的體型大得多
 reason.huge_prey,牠一腳踢開了你，你根本壓不住這麼大的身軀。
 animal.wolverine,狼獾
@@ -1018,3 +1018,4 @@ sleep_reason.none_elder,你老了，身體不再長了；只有經驗還在累�
 sleep_reason.none_idle,昨天沒怎麼活動，身體沒什麼變化。
 sleep_reason.none_peak,你的身體已經接近巔峰，很難再長得更強了。
 sleep_reason.none_small,這一晚的變化很小，還看不出來。
+explore.clue.scent_fresh,{location}，你聞到{fresh}{animal}氣味
