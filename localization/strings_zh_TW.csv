@@ -1013,3 +1013,8 @@ scavenger.found.tundra_wolves,那對苔原狼正圍在殘骸旁。
 scavenger.found.tundra_wolves.first,兩隻毛色偏淺的狼正圍在殘骸旁。
 scavenger.found.tundra_wolves.single,那隻苔原狼正守在殘骸旁。
 scavenger.found.tundra_wolves.single.first,一隻毛色偏淺的狼正守在殘骸旁。
+sleep_summary.title,睡醒了
+sleep_reason.none_elder,你老了，身體不再長了；只有經驗還在累積。
+sleep_reason.none_idle,昨天沒怎麼活動，身體沒什麼變化。
+sleep_reason.none_peak,你的身體已經接近巔峰，很難再長得更強了。
+sleep_reason.none_small,這一晚的變化很小，還看不出來。

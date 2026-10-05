@@ -348,9 +348,11 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 	var cfg: Dictionary = GameData.notices.get("sleep_summary", {})
 	var snap: Dictionary = life_log.get("sleep_snapshot", {})
 	var gains: Array = []
+	var amounts: Dictionary = {}
 	for stat in SLEEP_SUMMARY_STATS:
 		if snap.has(stat) and float(wolf.get(stat)) > float(snap[stat]) + float(cfg.get("min_gain", 0.05)):
 			gains.append(stat)
+			amounts[stat] = float(wolf.get(stat)) - float(snap[stat])
 	var reason: String = ""
 	if float(settle.get("points", 0.0)) >= float(cfg.get("starved_points", 15)) \
 			and float(settle.get("hunger_mult", 1.0)) < float(cfg.get("starved_mult", 0.3)):
@@ -366,7 +368,20 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 		elif not gains.has("strength"):
 			activity = "chase"
 		reason = str(cfg.get("reasons", {}).get(fed + "." + activity, ""))
-	return {"gains": gains, "reason": reason}
+	# 什麼都沒長、也沒有挨餓的原因時，說明為什麼（QA-47）
+	if gains.is_empty() and reason == "":
+		var none: Dictionary = cfg.get("none_reasons", {})
+		var at_peak: bool = not wolf.potential.is_empty() and Growth.BODY_STATS.all(
+			func(stat): return Growth.cap_of(wolf, stat) - float(wolf.get(stat)) < float(cfg.get("peak_margin", 2.0)))
+		if wolf.life_stage() == Wolf.LifeStage.ELDER:
+			reason = str(none.get("elder", ""))
+		elif float(settle.get("points", 0.0)) < float(cfg.get("idle_points", 4)):
+			reason = str(none.get("idle", ""))
+		elif at_peak:
+			reason = str(none.get("peak", ""))
+		else:
+			reason = str(none.get("small", ""))
+	return {"gains": gains, "amounts": amounts, "reason": reason}
 
 func _apply_elder_decay() -> void:
 	Growth.apply_elder_decay(wolf)

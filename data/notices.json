@@ -59,6 +59,10 @@
     "min_gain": 0.05,
     "starved_points": 15,
     "starved_mult": 0.3,
+    "idle_points": 4,
+    "peak_margin": 2.0,
+    "_none_comment": "沒有任何能力提升時的原因（QA-47）：老年身體不再成長、白天幾乎沒活動（鍛鍊點 < idle_points）、身體已到巔峰上限附近（差距 < peak_margin），其他是變化太小。",
+    "none_reasons": { "elder": "sleep_reason.none_elder", "idle": "sleep_reason.none_idle", "peak": "sleep_reason.none_peak", "small": "sleep_reason.none_small" },
     "reasons": {
       "starved": "sleep_reason.starved",
       "full.chase": "sleep_reason.full_chase",

@@ -1290,8 +1290,9 @@ func _on_action_button(action_id: String) -> void:
 				if res.get("interrupted", false):
 					_log(tr("log.sleep_interrupted"))
 				# 換季的那一覺不另外顯示睡覺結算，併入換季字卡（SPEC「睡覺結算」）
+				# 排進事件佇列，接在換日摘要之後，用按鍵關閉的卡片顯示（QA-47）
 				if not res.get("season_changed", false):
-					_show_sleep_summary(res.get("summary", {}))
+					GameState.pending_events.append({"type": "sleep_summary", "summary": res.get("summary", {})})
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
@@ -1773,6 +1774,9 @@ func _process_events() -> void:
 			return
 		"season_card":
 			_show_season_card(event)
+			return
+		"sleep_summary":
+			_show_sleep_summary(event.get("summary", {}))
 			return
 		"day_summary":
 			_show_day_summary(event)
@@ -3085,20 +3089,23 @@ func _show_day_toast() -> void:
 		.replace("{season}", tr("season." + GameTime.current_season())))
 
 # 睡覺結算：上次睡覺到這次提升的能力；速度或力量提升時附一句原因（也寫進行動紀錄）。
+# 睡覺結算卡片：這一晚長了哪些能力（附數字），沒有成長時寫原因（QA-47）。
 func _show_sleep_summary(summary: Dictionary) -> void:
 	var gains: Array = summary.get("gains", [])
-	var reason_only: bool = gains.is_empty()
-	if reason_only and str(summary.get("reason", "")) == "":
-		return
-	var parts: Array[String] = []
-	for stat in gains:
-		parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=#9be38a]▲[/color]")
-	var text: String = "" if reason_only else tr("sleep_summary.today") + "　".join(parts)
+	var amounts: Dictionary = summary.get("amounts", {})
+	var lines: Array[String] = []
+	if not gains.is_empty():
+		var parts: Array[String] = []
+		for stat in gains:
+			parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=#9be38a]▲%.1f[/color]" % float(amounts.get(stat, 0.0)))
+		lines.append(tr("sleep_summary.today") + "　".join(parts))
 	var reason: String = str(summary.get("reason", ""))
 	if reason != "":
-		text += ("" if reason_only else "\n") + tr(reason)
+		lines.append(tr(reason))
 		_log(tr(reason))
-	_show_toast(text, 3.0)
+	if lines.is_empty():
+		return
+	_show_card(tr("sleep_summary.title"), "\n".join(lines))
 
 # --- 除錯：模擬到死亡 ---
 
