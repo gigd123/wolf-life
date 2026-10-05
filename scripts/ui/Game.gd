@@ -78,6 +78,7 @@ var rest_buttons_box: VBoxContainer
 
 var rain: CPUParticles2D
 var snow: CPUParticles2D # 苔原的暴風雪、白矇天
+var _found_intro: String = "" # 跟著渡鴉發現殘骸的句子，殘骸旁有搶食者時一起放在字卡上（QA-43）
 
 var debug_overlay: Panel
 var debug_spins: Dictionary = {}
@@ -1276,6 +1277,8 @@ func _on_action_button(action_id: String) -> void:
 			var res := GameState.action_return_to_carcass()
 			if res.get("gone", false) or res.is_empty():
 				_log(tr("log.carcass_gone"))
+			elif res.get("event", "") != "" and not res.get("own", true):
+				_show_found_scavenger(str(res["event"]))
 			elif res.get("event", "") != "":
 				_show_scavenger(res["event"], true)
 			else:
@@ -1575,7 +1578,36 @@ func _on_feed() -> void:
 		encounter_overlay.visible = false
 
 # 灰熊或狐狸來搶食。returning：回到殘骸時撞見。
-func _show_scavenger(event: String, returning: bool) -> void:
+# 發現的殘骸（渡鴉、凍死的動物）旁已經有別的動物：先交代發現的經過，按「繼續」才進入對峙（QA-43）。
+func _show_found_scavenger(event: String) -> void:
+	var text: String = tr("scavenger.found." + _scavenger_text_key(event))
+	_log(text)
+	# 跟著渡鴉找到的：字卡上先寫發現殘骸的那一句
+	encounter_message.text = (_found_intro + "\n" + text) if _found_intro != "" else text
+	_found_intro = ""
+	encounter_detail.text = ""
+	var sprite: Dictionary = {"bear": ["grizzly_bear", "adult" if GameState.is_identified("grizzly_bear") else "distant"],
+		"fox": ["red_fox", "adult"], "wolverine": ["wolverine", "adult"], "tundra_wolves": ["tundra_wolf", "adult"]}
+	var sp: Array = sprite.get(event, ["red_fox", "adult"])
+	_set_creature(encounter_sprite, str(sp[0]), str(sp[1]), "move")
+	_set_terrain_bg(encounter_bg, str(GameState.current_feeding.get("terrain", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("ui.continue"), func(): _show_scavenger(event, true, true))
+	encounter_overlay.visible = true
+
+# 搶食者的文案鍵尾：苔原狼依剩幾隻、認不認得；狼獾與灰熊依認不認得。
+func _scavenger_text_key(event: String) -> String:
+	match event:
+		"tundra_wolves":
+			return "tundra_wolves" + ("" if GameState.tundra_pair().size() > 1 else ".single") + ("" if GameState.is_identified("tundra_wolf") else ".first")
+		"wolverine":
+			return "wolverine" + ("" if GameState.is_identified("wolverine") else ".first")
+		"bear":
+			return "bear" if GameState.is_identified("grizzly_bear") else "bear_unknown"
+	return event
+
+# intro_logged：發現殘骸的經過已經交代過（_show_found_scavenger），這裡不再寫「你回來時」。
+func _show_scavenger(event: String, returning: bool, intro_logged: bool = false) -> void:
 	if event == "tundra_wait":
 		var text: String = tr("scavenger.tundra_wait")
 		_log(text)
@@ -1597,19 +1629,24 @@ func _show_scavenger(event: String, returning: bool) -> void:
 	if event == "tundra_wolves":
 		# 認得之前寫「毛色偏淺的狼」；只剩一隻時用單數（start_tundra_combat 才記辨識，所以這裡要先判斷）
 		var suffix: String = ("" if GameState.tundra_pair().size() > 1 else ".single") + ("" if GameState.is_identified("tundra_wolf") else ".first")
-		_log(tr("scavenger.tundra_wolves." + ("returning" if returning else "arrive") + suffix))
+		if not intro_logged:
+			_log(tr("scavenger.tundra_wolves." + ("returning" if returning else "arrive") + suffix))
 		_begin_combat(GameState.start_tundra_combat("carcass"), "move")
 		return
 	if event == "wolverine":
 		var first: bool = not GameState.is_identified("wolverine")
-		_log(tr("scavenger.wolverine.%s%s" % ["returning" if returning else "arrive", ".first" if first else ""]))
+		if not intro_logged:
+			_log(tr("scavenger.wolverine.%s%s" % ["returning" if returning else "arrive", ".first" if first else ""]))
 		_begin_combat(GameState.start_wolverine_combat(), "move")
 		return
 	var bear_known: bool = event != "bear" or GameState.is_identified("grizzly_bear")
 	var key: String = "scavenger.%s.%s" % [event, "returning" if returning else "arrive"]
 	if not bear_known:
 		key = "scavenger.bear_unknown"
-	_log(tr(key))
+	if intro_logged:
+		key = "scavenger.found." + _scavenger_text_key(event)
+	else:
+		_log(tr(key))
 	# 認得的灰熊與狐狸：進入戰鬥模式（守住、叼走一塊、放棄、不理都在對峙畫面選）
 	if bear_known:
 		_begin_combat(GameState.start_combat("grizzly_bear" if event == "bear" else "red_fox", "adult", "carcass"), "move")
@@ -2433,6 +2470,7 @@ func _show_ravens(event: Dictionary) -> void:
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("ravens.follow"), func():
 		encounter_overlay.visible = false
+		var region_before: String = GameState.current_region
 		var res := GameState.ravens_follow(event)
 		if GameState.wolf == null or not GameState.wolf.alive:
 			_refresh()
@@ -2440,8 +2478,12 @@ func _show_ravens(event: Dictionary) -> void:
 				_on_wolf_died(GameState.wolf.death_cause)
 			return
 		if res.get("found", false):
-			_log(tr("ravens.found").replace("{animal}", tr("animal." + str(res["animal_id"]))))
+			var moved: bool = str(event.get("region", "")) != region_before
+			_found_intro = tr("ravens.found" + (".moved" if moved else "")).replace("{animal}", tr("animal." + str(res["animal_id"]))) \
+				.replace("{region}", tr("region." + GameState.current_region))
+			_log(_found_intro)
 			_on_action_button("return_to_carcass")
+			_found_intro = "" # 殘骸旁沒有搶食者時用不到
 		else:
 			_log(tr("ravens.nothing"))
 		_refresh()

@@ -60,6 +60,8 @@ var blizzard: Dictionary = {}
 var blizzard_at: int = -1
 # 白矇天：結束的絕對時段（-1 = 沒有），只在 events.json whiteout.regions 的區域有效。
 var whiteout_until: int = -1
+# 跟著渡鴉移動時不另外寫「你移動到了…」（發現殘骸的句子會交代來到哪裡）
+var _quiet_move_log: bool = false
 # 天氣："clear"、"storm"（暴雨）、"after_rain"（雨停後）；weather_until 是結束的絕對時段編號。
 var weather: String = "clear"
 var weather_until: int = -1
@@ -672,7 +674,8 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		turns = int(ice["turns"])
 		_learn_ice(bool(ice["thin"]))
 	GameTime.advance_turns(turns)
-	log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
+	if not _quiet_move_log:
+		log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
 	if lost_from != "":
 		log_message.emit(tr("log.whiteout_lost").replace("{target}", tr("region." + lost_from)).replace("{region}", tr("region." + target_region)))
 	if not is_region_visited(target_region):
@@ -1684,6 +1687,8 @@ func action_return_to_carcass() -> Dictionary:
 		state_changed.emit()
 		return {"gone": true}
 	var c: Dictionary = carcasses[idx]
+	# own：是不是你自己獵到、吃剩的（凍死的、渡鴉找到的殘骸不是）；畫面依此寫「你回來時」或「發現殘骸」
+	var own: bool = bool(c.get("own", true))
 	carcasses.remove_at(idx)
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
 		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"]}
@@ -1698,7 +1703,7 @@ func action_return_to_carcass() -> Dictionary:
 	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
 		event = "fox"
 	state_changed.emit()
-	return {"event": event}
+	return {"event": event, "own": own}
 
 # 每個時段：殘骸有 15% 機率被搶走或腐壞，超過 2 天一定消失。
 func _decay_carcasses() -> void:
@@ -2658,7 +2663,7 @@ func _end_blizzard() -> void:
 		var total: float = float(GameData.animals.get(animal_id, {}).get("adult", {}).get("hunger_value", 0))
 		carcasses.append({"region_id": region_id, "terrain": _random_terrain(region_id), "animal_id": animal_id, "life_stage": "adult",
 			"segments_left": segments, "segment_value": total / max(1, segments), "day": today + int(wk.get("extra_days", 2)),
-			"frozen": true, "found": false})
+			"frozen": true, "found": false, "own": false})
 	var entry := {"age": blizzard.get("start_age", snapped(wolf.age_years, 0.1)), "days": int(blizzard.get("days", 2)),
 		"in_tundra": bool(blizzard.get("in_tundra", false)), "choice": str(blizzard.get("choice", "")), "result": str(blizzard.get("result", ""))}
 	var list: Array = life_log.get("blizzards", [])
@@ -2754,7 +2759,9 @@ func ravens_follow(event: Dictionary) -> Dictionary:
 	var target: String = str(event.get("region", current_region))
 	record_decision("ravens.follow")
 	if target != current_region and adjacent_regions().has(target):
+		_quiet_move_log = true
 		action_move(target)
+		_quiet_move_log = false
 		if not wolf.alive:
 			return {}
 	else:
@@ -2772,7 +2779,7 @@ func ravens_follow(event: Dictionary) -> Dictionary:
 		var total: float = float(GameData.animals.get(animal_id, {}).get("adult", {}).get("hunger_value", 0))
 		carcasses.append({"region_id": current_region, "terrain": _random_terrain(current_region), "animal_id": animal_id, "life_stage": "adult",
 			"segments_left": min(segments, RNGService.randi_range(int(left.get("segments_min", 1)), int(left.get("segments_max", 2)))),
-			"segment_value": total / max(1, segments), "day": int(life_log.get("days_lived", 1))})
+			"segment_value": total / max(1, segments), "day": int(life_log.get("days_lived", 1)), "own": false})
 		idx = carcasses.size() - 1
 	life_log["ravens_followed"] = int(life_log.get("ravens_followed", 0)) + 1
 	state_changed.emit()

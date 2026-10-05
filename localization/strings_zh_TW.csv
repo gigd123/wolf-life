@@ -847,7 +847,8 @@ ravens.here,幾隻渡鴉在附近的天空盤旋，一邊叫一邊往下看。
 ravens.far,{region}的上空有幾隻渡鴉在盤旋。
 ravens.follow,跟過去
 ravens.ignore,不理牠們
-ravens.found,渡鴉底下是一具{animal}的殘骸，還剩下一些肉。
+ravens.found,你跟著渡鴉走過去，在牠們盤旋的地方發現一具{animal}的殘骸，還剩下一些肉。
+ravens.found.moved,你跟著渡鴉來到{region}，在牠們盤旋的地方發現一具{animal}的殘骸，還剩下一些肉。
 ravens.nothing,你跟到那裡，渡鴉已經散了，什麼也沒找到。
 summary.blizzard,{age} 歲的冬天，苔原起了 {days} 天的暴風雪；你{choice}，{result}。
 summary.blizzard.choice.dig,在雪地挖洞躲著
@@ -1003,3 +1004,12 @@ tundra.compare.weaker,牠們已經不如你了。
 tundra.compare.much_weaker,牠們遠遠不是你的對手了。
 combat.stake.meet.tundra_wolf.single,那隻苔原狼擋在你面前，壓低了頭。
 combat.stake.carcass.tundra_wolf.single,那隻苔原狼聞到了肉味，慢慢靠近你的獵物。
+scavenger.found.wolverine,一隻狼獾正趴在殘骸上撕咬，看到你也不肯走。
+scavenger.found.wolverine.first,一隻你沒見過的深色動物正趴在殘骸上撕咬，看到你也不肯走。
+scavenger.found.bear,一頭灰熊正在殘骸旁大口撕咬。
+scavenger.found.bear_unknown,殘骸旁有一頭陌生的大型動物，正低頭撕咬。
+scavenger.found.fox,一隻狐狸正在殘骸旁偷吃。
+scavenger.found.tundra_wolves,那對苔原狼正圍在殘骸旁。
+scavenger.found.tundra_wolves.first,兩隻毛色偏淺的狼正圍在殘骸旁。
+scavenger.found.tundra_wolves.single,那隻苔原狼正守在殘骸旁。
+scavenger.found.tundra_wolves.single.first,一隻毛色偏淺的狼正守在殘骸旁。
