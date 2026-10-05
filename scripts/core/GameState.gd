@@ -1787,6 +1787,15 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	_stat_inc("combat", animal_id + ".started")
 	return c
 
+# 最近 5 場戰鬥的逐回合紀錄寫進 life_log（試玩紀錄會一起匯出，QA-49）。
+func _record_combat_log(c: Combat) -> void:
+	var list: Array = life_log.get("recent_combats", [])
+	list.append({"age": snapped(wolf.age_years, 0.1), "animal": c.animal_id, "context": c.context, "outcome": c.outcome,
+		"wolf_start_hp": snapped(c.start_health, 0.1), "wolf_hp_max": wolf.health_max, "opp_hp_max": c.opp_hp_max,
+		"opp_power": c.opp_power(), "wolf_at_start": c.start_effective,
+		"rounds": c.round_log})
+	life_log["recent_combats"] = list.slice(-5)
+
 # 這一筆「對手」知識：撤退或退讓後，記得「現在的自己還不是對手」。
 func opponent_knowledge(animal_id: String, life_stage: String) -> Dictionary:
 	return {"type": "opponent", "animal": animal_id, "life_stage": life_stage}
@@ -1831,6 +1840,7 @@ func _after_bear_first_win() -> void:
 func finish_combat(c: Combat) -> Dictionary:
 	for d in c.decisions:
 		record_decision(d)
+	_record_combat_log(c)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
 	var result := {"outcome": c.outcome, "grow": ""}
 	if c.npc != null:

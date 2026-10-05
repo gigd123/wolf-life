@@ -37,6 +37,9 @@ var start_heavy_count: int = 0 # 開打時的重傷次數：這一戰有沒有�
 var state: Dictionary = {}
 var tendency: Dictionary = {}
 var decisions: Array[String] = []
+# 每回合的紀錄（試玩紀錄用，查「為什麼突然被打死」）：選擇、雙方血量、這回合的傷害、是否瀕危
+var round_log: Array = []
+var start_effective: Dictionary = {} # 開打時狼的實際能力（含飢餓、傷勢的影響）
 var practice: Array = []
 var fail_streak: int = 0
 # 對峙時可以選的退讓方式（依情境）：遭遇 yield、守住灰熊搶食 grab／abandon、狐狸 ignore
@@ -75,6 +78,9 @@ func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p
 	var stakes: Dictionary = FightRules.combat_cfg().get("stake_mult", {})
 	stake_mult = float(stakes.get("mother" if mother else context, 1.0))
 	start_health = wolf.health
+	start_effective = {"speed": snapped(wolf.effective_speed(), 0.1), "strength": snapped(wolf.effective_strength(), 0.1),
+		"skill": snapped(wolf.effective_skill(), 0.1), "power": snapped(FightRules.wolf_power(wolf), 0.1),
+		"injury": wolf.injury, "hunger": snapped(wolf.hunger, 1.0)}
 	start_heavy_count = wolf.heavy_injury_count
 
 func stage_name() -> String:
@@ -270,6 +276,9 @@ func choose(id: String) -> Dictionary:
 			_end(id) # yield／abandon／grab／ignore／share（讓狼獾吃一段）
 	if phase != Phase.DONE and wolf.health <= 0.0:
 		_end("died")
+	round_log.append({"r": rounds + 1, "choice": id, "wolf_hp": snapped(wolf.health, 0.1), "opp_hp": snapped(opp_hp, 0.1),
+		"wolf_dmg": snapped(float(res.get("wolf_damage", 0.0)), 0.1), "opp_dmg": snapped(float(res.get("opp_damage", 0.0)), 0.1),
+		"danger": FightRules.in_danger(wolf), "desperate": desperate, "notes": res.get("notes", [])})
 	rounds += 1
 	return res
 
