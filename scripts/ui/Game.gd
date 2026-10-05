@@ -2225,7 +2225,7 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 	if encounter.get("mother", false):
 		key = "encounter.mother"
 	if encounter.get("direct", false):
-		key = "encounter.direct"
+		key = "encounter.direct_mother" if encounter.get("mother", false) else "encounter.direct"
 	_log(tr(key).replace("{animal}", _prey_name(animal_id, life_stage)))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
@@ -2503,7 +2503,7 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 		_add_encounter_button(tr("tundra.follow").replace("{n}", str(int(round(GameState.tundra_follow_chance() * 100.0)))), func():
 			var res := GameState.tundra_follow()
 			if res.get("success", false):
-				var text: String = tr("tundra.follow.success").replace("{text}", tr("stranger.compare." + str(res["assessment"]["compare"])))
+				var text: String = tr("tundra.follow.success").replace("{text}", _tundra_compare_text(str(res["assessment"]["compare"])))
 				_log(text)
 				_show_tundra_meet(d, text)
 			else:
@@ -2670,7 +2670,11 @@ func _render_combat() -> void:
 	var lines: Array[String] = []
 	if c.phase == Combat.Phase.STANDOFF:
 		lines.append(tr("combat.standoff.title").replace("{animal}", name))
-		lines.append(tr("combat.stake." + ("mother" if c.mother else c.context + "." + c.animal_id)).replace("{animal}", name))
+		var stake_key: String = "combat.stake." + ("mother" if c.mother else c.context + "." + c.animal_id)
+		# 苔原狼只剩一隻時用單數的句子
+		if c.animal_id == "tundra_wolf" and GameState.tundra_pair().size() < 2:
+			stake_key += ".single"
+		lines.append(tr(stake_key).replace("{animal}", name))
 		var remember: String = _remember_line(c.animal_id, c.life_stage)
 		if remember != "":
 			lines.append(remember)
@@ -3109,9 +3113,20 @@ func _on_save_and_exit() -> void:
 	SaveSystem.save_game()
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
-# 遭遇時想起上一次交手的結果（輸過：還不是牠的對手；贏過：上次贏了牠）。
+# 遭遇時想起上一次交手的結果。黑狼、苔原狼是具名的對手：記得「上次你還不是牠（們）的對手」；
+# 灰熊等一般動物依現在的實力差距判斷（QA-41），苔原狼兩隻都在時用「牠們」（QA-42）。
 func _remember_line(animal_id: String, life_stage: String) -> String:
-	match GameState.opponent_history(animal_id, life_stage):
-		"lost": return tr("combat.remember")
-		"beaten": return tr("combat.remember_won")
-	return ""
+	var plural: bool = animal_id == "tundra_wolf" and GameState.tundra_pair().size() > 1
+	var history: String = GameState.opponent_history(animal_id, life_stage)
+	if history == "":
+		return ""
+	var named: bool = animal_id in ["stranger_wolf", "tundra_wolf"]
+	if history == "lost" and not named:
+		var opp_power: float = float(FightRules.opponent_profile(animal_id, life_stage).get("power", 100))
+		return tr("combat.remember.generic." + GameState.power_compare(opp_power)).replace("{animal}", _prey_name(animal_id, life_stage))
+	var key: String = "combat.remember" if history == "lost" else "combat.remember_won"
+	return tr(key + (".plural" if plural else ""))
+
+# 和苔原狼比較強弱的句子：兩隻都在時用「牠們」（QA-42）。
+func _tundra_compare_text(compare: String) -> String:
+	return tr(("tundra.compare." if GameState.tundra_pair().size() > 1 else "stranger.compare.") + compare)

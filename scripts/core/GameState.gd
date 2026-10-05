@@ -2308,17 +2308,20 @@ func stranger_assessment() -> Dictionary:
 	return npc_assessment(stranger())
 
 func npc_assessment(npc: NpcWolf) -> Dictionary:
-	var diff: float = npc.power() - FightRules.wolf_power(wolf)
-	var key: String = "even"
+	return {"compare": power_compare(npc.power()), "age": npc.life_stage_key()}
+
+# 對手的力量值和你現在的力量值相比：much_stronger／stronger／even／weaker／much_weaker（對手的角度）。
+func power_compare(opp_power: float) -> String:
+	var diff: float = opp_power - FightRules.wolf_power(wolf)
 	if diff > 25.0:
-		key = "much_stronger"
-	elif diff > 8.0:
-		key = "stronger"
-	elif diff < -25.0:
-		key = "much_weaker"
-	elif diff < -8.0:
-		key = "weaker"
-	return {"compare": key, "age": npc.life_stage_key()}
+		return "much_stronger"
+	if diff > 8.0:
+		return "stronger"
+	if diff < -25.0:
+		return "much_weaker"
+	if diff < -8.0:
+		return "weaker"
+	return "even"
 
 func _stranger_record(kind: String, outcome: String, wolf_damage: float = 0.0, npc_damage: float = 0.0) -> void:
 	var entry := {"age": snapped(wolf.age_years, 0.1), "kind": kind, "outcome": outcome, "region": current_region,

@@ -267,7 +267,7 @@ encounter.observe,觀察（1 回合）
 encounter.observed.grizzly_bear,你屏住氣息看清楚了。那是一頭灰熊，巨大的爪子和肩上的隆起讓人不敢靠近。
 encounter.observed.stranger_wolf,你遠遠看著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
 encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
-encounter.direct,{animal}沒有示威，直接撲了過來。
+encounter.direct,你撞見了一頭{animal}，牠沒有示威，直接朝你衝了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物，正朝你的獵物走來。
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
@@ -988,3 +988,18 @@ season_card.tundra.winter.short,寒風又颳了起來，河面結了厚冰。待
 season_card.tundra.winter.blizzard,天色發黃、風突然停下的時候，要趕快找地方躲。
 season_card.tundra.winter.wolverine,狼獾不冬眠。雪地上那串寬大的腳印，說明牠還在附近找吃的。
 factor.even,勢均力敵
+encounter.direct_mother,你撞見了一頭帶著幼熊的母熊，牠護著身後的小熊，直接朝你衝了過來。
+combat.remember.plural,你記得：上次你還不是牠們的對手。
+combat.remember_won.plural,你記得：上次你贏了牠們。
+combat.remember.generic.much_stronger,你記得{animal}比你強大許多。
+combat.remember.generic.stronger,你記得{animal}比你強，上次你沒能贏過牠。
+combat.remember.generic.even,上次你沒能贏過{animal}，但現在的你們也許不相上下。
+combat.remember.generic.weaker,上次你沒能贏過{animal}，但現在的你已經比當時強壯。
+combat.remember.generic.much_weaker,上次你沒能贏過{animal}，現在的你已經遠比當時強壯。
+tundra.compare.much_stronger,牠們比你強壯得多。
+tundra.compare.stronger,牠們比你強一些。
+tundra.compare.even,你和牠們不相上下。
+tundra.compare.weaker,牠們已經不如你了。
+tundra.compare.much_weaker,牠們遠遠不是你的對手了。
+combat.stake.meet.tundra_wolf.single,那隻苔原狼擋在你面前，壓低了頭。
+combat.stake.carcass.tundra_wolf.single,那隻苔原狼聞到了肉味，慢慢靠近你的獵物。
