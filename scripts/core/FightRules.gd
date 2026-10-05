@@ -48,6 +48,17 @@ static func hurt_wolf(wolf: Wolf, dmg: float, parts: Dictionary, source: String,
 	wolf.clamp_stats()
 	return {"damage": dmg, "part": part, "severity": severity}
 
+# 戰鬥或狩獵結束時還在瀕危：算重傷（部位依對手的 parts），已經是重傷就不再加。回傳是否新加了重傷。
+static func danger_to_heavy(wolf: Wolf, parts: Dictionary, source: String) -> bool:
+	var c: Dictionary = combat_cfg().get("injury", {})
+	if not bool(c.get("danger_is_heavy", false)) or not wolf.alive or not in_danger(wolf) or wolf.injury == Wolf.Injury.HEAVY:
+		return false
+	var part: String = RNGService.weighted_pick(parts) if not parts.is_empty() else "shoulder"
+	var stat: String = str(combat_cfg().get("part_stat", {}).get(part, "strength"))
+	wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(c.get("heavy_days_min", 3)), int(c.get("heavy_days_max", 5))),
+		stat, part, source)
+	return true
+
 static func move_ids() -> Array:
 	return _cfg().get("moves", {}).keys()
 

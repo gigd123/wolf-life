@@ -1267,6 +1267,7 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
+	FightRules.danger_to_heavy(wolf, hunt.fight_state.get("parts", {"leg": 0.5, "shoulder": 0.5}), hunt.animal_id + ".hunt")
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
@@ -1821,6 +1822,8 @@ func finish_combat(c: Combat) -> Dictionary:
 			_tundra_record(c.context, "died", c.damage_taken, c.opp_hp_max - c.opp_hp)
 		die_in_combat(c.animal_id, c.life_stage, c.context)
 		return result
+	# 打到瀕危才結束：算重傷（QA-46），不是睡一覺就能好
+	FightRules.danger_to_heavy(wolf, c.opp.get("parts", {}), c.animal_id + "." + c.context)
 	Growth.apply_practice(wolf, c.practice)
 	var w: Dictionary = GameData.balance.get("combat", {}).get("win", {})
 	if c.won():
