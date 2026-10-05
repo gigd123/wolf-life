@@ -290,7 +290,7 @@ func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_overr
 	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
 	if desperate:
 		hit_chance = min(0.95, hit_chance + float(opp.get("desperate_hit", 0.2)))
-		dmg_mult *= float(opp.get("desperate_damage", 1.5))
+		dmg_mult *= float(opp.get("desperate_damage", 1.05))
 	# 對手每次出手都耗耐力（打不打中都一樣）
 	_drain_opp(float(opp.get("swing_cost", 0.0)))
 	if not RNGService.chance(hit_chance):

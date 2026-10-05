@@ -45,7 +45,7 @@
       "old_age_death": { "base": 0.03, "per_year": 0.05 },
       "other_death_per_season": 0.01,
       "heal_per_day": 10,
-      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.4, "shoulder": 0.4, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.3, "desperate_hit": 0.2, "desperate_damage": 1.5, "yields_to_stronger": true },
+      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.4, "shoulder": 0.4, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.3, "desperate_hit": 0.2, "desperate_damage": 1.05, "yields_to_stronger": true },
       "_interaction_comment": "unlock_subadult_chance：第一次可以直接互動的時機，這個機率在次成年期，否則在成年後（都要先遠距觀察過）。follow：跟蹤成功率 = base + (感知 − 牠的感知) / divisor。drive_off_dominance_bonus：每輸給牠或示弱一次，被驅趕的機率再加多少。",
       "interaction": { "unlock_subadult_chance": 0.5, "follow_base": 0.45, "follow_divisor": 150, "drive_off_dominance_bonus": 0.15, "howl_mult_after_yield": 0.5, "submit_damage_mult": 0.6 }
     },
@@ -72,7 +72,7 @@
       "old_age_death": { "base": 0.03, "per_year": 0.05 },
       "other_death_per_season": 0.012,
       "heal_per_day": 10,
-      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.45, "shoulder": 0.35, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.25, "desperate_hit": 0.2, "desperate_damage": 1.5, "yields_to_stronger": true },
+      "combat": { "damage_per_strength": 0.15, "parts": { "leg": 0.45, "shoulder": 0.35, "face": 0.2 }, "give_up_ratio": 0.35, "threat_resist": 0.25, "desperate_hit": 0.2, "desperate_damage": 1.05, "yields_to_stronger": true },
       "_interaction_comment": "map：活動的地圖；roam：各季在哪些區域（權重），每天 roam_change_per_day 的機率換地方，換季時一定重選。meet_chance：在牠們所在的區域探索時遇上的機率；howl_night_chance：深夜在牠們所在或相鄰的區域聽到牠們嚎叫的機率；carcass_chance：在牠們所在的區域進食（每段）或回到殘骸時牠們找上門的機率。partner_chance／partner_damage_mult：打起來時另一隻插進來咬一口的機率與傷害倍率。relation：各種互動對關係值的增減，levels 是「敵視／熟悉／友善」的門檻。let_eat_segments：讓牠們先吃會失去的段數。",
       "interaction": {
         "map": "tundra",
