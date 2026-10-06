@@ -224,7 +224,7 @@ knowledge.level.3,【確定】
 knowledge.prey,{period}的{region}常有{animal}
 knowledge.danger,{season}季的{region}有{animal}出沒
 knowledge.weakness,{prey}被{option}時比較容易得手
-knowledge.overhunt,在{region}連續獵{animal}，牠們會離開好幾天
+knowledge.overhunt,在{region}連續獵{animal}之後，那一帶的{animal}會少好幾天
 knowledge.feature,{region}有{feature}
 knowledge.option.drive_forest,驅趕向密林
 knowledge.option.drive_stream,逼向溪流
@@ -232,7 +232,11 @@ knowledge.option.drive_logs,逼向倒木區
 knowledge.option.flank,切側翼
 knowledge.option.follow,長距離跟隨
 log.knowledge_learned,你學到：
-log.identified,你認出來了，那是{animal}。
+log.identified,那是{animal}。
+log.identified.grizzly_bear,那是一頭灰熊。
+log.identified.stranger_wolf,那是一隻黑狼。
+log.identified.wolverine,那是一隻狼獾。
+log.identified.tundra_wolf,那是一對苔原狼。
 log.danger_warning,你記得：
 explore.known,{period}的{location}，你知道{animal}會來
 animal_unknown.grizzly_bear,未知的大型掠食者
@@ -265,7 +269,7 @@ encounter.distant.grizzly_bear,{location}遠遠地有一頭{animal}在翻找食�
 encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過，牠沒有注意到你。
 encounter.observe,觀察（1 回合）
 encounter.observed.grizzly_bear,你屏住氣息看清楚了。那是一頭灰熊，巨大的爪子和肩上的隆起讓人不敢靠近。
-encounter.observed.stranger_wolf,你遠遠看著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
+encounter.observed.stranger_wolf,你遠遠觀察著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
 encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
 encounter.direct,你撞見了一頭{animal}，牠沒有示威，直接朝你衝了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物，正朝你的獵物走來。
@@ -442,7 +446,7 @@ cost.prey_drain,獵物體力 -{n}
 cost.stage.stalk,潛近
 cost.stage.chase,追擊
 cost.stage.fight,搏鬥
-ui.day_toast,第 {n} 天・{season}
+ui.day_toast,{season}・第 {n} 天
 ui.season_end,{season}末
 ui.day_summary.title,第 {n} 天
 sleep_summary.today,今天：
@@ -669,7 +673,7 @@ stranger.challenge,挑戰
 stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾著低吼。牠要你離開這一帶。
 stranger.stand,對峙
 stranger.yielded,你退開了，往{region}走去。
-stranger.won_territory,{region}從此是你的了。
+stranger.won_territory,牠讓出了牠盤踞的{region}，那一帶從此是你的了。
 stranger.first_win_growth,你第一次贏了那隻黑狼。牠的每一次閃身和撲咬，你都記在了心裡。
 stranger.killed_card.title,那隻黑狼
 bear.first_win.title,那頭灰熊

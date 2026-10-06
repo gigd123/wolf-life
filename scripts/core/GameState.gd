@@ -938,7 +938,7 @@ func prepare_threat_sighting(source: String, location: String) -> Dictionary:
 func action_observe_distant(encounter: Dictionary) -> void:
 	GameTime.advance_turns(int(_bear_cfg().get("observe_turns", 1)))
 	var animal_id: String = encounter.get("animal_id", "grizzly_bear")
-	identify(animal_id)
+	identify(animal_id, animal_id != "stranger_wolf")
 	_learn_threat(animal_id)
 	if animal_id == "stranger_wolf":
 		life_log["stranger_observed"] = true
@@ -1005,10 +1005,16 @@ func is_identified(source: String) -> bool:
 	return identified.has(source) or GameData.knowledge.get("identified_at_start", []).has(source)
 
 # 親眼見過才辨識。辨識後同類線索與舊的知識紀錄一律改用已辨識的文字（文字在畫面層依 identified 決定）。
-func identify(source: String) -> void:
+# 第一次辨識寫「那是一頭灰熊。」（QA-54）；announce 為 false 時不寫（畫面已經有描述，例如遠遠觀察黑狼，QA-52）。
+func identify(source: String, announce: bool = true) -> void:
 	if not identified.has(source):
 		identified.append(source)
-		log_message.emit(tr("log.identified").replace("{animal}", tr("animal." + source)))
+		if announce:
+			var key: String = "log.identified." + source
+			var text: String = tr(key)
+			if text == key:
+				text = tr("log.identified").replace("{animal}", tr("animal." + source))
+			log_message.emit(text)
 
 # 這一季在某區域是否知道有危險（例如灰熊出沒）。
 func known_dangers(region_id: String, season: String) -> Array:
@@ -2789,6 +2795,9 @@ func _maybe_ravens() -> void:
 		return
 	if not cfg.get("periods", ["day"]).has(GameTime.current_period()):
 		return
+	# 跟過渡鴉之後幾天內不再出現（QA-63）
+	if int(life_log.get("days_lived", 1)) < int(life_log.get("ravens_cooldown_until", 0)):
+		return
 	var chance_value: float = float(cfg.get("period_chance", 0.03))
 	var target: String = ""
 	var nearby: Array = [current_region] + adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
@@ -2832,6 +2841,7 @@ func ravens_follow(event: Dictionary) -> Dictionary:
 			"segment_value": total / max(1, segments), "day": int(life_log.get("days_lived", 1)), "own": false})
 		idx = carcasses.size() - 1
 	life_log["ravens_followed"] = int(life_log.get("ravens_followed", 0)) + 1
+	life_log["ravens_cooldown_until"] = int(life_log.get("days_lived", 1)) + int(cfg.get("follow_cooldown_days", 2)) + 1
 	state_changed.emit()
 	if idx < 0:
 		return {"found": false}

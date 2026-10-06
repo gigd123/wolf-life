@@ -1340,8 +1340,13 @@ func _on_action_button(action_id: String) -> void:
 					_log(tr("log.sleep_interrupted"))
 				# 換季的那一覺不另外顯示睡覺結算，併入換季字卡（SPEC「睡覺結算」）
 				# 排進事件佇列，接在換日摘要之後，用按鍵關閉的卡片顯示（QA-47）
+				# 插在換日摘要之後、睡覺期間排進的其他事件（渡鴉等）之前（QA-60）
 				if not res.get("season_changed", false):
-					GameState.pending_events.append({"type": "sleep_summary", "summary": res.get("summary", {})})
+					var at: int = 0
+					for i in GameState.pending_events.size():
+						if GameState.pending_events[i].get("type", "") in ["day_summary", "season_card"]:
+							at = i + 1
+					GameState.pending_events.insert(at, {"type": "sleep_summary", "summary": res.get("summary", {})})
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
@@ -2578,7 +2583,8 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	var remember: String = _remember_line("tundra_wolf", "adult")
 	if remember != "":
 		lines.append(remember)
-	_log(lines[0])
+	if extra == "": # 跟隨後重畫時，開頭句已經寫過（QA-61）
+		_log(lines[0])
 	encounter_message.text = "\n".join(lines)
 	encounter_detail.text = ""
 	_set_creature(encounter_sprite, "tundra_wolf", "adult", "pair" if GameState.tundra_pair().size() > 1 else "idle")
@@ -3141,8 +3147,10 @@ func _show_day_toast() -> void:
 	for event in GameState.pending_events:
 		if event.get("type", "") in ["season_card", "day_summary"]:
 			return
-	_show_toast(tr("ui.day_toast").replace("{n}", str(int(GameState.life_log.get("days_lived", 1)))) \
-		.replace("{season}", tr("season." + GameTime.current_season())))
+	# 和頂部一致：這一季的第幾天；到期後顯示季末（QA-56）
+	var season_text: String = tr("season." + GameTime.current_season())
+	_show_toast(tr("ui.season_end").replace("{season}", season_text) if GameTime.season_due() \
+		else tr("ui.day_toast").replace("{n}", str(GameTime.day)).replace("{season}", season_text))
 
 # 睡覺結算：上次睡覺到這次提升的能力；速度或力量提升時附一句原因（也寫進行動紀錄）。
 # 睡覺結算卡片：這一晚長了哪些能力（附數字），沒有成長時寫原因（QA-47）。
