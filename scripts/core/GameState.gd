@@ -14,8 +14,9 @@ signal knowledge_learned(entry: Dictionary)
 var wolf: Wolf
 var den_region: String = ""
 var current_region: String = ""
-# 這個區域找到的睡處："" 沒找到、"normal" 普通睡處、"good" 好睡處。離開區域或睡過之後失效。
-var sleep_spot_here: String = ""
+# 找到過的普通睡處：{region_id: "normal"}。離開再回來還在（好睡處記在區域知識）；大火燒過的區域會失效。
+# 未來（Phase 2）睡處可能因環境變化或其他動物入侵而變差、失去。
+var found_sleep_spots: Dictionary = {}
 var rng_seed: int = 0
 # 區域資源消耗：{region_id: {animal_id: 出現率倍率}}，沒有紀錄就是 1。
 var region_depletion: Dictionary = {}
@@ -80,7 +81,7 @@ func new_game(start_den: String) -> void:
 	wolf = Wolf.new()
 	den_region = start_den
 	current_region = start_den
-	sleep_spot_here = ""
+	found_sleep_spots = {}
 	region_depletion = {}
 	wind_dir = RNGService.randi_range(0, 3)
 	region_knowledge = {start_den: {"visited": true, "features": []}}
@@ -679,7 +680,6 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		if not maps_visited.has(GameData.map_of(target_region)):
 			maps_visited.append(GameData.map_of(target_region))
 		life_log["maps_visited"] = maps_visited
-	sleep_spot_here = ""
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
@@ -1073,20 +1073,22 @@ func action_find_sleep_spot() -> String:
 	_record_action("find_sleep_spot")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_sleep_spot", 1)))
+	var spot := ""
 	if _feature_known_here("sleep_spot"):
-		sleep_spot_here = "good"
+		spot = "good"
 	elif EncounterSystem.find_sleep_spot(current_region):
-		sleep_spot_here = "normal"
+		spot = "normal"
+		found_sleep_spots[current_region] = "normal"
 		var region: Dictionary = EncounterSystem.region_data(current_region)
 		if region.get("secondary_features", []).has("good_sleep_spot") \
 				and RNGService.chance(float(GameData.balance.get("sleep", {}).get("good_spot_find_chance", 0.35))):
-			sleep_spot_here = "good"
+			spot = "good"
 			var knowledge: Dictionary = region_knowledge.get(current_region, {"visited": true, "features": []})
 			if not knowledge["features"].has("good_sleep_spot"):
 				knowledge["features"].append("good_sleep_spot")
 			region_knowledge[current_region] = knowledge
 	state_changed.emit()
-	return sleep_spot_here
+	return spot
 
 # 現在睡覺的睡處等級：巢穴 > 已知好睡處 > 找到的睡處 > 勉強過夜。
 func sleep_quality() -> String:
@@ -1094,9 +1096,7 @@ func sleep_quality() -> String:
 		return "den"
 	if _feature_known_here("sleep_spot"):
 		return "good"
-	if sleep_spot_here != "":
-		return sleep_spot_here
-	return "rough"
+	return str(found_sleep_spots.get(current_region, "rough"))
 
 func action_short_rest() -> void:
 	_record_action("short_rest")
@@ -1226,7 +1226,6 @@ func action_sleep() -> Dictionary:
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
 	if not season_sleep and not encounter.get("encountered", false) and quality != "rough":
 		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
-	sleep_spot_here = ""
 	var summary := sleep_summary(settle)
 	var season_changed: bool = season_sleep and wolf.alive
 	if season_changed:
@@ -1524,7 +1523,6 @@ func _leave_stranger_territory() -> String:
 	var targets: Array = adjacent_regions()
 	if not targets.is_empty():
 		current_region = targets[RNGService.randi_range(0, targets.size() - 1)]
-		sleep_spot_here = ""
 		if not is_region_visited(current_region):
 			var knowledge_entry: Dictionary = region_knowledge.get(current_region, {"features": []})
 			knowledge_entry["visited"] = true
@@ -2116,8 +2114,7 @@ func _region_burned(region_id: String) -> void:
 	if not rk.is_empty():
 		rk["features"] = []
 		region_knowledge[region_id] = rk
-	if region_id == current_region:
-		sleep_spot_here = ""
+	found_sleep_spots.erase(region_id)
 	var kept: Array = []
 	for c in carcasses:
 		if c["region_id"] != region_id:
@@ -2251,7 +2248,6 @@ func _end_fire_on_death() -> void:
 # 逃命時移動到相鄰區域（不另外判定灰熊遭遇與地形體力）。
 func action_move_silent(target_region: String) -> void:
 	current_region = target_region
-	sleep_spot_here = ""
 	if not life_log["regions_visited"].has(target_region):
 		life_log["regions_visited"].append(target_region)
 	var maps_visited: Array = life_log.get("maps_visited", [GameData.map_of(den_region)])
@@ -2732,6 +2728,20 @@ func whiteout_here() -> bool:
 func _apply_env_perception() -> void:
 	if wolf != null:
 		wolf.env_perception_mult = float(_events_cfg().get("whiteout", {}).get("perception_mult", 0.8)) if whiteout_here() else 1.0
+
+# 進出河谷（一般移動，不是地圖連結或冰面捷徑）要過河："frozen" 冬季走冰、"thaw" 春季冰薄、"wade" 夏秋涉水；不用過河回傳 ""。
+func river_crossing(target_region: String) -> String:
+	var river: String = str(_ice_cfg().get("region", ""))
+	if river == "" or (current_region != river and target_region != river):
+		return ""
+	if not _link_to(target_region).is_empty():
+		return ""
+	var season: String = GameTime.current_season()
+	if season == "winter":
+		return "frozen"
+	if season == str(_ice_cfg().get("season", "spring")):
+		return "thaw"
+	return "wade"
 
 # 春融：春季進出河谷要過河，河冰可能在腳下裂開。
 func _maybe_ice_break() -> void:
@@ -3350,7 +3360,7 @@ func to_dict() -> Dictionary:
 		"wolf": wolf.to_dict() if wolf != null else {},
 		"den_region": den_region,
 		"current_region": current_region,
-		"sleep_spot_here": sleep_spot_here,
+		"found_sleep_spots": found_sleep_spots,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
@@ -3386,7 +3396,7 @@ func load_from_dict(data: Dictionary) -> void:
 	wolf = Wolf.from_dict(data.get("wolf", {}))
 	den_region = data.get("den_region", "")
 	current_region = data.get("current_region", den_region)
-	sleep_spot_here = str(data.get("sleep_spot_here", ""))
+	found_sleep_spots = data.get("found_sleep_spots", {})
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})

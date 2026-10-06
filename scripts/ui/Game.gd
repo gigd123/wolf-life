@@ -1264,15 +1264,40 @@ func _all_regions() -> Array:
 		list.append_array(GameData.map_regions(map_id))
 	return list
 
-func _on_region_button(region_id: String, via_ice: bool = false) -> void:
-	_new_main_entry()
+func _on_region_button(region_id: String, via_ice: bool = false, river_confirmed: bool = false) -> void:
 	if region_id == GameState.current_region:
 		return
+	# 進出河谷要過河（QA-64）：春季河冰變薄，先跳字卡讓玩家決定；其他季節只寫一行怎麼過河。
+	var crossing: String = "" if via_ice else GameState.river_crossing(region_id)
+	if crossing == "thaw" and not river_confirmed:
+		_show_river_prompt(region_id)
+		return
+	_new_main_entry()
 	for entry in GameState.known_dangers(region_id, GameTime.current_season()):
 		_log(tr("log.danger_warning") + _knowledge_text(entry))
 	if via_ice:
 		_log(tr("log.ice_shortcut"))
+	elif crossing != "":
+		_log(tr("river.cross." + crossing))
 	GameState.action_move(region_id, via_ice)
+
+# 春季進出河谷：河冰正在融化，過河時可能裂開。和森林、苔原之間的冰面捷徑不同，這是必經的路。
+func _show_river_prompt(region_id: String) -> void:
+	var river: String = str(GameState._ice_cfg().get("region", ""))
+	var text: String = tr("river.thaw." + ("leave" if GameState.current_region == river else "enter"))
+	encounter_message.text = text
+	encounter_detail.text = tr("river.thaw.detail")
+	_set_wolf_pose(encounter_sprite, "idle")
+	encounter_bg.texture = ArtLibrary.terrain_background("ice", GameTime.current_season()) # 春季是冰薄版
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("river.thaw.go").replace("{region}", tr("region." + region_id)), func():
+		encounter_overlay.visible = false
+		_on_region_button(region_id, false, true)
+	)
+	_add_encounter_button(tr("river.thaw.back"), func():
+		encounter_overlay.visible = false
+	)
+	encounter_overlay.visible = true
 
 # --- Actions ---
 
