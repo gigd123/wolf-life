@@ -25,6 +25,7 @@ var injury_days_remaining: int = 0
 var injury_stat: String = "" # 重傷影響的能力："speed"、"strength" 或 "perception"
 var injury_part: String = "" # 受傷部位：leg／shoulder／face（SPEC 1.6「傷勢與舊傷」）
 var injury_source: String = "" # 傷從哪裡來（例如 "grizzly_bear.carcass"），重傷留下舊傷時記下
+var last_injury_source: String = "" # 最近一次受傷（含輕傷）的來源，受傷提示用（QA-51），不存檔
 # 舊傷：[{part, stat, source, age}]；flare_index／flare_days：目前發作的舊傷與剩下的天數（-1 = 沒有發作）。
 var old_injuries: Array = []
 var flare_index: int = -1
@@ -77,6 +78,8 @@ func clamp_stats() -> void:
 func apply_injury(severity: int, days: int, stat: String = "", part: String = "", source: String = "") -> void:
 	if severity == Injury.HEAVY:
 		heavy_injury_count += 1
+	if source != "":
+		last_injury_source = source
 	if severity >= injury:
 		if severity == Injury.HEAVY and (injury != Injury.HEAVY or injury_stat == ""):
 			injury_stat = stat

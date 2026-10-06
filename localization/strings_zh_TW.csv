@@ -1030,3 +1030,11 @@ river.thaw.leave,春天了，河冰正在融化。要離開河谷，得從變薄
 river.thaw.detail,冰面隨時可能裂開。這是進出河谷必經的路，和沿著冰面抄近路不同。
 river.thaw.go,過河到{region}
 river.thaw.back,先不過河
+injury.toast.light_source,{source}時受了輕傷：體力消耗增加，約 {days} 天痊癒
+injury_source.generic.hunt,獵{animal}
+injury_source.generic.conflict,和{animal}衝突
+injury_source.blizzard,暴風雪
+ui.note_hint.prey,（不花時間；累積對這一帶獵物出沒的了解）
+ui.note_hint.threat,（不花時間；記住這一帶的危險，移動前會提醒）
+ui.stamina_low,體力不支
+ui.stamina_low.tip,體力快用完了：追擊時更難跑贏獵物，遇到危險也更難脫身。休息或睡覺可以恢復。

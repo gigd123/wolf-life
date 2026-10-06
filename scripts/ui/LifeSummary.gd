@@ -259,11 +259,8 @@ func _stranger_bio(log_data: Dictionary) -> String:
 # 舊傷：部位、年齡、來源（例如「左後腿的舊傷，是 2.3 歲那年和灰熊搶食時留下的」）。
 func _old_injury_line(record: Dictionary) -> String:
 	var source: String = str(record.get("source", ""))
-	var key: String = "injury_source." + source
-	if tr(key) == key:
-		key = "injury_source.hunt"
 	return tr("summary.old_injury").replace("{part}", tr(str(record.get("part_key", "")))) \
-		.replace("{age}", "%.1f" % float(record.get("age", 0.0))).replace("{source}", tr(key))
+		.replace("{age}", "%.1f" % float(record.get("age", 0.0))).replace("{source}", TextFormat.injury_source(source))
 
 # 依模板組成的生平：年輕時的經歷 → 狩獵方式（與變化）→ 死亡。
 func _biography(log_data: Dictionary, wolf: Wolf) -> String:

@@ -44,7 +44,7 @@ static func hurt_wolf(wolf: Wolf, dmg: float, parts: Dictionary, source: String,
 			stat, part, source)
 	elif dmg >= float(c.get("light_damage", 8)):
 		severity = Wolf.Injury.LIGHT
-		wolf.apply_injury(Wolf.Injury.LIGHT, int(c.get("light_days", 2)))
+		wolf.apply_injury(Wolf.Injury.LIGHT, int(c.get("light_days", 2)), "", "", source)
 	wolf.clamp_stats()
 	return {"damage": dmg, "part": part, "severity": severity}
 

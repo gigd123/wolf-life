@@ -20,6 +20,7 @@ var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var explore_hint_label: Label
 var status_icons: Dictionary = {}
+var stamina_warning: Label # 頂部「體力不支」（QA-55；最低體力的規則在 1.7 定）
 var log_box: RichTextLabel
 
 # 行動訊息（試玩回饋後的改版）：
@@ -202,6 +203,13 @@ func _build_ui() -> void:
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
+	stamina_warning = Label.new()
+	stamina_warning.text = tr("ui.stamina_low")
+	stamina_warning.tooltip_text = tr("ui.stamina_low.tip")
+	stamina_warning.mouse_filter = Control.MOUSE_FILTER_PASS
+	stamina_warning.add_theme_color_override("font_color", Color(0.95, 0.55, 0.4))
+	stamina_warning.visible = false
+	status_row.add_child(stamina_warning)
 
 	var debug_btn := Button.new()
 	debug_btn.text = tr("ui.debug")
@@ -939,6 +947,7 @@ func _refresh() -> void:
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
 	status_icons["cold"].visible = GameState.is_freezing()
+	stamina_warning.visible = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
 
 	var season: String = GameTime.current_season()
 	var map_id: String = GameState.current_map()
@@ -1441,7 +1450,8 @@ func _show_discovery(d: Dictionary) -> void:
 			_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
 	if d.get("kind", "") == "clue" and (d.get("source_kind", "") == "threat" or (d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false))):
-		_add_encounter_button(tr("ui.note"), func():
+		# 按鈕寫出記下的效果：不花時間，累積知識（QA-53）
+		_add_encounter_button(tr("ui.note") + "　" + tr("ui.note_hint." + ("threat" if d.get("source_kind", "") == "threat" else "prey")), func():
 			GameState.note_discovery()
 			encounter_overlay.visible = false
 		)
@@ -3008,7 +3018,13 @@ func _show_injury_notice(event: Dictionary) -> void:
 		body += "\n" + tr("injury.card.hp_note")
 		_show_card(tr("injury.card.heavy.title"), body)
 	else:
-		_show_toast(tr("injury.toast.light").replace("{days}", str(w.injury_days_remaining)), 2.4)
+		# 輕傷也寫出從哪裡來，並留在紀錄裡（QA-51）
+		var text: String = tr("injury.toast.light").replace("{days}", str(w.injury_days_remaining))
+		if w.last_injury_source != "":
+			text = tr("injury.toast.light_source").replace("{source}", TextFormat.injury_source(w.last_injury_source)) \
+				.replace("{days}", str(w.injury_days_remaining))
+		_log(text)
+		_show_toast(text, 2.4)
 
 # 「速度 −20%，約 4 天痊癒」；輕傷沒有能力影響。
 func _injury_effect_text(w: Wolf) -> String:

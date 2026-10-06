@@ -18,6 +18,17 @@ static func prey_name(animal_id: String, life_stage: String) -> String:
 		return t("explore.juvenile") + t("animal." + animal_id)
 	return t("animal." + animal_id)
 
+# 傷從哪裡來：有專屬文字就用（「和灰熊搶食」），否則「獵駝鹿」「和狼獾衝突」。
+static func injury_source(source: String) -> String:
+	var key: String = "injury_source." + source
+	if t(key) != key:
+		return t(key)
+	var parts: PackedStringArray = source.split(".")
+	if parts.size() == 2:
+		var animal: String = source_name(parts[0])
+		return t("injury_source.generic.hunt" if parts[1] == "hunt" else "injury_source.generic.conflict").replace("{animal}", animal)
+	return t("injury_source.hunt")
+
 static func knowledge_text(entry: Dictionary) -> String:
 	var level: String = t("knowledge.level.%d" % GameState.knowledge_level(entry))
 	# 狼嚎的知識本身就分三句寫出把握程度，不再加【似乎】（免得「【似乎】似乎有其他狼」）

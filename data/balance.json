@@ -7,6 +7,7 @@
   "hunger_max": 150,
   "hunger_decay_per_period": 4,
   "hunger_low_threshold": 30,
+  "stamina_low_threshold": 10,
   "hunger_penalties": {
     "low_threshold": 30,
     "low_health_value_loss_per_day": 1,
