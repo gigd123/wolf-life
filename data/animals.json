@@ -6,9 +6,9 @@
     "period_activity": { "dawn": 2.0, "day": 0.5, "dusk": 2.0 },
     "depth": { "juvenile": "simple", "adult": "standard", "buck": "full" },
     "reactions": { "buck": { "stand": 0.35 }, "juvenile": { "hide": 0.4, "protect": 0.5 } },
-    "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "hunger_value": 40 },
-    "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 5, "hunger_value": 75 },
-    "buck": { "detection": 60, "stamina": 60, "speed": 62, "counter_attack": 25, "hunger_value": 75 }
+    "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "fight_power": 35, "hunger_value": 40 },
+    "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 5, "fight_power": 50, "hunger_value": 75 },
+    "buck": { "detection": 60, "stamina": 60, "speed": 62, "counter_attack": 25, "fight_power": 75, "hunger_value": 75 }
   },
   "hare": {
     "type": "prey",
@@ -16,8 +16,8 @@
     "name_key": "animal.hare",
     "depth": { "juvenile": "simple", "adult": "simple" },
     "reactions": { "adult": { "hide": 0.5 }, "juvenile": { "hide": 0.6 } },
-    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 7 },
-    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 12 }
+    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "fight_power": 20, "hunger_value": 7 },
+    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "fight_power": 25, "hunger_value": 12 }
   },
   "red_fox": {
     "type": "prey",
@@ -26,8 +26,8 @@
     "period_activity": { "night": 1.5 },
     "depth": { "juvenile": "simple", "adult": "standard" },
     "reactions": { "juvenile": { "hide": 0.4 } },
-    "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "hunger_value": 11 },
-    "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "hunger_value": 18 }
+    "juvenile": { "detection": 40, "stamina": 20, "speed": 60, "counter_attack": 0, "fight_power": 30, "hunger_value": 11 },
+    "adult": { "detection": 55, "stamina": 30, "speed": 70, "counter_attack": 5, "fight_power": 35, "hunger_value": 18 }
   },
   "snowshoe_hare": {
     "type": "prey",
@@ -37,8 +37,8 @@
     "winter_camouflage": 0.15,
     "depth": { "juvenile": "simple", "adult": "simple" },
     "reactions": { "adult": { "hide": 0.5 }, "juvenile": { "hide": 0.6 } },
-    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "hunger_value": 7 },
-    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "hunger_value": 12 }
+    "juvenile": { "detection": 35, "stamina": 15, "speed": 65, "counter_attack": 0, "fight_power": 20, "hunger_value": 7 },
+    "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "fight_power": 25, "hunger_value": 12 }
   },
   "caribou": {
     "type": "prey",
@@ -50,8 +50,8 @@
     "period_activity": { "dawn": 1.5, "day": 1.0, "dusk": 1.5 },
     "depth": { "juvenile": "simple", "adult": "standard" },
     "reactions": {},
-    "juvenile": { "detection": 45, "stamina": 45, "speed": 55, "counter_attack": 0, "hunger_value": 45 },
-    "adult": { "detection": 60, "stamina": 70, "speed": 66, "counter_attack": 10, "hunger_value": 80 }
+    "juvenile": { "detection": 45, "stamina": 45, "speed": 55, "counter_attack": 0, "fight_power": 40, "hunger_value": 45 },
+    "adult": { "detection": 60, "stamina": 70, "speed": 66, "counter_attack": 10, "fight_power": 60, "hunger_value": 80 }
   },
   "moose": {
     "type": "prey",
@@ -61,8 +61,8 @@
     "period_activity": { "dawn": 1.3, "dusk": 1.3 },
     "depth": { "juvenile": "simple", "adult": "full" },
     "reactions": { "adult": { "stand": 0.55 }, "juvenile": { "protect": 0.7 } },
-    "juvenile": { "detection": 40, "stamina": 40, "speed": 45, "counter_attack": 0, "hunger_value": 60 },
-    "adult": { "detection": 55, "stamina": 80, "speed": 60, "counter_attack": 45, "hunger_value": 150,
+    "juvenile": { "detection": 40, "stamina": 40, "speed": 45, "counter_attack": 0, "fight_power": 50, "hunger_value": 60 },
+    "adult": { "detection": 55, "stamina": 80, "speed": 60, "counter_attack": 45, "fight_power": 140, "hunger_value": 150,
       "fight": { "difficulty": 0.35, "wounds_to_kill": 3, "counter_damage_mult": 1.8, "parts": { "leg": 0.7, "shoulder": 0.2, "face": 0.1 } } }
   },
   "grizzly_bear": {

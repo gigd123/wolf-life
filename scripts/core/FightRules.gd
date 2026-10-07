@@ -71,9 +71,14 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var cfg := _cfg()
 	var m: Dictionary = cfg.get("moves", {}).get(move, {})
 	var factors: Array = []
-	var diff: float = (power(wolf, move) - 40.0 - prey_counter) / float(cfg.get("power_divisor", 130))
-	# 標籤把體型差（difficulty，例如駝鹿）一起算進去，免得對駝鹿也顯示「力量佔優」
-	factors.append(_power_factor(diff - float(state.get("difficulty", 0.0))))
+	# 1.7 第 3 步：成功率看「狼的力量值 − 獵物的力量值」；沒有設定力量值的獵物沿用舊式（40 + 反擊）
+	var prey_power: float = float(state.get("prey_power", -1.0))
+	var has_power: bool = prey_power >= 0.0
+	if not has_power:
+		prey_power = 40.0 + prey_counter
+	var diff: float = (power(wolf, move) - prey_power) / float(cfg.get("power_divisor", 130))
+	# 標籤把體型差一起算進去（獵物力量值已經包含體型；舊式要再扣 difficulty），免得對駝鹿也顯示「力量佔優」
+	factors.append(_power_factor(diff - (0.0 if has_power else float(state.get("difficulty", 0.0)))))
 	var chase_bonus: float = float(state.get("chase_bonus", 0.0))
 	if chase_bonus > 0.0:
 		factors.append({"key": "factor.chase_bonus", "good": true, "weight": chase_bonus})
@@ -93,8 +98,11 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	# 體型巨大的獵物（駝鹿）：搏鬥本身就很難
 	var difficulty: float = float(state.get("difficulty", 0.0))
 	if difficulty > 0.0:
-		factors.append({"key": "factor.huge_prey", "good": false, "weight": difficulty})
-		penalty += difficulty
+		if has_power:
+			factors.append({"key": "factor.huge_prey", "good": false, "weight": 0.0, "info": true})
+		else:
+			factors.append({"key": "factor.huge_prey", "good": false, "weight": difficulty})
+			penalty += difficulty
 	var value: float = float(cfg.get("base", 0.5)) + diff + float(m.get("bonus", 0.0)) + chase_bonus + wound_bonus + next_bonus + tendency_bonus - penalty
 	return {"chance": HuntSystem.clamp_chance(value), "factors": factors}
 

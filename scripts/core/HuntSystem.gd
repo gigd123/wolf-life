@@ -114,6 +114,9 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 	for key in ["difficulty", "wounds_to_kill", "counter_damage_mult", "parts"]:
 		if fight_mods.has(key):
 			fight_state[key] = fight_mods[key]
+	# 1.7 第 3 步：搏鬥用獵物自己的力量值（和戰鬥模式同尺度），已經包含體型，不再另外扣 difficulty
+	if stats.has("fight_power"):
+		fight_state["prey_power"] = float(stats["fight_power"])
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
