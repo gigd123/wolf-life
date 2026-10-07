@@ -588,9 +588,9 @@ injury.card.heavy,這道傷口很深，需要時間慢慢癒合。
 injury.card.heavy.speed,你的腿傷得很深，每跨一步都在發疼，跑不快了。
 injury.card.heavy.strength,你的肩膀傷得很深，一用力撕咬就痛得發抖。
 injury.card.heavy.perception,你的臉傷得很深，一隻眼睛腫得睜不開，鼻子也不靈了。
-injury.card.hp_note,重傷期間，睡一覺只能回復平常一半的血量；傷口本身要等時間過去才會好。
-injury.effect.heavy,重傷：{stat} −{n}%、體力消耗增加，約 {days} 天痊癒
-injury.effect.light,輕傷：體力消耗增加，約 {days} 天痊癒
+injury.card.hp_note,重傷期間，睡一覺只能回復平常一半的血量，而且傷好之前血量回不到七成。傷口只在睡覺時癒合：睡在巢穴或好睡處、吃飽了會好得快；挨餓時不會好；帶傷硬撐去打架、狩獵可能拖得更久。
+injury.effect.heavy,重傷：{stat} −{n}%、體力消耗增加、血量最多回到七成，約 {days} 晚痊癒（好好休養會更快）
+injury.effect.light,輕傷：體力消耗增加、睡覺回復稍慢，約 {days} 晚痊癒
 injury.toast.light,輕傷：體力消耗增加，約 {days} 天痊癒
 combat.dodge.success,你閃開了{animal}的攻擊，看見了牠的破綻。
 combat.retreat.success,你轉身跑開，牠沒有追來。
@@ -1050,3 +1050,4 @@ encounter.woken_mother,你睜開眼，一頭帶著幼熊的母灰熊就在不遠
 fire.rain_warning,暴雨落了下來，風裡的焦味漸漸散了。這場火沒有燒起來。
 fire.rain_out,暴雨傾盆而下，大火在雨裡一點一點熄滅了。
 ui.too_tired_to_hunt,（太累了，追不動）
+log.injury_pushed_on,帶著重傷硬撐，傷口又裂開了，要多養一陣子。

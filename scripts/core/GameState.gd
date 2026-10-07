@@ -448,15 +448,38 @@ func _process_daily_recovery() -> void:
 	if wolf.poison_days_remaining > 0:
 		wolf.poison_days_remaining -= 1
 		wolf.health_value -= float(GameData.balance.get("poison_health_value_loss_per_day", 1))
-	if wolf.injury_days_remaining > 0:
-		wolf.injury_days_remaining -= 1
+	# 傷勢只在睡覺時好轉（1.7 第 2 步）：這一天睡過才減，休養得好減更多、挨餓不減
+	if wolf.injury_days_remaining > 0 and _sleep_heal >= 0:
+		wolf.injury_days_remaining -= _sleep_heal
 		if wolf.injury_days_remaining <= 0:
 			if wolf.injury == Wolf.Injury.HEAVY:
 				_maybe_old_injury()
 			wolf.clear_injury()
+	_sleep_heal = -1
 	_update_old_injury_flare()
 	wolf.clamp_stats()
 	_check_death()
+
+# 這一天睡覺時的傷勢好轉天數（-1 = 還沒睡）；換日時結算。
+var _sleep_heal: int = -1
+
+func _heal_progress(quality: String) -> int:
+	var h: Dictionary = GameData.balance.get("sleep", {}).get("heal", {})
+	if wolf.hunger < float(h.get("starving_hunger", 30)):
+		return int(h.get("starving", 0))
+	if quality in ["den", "good"] and wolf.hunger >= float(h.get("good_hunger", 60)):
+		return int(h.get("good", 2))
+	return int(h.get("normal", 1))
+
+# 帶傷硬撐（1.7 第 2 步）：開打前就是重傷，打完一場戰鬥或狩獵的搏鬥，有機率多養幾天。
+func _push_on_injury(start_heavy: bool) -> void:
+	if not start_heavy or wolf.injury != Wolf.Injury.HEAVY:
+		return
+	var p: Dictionary = GameData.balance.get("sleep", {}).get("push_on", {})
+	if RNGService.chance(float(p.get("chance", 0.5))):
+		wolf.injury_days_remaining = min(int(p.get("max_days", 7)), wolf.injury_days_remaining + int(p.get("days", 1)))
+		life_log["pushed_on"] = int(life_log.get("pushed_on", 0)) + 1
+		log_message.emit(tr("log.injury_pushed_on"))
 
 # 換日摘要要顯示的舊傷變化（_queue_day_summary 取用後清空）。
 var _day_events: Array = []
@@ -1223,6 +1246,7 @@ func action_sleep() -> Dictionary:
 	var turns: int = int(costs.get("sleep", 3))
 	# 換季睡眠（SPEC「季節轉換」）：睡醒時已經到期、而且沒有大火或暴風雪，這一覺不會被打斷，睡醒時換季
 	var season_sleep: bool = GameTime.season_due_after(turns) and not season_change_blocked()
+	_sleep_heal = max(_sleep_heal, _heal_progress(quality))
 	quiet_sleep = season_sleep
 	GameTime.advance_turns(turns)
 	quiet_sleep = false
@@ -1245,8 +1269,15 @@ func action_sleep() -> Dictionary:
 	if not settle["gains"].is_empty():
 		growth_applied.emit()
 	# 重傷期間血量回復減半（SPEC「傷勢與舊傷」）：重傷之後要休養幾天，體力照常回復
-	var health_mult: float = mult * (float(cfg.get("heavy_injury_health_mult", 0.5)) if wolf.injury == Wolf.Injury.HEAVY else 1.0)
-	wolf.health += (wolf.health_max - wolf.health) * health_mult
+	# 1.7 第 2 步：輕傷回復 ×0.8；重傷回復 ×0.5，而且痊癒前最多回到血量上限的 70%（已經比較高就不扣）
+	var health_mult: float = mult
+	var health_target: float = wolf.health_max
+	if wolf.injury == Wolf.Injury.HEAVY:
+		health_mult *= float(cfg.get("heavy_injury_health_mult", 0.5))
+		health_target = wolf.health_max * float(cfg.get("heavy_health_cap", 1.0))
+	elif wolf.injury == Wolf.Injury.LIGHT:
+		health_mult *= float(cfg.get("light_injury_health_mult", 1.0))
+	wolf.health += max(0.0, health_target - wolf.health) * health_mult
 	wolf.stamina += (smax - wolf.stamina) * mult
 	wolf.clamp_stats()
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
@@ -1312,6 +1343,8 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
+	if hunt.decisions.any(func(d): return str(d).begins_with("fight.")):
+		_push_on_injury(hunt.start_heavy)
 	FightRules.danger_to_heavy(wolf, hunt.fight_state.get("parts", {"leg": 0.5, "shoulder": 0.5}), hunt.animal_id + ".hunt")
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
@@ -1893,6 +1926,8 @@ func _after_bear_first_win() -> void:
 func finish_combat(c: Combat) -> Dictionary:
 	for d in c.decisions:
 		record_decision(d)
+	if c.rounds > 0:
+		_push_on_injury(c.start_heavy)
 	_record_combat_log(c)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
 	var result := {"outcome": c.outcome, "grow": ""}

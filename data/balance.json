@@ -150,7 +150,12 @@
     "night_encounter": { "den": 0.0, "good": 0.03, "normal": 0.08, "rough": 0.15 },
     "good_spot_find_chance": 0.35,
     "interrupted_mult": 0.5,
-    "heavy_injury_health_mult": 0.5
+    "heavy_injury_health_mult": 0.5,
+    "_injury_comment": "1.7 第 2 步（QA-45）。light_injury_health_mult：輕傷時睡覺的血量回復倍率；heavy_health_cap：重傷痊癒前，睡覺最多回到血量上限的幾成（1.0 = 沒有上限）。heal：傷勢只在睡覺時好轉，每晚減 normal 天；睡在巢穴或好睡處、飽食度 ≥ good_hunger 時減 good 天；飽食度 < starving_hunger 時減 starving 天。push_on：重傷期間打完一場戰鬥或狩獵的搏鬥，chance 機率多 days 天（最多 max_days 天）。",
+    "light_injury_health_mult": 0.8,
+    "heavy_health_cap": 0.7,
+    "heal": { "normal": 1, "good": 2, "starving": 0, "good_hunger": 60, "starving_hunger": 30 },
+    "push_on": { "chance": 0.5, "days": 1, "max_days": 7 }
   },
   "short_rest_stamina": 15,
   "rest_until_stamina_per_turn": 7.5,

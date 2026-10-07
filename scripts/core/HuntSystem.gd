@@ -74,6 +74,7 @@ var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風
 var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
 var herd_weak: float = 0.0 # 觀察鹿群時找出跑得慢的那一隻（北美馴鹿）：追擊加成
+var start_heavy: bool = false # 開始狩獵時已經是重傷（帶傷硬撐，1.7 第 2 步）
 var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
@@ -81,6 +82,7 @@ var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mod: float = 0.0,
 		p_wind_dir: int = 0, p_prey_dir: int = 0, p_terrain: String = "", p_injured: bool = false) -> void:
 	wolf = p_wolf
+	start_heavy = wolf.injury == Wolf.Injury.HEAVY
 	animal_id = p_animal_id
 	life_stage = p_life_stage
 	is_night = detection_mod < 0.0

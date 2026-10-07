@@ -39,6 +39,7 @@ var tendency: Dictionary = {}
 var decisions: Array[String] = []
 # 每回合的紀錄（試玩紀錄用，查「為什麼突然被打死」）：選擇、雙方血量、這回合的傷害、是否瀕危
 var round_log: Array = []
+var start_heavy: bool = false # 開打時已經是重傷（帶傷硬撐，1.7 第 2 步）
 var start_effective: Dictionary = {} # 開打時狼的實際能力（含飢餓、傷勢的影響）
 var practice: Array = []
 var fail_streak: int = 0
@@ -82,6 +83,7 @@ func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p
 		"skill": snapped(wolf.effective_skill(), 0.1), "power": snapped(FightRules.wolf_power(wolf), 0.1),
 		"injury": wolf.injury, "hunger": snapped(wolf.hunger, 1.0)}
 	start_heavy_count = wolf.heavy_injury_count
+	start_heavy = wolf.injury == Wolf.Injury.HEAVY
 
 func stage_name() -> String:
 	return PHASE_NAMES[phase]
