@@ -191,6 +191,10 @@ func _explore_once() -> void:
 	if prey == "deer_focus" and not big and GameState.wolf.hunger > 40:
 		GameState.clear_discovery()
 		return
+	# 太累不能開始狩獵（1.7 QA-55）
+	if GameState.too_tired_to_hunt():
+		GameState.clear_discovery()
+		return
 	var hunt: HuntSystem = null
 	if d.get("clue", "") == "sight":
 		hunt = GameState.action_hunt_sighted()

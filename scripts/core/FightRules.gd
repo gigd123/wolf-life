@@ -172,6 +172,11 @@ static func attack_chance(wolf: Wolf, opp_power: float, move: String, state: Dic
 		if v > 0.0:
 			value += v
 			factors.append({"key": "factor.combat." + key, "good": true, "weight": v})
+	# 體力耗盡：攻擊的命中下降（1.7 QA-55，和追擊的「體力不足」相同）
+	var tired: float = float(GameData.balance.get("low_stamina", {}).get("combat_hit_penalty", 0.0))
+	if wolf.stamina <= 0.0 and tired > 0.0:
+		value -= tired
+		factors.append({"key": "factor.tired", "good": false, "weight": tired})
 	return {"chance": clamp(value, float(a.get("min", 0.05)), float(a.get("max", 0.95))), "factors": factors}
 
 # 對手這一回合打中狼的機率；dodge 大幅降低，猛撲提高。

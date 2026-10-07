@@ -1452,14 +1452,14 @@ func _show_discovery(d: Dictionary) -> void:
 					_log(tr("log.gather.success").replace("{item}", tr("item." + item)))
 			)
 		elif d.get("clue", "") == "sight":
-			_add_encounter_button(tr("ui.hunt"), func():
+			_add_hunt_button(tr("ui.hunt"), func():
 				encounter_overlay.visible = false
 				current_hunt = GameState.action_hunt_sighted()
 				_render_hunt_stage()
 			)
 		elif ExploreSystem.can_track(d):
 			var info := GameState.track_chance()
-			_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+			_add_hunt_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
 	if d.get("kind", "") == "clue" and (d.get("source_kind", "") == "threat" or (d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false))):
 		# 按鈕寫出記下的效果：不花時間，累積知識（QA-53）
@@ -1526,6 +1526,16 @@ func _on_track() -> void:
 			_log(tr(reason).replace("{animal}", animal_name))
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
+
+# 會開始狩獵的按鈕：太累時灰掉並寫「太累了，追不動」（1.7 QA-55）。
+func _add_hunt_button(label: String, callback: Callable) -> void:
+	if not GameState.too_tired_to_hunt():
+		_add_encounter_button(label, callback)
+		return
+	var btn := Button.new()
+	btn.text = label + "　" + tr("ui.too_tired_to_hunt")
+	btn.disabled = true
+	encounter_buttons_box.add_child(btn)
 
 func _add_encounter_button(label: String, callback: Callable) -> void:
 	var btn := Button.new()
@@ -2098,7 +2108,7 @@ func _show_find_result(result: Dictionary) -> void:
 	_set_creature(encounter_sprite, animal_id, life_stage)
 	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
-	_add_encounter_button(tr("ui.hunt"), func():
+	_add_hunt_button(tr("ui.hunt"), func():
 		encounter_overlay.visible = false
 		_begin_hunt(animal_id, life_stage, prey_dir)
 	)

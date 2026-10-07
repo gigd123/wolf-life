@@ -8,6 +8,9 @@
   "hunger_decay_per_period": 4,
   "hunger_low_threshold": 30,
   "stamina_low_threshold": 10,
+  "_stamina_rules_comment": "1.7 第 1 步（QA-48、55）。action_stamina_costs：一般行動的體力消耗（有傷時再乘傷勢的體力倍率）；移動是每次的基本消耗，再加區域的地形消耗；跨地圖的連結另見 regions.json links.stamina。low_stamina：體力低於 hunt_min 不能開始狩獵；低於 growth_threshold 時行動帶來的成長 × growth_mult；體力 0 時戰鬥的攻擊命中 − combat_hit_penalty。設 hunt_min 0、growth_mult 1、combat_hit_penalty 0 就等於沒有這些規則。",
+  "action_stamina_costs": { "explore": 3, "gather": 2, "find_sleep_spot": 2, "track": 3, "return_to_carcass": 1, "move_region": 3 },
+  "low_stamina": { "hunt_min": 10, "growth_threshold": 10, "growth_mult": 0.5, "combat_hit_penalty": 0.15 },
   "hunger_penalties": {
     "low_threshold": 30,
     "low_health_value_loss_per_day": 1,

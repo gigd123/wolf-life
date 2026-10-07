@@ -56,16 +56,22 @@ static func cap_of(wolf: Wolf, stat: String) -> float:
 # 技巧、感知的當下成長。units：成功 1、失敗 fail_mult（再依連續失敗遞減）。
 static func learn(wolf: Wolf, stat: String, units: float) -> float:
 	var base: float = float(cfg().get("learn_per_unit", {}).get(stat, 0.0))
-	return _add(wolf, stat, base * units * stage_mult(wolf, stat))
+	return _add(wolf, stat, base * units * stage_mult(wolf, stat) * tired_mult(wolf))
+
+# 累到極點練不起來（1.7 QA-55）：體力低於門檻時，行動、狩獵帶來的成長打折。
+static func tired_mult(wolf: Wolf) -> float:
+	var ls: Dictionary = GameData.balance.get("low_stamina", {})
+	return float(ls.get("growth_mult", 1.0)) if wolf.stamina < float(ls.get("growth_threshold", 0)) else 1.0
 
 # 固定份量的當下成長（探索、追蹤、遠距觀察、採集的感知）：cfg_key 是 growth 裡的數值鍵。
 static func learn_flat(wolf: Wolf, stat: String, cfg_key: String, units: float = 1.0) -> float:
-	return _add(wolf, stat, float(cfg().get(cfg_key, 0.0)) * units * stage_mult(wolf, stat))
+	return _add(wolf, stat, float(cfg().get(cfg_key, 0.0)) * units * stage_mult(wolf, stat) * tired_mult(wolf))
 
 # 鍛鍊點：記在速度、力量、血量上限，睡覺時結算。同時有很少量的當下成長。
 static func train(wolf: Wolf, stat: String, points: float) -> void:
 	if points <= 0.0 or not BODY_STATS.has(stat):
 		return
+	points *= tired_mult(wolf)
 	wolf.training[stat] = float(wolf.training.get(stat, 0.0)) + points
 	if stat != "health_max":
 		_add(wolf, stat, points * float(cfg().get("immediate_body_per_point", 0.0)) * stage_mult(wolf, stat))

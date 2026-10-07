@@ -12,7 +12,7 @@
     }
   },
   "links": [
-    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 8 }
+    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 10 }
   ],
   "features": {
     "good_sleep_spot": { "sleep_spot": true },

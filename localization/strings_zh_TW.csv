@@ -1037,7 +1037,7 @@ injury_source.blizzard,暴風雪
 ui.note_hint.prey,（不花時間；累積對這一帶獵物出沒的了解）
 ui.note_hint.threat,（不花時間；記住這一帶的危險，移動前會提醒）
 ui.stamina_low,體力不支
-ui.stamina_low.tip,體力快用完了：追擊時更難跑贏獵物，遇到危險也更難脫身。休息或睡覺可以恢復。
+ui.stamina_low.tip,體力快用完了：不能開始狩獵，練習的成長減半；體力用完時，戰鬥中的攻擊也不容易命中。休息或睡覺可以恢復。
 river.cross.thaw,你踏上變薄的河冰，小心地往對岸走。
 blizzard.over.later,你離開的時候，苔原的暴風雪已經停了。雪原一片寂靜，雪堆得比你的肩膀還高。
 animal.grizzly_bear.mother,母灰熊
@@ -1049,3 +1049,4 @@ encounter.woken,你睜開眼，一頭{animal}就在不遠處，正盯著你。
 encounter.woken_mother,你睜開眼，一頭帶著幼熊的母灰熊就在不遠處，牠護著身後的小熊，非常激動。
 fire.rain_warning,暴雨落了下來，風裡的焦味漸漸散了。這場火沒有燒起來。
 fire.rain_out,暴雨傾盆而下，大火在雨裡一點一點熄滅了。
+ui.too_tired_to_hunt,（太累了，追不動）

@@ -681,6 +681,8 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		fire["alerted"].erase(target_region)
 	current_region = target_region
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
+	if link.is_empty():
+		_spend_action_stamina("move_region")
 	if not link.is_empty():
 		wolf.stamina -= float(link["stamina"]) * wolf.injury_stamina_mult()
 		var maps_visited: Array = life_log.get("maps_visited", [GameData.map_of(den_region)])
@@ -750,6 +752,7 @@ func action_explore() -> Dictionary:
 	GameTime.advance_turns(int(costs.get("explore", 1)))
 	if not wolf.alive:
 		return {}
+	_spend_action_stamina("explore")
 	Growth.train_activity(wolf, "explore")
 	# 暴風雪中什麼都看不見，也不能狩獵
 	if blizzard_here():
@@ -818,6 +821,7 @@ func action_track() -> Dictionary:
 	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
 	if not wolf.alive:
 		return {"success": false}
+	_spend_action_stamina("track")
 	if not d.get("fresh", false):
 		state_changed.emit()
 		return {"success": false, "reason_key": "reason.stale"}
@@ -855,6 +859,7 @@ func action_gather_discovered() -> String:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("gather", 1)))
 	if wolf.alive:
+		_spend_action_stamina("gather")
 		_practice_gather()
 		_apply_gather_effect(d["source"])
 	state_changed.emit()
@@ -1053,6 +1058,7 @@ func action_gather() -> Dictionary:
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("gather", 1)))
 	if wolf.alive:
+		_spend_action_stamina("gather")
 		_practice_gather()
 	var result := EncounterSystem.gather(current_region, GameTime.current_season())
 	if burn_state(current_region) in ["burning", "ash"]:
@@ -1090,6 +1096,7 @@ func action_find_sleep_spot() -> String:
 	_record_action("find_sleep_spot")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	GameTime.advance_turns(int(costs.get("find_sleep_spot", 1)))
+	_spend_action_stamina("find_sleep_spot")
 	var spot := ""
 	if _feature_known_here("sleep_spot"):
 		spot = "good"
@@ -1333,6 +1340,16 @@ func _stat_inc(group: String, key: String, amount: int = 1) -> void:
 	table[key] = int(table.get(key, 0)) + amount
 	stats[group] = table
 	life_log["stats"] = stats
+
+# 1.7 行動的體力消耗（balance.action_stamina_costs）：有傷時乘傷勢的體力倍率，最低停在 0。
+func _spend_action_stamina(action: String) -> void:
+	var cost: float = float(GameData.balance.get("action_stamina_costs", {}).get(action, 0))
+	if cost > 0.0 and wolf != null:
+		wolf.stamina = max(0.0, wolf.stamina - cost * wolf.injury_stamina_mult())
+
+# 太累不能開始狩獵（QA-55；balance.low_stamina.hunt_min）。
+func too_tired_to_hunt() -> bool:
+	return wolf != null and wolf.stamina < float(GameData.balance.get("low_stamina", {}).get("hunt_min", 0))
 
 func _record_action(action: String) -> void:
 	var after: Dictionary = life_log.get("after_deer", {})
@@ -1731,6 +1748,7 @@ func action_return_to_carcass() -> Dictionary:
 	GameTime.advance_turns(int(cfg.get("return_turns", 1)))
 	if not wolf.alive:
 		return {}
+	_spend_action_stamina("return_to_carcass")
 	# 回程途中殘骸也可能被搶走或腐壞
 	idx = carcass_index_here()
 	if idx < 0:
