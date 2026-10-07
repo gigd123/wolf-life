@@ -110,6 +110,8 @@
   "combat": {
     "_comment": "戰鬥模式（SPEC 1.6「戰鬥模式」，規則在 FightRules.gd、流程在 Combat.gd）。力量值（power）的尺度與狼一致：狼的力量值 = 力量 × strength_weight + 技巧 × (2 − strength_weight)，約是能力值的兩倍。",
     "danger_ratio": 0.25,
+    "_outlook_comment": "1.7 第 5 步：戰鬥畫面的戰況標籤（只影響顯示）。幾回合能逼退牠 ÷ 幾回合會被打到瀕危：≤ stronger 寫「你佔上風」，≥ weaker 寫「牠很難纏」，中間「勢均力敵」。騷擾的 speed_ref：速度低於它越多越容易被打中（倍率 1 + (speed_ref − 速度) ÷ speed_divisor，限制在 min～max）。",
+    "outlook": { "stronger": 0.7, "weaker": 1.3 },
     "_morale_comment": "依實力差距提早示弱（同體型的對手，yields_to_stronger）：放棄門檻 + clamp((你的力量值 ÷ 牠的力量值 − start) × slope, 0, max)；威嚇成功率加上同一個值 × threaten_mult。",
     "morale": { "start": 1.05, "slope": 2.5, "max": 0.5, "threaten_mult": 0.8 },
     "attack": { "base": 0.55, "divisor": 200, "min": 0.05, "max": 0.95, "initiative": 0.1 },
@@ -119,7 +121,7 @@
       "bite": { "bonus": 0.0, "strength_weight": 1.0, "damage_mult": 1.0, "hit_mult": 1.0, "stamina": 6, "trains": ["strength", "skill"] },
       "lunge": { "bonus": -0.15, "strength_weight": 1.3, "damage_mult": 1.7, "hit_mult": 1.3, "stamina": 10, "train_mult": 1.3, "trains": ["strength"] },
       "dodge": { "hit_mult": 0.35, "next_bonus": 0.12, "stamina": 4, "trains": ["skill"] },
-      "harass": { "bonus": 0.25, "strength_weight": 1.0, "damage_mult": 0.35, "hit_mult": 0.45, "drain": 6, "stamina": 3, "trains": ["speed", "skill"] },
+      "harass": { "bonus": 0.25, "strength_weight": 1.0, "damage_mult": 0.35, "hit_mult": 0.45, "drain": 6, "stamina": 3, "speed_ref": 90, "speed_divisor": 60, "speed_mult_min": 0.7, "speed_mult_max": 1.5, "trains": ["speed", "skill"] },
       "retreat": { "base": 0.55, "speed_divisor": 150, "danger_bonus": 0.25, "leg_injury_penalty": 0.15, "stamina": 8, "trains": ["speed"] }
     },
     "standoff": {

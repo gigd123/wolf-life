@@ -1062,3 +1062,7 @@ prey_style.burst_stand,牠爆發力很強，被逼急了可能轉身用角頂你
 prey_style.dodger,牠很會急轉、鑽進洞裡，跟著跑只會讓牠躲起來。
 prey_style.follows_mother,小駝鹿跟在母鹿身邊，跑不快也跑不遠。
 prey_style.stand,牠不太跑，常站定反擊；慢慢消耗牠的體力比正面衝上去安全。
+factor.outlook.stronger,看起來你能在受重傷之前把牠逼退
+factor.outlook.even,勢均力敵：誰先撐不住還很難說
+factor.outlook.weaker,牠很難纏：還沒逼退牠，你可能就先被打到瀕危
+factor.combat.lethal,你已經瀕危：再被打中可能會死

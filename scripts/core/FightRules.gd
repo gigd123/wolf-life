@@ -193,6 +193,11 @@ static func opponent_hit_chance(wolf: Wolf, opp_power: float, move: String, divi
 	# divisor：對手專屬的尺度（灰熊揮掌範圍大，狼的閃躲能力影響較小）；0 = 用共通的
 	var value: float = float(h.get("base", 0.45)) + (opp_power - wolf_defense(wolf)) / (divisor if divisor > 0.0 else float(h.get("divisor", 200)))
 	value *= float(move_cfg(move).get("hit_mult", 1.0))
+	# 騷擾靠速度躲開（1.7 第 5 步）：速度低於 speed_ref 越多越容易被打中，速度很快才真的安全
+	var m := move_cfg(move)
+	if m.has("speed_ref"):
+		value *= clamp(1.0 + (float(m["speed_ref"]) - wolf.effective_speed()) / float(m.get("speed_divisor", 60)),
+			float(m.get("speed_mult_min", 0.7)), float(m.get("speed_mult_max", 1.8)))
 	return clamp(value, float(h.get("min", 0.05)), float(h.get("max", 0.9)))
 
 static func wolf_damage(wolf: Wolf, move: String) -> float:

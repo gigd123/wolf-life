@@ -181,11 +181,43 @@ func _attack_state(initiative: bool) -> Dictionary:
 		s["initiative"] = float(FightRules.combat_cfg().get("attack", {}).get("initiative", 0.1))
 	return s
 
+# 戰況（1.7 第 5 步）：比「幾回合能逼退牠」和「幾回合會被打到瀕危」，取代只比力量值的標籤
+# （試玩紀錄：力量值 186 對灰熊 170 顯示「力量佔優」，牠三掌就把血量 120 的狼打死）。只影響顯示。
+func outlook() -> String:
+	var hit: float = float(FightRules.attack_chance(wolf, opp_power(), "bite", {})["chance"])
+	var d: Dictionary = FightRules.combat_cfg().get("wolf_damage", {})
+	var per_round: float = (float(d.get("base", 6)) + wolf.effective_strength() * float(d.get("strength_mult", 0.12))) * hit
+	var rounds_win: float = max(0.0, opp_hp - opp_hp_max * opp_give_up_ratio()) / max(0.1, per_round)
+	if opp_stamina_max > 0.0:
+		var drain: float = float(opp.get("swing_cost", 0.0)) + per_round * float(opp.get("hurt_drain", 0.0))
+		var left: float = opp_stamina - opp_stamina_max * float(opp.get("stamina_give_up", 0.2)) / max(0.1, stake_mult)
+		rounds_win = min(rounds_win, max(0.0, left) / max(0.1, drain))
+	var dr: Array = opp.get("damage", [5, 10])
+	var opp_per_round: float = (float(dr[0]) + float(dr[1])) * 0.5 * (1.2 if mother else 1.0) \
+		* FightRules.opponent_hit_chance(wolf, opp_power(), "bite", float(opp.get("hit_divisor", 0.0))) * (1.0 + partner_chance)
+	var rounds_danger: float = max(0.0, wolf.health - wolf.health_max * float(FightRules.combat_cfg().get("danger_ratio", 0.25))) / max(0.1, opp_per_round)
+	var o: Dictionary = FightRules.combat_cfg().get("outlook", {})
+	var ratio: float = rounds_win / max(0.5, rounds_danger)
+	if ratio <= float(o.get("stronger", 0.7)):
+		return "stronger"
+	if ratio >= float(o.get("weaker", 1.3)):
+		return "weaker"
+	return "even"
+
+# 攻擊類選項的因素：力量比較換成戰況；瀕危時加上「再被打中可能會死」。
+func _combat_factors(factors: Array) -> Array:
+	var list: Array = factors.filter(func(f): return not str(f.get("key", "")) in ["factor.stronger", "factor.weaker", "factor.even"])
+	var key: String = outlook()
+	list.push_front({"key": "factor.outlook." + key, "good": key != "weaker", "weight": 0.0, "info": true})
+	if FightRules.in_danger(wolf):
+		list.push_front({"key": "factor.combat.lethal", "good": false, "weight": 0.0, "info": true})
+	return list
+
 func _attack_option(move: String, initiative: bool) -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), move, _attack_state(initiative))
 	var label: String = "combat.option.attack" if initiative else "combat.option." + move
 	var risk: float = FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
-	var factors: Array = info["factors"]
+	var factors: Array = _combat_factors(info["factors"])
 	if partner_chance > 0.0:
 		# 另一隻也可能插進來：被打中的機率 = 1 − 兩下都沒中
 		risk = 1.0 - (1.0 - risk) * (1.0 - partner_chance * risk)
@@ -208,7 +240,7 @@ func _dodge_option() -> Dictionary:
 # 騷擾：繞著牠打轉、咬一口就跳開。容易咬中但傷害很低，主要是消耗牠的耐力；牠反擊打中的機率低，但一掌就很重（只對有耐力的對手）。
 func _harass_option() -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), "harass", _attack_state(false))
-	var factors: Array = info["factors"].duplicate()
+	var factors: Array = _combat_factors(info["factors"])
 	factors.append({"key": "factor.combat.tiring", "good": true, "weight": 0.0, "info": true})
 	var opt := {"id": "harass", "label_key": "combat.option.harass", "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
 		"injury_risk": FightRules.opponent_hit_chance(wolf, opp_power(), "harass", float(opp.get("hit_divisor", 0.0)))}
