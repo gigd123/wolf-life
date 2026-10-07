@@ -1,0 +1,572 @@
+{
+  "age_years": 6.4167,
+  "den": "forest_east",
+  "knowledge": [
+    {
+      "animal": "stranger_wolf",
+      "count": 6,
+      "region": "forest_north",
+      "type": "territory"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1,
+      "region": "forest_east",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "red_fox",
+      "count": 2,
+      "last_day": 14,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "red_fox",
+      "count": 3,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "red_fox",
+      "count": 1,
+      "last_day": 11,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "last_day": 19,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "last_day": 12,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "last_day": 16,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 2,
+      "last_day": 16,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "red_fox",
+      "count": 2,
+      "last_day": 21,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "red_fox",
+      "count": 1,
+      "life_stage": "adult",
+      "option": "drive_forest",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 13,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "red_fox",
+      "count": 3,
+      "region": "forest_east",
+      "type": "overhunt"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 5,
+      "last_day": 20,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "region": "forest_east",
+      "type": "overhunt"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2,
+      "region": "forest_east",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "red_fox",
+      "count": 3,
+      "last_day": 20,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "last_day": 16,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "red_fox",
+      "count": 1,
+      "last_day": 16,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 2,
+      "last_day": 21,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "last_day": 19,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 2,
+      "last_day": 20,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 2,
+      "region": "forest_east",
+      "type": "overhunt"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 21,
+      "period": "night",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1,
+      "region": "forest_west",
+      "season": "autumn",
+      "type": "danger"
+    }
+  ],
+  "life_log": {
+    "adult_body": "adult_body.speed",
+    "adult_bonus": {
+      "health_max": 2.5,
+      "speed": 3.0,
+      "strength": 3.0
+    },
+    "after_deer": {},
+    "biggest_prey": "white_tailed_deer",
+    "biggest_prey_stage": "adult",
+    "blizzards": [
+      {
+        "age": 0.7,
+        "choice": "",
+        "days": 2,
+        "in_tundra": false,
+        "result": ""
+      }
+    ],
+    "burn_seen": {
+      "forest_east": "ash@22",
+      "forest_north": "ash@22",
+      "forest_south": "ash@22",
+      "forest_west": "ash@22"
+    },
+    "days_lived": 23,
+    "death_cause": "combat",
+    "death_detail": {
+      "age": 6.4,
+      "animal": "grizzly_bear",
+      "context": "encounter",
+      "life_stage": "adult"
+    },
+    "decisions": [
+      "stealth",
+      "pursuit",
+      "stealth",
+      "pursuit",
+      "other",
+      "stealth",
+      "pursuit",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "stealth",
+      "other",
+      "other",
+      "stealth",
+      "pursuit",
+      "pursuit",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "stealth",
+      "pursuit",
+      "assault",
+      "assault",
+      "assault"
+    ],
+    "den_smell_noted": 22,
+    "elder_age": 6.17,
+    "fires": [
+      {
+        "age": 6.2,
+        "burned": [
+          "forest_east",
+          "forest_north",
+          "forest_south",
+          "forest_west"
+        ],
+        "den_burned": true,
+        "escape": "stream",
+        "escape_region": "",
+        "origin": "forest_east",
+        "result": "safe",
+        "season": "summer"
+      }
+    ],
+    "hunger_tier": 0,
+    "hunt_attempts": 22,
+    "hunt_successes": 16,
+    "main_tendency": "stealth",
+    "potential": {
+      "health_max": 90.0,
+      "perception": 55.0,
+      "skill": 55.0,
+      "speed": 55.0,
+      "strength": 55.0
+    },
+    "prey_count": {
+      "hare": 4,
+      "red_fox": 6,
+      "white_tailed_deer": 6
+    },
+    "recent_combats": [
+      {
+        "age": 6.4,
+        "animal": "grizzly_bear",
+        "context": "encounter",
+        "opp_hp_max": 300.0,
+        "opp_power": 170.0,
+        "outcome": "died",
+        "rounds": [
+          {
+            "choice": "attack",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.miss",
+              "combat.opp_hit.shoulder",
+              "combat.heavy_injury"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 300.0,
+            "r": 1,
+            "wolf_dmg": 36.0,
+            "wolf_hp": 44.6
+          },
+          {
+            "choice": "lunge",
+            "danger": true,
+            "desperate": false,
+            "notes": [
+              "combat.hit.lunge",
+              "combat.opp_hit.face",
+              "combat.heavy_injury"
+            ],
+            "opp_dmg": 19.5,
+            "opp_hp": 280.5,
+            "r": 2,
+            "wolf_dmg": 43.6,
+            "wolf_hp": 1.0
+          },
+          {
+            "choice": "lunge",
+            "danger": true,
+            "desperate": false,
+            "notes": [
+              "combat.miss",
+              "combat.opp_hit.face",
+              "combat.heavy_injury"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 280.5,
+            "r": 3,
+            "wolf_dmg": 38.0,
+            "wolf_hp": 0.0
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 114.0,
+          "injury": 0,
+          "power": 84.3,
+          "skill": 42.1,
+          "speed": 41.1,
+          "strength": 42.2
+        },
+        "wolf_hp_max": 80.574202128,
+        "wolf_start_hp": 80.6
+      }
+    ],
+    "recent_messages": [
+      "夏 D6 清晨　溪流旁，遠處有一頭灰熊，牠沒有發現你。採集到了藍莓。",
+      "夏 D6 白天　林緣，你發現新鮮的小野兔足跡。你學到：【似乎】白天的森林東部常有野兔。你獵到了小野兔。",
+      "夏 D6 黃昏　溪流旁，你發現新鮮的啃食痕跡，是受傷的白尾鹿母鹿留下的。你學到：【似乎】黃昏的森林東部常有白尾鹿。線索太模糊，你分辨不出方向。",
+      "夏 D6 深夜　深夜的林緣，你知道白尾鹿會來。你學到：【確定】深夜的森林東部常有白尾鹿。你獵到了受傷的白尾鹿母鹿。你學到：【通常】在森林東部連續獵白尾鹿之後，那一帶的白尾鹿會少好幾天。你把獵物吃完了。",
+      "夏 D6 凌晨　溪流旁，你發現了藍莓。採集到了藍莓。",
+      "夏 D7 清晨　你在巢穴裡安穩地睡了一覺。",
+      "夏 D7 白天　溪流旁，遠處有一頭灰熊，牠沒有發現你。你學到：【通常】黃昏的森林東部常有白尾鹿。你跟丟了線索。",
+      "夏 D7 深夜　溪流旁，你發現了藍莓。這次狩獵失敗了。線索太模糊，你分辨不出方向。",
+      "夏 D8 清晨　溪流旁，你看見一隻受傷的野兔。你學到：【似乎】清晨的森林東部常有野兔。你獵到了受傷的野兔。",
+      "夏 D8 清晨　溪流旁，你聞到白尾鹿母鹿的氣味（順風，聞不出新不新鮮）。你學到：【確定】清晨的森林東部常有白尾鹿。線索太舊了，白尾鹿早就離開了。",
+      "夏 D8 白天　溪流旁，你聞到新鮮的小狐狸氣味。你學到：【通常】白天的森林東部常有狐狸。你獵到了小狐狸。你學到：【確定】在森林東部連續獵狐狸之後，那一帶的狐狸會少好幾天。",
+      "夏 D8 黃昏　黃昏的林緣，你知道白尾鹿會來。你學到：【確定】黃昏的森林東部常有白尾鹿。你獵到了白尾鹿母鹿。你學到：【確定】白尾鹿母鹿被長距離跟隨時比較容易得手。你把獵物吃完了。",
+      "夏 D9 清晨　你在巢穴裡安穩地睡了一覺。",
+      "夏 D9 清晨　林緣，你看見一隻野兔。你學到：【通常】清晨的森林東部常有野兔。你獵到了野兔。你學到：【似乎】在森林東部連續獵野兔之後，那一帶的野兔會少好幾天。",
+      "夏 D9 白天　白天的林緣，你知道狐狸會來。你學到：【確定】白天的森林東部常有狐狸。你獵到了小狐狸。",
+      "夏 D9 黃昏　溪流旁，你發現了藍莓。採集到了藍莓。",
+      "夏 D9 深夜　林緣什麼也沒發現，這裡最近沒有狐狸來過。這次狩獵失敗了。你獵到了小鹿。你把獵物吃完了。獵鹿時受了輕傷：體力消耗增加，約 1 天痊癒。",
+      "夏 D10 清晨　林緣，你聞到狐狸的氣味（側風，聞不出新不新鮮）。你學到：【通常】清晨的森林東部常有狐狸。採集到了藍莓。",
+      "夏 D10 白天　溪流旁，你發現新鮮的野兔足跡。你學到：【通常】白天的森林東部常有野兔。你獵到了野兔。你學到：【通常】在森林東部連續獵野兔之後，那一帶的野兔會少好幾天。風裡有一股焦味。鳥群從森林東部那邊飛過來，林間的動物都往同一個方向逃。火燒到了森林東部！濃煙從林間湧來，樹冠劈啪作響。你伏在溪水裡，看著火從頭頂燒過去。",
+      "夏 D10 深夜　火往森林北部蔓延過去了。火往森林南部蔓延過去了。你移動到了森林北部。第一次來到森林北部：樹林茂密，溪水從林間穿過。深夜，又是那熟悉的狼嚎。森林北部是那隻狼的範圍。火燒到了森林北部！濃煙從林間湧來，樹冠劈啪作響。你伏在溪水裡，看著火從頭頂燒過去。",
+      "夏 D10 深夜　溪流旁，你看見一隻白尾鹿母鹿。你學到：【似乎】深夜的森林北部常有白尾鹿。這次狩獵失敗了。線索太模糊，你分辨不出方向。",
+      "夏 D10 凌晨　你記得：【通常】夏季的森林東部有灰熊出沒。森林東部的火熄了，只剩焦黑的樹幹；火還在森林北部、森林南部、森林西部燒著。你移動到了森林東部。巢穴還在地下，但四周一片焦黑，洞口滿是嗆鼻的焦味。巢穴還在地下，但四周都是很重的焦味。身上的小傷已經結痂，不再牽動你的步伐。",
+      "夏 D11 清晨　你在巢穴裡安穩地睡了一覺。",
+      "夏 D11 白天　森林北部的火熄了，只剩焦黑的樹幹；火還在森林西部燒著。森林南部的火熄了，只剩焦黑的樹幹；火還在森林西部燒著。你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。",
+      "夏 D11 黃昏　你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。火終於熄了。森林東部、森林北部、森林南部、森林西部只剩焦黑的樹幹，空氣裡全是灰燼的味道。",
+      "秋 D1 深夜　季節變換了。你在巢穴裡安穩地睡了一覺。",
+      "秋 D1 深夜　你移動到了森林北部。森林北部剛燒過。地上一片焦黑，踩下去全是灰，嗆人的煙味還沒散。",
+      "秋 D1 深夜　你移動到了森林西部。第一次來到森林西部：最深的老林，坡上到處是倒木。森林西部剛燒過。地上一片焦黑，踩下去全是灰，嗆人的煙味還沒散。",
+      "秋 D1 深夜　你移動到了森林南部。第一次來到森林南部：樹林在這裡漸漸稀疏，外面是開闊的空地。森林南部剛燒過。地上一片焦黑，踩下去全是灰，嗆人的煙味還沒散。",
+      "秋 D1 凌晨　你移動到了森林東部。森林東部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D1 凌晨　你移動到了森林北部。森林北部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D1 凌晨　你移動到了森林西部。森林西部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D1 凌晨　你移動到了森林南部。森林南部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 清晨　你移動到了森林東部。森林東部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 清晨　你移動到了森林北部。森林北部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 清晨　你移動到了森林西部。森林西部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 清晨　你移動到了森林南部。森林南部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 白天　你移動到了森林東部。森林東部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 白天　你移動到了森林北部。森林北部還是一片焦黑，空氣裡仍有焦味。",
+      "秋 D2 白天　你移動到了森林西部。森林西部還是一片焦黑，空氣裡仍有焦味。你遇到了一頭灰熊。你學到：【似乎】秋季的森林西部有灰熊出沒。"
+    ],
+    "regions_visited": [
+      "forest_east",
+      "forest_north",
+      "forest_west",
+      "forest_south"
+    ],
+    "scavenged": 1,
+    "scavenged_by_bear": 1,
+    "season_days": 1,
+    "season_fed_days": 1,
+    "season_snapshot": {
+      "health_max": 80.574202128,
+      "perception": 39.2205,
+      "skill": 42.1000000000001,
+      "speed": 41.1123940194174,
+      "strength": 42.1539023096612
+    },
+    "seasons_seen": [
+      "winter",
+      "spring",
+      "summer",
+      "autumn"
+    ],
+    "since_sleep": {},
+    "sleep_snapshot": {
+      "health_max": 80.574202128,
+      "perception": 39.2205,
+      "skill": 42.1000000000001,
+      "speed": 41.1123940194174,
+      "strength": 42.1539023096612
+    },
+    "stats": {
+      "after_deer": [
+        {
+          "actions": {
+            "explore": 5,
+            "sleep": 1
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "sleep": 1
+          },
+          "days": 0
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "rest_until": 1,
+            "sleep": 1
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 10,
+            "sleep": 1
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "sleep": 1
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 4
+          },
+          "days": 0
+        }
+      ],
+      "combat": {
+        "grizzly_bear.died": 1,
+        "grizzly_bear.started": 1
+      },
+      "counters": {
+        "hunts": 22,
+        "observe_opportunities": 1
+      },
+      "nights": {
+        "den": 10
+      },
+      "option_counts": {
+        "chase.drive_forest": 1,
+        "chase.follow": 9,
+        "chase.sprint": 1,
+        "combat.attack": 1,
+        "combat.lunge": 2,
+        "fire.stream": 2,
+        "observe.skip_observe": 1,
+        "pounce.creep_pounce": 11,
+        "pounce.search": 1,
+        "scavenger.grab": 1,
+        "stalk.downwind": 9,
+        "stalk.wait": 3
+      }
+    },
+    "stranger_unlock": "subadult",
+    "tendency_history": [
+      {
+        "age": 6.2,
+        "day": 14,
+        "type": "stealth"
+      }
+    ]
+  },
+  "region": "forest_west",
+  "tendency": {
+    "effect": 0.03,
+    "share": 0.2,
+    "type": "stealth"
+  },
+  "time": {
+    "day": 2,
+    "period": "day",
+    "season": "autumn"
+  },
+  "wolf": {
+    "age_years": 6.4167,
+    "alive": false,
+    "death_cause": "combat",
+    "fed_streak": 8,
+    "flare_days": 0,
+    "flare_index": -1,
+    "health": 0.0,
+    "health_max": 80.574202128,
+    "health_value": 57.0,
+    "heavy_injury_count": 3,
+    "hunger": 114.0,
+    "injury": 2,
+    "injury_days_remaining": 5,
+    "injury_part": "shoulder",
+    "injury_source": "grizzly_bear.encounter",
+    "injury_stat": "strength",
+    "old_injuries": [],
+    "perception": 39.2205,
+    "poison_days_remaining": 0,
+    "potential": {
+      "health_max": 90.0,
+      "perception": 55.0,
+      "skill": 55.0,
+      "speed": 55.0,
+      "strength": 55.0
+    },
+    "season_reserve": {},
+    "skill": 42.1000000000001,
+    "speed": 41.1123940194174,
+    "stamina": 62.0,
+    "start_stats": {
+      "health_max": 80.0,
+      "perception": 40.0,
+      "skill": 40.0,
+      "speed": 40.0,
+      "strength": 40.0
+    },
+    "strength": 42.1539023096612,
+    "training": {}
+  }
+}

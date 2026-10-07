@@ -1,0 +1,272 @@
+{
+  "age_years": 6.1667,
+  "den": "forest_east",
+  "knowledge": [
+    {
+      "animal": "hare",
+      "count": 2,
+      "last_day": 3,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 1,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "last_day": 1,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "last_day": 3,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "last_day": 2,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 1,
+      "region": "forest_east",
+      "type": "stranger"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 1,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 1,
+      "region": "forest_west",
+      "type": "territory"
+    },
+    {
+      "animal": "red_fox",
+      "count": 1,
+      "last_day": 2,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "last_day": 2,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "region": "forest_east",
+      "type": "overhunt"
+    }
+  ],
+  "life_log": {
+    "adult_body": "adult_body.perception",
+    "adult_bonus": {
+      "health_max": 2.5,
+      "speed": 3.0,
+      "strength": 3.0
+    },
+    "after_deer": {
+      "actions": {},
+      "day": 3
+    },
+    "biggest_prey": "white_tailed_deer",
+    "biggest_prey_stage": "buck",
+    "days_lived": 3,
+    "death_cause": "",
+    "decisions": [
+      "other",
+      "other",
+      "other",
+      "other",
+      "stealth",
+      "other",
+      "other",
+      "other",
+      "stealth",
+      "assault",
+      "assault",
+      "assault",
+      "assault"
+    ],
+    "elder_age": 6.17,
+    "hunt_attempts": 5,
+    "hunt_successes": 4,
+    "main_tendency": "assault",
+    "potential": {
+      "health_max": 90.0,
+      "perception": 55.774,
+      "skill": 55.675,
+      "speed": 55.02844,
+      "strength": 55.036
+    },
+    "prey_count": {
+      "hare": 3,
+      "white_tailed_deer": 1
+    },
+    "recent_messages": [
+      "冬 D1 清晨　溪流旁，你聽見野兔的動靜。你學到：【似乎】清晨的森林東部常有野兔。你在上風處，野兔聞到了你。",
+      "冬 D1 清晨　溪流旁，你發現新鮮的白尾鹿母鹿足跡。你學到：【似乎】清晨的森林東部常有白尾鹿。線索太模糊，你分辨不出方向。",
+      "冬 D1 白天　林緣，你發現新鮮的糞便，是野兔留下的。你學到：【似乎】白天的森林東部常有野兔。你獵到了野兔。（除錯）年齡調整為 1.17 歲。",
+      "冬 D1 黃昏　溪流旁，你發現新鮮的啃食痕跡，是白尾鹿雄鹿留下的。你學到：【似乎】黃昏的森林東部常有白尾鹿。線索太模糊，你分辨不出方向。你已經是一隻成年的狼了。",
+      "冬 D1 深夜　溪流旁，你發現陳舊的白尾鹿雄鹿足跡。你學到：【似乎】深夜的森林東部常有白尾鹿。",
+      "冬 D1 深夜　溪流旁，地上有一個和自己體型相近、但不是家人的腳印（還很新）。你學到：【似乎】森林東部有陌生的狼的蹤跡。",
+      "冬 D1 深夜　林緣，你發現了獵物常走的小徑。你學到：【似乎】凌晨的森林東部常有白尾鹿。這次狩獵失敗了。線索太模糊，你分辨不出方向。（除錯）年齡調整為 5.92 歲。",
+      "冬 D10 白天　你在巢穴裡安穩地睡了一覺。這幾天的追逐，讓你的腿更有力了。",
+      "冬 D10 黃昏　你在巢穴裡安穩地睡了一覺。昨天沒怎麼活動，身體沒什麼變化。",
+      "冬 D10 黃昏　你移動到了森林北部。第一次來到森林北部：樹林茂密，溪水從林間穿過。",
+      "冬 D10 黃昏　你移動到了森林西部。第一次來到森林西部：最深的老林，坡上到處是倒木。",
+      "冬 D10 黃昏　你移動到了森林南部。第一次來到森林南部：樹林在這裡漸漸稀疏，外面是開闊的空地。",
+      "冬 D10 深夜　你移動到了森林東部。你學到：似乎有其他狼在附近。深夜，遠方傳來狼嚎。這附近似乎還有別的狼。",
+      "冬 D10 深夜　林緣，你聞到新鮮的小狐狸氣味。你學到：【似乎】深夜的森林東部常有狐狸。你跟丟了線索。",
+      "冬 D10 深夜　林緣，你發現新鮮的啃食痕跡，是白尾鹿雄鹿留下的。你學到：【通常】深夜的森林東部常有白尾鹿。線索太模糊，你分辨不出方向。下起了暴雨。雨聲蓋過了一切，氣味和舊足跡都被沖散了。",
+      "冬 D10 凌晨　溪流旁，你看見一隻小野兔。你學到：【似乎】凌晨的森林東部常有野兔。你獵到了小野兔。",
+      "冬 D11 清晨　溪流旁，你看見一隻野兔。你學到：【通常】清晨的森林東部常有野兔。你獵到了野兔。你學到：【似乎】在森林東部連續獵野兔之後，那一帶的野兔會少好幾天。雨停了。泥地上的新足跡特別清楚。",
+      "春 D1 白天　季節變換了。你在巢穴裡安穩地睡了一覺。你的口鼻開始泛白，毛色變淡，追久了會喘。但你比以前更懂得，什麼時候不該追。",
+      "春 D1 白天　林緣，你發現陳舊的糞便，是野兔留下的。你學到：【通常】黃昏的森林東部常有白尾鹿。你獵到了白尾鹿雄鹿。你把獵物吃完了。你越來越習慣伏低身子，借著風和地形一點一點靠近。你越來越常正面撲上去，用力量和牙齒結束一場狩獵。獵鹿時受了輕傷：體力消耗增加，約 2 天痊癒。"
+    ],
+    "regions_visited": [
+      "forest_east",
+      "forest_north",
+      "forest_west",
+      "forest_south"
+    ],
+    "season_days": 0,
+    "season_fed_days": 0,
+    "season_snapshot": {
+      "health_max": 81.6865301893152,
+      "perception": 40.268,
+      "skill": 40.935625,
+      "speed": 42.2637769916084,
+      "strength": 42.8998154194044
+    },
+    "seasons_seen": [
+      "winter",
+      "spring"
+    ],
+    "since_sleep": {
+      "chase": 1,
+      "fight": 3
+    },
+    "sleep_snapshot": {
+      "health_max": 81.6865301893152,
+      "perception": 40.268,
+      "skill": 40.935625,
+      "speed": 42.2637769916084,
+      "strength": 42.8998154194044
+    },
+    "stats": {
+      "counters": {
+        "hunts": 5,
+        "observe_opportunities": 2
+      },
+      "nights": {
+        "den": 3
+      },
+      "option_counts": {
+        "chase.attack_standing": 1,
+        "fight.bite_throat": 3,
+        "observe.skip_observe": 2,
+        "pounce.creep_pounce": 4,
+        "pounce.search": 1,
+        "stalk.downwind": 1,
+        "stalk.wait": 1
+      }
+    },
+    "stranger_unlock": "adult",
+    "tendency_history": [
+      {
+        "age": 6.2,
+        "day": 3,
+        "type": "stealth"
+      },
+      {
+        "age": 6.2,
+        "day": 3,
+        "type": "assault"
+      }
+    ]
+  },
+  "region": "forest_east",
+  "tendency": {
+    "effect": 0.0461538461538462,
+    "share": 0.307692307692308,
+    "type": "assault"
+  },
+  "time": {
+    "day": 1,
+    "period": "predawn",
+    "season": "spring"
+  },
+  "wolf": {
+    "age_years": 6.1667,
+    "alive": true,
+    "death_cause": "",
+    "fed_streak": 0,
+    "flare_days": 0,
+    "flare_index": -1,
+    "health": 67.6865301893152,
+    "health_max": 81.6865301893152,
+    "health_value": 80.0,
+    "heavy_injury_count": 0,
+    "hunger": 120.0,
+    "injury": 1,
+    "injury_days_remaining": 2,
+    "injury_part": "",
+    "injury_source": "",
+    "injury_stat": "",
+    "old_injuries": [],
+    "perception": 40.268,
+    "poison_days_remaining": 0,
+    "potential": {
+      "health_max": 90.0,
+      "perception": 55.774,
+      "skill": 55.675,
+      "speed": 55.02844,
+      "strength": 55.036
+    },
+    "season_reserve": {},
+    "skill": 41.1465625,
+    "speed": 42.2637769916084,
+    "stamina": 94.0,
+    "start_stats": {
+      "health_max": 80.0,
+      "perception": 40.0,
+      "skill": 40.0,
+      "speed": 40.0,
+      "strength": 40.0
+    },
+    "strength": 42.8998154194044,
+    "training": {
+      "health_max": 4.87,
+      "speed": 1.0,
+      "strength": 13.9
+    }
+  }
+}
