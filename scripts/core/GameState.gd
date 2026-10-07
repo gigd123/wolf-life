@@ -273,6 +273,13 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
 
 # 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
+# 風雪停的時候人不在苔原：回到苔原時才跳「風雪之後」。
+func _maybe_blizzard_aftermath() -> void:
+	if life_log.has("blizzard_over_unseen") and current_map() == _blizzard_map() and not blizzard_active():
+		var unseen: Dictionary = life_log["blizzard_over_unseen"]
+		life_log.erase("blizzard_over_unseen")
+		_queue_notice({"type": "blizzard_over", "kills": int(unseen.get("kills", 0)), "later": true})
+
 func _maybe_map_season_card() -> void:
 	if GameData.notices.get("season_cards_by_map", {}).get(current_map(), {}).is_empty():
 		return
@@ -715,6 +722,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		_apply_env_perception()
 		_check_blizzard_here()
 		_maybe_map_season_card()
+		_maybe_blizzard_aftermath()
 		if ice_check:
 			_maybe_ice_break()
 		elif not ice.is_empty() and RNGService.chance(float(ice["break"])):
@@ -876,6 +884,9 @@ func _bear_cfg() -> Dictionary:
 
 func _abs_period() -> int:
 	return int(life_log.get("days_lived", 1)) * GameTime.PERIODS.size() + GameTime.period_index
+
+func _abs_turn() -> int:
+	return _abs_period() * GameTime.TURNS_PER_PERIOD + GameTime.turn_in_period
 
 # 避開灰熊線索：這個時段內，此區域的灰熊遭遇機率降低。
 func action_avoid() -> void:
@@ -1139,7 +1150,9 @@ func action_rest_out_blizzard() -> Dictionary:
 	_record_action("rest_until")
 	var floor_hunger: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	var max_turns: int = int(blizzard.get("days", 3)) * GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD
-	var res := _rest_loop(func(): return not blizzard_here() or wolf.hunger <= floor_hunger, max_turns)
+	# 至少休息一回合，再因為太餓停下（QA-68：已經很餓時原本一回合都沒休息就停）
+	var start_turns: int = _abs_turn()
+	var res := _rest_loop(func(): return not blizzard_here() or (wolf.hunger <= floor_hunger and _abs_turn() > start_turns), max_turns)
 	if wolf.alive and str(res["interrupted"]) == "" and blizzard_here():
 		res["interrupted"] = "hungry"
 	return res
@@ -1240,7 +1253,9 @@ func action_sleep() -> Dictionary:
 	SaveSystem.save_game()
 	state_changed.emit()
 	if encounter.get("encountered", false):
-		encounter_triggered.emit(prepare_bear_encounter(encounter))
+		var woken := prepare_bear_encounter(encounter)
+		woken["woken"] = true
+		encounter_triggered.emit(woken)
 	return {"quality": quality, "interrupted": encounter.get("encountered", false), "summary": summary, "season_changed": season_changed}
 
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
@@ -1462,8 +1477,9 @@ func _update_weather() -> void:
 		"after_rain":
 			if now > weather_until:
 				weather = "clear"
-	# 暴風雪期間不會同時下暴雨
-	if weather == "clear" and not blizzard_here() and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05))):
+	# 暴風雪期間不會同時下暴雨；冬季不下暴雨（QA-69，Phase 2 其他地圖冬季改成暴風雪）
+	if weather == "clear" and not blizzard_here() and cfg.get("seasons", ["spring", "summer", "autumn"]).has(GameTime.current_season()) \
+			and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05)) * (float(cfg.get("fire_mult", 0.3)) if not fire.is_empty() else 1.0)):
 		start_storm()
 
 func start_storm() -> void:
@@ -2042,6 +2058,10 @@ func _update_fire() -> void:
 		if fire_at >= 0 and now >= fire_at:
 			start_fire_warning("")
 		return
+	# 暴雨澆熄大火（QA-73）：徵兆階段就不會起火；燃燒中的區域在這個時段熄滅（算燒過）
+	if weather == "storm":
+		_rain_out_fire()
+		return
 	if fire["phase"] == "warning":
 		_maybe_notice_fire()
 		if now >= int(fire["ignite_at"]):
@@ -2078,6 +2098,23 @@ func _update_fire() -> void:
 		for r in spread:
 			log_message.emit(tr("fire.spread").replace("{region}", tr("region." + str(r))))
 	_check_fire_here()
+
+func _rain_out_fire() -> void:
+	var noticed: bool = bool(fire.get("noticed", false))
+	if fire["phase"] == "warning":
+		if noticed:
+			log_message.emit(tr("fire.rain_warning"))
+		fire = {}
+		return
+	for region_id in fire["regions"].keys():
+		if not fire["burned"].has(region_id):
+			fire["burned"].append(region_id)
+			_region_burned(region_id)
+	fire["regions"] = {}
+	fire["rained_out"] = true
+	if noticed:
+		log_message.emit(tr("fire.rain_out"))
+	_end_fire()
 
 # 起火前的徵兆：origin 空字串時隨機選一個森林區域。除錯可以指定起火區域。
 func start_fire_warning(origin: String) -> void:
@@ -2713,8 +2750,11 @@ func _end_blizzard() -> void:
 	var list: Array = life_log.get("blizzards", [])
 	list.append(entry)
 	life_log["blizzards"] = list
-	if entry["in_tundra"] or current_map() == _blizzard_map():
+	# 人在苔原才看得到風雪停了；逃離苔原的話，下次回到苔原再看到風雪之後的景象（QA-69）
+	if current_map() == _blizzard_map():
 		_queue_notice({"type": "blizzard_over", "kills": kills})
+	elif entry["in_tundra"]:
+		life_log["blizzard_over_unseen"] = {"kills": kills}
 	blizzard = {}
 
 # 白矇天：開闊苔原、遠北偶爾起霧或刮白毛風，持續 1～2 個時段。感知 −20%，移動可能走錯區域。
@@ -2760,7 +2800,7 @@ func _maybe_ice_break() -> void:
 		_learn_ice(true)
 		pending_events.append({"type": "ice_break"})
 
-# 選項：跳回岸上（看速度）、趴低慢慢爬回（較穩，多花回合）。
+# 選項：跳到對岸（看速度）、趴低慢慢爬到對岸（較穩，多花回合）。
 func ice_break_options() -> Array:
 	var cfg := _ice_cfg()
 	var jump: float = HuntSystem.clamp_chance(float(cfg.get("jump_base", 0.6)) + (wolf.effective_speed() - 40.0) / float(cfg.get("speed_divisor", 150)))

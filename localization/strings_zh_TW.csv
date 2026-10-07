@@ -270,7 +270,7 @@ encounter.distant.stranger_wolf,{location}遠遠地有一隻{animal}走過，牠
 encounter.observe,觀察（1 回合）
 encounter.observed.grizzly_bear,你屏住氣息看清楚了。那是一頭灰熊，巨大的爪子和肩上的隆起讓人不敢靠近。
 encounter.observed.stranger_wolf,你遠遠觀察著牠。那是一隻毛色漆黑的成年灰狼，和你一樣獨自生活。
-encounter.mother,一頭帶著幼熊的母熊擋在前面，牠非常激動。
+encounter.mother,一頭帶著幼熊的母灰熊擋在前面，牠非常激動。
 encounter.direct,你撞見了一頭{animal}，牠沒有示威，直接朝你衝了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物，正朝你的獵物走來。
 feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
@@ -673,7 +673,7 @@ stranger.challenge,挑戰
 stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾著低吼。牠要你離開這一帶。
 stranger.stand,對峙
 stranger.yielded,你退開了，往{region}走去。
-stranger.won_territory,牠讓出了牠盤踞的{region}，那一帶從此是你的了。
+stranger.won_territory,{region}原本是牠的地盤，從此是你的了。
 stranger.first_win_growth,你第一次贏了那隻黑狼。牠的每一次閃身和撲咬，你都記在了心裡。
 stranger.killed_card.title,那隻黑狼
 bear.first_win.title,那頭灰熊
@@ -843,9 +843,9 @@ blizzard.over.kills,有些動物沒能撐過這場風雪。雪地底下也許埋
 event.whiteout,起霧了，風捲起地上的雪，天地白成一片。你看不清遠處，也容易走錯方向。
 log.whiteout_lost,白茫茫一片，你本來要去{target}，卻走到了{region}。
 ice.here,過河時，腳下的河冰發出一聲悶響，裂開了！
-ice.option.jump,跳回岸上　成功率 {n}%
-ice.option.crawl,趴低慢慢爬回去　成功率 {n}%
-ice.result.success,你回到了岸上，河水在身後翻湧。
+ice.option.jump,跳到對岸　成功率 {n}%
+ice.option.crawl,趴低慢慢爬到對岸　成功率 {n}%
+ice.result.success,你上了對岸，河水在身後翻湧。
 ice.result.fail,你掉進了冰冷的河水裡，拚命爬上岸時已經筋疲力盡，全身發抖。
 ravens.here,幾隻渡鴉在附近的天空盤旋，一邊叫一邊往下看。
 ravens.far,{region}的上空有幾隻渡鴉在盤旋。
@@ -993,7 +993,7 @@ season_card.tundra.winter.short,寒風又颳了起來，河面結了厚冰。待
 season_card.tundra.winter.blizzard,天色發黃、風突然停下的時候，要趕快找地方躲。
 season_card.tundra.winter.wolverine,狼獾不冬眠。雪地上那串寬大的腳印，說明牠還在附近找吃的。
 factor.even,勢均力敵
-encounter.direct_mother,你撞見了一頭帶著幼熊的母熊，牠護著身後的小熊，直接朝你衝了過來。
+encounter.direct_mother,你撞見了一頭帶著幼熊的母灰熊，牠護著身後的小熊，直接朝你衝了過來。
 combat.remember.plural,你記得：上次你還不是牠們的對手。
 combat.remember_won.plural,你記得：上次你贏了牠們。
 combat.remember.generic.much_stronger,你記得{animal}比你強大許多。
@@ -1038,3 +1038,14 @@ ui.note_hint.prey,（不花時間；累積對這一帶獵物出沒的了解）
 ui.note_hint.threat,（不花時間；記住這一帶的危險，移動前會提醒）
 ui.stamina_low,體力不支
 ui.stamina_low.tip,體力快用完了：追擊時更難跑贏獵物，遇到危險也更難脫身。休息或睡覺可以恢復。
+river.cross.thaw,你踏上變薄的河冰，小心地往對岸走。
+blizzard.over.later,你離開的時候，苔原的暴風雪已經停了。雪原一片寂靜，雪堆得比你的肩膀還高。
+animal.grizzly_bear.mother,母灰熊
+log.slept_woken.den,你在巢穴裡睡下。
+log.slept_woken.good,你在好睡處睡下。
+log.slept_woken.normal,你在找到的地方睡下。
+log.slept_woken.rough,你勉強找了個地方睡下。
+encounter.woken,你睜開眼，一頭{animal}就在不遠處，正盯著你。
+encounter.woken_mother,你睜開眼，一頭帶著幼熊的母灰熊就在不遠處，牠護著身後的小熊，非常激動。
+fire.rain_warning,暴雨落了下來，風裡的焦味漸漸散了。這場火沒有燒起來。
+fire.rain_out,暴雨傾盆而下，大火在雨裡一點一點熄滅了。

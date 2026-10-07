@@ -20,6 +20,8 @@ var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var explore_hint_label: Label
 var status_icons: Dictionary = {}
+var sleeping_now: bool = false # 睡覺結算期間（QA-70）
+var woken_encounter: Dictionary = {}
 var stamina_warning: Label # 頂部「體力不支」（QA-55；最低體力的規則在 1.7 定）
 var log_box: RichTextLabel
 
@@ -28,6 +30,7 @@ var log_box: RichTextLabel
 # - 遭遇、狩獵、戰鬥畫面下方有「這場遭遇的紀錄」（session）：每個選擇一段，戰鬥與多回合追擊加上編號。
 #   遭遇結束時先在畫面上交代結果、按「繼續」才關掉；主畫面的紀錄只留總結。
 var main_entries: Array = [] # [{"time": String, "lines": Array}]
+var restored_messages: Array = [] # 讀檔前存下的訊息，接在這次的訊息前面寫回試玩紀錄（QA-74）
 var main_entry_open: bool = false
 var session_active: bool = false
 var session_entries: Array = [] # [{"label": String, "num": int, "lines": Array}]
@@ -109,6 +112,7 @@ func _ready() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	_build_ui()
+	restored_messages = GameState.life_log.get("recent_messages", []).duplicate()
 	GameState.state_changed.connect(_refresh)
 	GameState.log_message.connect(_log)
 	GameState.wolf_died.connect(_on_wolf_died)
@@ -1083,12 +1087,12 @@ const RECENT_MESSAGES_KEEP := 40
 func _store_recent_messages() -> void:
 	if GameState.auto_playing:
 		return
-	var list: Array = []
+	var list: Array = restored_messages.duplicate()
 	for i in range(max(0, main_entries.size() - RECENT_MESSAGES_KEEP), main_entries.size()):
 		var e: Dictionary = main_entries[i]
 		if not e["lines"].is_empty():
 			list.append(str(e["time"]) + "　" + _join_sentences(e["lines"]))
-	GameState.life_log["recent_messages"] = list
+	GameState.life_log["recent_messages"] = list.slice(max(0, list.size() - RECENT_MESSAGES_KEEP))
 
 func _render_main_log() -> void:
 	var parts: Array[String] = []
@@ -1342,11 +1346,19 @@ func _on_action_button(action_id: String) -> void:
 			else:
 				_show_feeding()
 		"sleep":
+			sleeping_now = true
+			woken_encounter = {}
 			var res := GameState.action_sleep()
+			sleeping_now = false
 			if not res.is_empty():
-				_log(tr("log.slept." + str(res["quality"])))
 				if res.get("interrupted", false):
+					_log(tr("log.slept_woken." + str(res["quality"])))
 					_log(tr("log.sleep_interrupted"))
+				else:
+					_log(tr("log.slept." + str(res["quality"])))
+				if not woken_encounter.is_empty():
+					_on_encounter_triggered(woken_encounter)
+					woken_encounter = {}
 				# 換季的那一覺不另外顯示睡覺結算，併入換季字卡（SPEC「睡覺結算」）
 				# 排進事件佇列，接在換日摘要之後，用按鍵關閉的卡片顯示（QA-47）
 				# 插在換日摘要之後、睡覺期間排進的其他事件（渡鴉等）之前（QA-60）
@@ -2322,8 +2334,18 @@ func _finish_hunt() -> void:
 # --- Competitor encounters ---
 
 # 灰熊遭遇。辨識前一律是遠距目擊（_show_distant）；之後可能是母熊帶幼熊，或直接衝過來攻擊。
+# 戰鬥中對手的名稱：帶著幼熊的母熊寫「母灰熊」（QA-71）。
+func _combat_name(c: Combat) -> String:
+	if c.mother and c.animal_id == "grizzly_bear":
+		return tr("animal.grizzly_bear.mother")
+	return _prey_name(c.animal_id, c.life_stage)
+
 func _on_encounter_triggered(encounter: Dictionary) -> void:
 	if GameState.auto_playing:
+		return
+	# 睡覺中被驚醒：先寫完在哪裡睡下、被驚醒，再進入遭遇（QA-70）
+	if sleeping_now:
+		woken_encounter = encounter
 		return
 	if encounter.get("distant", false):
 		_show_distant(encounter)
@@ -2338,6 +2360,8 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		key = "encounter.mother"
 	if encounter.get("direct", false):
 		key = "encounter.direct_mother" if encounter.get("mother", false) else "encounter.direct"
+	if encounter.get("woken", false):
+		key = "encounter.woken_mother" if encounter.get("mother", false) else "encounter.woken"
 	_log(tr(key).replace("{animal}", _prey_name(animal_id, life_stage)))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
@@ -2375,6 +2399,9 @@ func _show_distant(encounter: Dictionary) -> void:
 
 # 火燒到你所在的區域：逃往還沒燒到的區域、到溪邊避難、躲進巢穴，各自附平安率。
 func _show_fire_escape(event: Dictionary) -> void:
+	# 火已經被暴雨澆熄（或熄滅）就不再跳逃生畫面
+	if GameState.fire.is_empty() or str(GameState.fire.get("phase", "")) != "burning":
+		return
 	var region: String = str(event.get("region", GameState.current_region))
 	var text: String = tr("fire.here" + (".entered" if event.get("entered", false) else "")).replace("{region}", tr("region." + region))
 	_log(text)
@@ -2488,10 +2515,10 @@ func _on_blizzard_choice(id: String) -> void:
 		_on_wolf_died(GameState.wolf.death_cause)
 
 func _show_blizzard_over(event: Dictionary) -> void:
-	var body: String = tr("blizzard.over")
+	var body: String = tr("blizzard.over.later" if event.get("later", false) else "blizzard.over")
 	if int(event.get("kills", 0)) > 0:
 		body += "\n\n" + tr("blizzard.over.kills")
-	_log(tr("blizzard.over"))
+	_log(tr("blizzard.over.later" if event.get("later", false) else "blizzard.over"))
 	_show_card(tr("blizzard.over.title"), body, ArtLibrary.region_background(GameState.current_region, "winter"))
 
 # 第一次走這種冰：先踩上去試，只描述腳下的感覺，由玩家決定要不要走。
@@ -2781,7 +2808,7 @@ func _render_combat() -> void:
 		return
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
-	var name: String = _prey_name(c.animal_id, c.life_stage)
+	var name: String = _combat_name(c)
 	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action)
 	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose)
 	_set_terrain_bg(hunt_bg, c.terrain)
@@ -2814,7 +2841,7 @@ func _on_combat_choice(id: String) -> void:
 	var res := c.choose(id)
 	if id in ["bite", "lunge", "attack", "harass"]:
 		Audio.play_bite()
-	var name: String = _prey_name(c.animal_id, c.life_stage)
+	var name: String = _combat_name(c)
 	combat_notes = []
 	for n in res.get("notes", []):
 		var text: String = tr(str(n)).replace("{animal}", name)
@@ -2833,7 +2860,7 @@ func _finish_combat_ui() -> void:
 	current_combat = null
 	var r := GameState.finish_combat(c)
 	hunt_overlay.visible = false
-	var name: String = _prey_name(c.animal_id, c.life_stage)
+	var name: String = _combat_name(c)
 	var result_text: String = ""
 	if c.outcome != "died":
 		# 依情境有專屬的結果文字（例如圍攻狼獾：combat.result.mob.drove_off）
@@ -2846,7 +2873,8 @@ func _finish_combat_ui() -> void:
 			_log_result(tr("combat.grow." + str(r["grow"])))
 		if float(r.get("first_win_skill", 0.0)) > 0.0:
 			_log_result(tr("stranger.first_win_growth"))
-		if c.npc != null and c.npc.id == "stranger_wolf" and c.won():
+		# 咬死時後面有「那隻黑狼」卡片，不另外寫地盤（QA-67）
+		if c.npc != null and c.npc.id == "stranger_wolf" and c.outcome == "drove_off":
 			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty():
 			_log(tr("tundra.relation." + GameState.tundra_relation_key()))

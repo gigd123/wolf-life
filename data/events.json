@@ -61,6 +61,8 @@
   },
   "storm": {
     "period_chance": 0.05,
+    "seasons": ["spring", "summer", "autumn"],
+    "fire_mult": 0.3,
     "after_rain_periods": 1,
     "scent_mult": 0.2,
     "stale_track_mult": 0.0,
