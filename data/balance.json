@@ -211,7 +211,7 @@
       "base_small": 0.75, "speed_divisor_small": 200,
       "free_rounds": 2, "fatigue_per_round": 0.1,
       "escape_base": 0.3, "escape_per_round": 0.1,
-      "prey_tired_bonus": 0.25, "precise_perception": 60,
+      "prey_tired_bonus": 0.25, "precise_perception": 60, "style_perception": 55, "style_escape_misfit": 0.25, "style_escape_fit": 0.1,
       "options": {
         "sprint": { "bonus": 0.16, "stamina": 30, "stat": "speed", "fight_bonus": 0.0, "prey_drain": 15, "train_mult": 1.6, "trains": ["speed"] },
         "follow": { "bonus": 0.08, "stamina": 10, "stat": "speed_half", "fight_bonus": 0.05, "turns": 1, "prey_drain": 25, "train_mult": 0.8, "trains": ["speed"] },

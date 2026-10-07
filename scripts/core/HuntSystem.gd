@@ -75,6 +75,7 @@ var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}�
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
 var herd_weak: float = 0.0 # 觀察鹿群時找出跑得慢的那一隻（北美馴鹿）：追擊加成
 var start_heavy: bool = false # 開始狩獵時已經是重傷（帶傷硬撐，1.7 第 2 步）
+var chase_style: Dictionary = {} # 1.7 第 4 步：獵物適合的追擊方式（animals.json chase_style：type、各方式的加減）
 var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 
 # detection_mod：時段等外部因素對獵物警覺的修正（例如深夜 -10）。
@@ -117,6 +118,7 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 	# 1.7 第 3 步：搏鬥用獵物自己的力量值（和戰鬥模式同尺度），已經包含體型，不再另外扣 difficulty
 	if stats.has("fight_power"):
 		fight_state["prey_power"] = float(stats["fight_power"])
+	chase_style = stats.get("chase_style", {})
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
@@ -409,6 +411,13 @@ func _chase_option(id: String) -> Dictionary:
 	var known: float = float(knowledge_bonus.get(id, 0.0))
 	if known > 0.0:
 		factors.append({"key": "factor.knowledge", "good": true, "weight": known})
+	# 依獵物決定狩獵方式（1.7 第 4 步）：耐力型適合長距離跟隨，爆發型適合短衝
+	var style: float = float(chase_style.get(id, 0.0))
+	if style > 0.0:
+		factors.append({"key": "factor.style_fit." + id, "good": true, "weight": style})
+	elif style < 0.0:
+		factors.append({"key": "factor.style_misfit." + id, "good": false, "weight": -style})
+	t += style
 	var value: float = base + diff + t + chase_bonus + known + float(opt.get("bonus", 0.0)) - exhausted
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0)),
@@ -542,6 +551,9 @@ func prey_state_keys() -> Array:
 	keys.append("prey_state.strong" if prey_stamina >= 50.0 else "prey_state.tired")
 	if prey_counter_attack >= 20.0:
 		keys.append("prey_state.dangerous")
+	# 感知夠高時看得出牠是哪一種跑法（1.7 第 4 步）
+	if not chase_style.is_empty() and wolf.effective_perception() >= float(_tuning().get("chase", {}).get("style_perception", 55)):
+		keys.append("prey_style." + str(chase_style.get("type", "")))
 	# 感知夠高才能預判牠的反應。
 	if wolf.effective_perception() >= prey_detection - float(_reaction_cfg().get("predict_margin", 5)):
 		keys.append("prey_reaction." + reaction)
@@ -689,6 +701,12 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	var over: int = max(0, chase_round - int(cfg.get("free_rounds", 2)))
 	var escape: float = float(cfg.get("escape_base", 0.3)) + over * float(cfg.get("escape_per_round", 0.1)) \
 		- (1.0 - prey_stamina_cur / prey_stamina_max) * 0.2
+	# 用錯方式更容易跟丟、用對方式比較咬得住（1.7 第 4 步）
+	var style: float = float(chase_style.get(str(opt["id"]), 0.0))
+	if style < 0.0:
+		escape += float(cfg.get("style_escape_misfit", 0.25))
+	elif style > 0.0:
+		escape -= float(cfg.get("style_escape_fit", 0.1))
 	if RNGService.chance(clamp(escape, 0.05, 0.95)):
 		return _flee("hunt.chase.fail", opt["factors"], false)
 	var notes: Array = []

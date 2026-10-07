@@ -1051,3 +1051,14 @@ fire.rain_warning,暴雨落了下來，風裡的焦味漸漸散了。這場火�
 fire.rain_out,暴雨傾盆而下，大火在雨裡一點一點熄滅了。
 ui.too_tired_to_hunt,（太累了，追不動）
 log.injury_pushed_on,帶著重傷硬撐，傷口又裂開了，要多養一陣子。
+factor.style_fit.follow,牠跑得久，適合慢慢跟著耗
+factor.style_fit.sprint,牠爆發力強但跑不久，適合短衝
+factor.style_misfit.follow,長距離跟隨容易跟丟
+factor.style_misfit.sprint,短衝追不上牠
+prey_style.endurance,牠的步伐穩，看起來能跑很久。
+prey_style.endurance_herd,鹿群步伐穩、能跑很久；跟在後面，跑得慢的那一隻會被拖出來。
+prey_style.burst,牠爆發力很強，但跑不久；在林子裡長距離跟容易跟丟。
+prey_style.burst_stand,牠爆發力很強，被逼急了可能轉身用角頂你。
+prey_style.dodger,牠很會急轉、鑽進洞裡，跟著跑只會讓牠躲起來。
+prey_style.follows_mother,小駝鹿跟在母鹿身邊，跑不快也跑不遠。
+prey_style.stand,牠不太跑，常站定反擊；慢慢消耗牠的體力比正面衝上去安全。
