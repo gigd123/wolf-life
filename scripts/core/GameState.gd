@@ -2198,7 +2198,6 @@ func fire_escape(id: String) -> Dictionary:
 	if opt.is_empty():
 		return {}
 	var e: Dictionary = _fire_cfg().get("escape", {})
-	GameTime.advance_turns(1)
 	var probs := _fire_outcome_probs(float(opt["danger"]))
 	var roll: float = RNGService.randf()
 	var result: String = "safe"
@@ -2208,10 +2207,8 @@ func fire_escape(id: String) -> Dictionary:
 		result = "heavy"
 	elif roll < float(probs["death"]) + float(probs["heavy"]) + float(probs["light"]):
 		result = "light"
-	if opt["kind"] in ["flee", "other_map"]:
-		wolf.stamina -= float(e.get("flee_stamina", 20))
-		action_move_silent(str(opt["region"]))
-	else:
+	var flee: bool = opt["kind"] in ["flee", "other_map"]
+	if not flee:
 		fire["sheltered"] = current_region
 	# 一場大火裡最重的那次逃生記入一生回顧
 	var order := ["safe", "light", "heavy", "death"]
@@ -2219,6 +2216,11 @@ func fire_escape(id: String) -> Dictionary:
 		fire["escape"] = opt["kind"]
 		fire["escape_region"] = opt["region"]
 		fire["result"] = result
+	# 先記下逃生結果再過回合：大火可能在這一回合熄滅（_end_fire 會清空 fire），之後不能再寫 fire
+	GameTime.advance_turns(1)
+	if flee:
+		wolf.stamina -= float(e.get("flee_stamina", 20))
+		action_move_silent(str(opt["region"]))
 	record_decision("fire." + str(opt["kind"]))
 	var b: Dictionary = _fire_cfg().get("burn", {})
 	match result:
@@ -2231,9 +2233,9 @@ func fire_escape(id: String) -> Dictionary:
 			wolf.health = max(1.0, wolf.health - RNGService.randi_range(int(r2[0]), int(r2[1])))
 			wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(b.get("heavy_days_min", 4)), int(b.get("heavy_days_max", 6))), "speed", "leg", "fire")
 		"death":
-			if fire.has("start_age"):
-				fire["result"] = "death"
-			_end_fire_on_death()
+			# 大火已在這一回合熄滅時，_end_fire 已經記下（結果是 death）
+			if not fire.is_empty():
+				_end_fire_on_death()
 			_die("fire")
 			return {"result": result, "kind": opt["kind"], "region": opt["region"]}
 	wolf.clamp_stats()
@@ -3421,6 +3423,9 @@ func load_from_dict(data: Dictionary) -> void:
 	stranger_territory = str(data.get("stranger_territory", "forest_north"))
 	territory_periods = int(data.get("territory_periods", 0))
 	fire = data.get("fire", {})
+	# 2026-10-08 以前的 bug：大火熄滅的那一回合逃生，會留下沒有 phase 的殘缺資料
+	if not fire.is_empty() and not fire.has("phase"):
+		fire = {}
 	region_burn = data.get("region_burn", {})
 	fire_at = int(data.get("fire_at", -1))
 	fire_season = str(data.get("fire_season", ""))
