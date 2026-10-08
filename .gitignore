@@ -18,3 +18,6 @@ desktop.ini
 
 # Claude Code 個人設定（含 auto mode 環境描述，不上傳）
 .claude/settings.local.json
+
+# 雲端 headless 測試的暫存腳本
+probe_tmp*

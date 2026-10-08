@@ -28,7 +28,7 @@
 ## 目前的任務順序
 
 1. **Phase 1.6、1.7 驗收**：都已實作完成；1.6 剩下的驗收併到 1.7 的試玩（`docs/playtest-checklist.md` 的 G 區），依回饋修正。苔原的細節在 `docs/tundra-detail.md`。
-2. **Phase 1.8 獵物生態與季節**：1.7 驗收之後，依 `SPEC.md` 的實作順序做（先白尾鹿）。生態資料整理在 `docs/ecology-reference.md`，其他動物還缺的資料與素材在 `docs/animal-data-needs.md`。
+2. **Phase 1.8 獵物生態與季節**：1.7 驗收之後，依 `SPEC.md` 的實作順序做（從第 1 步「雪況」開始，共 8 步）。生態資料整理在 `docs/ecology-reference.md`，其他動物還缺的資料與素材在 `docs/animal-data-needs.md`。
 3. **Phase 1.9 戰鬥演出**：1.8 之後。
 
 ## 工作規則
