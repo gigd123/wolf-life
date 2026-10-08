@@ -433,6 +433,37 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 - 灰熊搶到狼殘骸的確切比例（網路上流傳的「約 50%」沒有出處，不採用）。
 - 阿拉斯加、北極地區的冬眠時間（北方應該更晚出洞、更早入洞）。
 
+### 使用者補充（2026-10-08，經 ChatGPT 整理）與修正
+
+| 項目 | 修正或補充 | 來源 |
+| --- | --- | --- |
+| 熊控制殘骸 | 一致，且有官方紀錄：一頭灰熊站在狼殺的公麋鹿上、開始把殘骸埋起來，24 隻狼不斷騷擾也趕不走；另有 4 狼對 12 熊、10 狼對 4 熊，都是熊控制殘骸 | NPS〈Ten Years of Yellowstone Wolves 1995–2005〉 |
+| 致命衝突 | 黃石狼計畫的紀錄：只有 2 頭成年灰熊被狼殺死、1 隻成年狼被熊殺死；狼殺熊多半是幼熊；雙方通常互相避開 | NPS〈Bear Ecology〉；International Wolf Center 2025 冬季刊 |
+| 母熊搶食 | 修正「很少成功」為「帶幼熊時通常比較不願意冒險」：研究中帶幼熊的母熊在 5 次狼獵物互動中成功 1 次（20%）——帶 2 隻幼熊對 6 隻狼，狼可能已經吃飽 | 〈Interactions between wolves and female grizzly bears with cubs in Yellowstone National Park〉 |
+| 秋季入洞 | 修正「秋末只剩公熊」：懷孕母熊最早入洞、其他母熊其次、公熊最晚；秋末母熊明顯變少，但不是全部消失 | USGS 冬眠研究 |
+| 帶新生幼熊的母熊出洞 | 約 4 月第 4 週 | NPS〈Yellowstone Grizzly Bears: Ecology and Conservation〉 |
+| 灰熊獵幼鹿 | 不是偶發：70 次針對有幼鹿的鹿群的狩獵中成功 26 次；5 月 71%、6 月 42%、7 月 7%（幼鹿長大會逃後急降）；曾有一頭熊 15 分鐘內抓到 5 隻幼鹿，有的熊春季短期內一天殺一隻 | 國際熊類研究與管理協會（Gunther & Renkin；French & French 1986～88） |
+| 熊對狼的影響 | 熊出現在狼的殘骸旁後，狼下一次獵殺的間隔平均多約 7.5 小時（14%）；夏季 672 個殘骸地點中約 30% 偵測到熊（95% 是狼殺的）——這是「熊出現過」，不是「被搶走」的比例 | Tallian 等 2022（Ecological Monographs） |
+| 小殘骸與大殘骸 | 修正我的「小殘骸值得守、大殘骸就讓」：熊出現時，狼在小殘骸旁待更久、在大殘骸的處理時間反而縮短；研究者推測大殘骸會吸引更多熊，到某個程度狼就放棄。遊戲的說法改成「小殘骸還守得住；大殘骸熊越來越多，守下去不划算」 | 同上 |
+
+**整合後對遊戲的建議（灰熊）**
+
+| 情況 | 遊戲行為 |
+| --- | --- |
+| 冬季 | 沒有灰熊 |
+| 春初 | 主要是公熊（剛出洞、很餓） |
+| 春中 | 公熊與部分母熊 |
+| 春末 | 帶幼熊的母熊開始出現 |
+| 夏季 | 各種灰熊 |
+| 秋季 | 逐漸減少，母熊先少 |
+| 公熊遇到狼的殘骸 | 高機率來搶，狼守不住 |
+| 帶幼熊的母熊 | 多半是遭遇、避開狼；偶爾搶食（狼少、食物值得時） |
+| 單狼守大型殘骸 | 幾乎守不住（驅離 0～5%，或只能等待、離開、伺機偷吃） |
+| 灰熊死亡 | 非常罕見 |
+| 狼死亡 | 熊的反擊可能致命（瀕危後硬打） |
+| 春末到初夏 | 灰熊也獵幼鹿，5 月最有效、7 月就很少 |
+| 熊出現在殘骸 | 狼接下來的狩獵節奏被打亂 |
+
 來源：USGS〈Grizzly bear denning chronology and movements in the Greater Yellowstone Ecosystem〉（pubs.usgs.gov/publication/70159902）；黃石國家公園出洞說明與新聞（Daily Montanan 2026、Vice、Bozeman Daily Chronicle）；Idaho Capital Sun／Daily Montanan 2022〈When a bear tries to steal elk from wolves in Yellowstone〉（Metz 等研究）；International Wolf Center〈Wolves and Brown Bears〉、〈Wildly rare video shows Yellowstone bear join in wolf hunt〉；Explore Big Sky〈Wolves, bears are wary rivals as they compete for food〉（Tallian）；yellowstonepark.com〈Grizzly bear vs wolves〉（Doug Smith）；NPS science series 14 第 8 章；Field & Stream（灰熊搶狼群獵物）；USGS〈Use of ungulates by Yellowstone grizzly bears〉；bearstudy.org；Arctic 期刊（狼殺北極熊幼崽）；Canadian Field-Naturalist；Pitchstone Waters。
 
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
