@@ -338,6 +338,38 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Krebs〈Seven Questions about the 10-year Cycle of Snowshoe Hares〉（University of Florida WEC 部落格 2016）、Krebs 等〈Using experimentation to understand the 10-year snowshoe hare cycle in the boreal forest of North America〉（Dryad 資料集；zoology.ubc.ca/~krebs）、Oli 等 2020〈Demography of snowshoe hare population cycles〉（Ecology）、Alaska Science Forum〈When predators become dinner〉；Minnesota 東北部狼的夏季食性（University of Minnesota experts 頁面）、ADF&G 1974 Mt. Drum 狼窩報告（arlis.org）、Mech《The Wolves of Isle Royale》（NPS Fauna 7）、PLoS ONE 2015 阿拉斯加雪兔存活研究（PMC4696674）；Zimova 等 2014（Proc R Soc B，換毛與毛色不合）、〈Local climate determines vulnerability to camouflage mismatch in snowshoe hares〉（par.nsf.gov、deepblue.lib.umich.edu）、USA-NPN〈Climate change means snowshoe hares stand out like lightbulbs〉；Animal Diversity Web〈Lepus americanus〉、〈Behavioral Plasticity in Snowshoe Hare Predator Escape Decisions〉（Montana State）、University of Montana〈Avoiding and escaping predators: movement tortuosity of snowshoe hares〉；Minnesota DNR〈Rabbits and hares〉、Duluth News Tribune〈Where did all the snowshoe bunnies go〉、University of Wisconsin 雪兔分布北移研究。
 
+## 紅狐（2026-10-08 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察的個案；**推論**＝一般說法或二手整理。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 狼會殺狐狸、追狐狸，但多半是排除競爭者，**殺了通常不吃** | 推論（二手整理）＋研究（「狼被觀察到殺死與追趕狐狸」，Oecologia 2018） | 狐狸是獵物：可以追、殺、吃（試玩紀錄裡一隻狼吃了 25 隻狐狸） | **最大的差異**：狐狸應該以「競爭者」為主，不是主要食物 |
+| 狼殺狐狸比殺郊狼少見 | 研究（Newsome & Ripple 2015） | — | 狼和狐狸的衝突不常見 |
+| 狼吃狐狸非常罕見：Isle Royale 第一次記錄到成年狼在洞穴殺死狐狸幼崽並可能吃了至少兩隻，研究者推測和那隻狼剛被移入、還不熟悉當地食物有關 | 記述 | — | 只在走投無路時（極度飢餓）才會吃狐狸（可選） |
+| 只聞到狼尿，狐狸就提早離開覓食點（放棄的密度高 34%、離開的速度快 29%） | 研究（克羅埃西亞 Plitvice，Oecologia 2018） | 狐狸偷吃時會被趕走 | 狐狸怕狼：狼在殘骸旁時狐狸較少靠近、一嚇就跑 |
+| 狐狸會吃狼殺的獵物殘骸（黃石的狼殺麋鹿殘骸有 9 種食肉動物來吃，狐狸是其中之一）；在美洲獅的殘骸上，冬季 70% 有狐狸、夏季 49%，冬季數量更多、待得更久、更敢在掠食者附近偷吃（推測是飢餓） | 研究 | 狐狸會來偷吃 | 一致；冬季狐狸更常來、更大膽 |
+| 主要夜間活動，清晨、黃昏也看得到；育幼期母狐幾乎改成白天活動 | 研究／記述 | 狐狸深夜 ×1.5 | 大致一致；春季育幼期白天也常見（可選） |
+| 12 月底到 3 月中交配，之後築窩；幼狐在窩裡由父母看守，秋季斷奶後家庭解散；平常不用窩 | 研究（Yukon 政府） | 狐狸幼體全年出現 | 幼狐只在春末夏初、窩附近出現 |
+| 北方森林的食物：老鼠、田鼠、松鼠、鼩鼱、松雞、雷鳥、雪兔；森林大塊區域的幼狐主要吃有蹄類的腐肉 | 研究（Yukon；白俄羅斯） | — | 狐狸和狼搶腐肉、搶兔子 |
+| 有影片拍到紅狐抓走狼的幼崽（前所未見的行為） | 記述（新聞） | — | Phase 3 有幼狼時，狐狸是幼狼的威脅（可選） |
+| 狼壓制郊狼 → 狐狸受益（中型掠食者釋放）：沒有明確證據 | 研究（結果不一） | — | 不採用 |
+
+**和目前遊戲最大的差異**
+1. 狐狸在遊戲裡是常見的食物來源（成年狼抓狐狸成功率很高，試玩紀錄中一隻狼抓了 25 隻），真實的狼很少吃狐狸。
+2. 狐狸作為「偷吃殘骸的競爭者」這一面，遊戲已經有了，方向對；可以再加冬季更常來、更大膽。
+
+**建議（給使用者決定）**
+- (a) 狐狸改成只當競爭者：不能主動獵來吃；驅趕、咬死偷吃的狐狸照舊，咬死後不吃（或只有極度飢餓時能吃）。小型獵物改由雪兔撐起（配合雪兔的族群週期，低谷年會比較辛苦）。
+- (b) 保留可以獵，但大幅降低：狐狸很難抓（很會急轉、鑽洞）、肉少，狼通常不值得追。
+- 兩者都會讓小型獵物的食物變少，需要重跑模擬看飢餓與壽命。
+
+**查不到的**
+- 狐狸出現在狼殺的殘骸上的頻率（只有美洲獅殘骸的數據）。
+- 北方森林狐狸的季節活動細節。
+
+來源：Newsome & Ripple 2015（Journal of Animal Ecology，thomasnewsome.com）；Oecologia 2018（s00442-018-4133-3，克羅埃西亞 Plitvice 的狐狸對狼尿的反應）；Wildlife Online〈Red Fox Predators〉；Great Lakes Echo〈Rare wolf attack on baby foxes found on Isle Royale〉；PeerJ 2018（PMC6074758，美洲獅殘骸上的狐狸）；EPA 研究計畫（黃石狼殺殘骸的食腐者）；Yahoo News（紅狐抓走狼幼崽的影片）；Yukon 政府〈Red fox〉；Tennessee WHEP 2026 野生動物手冊；Australian Wildlife Research（WR9910677，育幼期的活動）；白俄羅斯幼狐食性研究（FAO AGRIS）；Ripple 2013、Scientific Reports 2021（中型掠食者釋放）。
+
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
 
 來源是 WolfQuest 玩家社群的討論（Reddit r/WolfQuestGame，2024），可信度**低**，只當作方向參考；其中一位自稱住在狼出沒地區、觀察多年。
