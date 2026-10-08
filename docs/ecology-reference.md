@@ -317,6 +317,25 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 - 狼抓雪兔的成功率。
 - 「狼很少抓到躲起來的野兔」（現有的生態對照表裡有這條，這次沒找到直接來源）。
 
+### 使用者補充（2026-10-08，經 ChatGPT 整理）與修正
+
+| 項目 | 修正或補充 | 來源 |
+| --- | --- | --- |
+| 物種 | 同意森林的兔子＝雪兔，**不另加棉尾兔**：棉尾兔在明尼蘇達最北的約五分之一沒有分布，典型環境是灌叢、草地、農田與林緣；兩種兔子在遊戲裡差別太小，玩家感受不到 | Minnesota DNR（雪兔、棉尾兔狩獵頁） |
+| 換毛 | 修正我的說法「主要看日照、雪只稍微調整」：換毛由季節（光週期）推動，雪況與氣候會影響時間與速度；雪多的年份秋季較早變白、春季較晚變褐 | USGS〈Local climate determines vulnerability to camouflage mismatch in snowshoe hares〉 |
+| 毛色不合 | 一致：追蹤約 200 隻雪兔，白兔在無雪地面上存活率明顯下降，而且不會改躲到較融入背景的地方 | Oecologia〈Snow-mediated plasticity does not prevent camouflage mismatch〉；PMC3973274 |
+| 族群週期 | 約 9～10 年；高峰與低谷的密度可差 20～200 倍（比我寫的 10～30 倍範圍更大） | Hodges 1999（Journal of Animal Ecology） |
+| 狼的食物 | 修正「順便吃」：Voyageurs 研究中，8 月中到 10 月初雪兔平均佔狼每週食物約 34%；平常是替代獵物，高峰年或特定季節可以變成很重要的食物 | Gable 等 2018（Voyageurs Wolf Project） |
+| 時段活動 | 不要做成全有全無：清晨高、上午低、中午很低、下午低到中、黃昏與夜間高 | — |
+| 幼兔／成兔 | 幼兔多靜止靠偽裝、成兔多逃跑急轉；但躲或跑也受季節與遮蔽影響，不是絕對規則 | PMC3973274 |
+
+**整合後對遊戲的建議（1.8 的兔子）**
+1. 森林與苔原都是雪兔（森林的「野兔」改成雪兔，沿用雪兔的夏冬兩套圖）。
+2. 毛色依季節轉換、雪況影響快慢；有雪時白兔難發現，初冬無雪、春季雪融時白兔反而顯眼。
+3. 約 10 年的族群週期：低谷年很少、高峰年到處都是；高峰年對狼是重要食物。
+4. 時段活動：黃昏、夜間最多，中午最少。
+5. 幼兔多躲、成兔多跑（急轉），受遮蔽影響。
+
 來源：Krebs〈Seven Questions about the 10-year Cycle of Snowshoe Hares〉（University of Florida WEC 部落格 2016）、Krebs 等〈Using experimentation to understand the 10-year snowshoe hare cycle in the boreal forest of North America〉（Dryad 資料集；zoology.ubc.ca/~krebs）、Oli 等 2020〈Demography of snowshoe hare population cycles〉（Ecology）、Alaska Science Forum〈When predators become dinner〉；Minnesota 東北部狼的夏季食性（University of Minnesota experts 頁面）、ADF&G 1974 Mt. Drum 狼窩報告（arlis.org）、Mech《The Wolves of Isle Royale》（NPS Fauna 7）、PLoS ONE 2015 阿拉斯加雪兔存活研究（PMC4696674）；Zimova 等 2014（Proc R Soc B，換毛與毛色不合）、〈Local climate determines vulnerability to camouflage mismatch in snowshoe hares〉（par.nsf.gov、deepblue.lib.umich.edu）、USA-NPN〈Climate change means snowshoe hares stand out like lightbulbs〉；Animal Diversity Web〈Lepus americanus〉、〈Behavioral Plasticity in Snowshoe Hare Predator Escape Decisions〉（Montana State）、University of Montana〈Avoiding and escaping predators: movement tortuosity of snowshoe hares〉；Minnesota DNR〈Rabbits and hares〉、Duluth News Tribune〈Where did all the snowshoe bunnies go〉、University of Wisconsin 雪兔分布北移研究。
 
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
