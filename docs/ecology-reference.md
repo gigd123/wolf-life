@@ -286,6 +286,39 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Mech《The Wolves of Isle Royale》（NPS Fauna Series No. 7，1966；npshistory.com/series/fauna/7）；isleroyalewolf.org〈The Population Biology of Isle Royale Wolves and Moose〉；Canadian Field-Naturalist（Isle Royale 狼在水中攻擊駝鹿 2008；獵物殺死的狼的紀錄）；Alces 期刊（〈Wolf predation on moose – a case study using hunter observations〉、Riding Mountain 夏季食性、Samuel 2007 冬蜱與駝鹿死亡回顧）；Michigan Tech〈Wolf-avoidance strategies of moose〉；ADF&G Alaska Fish & Wildlife News（駝鹿怎麼踢）；Minnesota DNR 狼管理計畫（North Shore Journal 2026 報導）；Ecology Letters 2010（Peterson 等，駝鹿骨關節炎，mtu.edu）；Frontiers in Ecology and Evolution 2022（Hoy, Vucetich & Peterson，狼依年齡與骨關節炎挑選駝鹿）；Duluth News Tribune〈New research confirms old theory: wolves really do prefer old and sick moose〉；European Wilderness Society 單狼攻擊駝鹿影片；瑞典 SLU 研究（stud.epsilon.slu.se/12940）；CBC〈Coyotes are moose killers〉；USGS〈Observation of a wolf killed by a deer〉；NPS Fauna Series No. 5（Murie，深雪中的駝鹿）。
 
+## 獵物：野兔與雪兔（2026-10-08 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察的個案；**推論**＝一般說法，沒有直接來源。
+
+**先確認物種**：遊戲森林裡的「野兔」目前沒有指定是哪一種。北美灰狼所在的北方森林（例如明尼蘇達北部、加拿大）裡最常見的就是雪兔；東部棉尾兔（全年褐色、體型較小）多在南方與開闊地。建議把森林的野兔也當成雪兔（冬季同樣變白），或明確寫成棉尾兔（不變色、偏好林緣開闊地）。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 雪兔約 10 年一個族群週期，數量在高峰與低谷之間差 10～30 倍，甚至百倍；猞猁數量跟著晚一步起落 | 研究（Krebs 等，Yukon Kluane 長期研究；哈德遜灣公司毛皮紀錄） | 雪兔數量固定（只有過度狩獵後暫時變少） | 雪兔有好年、壞年：某幾年到處都是，某幾年幾乎找不到。可以跨年慢慢變化，讓一生中有幾段「兔子年」 |
+| 週期的崩落主要由掠食造成（排除掠食者的圍欄區，數量增加 10 倍、週期消失；只加食物沒用）；母兔被追得長期緊張，繁殖率下降 | 研究 | — | 不需要模擬原因，只要有起落 |
+| 雪兔的死亡 85～100% 是被捕食；主要掠食者是猞猁、蒼鷹、大角鴞、郊狼，狼只是其中之一 | 研究 | 狐狸、灰熊不會和狼搶兔子 | 不變；Phase 2 加猞猁時可以讓牠和狼搶兔子 |
+| 狼對兔子是「順便」吃：明尼蘇達東北部夏季，8 月中以後兔子和成鹿才成為主食（之前是幼鹿與莓果）；阿拉斯加一個狼窩的糞便 35% 有兔子；Isle Royale 只有 3% | 研究（各地差很多） | 小型獵物任何時候都一樣 | 夏末（幼鹿長大後）兔子對狼比較重要；大型獵物少時兔子是補充 |
+| 雪兔夏季存活率最高（掠食者有其他獵物可吃） | 研究 | — | 夏季兔子多、好找 |
+| 換毛：秋季變白、春季變褐，主要由日照長短決定，雪況只能稍微調整；雪來得晚或融得早時，白兔在褐色地面上非常顯眼（「像燈泡一樣」） | 研究 | 雪兔冬季變白，在雪地裡難發現 15% | 加「毛色和地面不合」：初冬沒雪、春季雪融後，白色的雪兔反而**更容易**發現；有雪時才難發現 |
+| 毛色不合時，雪兔不會改躲到更隱密的地方（沒有行為補償） | 研究 | — | 不合期間直接比較好抓 |
+| 幼兔偵測到掠食者時傾向不動（靠保護色）；成兔較常逃跑，時速可達約 43 公里，追的時候急轉彎（之字形） | 研究／記述 | 野兔幼體躲藏 60%、成體 50% | 幼兔多躲、成兔多跑；成兔的急轉讓衝刺不容易一次抓到 |
+| 面對地面掠食者（狗）時較少鑽進地下的躲藏處，面對猛禽時較多；逃跑路線相當固定 | 研究（訓練過的鷹與狗實驗） | 雪兔會躲 | 對狼來說「逃跑」比「躲」常見（可以把成兔躲藏的比例調低一些） |
+| 晨昏與夜間活動，白天多休息；有固定的「兔徑」 | 研究 | 雪兔沒有時段活動（野兔也沒有） | 加時段活動：清晨、黃昏、深夜多；兔徑可以當成探索時的線索 |
+| 偶爾會游過小湖、小河，也有為了躲避掠食者而下水的紀錄 | 記述 | — | 不採用（小事） |
+| 狼抓兔子的成功率 | 查不到 | 小型獵物成功率高 | — |
+
+**和目前遊戲最大的差異**
+1. 森林的野兔沒有指定物種、也不變色；真實北方森林的兔子多半就是雪兔。
+2. 雪兔只有「冬天難發現」；真實的雪兔在沒雪的初冬、雪融的春季反而因為白色而顯眼。
+3. 沒有族群週期：真實的雪兔有好年壞年，差很多倍。
+4. 沒有時段活動（雪兔晨昏、夜間活躍）。
+
+**查不到的**
+- 狼抓雪兔的成功率。
+- 「狼很少抓到躲起來的野兔」（現有的生態對照表裡有這條，這次沒找到直接來源）。
+
+來源：Krebs〈Seven Questions about the 10-year Cycle of Snowshoe Hares〉（University of Florida WEC 部落格 2016）、Krebs 等〈Using experimentation to understand the 10-year snowshoe hare cycle in the boreal forest of North America〉（Dryad 資料集；zoology.ubc.ca/~krebs）、Oli 等 2020〈Demography of snowshoe hare population cycles〉（Ecology）、Alaska Science Forum〈When predators become dinner〉；Minnesota 東北部狼的夏季食性（University of Minnesota experts 頁面）、ADF&G 1974 Mt. Drum 狼窩報告（arlis.org）、Mech《The Wolves of Isle Royale》（NPS Fauna 7）、PLoS ONE 2015 阿拉斯加雪兔存活研究（PMC4696674）；Zimova 等 2014（Proc R Soc B，換毛與毛色不合）、〈Local climate determines vulnerability to camouflage mismatch in snowshoe hares〉（par.nsf.gov、deepblue.lib.umich.edu）、USA-NPN〈Climate change means snowshoe hares stand out like lightbulbs〉；Animal Diversity Web〈Lepus americanus〉、〈Behavioral Plasticity in Snowshoe Hare Predator Escape Decisions〉（Montana State）、University of Montana〈Avoiding and escaping predators: movement tortuosity of snowshoe hares〉；Minnesota DNR〈Rabbits and hares〉、Duluth News Tribune〈Where did all the snowshoe bunnies go〉、University of Wisconsin 雪兔分布北移研究。
+
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
 
 來源是 WolfQuest 玩家社群的討論（Reddit r/WolfQuestGame，2024），可信度**低**，只當作方向參考；其中一位自稱住在狼出沒地區、觀察多年。
