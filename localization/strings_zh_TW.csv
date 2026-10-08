@@ -890,8 +890,8 @@ scavenger.tundra_wolves.returning,你回來時，那對苔原狼正圍在你的�
 scavenger.tundra_wolves.returning.first,你回來時，兩隻毛色偏淺的狼正圍在你的獵物旁邊。
 scavenger.tundra_wolves.returning.single,你回來時，那隻苔原狼正守在你的獵物旁邊。
 scavenger.tundra_wolves.returning.single.first,你回來時，一隻毛色偏淺的狼正守在你的獵物旁邊。
-tundra.meet.first.pair,兩隻毛色偏淺的狼從遠處的雪坡上看著你。牠們比你瘦小一些，腿卻很長，是跟著馴鹿群遷徙的苔原狼。
-tundra.meet.first.single,一隻毛色偏淺的狼從遠處的雪坡上看著你。牠比你瘦小一些，腿卻很長，是跟著馴鹿群遷徙的苔原狼。
+tundra.meet.first.pair,兩隻毛色偏淺的狼從遠處的雪坡上看著你。牠們腿很長，是一對住在苔原的灰狼，跟著馴鹿群四處遷徙。
+tundra.meet.first.single,一隻毛色偏淺的狼從遠處的雪坡上看著你。牠腿很長，是住在苔原的灰狼，跟著馴鹿群四處遷徙。
 tundra.meet.again.pair,那對苔原狼又出現在你面前。
 tundra.meet.again.single,那隻苔原狼又出現了，這次只有牠一隻。
 tundra.attitude.hostile,牠們一看到你就壓低了頭，頸毛豎起，喉嚨裡滾著低吼。

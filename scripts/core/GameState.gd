@@ -3090,7 +3090,7 @@ func _maybe_meet_tundra_wolves() -> bool:
 		return false
 	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf"),
 		"charge": tundra_relation_key() == "hostile" and RNGService.chance(float(_tundra_effects().get("hostile_charge", 0.35)))}
-	identify("tundra_wolf")
+	identify("tundra_wolf", false) # 第一次相遇的描述已經介紹牠們（一對住在苔原的灰狼），不另寫「那是一對苔原狼」
 	return true
 
 # 避開：不起衝突的相遇，牠們會慢慢熟悉你。
@@ -3410,7 +3410,7 @@ func debug_tundra_wolves_here() -> void:
 func debug_tundra_meet() -> Dictionary:
 	debug_tundra_wolves_here()
 	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf")}
-	identify("tundra_wolf")
+	identify("tundra_wolf", false)
 	return current_discovery
 
 func debug_tundra_mob() -> Dictionary:
