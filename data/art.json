@@ -96,7 +96,12 @@
           "stalk": "res://assets/art/sprites/wolf/wolf_adult_stalk.png",
           "pounce": "res://assets/art/sprites/wolf/wolf_adult_pounce.png",
           "eat": "res://assets/art/sprites/wolf/wolf_adult_eat.png",
-          "sleep": "res://assets/art/sprites/wolf/wolf_adult_sleep.png"
+          "sleep": "res://assets/art/sprites/wolf/wolf_adult_sleep.png",
+          "threaten": "res://assets/art/sprites/wolf/wolf_adult_threaten.png",
+          "bite": "res://assets/art/sprites/wolf/wolf_adult_bite.png",
+          "dodge": "res://assets/art/sprites/wolf/wolf_adult_dodge.png",
+          "hurt": "res://assets/art/sprites/wolf/wolf_adult_hurt.png",
+          "submit": "res://assets/art/sprites/wolf/wolf_adult_submit.png"
         }
       },
       "elder": {
@@ -105,7 +110,12 @@
           "stalk": "res://assets/art/sprites/wolf/wolf_elder_stalk.png",
           "pounce": "res://assets/art/sprites/wolf/wolf_elder_pounce.png",
           "eat": "res://assets/art/sprites/wolf/wolf_elder_eat.png",
-          "sleep": "res://assets/art/sprites/wolf/wolf_elder_sleep.png"
+          "sleep": "res://assets/art/sprites/wolf/wolf_elder_sleep.png",
+          "threaten": "res://assets/art/sprites/wolf/wolf_elder_threaten.png",
+          "bite": "res://assets/art/sprites/wolf/wolf_elder_bite.png",
+          "dodge": "res://assets/art/sprites/wolf/wolf_elder_dodge.png",
+          "hurt": "res://assets/art/sprites/wolf/wolf_elder_hurt.png",
+          "submit": "res://assets/art/sprites/wolf/wolf_elder_submit.png"
         }
       }
     }
@@ -114,6 +124,9 @@
     "forest_east": "res://assets/art/backgrounds/regions/forest_east.png",
     "forest_north": "res://assets/art/backgrounds/regions/forest_north.png",
     "forest_north@winter": "res://assets/art/backgrounds/regions/forest_north_winter.png",
+    "forest_east@winter": "res://assets/art/backgrounds/regions/forest_east_winter.png",
+    "forest_south@winter": "res://assets/art/backgrounds/regions/forest_south_winter.png",
+    "forest_west@winter": "res://assets/art/backgrounds/regions/forest_west_winter.png",
     "forest_south": "res://assets/art/backgrounds/regions/forest_south.png",
     "forest_west": "res://assets/art/backgrounds/regions/forest_west.png",
     "tundra_south": "res://assets/art/backgrounds/regions/tundra_south.png",
@@ -141,7 +154,7 @@
     "stream": "res://assets/art/backgrounds/terrain/stream.png",
     "dense_forest": "res://assets/art/backgrounds/terrain/dense_forest.png",
     "forest_edge": "res://assets/art/backgrounds/terrain/forest_edge.png",
-    "clearing": "res://assets/art/backgrounds/terrain/forest_edge.png",
+    "clearing": "res://assets/art/backgrounds/terrain/clearing.png",
     "fallen_logs": "res://assets/art/backgrounds/terrain/fallen_logs.png",
     "treeline": "res://assets/art/backgrounds/terrain/treeline.png",
     "treeline@winter": "res://assets/art/backgrounds/terrain/treeline_winter.png",
@@ -152,7 +165,18 @@
     "rocky": "res://assets/art/backgrounds/terrain/rocky.png",
     "rocky@winter": "res://assets/art/backgrounds/terrain/rocky_winter.png",
     "esker": "res://assets/art/backgrounds/terrain/esker.png",
-    "esker@winter": "res://assets/art/backgrounds/terrain/esker_winter.png"
+    "esker@winter": "res://assets/art/backgrounds/terrain/esker_winter.png",
+    "_burned_winter_comment": "森林地形的焦黑版（大火燃燒中與焦黑期，QA-72）與冬季版（2026-10-08 加入）；空地沒有另做，共用林緣。",
+    "stream@burned": "res://assets/art/backgrounds/terrain/stream_burned.png",
+    "stream@winter": "res://assets/art/backgrounds/terrain/stream_winter.png",
+    "dense_forest@burned": "res://assets/art/backgrounds/terrain/dense_forest_burned.png",
+    "dense_forest@winter": "res://assets/art/backgrounds/terrain/dense_forest_winter.png",
+    "forest_edge@burned": "res://assets/art/backgrounds/terrain/forest_edge_burned.png",
+    "forest_edge@winter": "res://assets/art/backgrounds/terrain/forest_edge_winter.png",
+    "fallen_logs@burned": "res://assets/art/backgrounds/terrain/fallen_logs_burned.png",
+    "fallen_logs@winter": "res://assets/art/backgrounds/terrain/fallen_logs_winter.png",
+    "clearing@burned": "res://assets/art/backgrounds/terrain/forest_edge_burned.png",
+    "clearing@winter": "res://assets/art/backgrounds/terrain/forest_edge_winter.png"
   },
   "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",
   "carcasses": {
@@ -178,6 +202,7 @@
     "status.burn": "res://assets/art/icons/status_burn.png",
     "status.cold": "res://assets/art/icons/status_cold.png",
     "status.frostbite": "res://assets/art/icons/status_frostbite.png",
+    "status.exhausted": "res://assets/art/icons/status_exhausted.png",
     "region_tile.forest_east": "res://assets/art/icons/region_tile_forest_east.png",
     "region_tile.forest_north": "res://assets/art/icons/region_tile_forest_north.png",
     "region_tile.forest_south": "res://assets/art/icons/region_tile_forest_south.png",
