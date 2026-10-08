@@ -368,6 +368,34 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 - 狐狸出現在狼殺的殘骸上的頻率（只有美洲獅殘骸的數據）。
 - 北方森林狐狸的季節活動細節。
 
+### 使用者補充（2026-10-08，經 ChatGPT 整理）與修正
+
+| 項目 | 修正或補充 | 來源 |
+| --- | --- | --- |
+| 狼殺狐狸 | 一致：Isle Royale、Denali、Wood Buffalo 都有紀錄，多數死在狼的獵物附近；狼可能吃也可能不吃。Isle Royale 東狼群殺死一隻紅狐，毛被扯掉很多，但沒有吃 | Mech 2003《Wolves》第 4 章；《Wolf Ecology and Prey Relationships on Isle Royale》第 2 章（npshistory.com） |
+| 「狼吃狐狸非常罕見」 | 修正為：紅狐**可以**出現在狼的食物紀錄裡（全球分析，北美也有），但北美的狼殺狐狸通常不是為了吃，不是典型的捕食關係 | MDPI Diversity 2020〈Consumption of Carnivores by Wolves〉 |
+| 狼抓不太到狐狸 | 1972～74 年冬季 Isle Royale 的狼追狐狸 6 次、一次都沒抓到；狐狸在雪面（較輕的雪層、雪殼）上移動比狼好，研究者認為這是兩者能共存的原因之一 | 同上（Isle Royale 第 2 章） |
+| 鑽洞 | 修正我的「很會急轉、鑽洞」：洞穴主要是育幼用，成年狐狸逃狼靠的是速度、靈活、地形與提早察覺 | — |
+| 怕狼也靠狼吃飯 | 狐狸對狼尿會降低覓食程度，但狼的殘骸又很值得冒險：Isle Royale 冬季狐狸大量利用狼殺的駝鹿，深雪讓狐狸抓不到雪兔的冬天更依賴；1972 年曾看到 10 隻紅狐同時圍在一具駝鹿殘骸旁 | PMC6018578；Isle Royale 第 2 章 |
+| 冬季殘骸 | 一致：狼重新引入 Isle Royale 後，狐狸的食物轉向大型殘骸；Denali 冬季殘骸主要由狼與狼獾使用，狐狸用得較少，在狼常出沒的殘骸旁更警戒 | Scientific Reports 2025（s41598-025-15503-w）；NPS〈Dominance dynamics among scavengers〉 |
+
+**整合後對遊戲的建議（1.8 的狐狸，使用者傾向 (a)）**
+
+| 狀況 | 狼與狐狸 |
+| --- | --- |
+| 探索遇到狐狸 | 不能當一般獵物主動獵；可以驅趕 |
+| 狐狸靠近自己的殘骸 | 驅趕（現有的「狐狸偷吃」） |
+| 狐狸不逃 | 攻擊 |
+| 狐狸逃跑 | 通常追不上，也不值得追（雪面上狐狸更快） |
+| 咬死狐狸 | 通常不吃；極度飢餓時才有機會吃 |
+| 狼離開殘骸後 | 狐狸可能回來吃 |
+| 冬季、雪兔低谷年 | 狐狸更依賴狼的殘骸，更常來、更大膽 |
+| 狼常活動的區域 | 狐狸較少出現、一察覺就跑 |
+
+和雪兔週期連動：高峰年狼與狐狸都靠兔子，衝突少；低谷年狼更依賴大型獵物，狐狸更依賴狼的殘骸，偷吃變多。
+
+**仍待確認**：狼殺狐狸後吃掉的比例（決定「極度飢餓才吃」要多罕見，北美與歐亞差很多）。
+
 來源：Newsome & Ripple 2015（Journal of Animal Ecology，thomasnewsome.com）；Oecologia 2018（s00442-018-4133-3，克羅埃西亞 Plitvice 的狐狸對狼尿的反應）；Wildlife Online〈Red Fox Predators〉；Great Lakes Echo〈Rare wolf attack on baby foxes found on Isle Royale〉；PeerJ 2018（PMC6074758，美洲獅殘骸上的狐狸）；EPA 研究計畫（黃石狼殺殘骸的食腐者）；Yahoo News（紅狐抓走狼幼崽的影片）；Yukon 政府〈Red fox〉；Tennessee WHEP 2026 野生動物手冊；Australian Wildlife Research（WR9910677，育幼期的活動）；白俄羅斯幼狐食性研究（FAO AGRIS）；Ripple 2013、Scientific Reports 2021（中型掠食者釋放）。
 
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
