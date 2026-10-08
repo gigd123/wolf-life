@@ -109,6 +109,43 @@
 
 來源：USGS〈Relationship between snow depth and gray wolf predation on white-tailed deer〉、USGS〈Sixty years of White-tailed Deer yarding…〉、Canadian Field-Naturalist（幼鹿被捕食風險、深雪中狼藏食、Mech《Wolves on the Hunt》書評）、Voyageurs Wolf Project（Quetico Superior 報導）、LCCMR〈Effects of Wolf Predation on Beaver, Moose, and Deer〉、International Wolf Center、Minnesota DNR（DelGiudice）、Mech et al.《Wolves on the Hunt》、Pennsylvania Game Commission、SEAFWA〈Social Grouping of White-tailed Deer in Shenandoah National Park〉、Montana State Extension、FWC 等（完整連結見使用者 2026-10-08 提供的整理，記在 `docs/spec-update-proposal-3.md`）。跳水與速度兩項沒有直接來源，只作參考。
 
+## 獵物：北美馴鹿（2026-10-08 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察的個案；**推論**＝一般說法或由其他資料推得，沒有直接來源。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 苔原狼以貧瘠地馴鹿為主食，一年大部分時間跟著鹿群移動，不守固定領域 | 研究 | 苔原狼跟著馴鹿遷徙（文字與漫遊） | 不變 |
+| 狼春季從北方針葉林（冬季範圍）移到苔原築巢，4 月底前多半固定在巢穴附近；巢穴多在林線 50 公里內（209 個巢穴中 60%），不在產仔地 | 研究 | 苔原狼的巢穴範圍沒有寫明 | 苔原狼春夏多在林線、開闊苔原，少去遠北 |
+| 馴鹿 6 月中多半已走過狼的築巢區、往北，到 7 月中下旬才回來；這段時間巢穴附近幾乎沒有馴鹿 | 研究 | 夏季各區都沒有馴鹿 | 大致相符；可改成夏季馴鹿在遠北苔原（產仔地、夏季範圍），其他區沒有 |
+| 冬季範圍在北方針葉林、林線一帶 | 研究（同上，間接） | **冬季各區都沒有馴鹿** | 冬季馴鹿應出現在苔原林線（遷到林線過冬），這是目前和真實最大的差距 |
+| 鹿群大小：遷徙時群最大（尤其秋季），產仔時最小、母鹿刻意彼此散開讓掠食者難找（spacing away，被認為很有效） | 研究 | 只有「成群」一種狀態 | 春秋遷徙大群（觀察挑弱者、潛近難）；產仔季散開（找到的多半是單隻母鹿帶小鹿，但難找） |
+| 健康成鹿在短程追逐中跑得掉；狼靠拖長追逐耗掉體力；崎嶇地形時狼很快被甩開（Murie 記述：一隻狼追了 0.8 公里在亂石區被甩開後放棄） | 記述 | 跟隨 +10%、衝刺 −5%；岩地衝刺 −10% | 方向相符；岩地上追馴鹿再更難 |
+| 鹿群會停下來等狼追近再跑開，狼很快就放棄 | 記述（單一觀察者） | 沒有 | 可當作「試探」的文字：健康鹿群一直拉開距離 |
+| 最高速度：馴鹿約時速 64 公里、狼約 50～60 公里，馴鹿略快 | 推論（科普文章） | 馴鹿速度 66、狼起始 40 | 不變 |
+| 小馴鹿：出生後一兩天跑不快；前兩週主要被熊、狼獾、老鷹殺死，之後腿力變強，熊和狼獾追不上，狼成為主要威脅；常有 25% 以上的小鹿活不過一個月 | 研究 | 小馴鹿走簡易狩獵，沒有季節性 | 春末產仔季：小馴鹿多、很好抓但母鹿在旁邊；之後幾週小鹿變快 |
+| 母鹿到產仔地生產能降低新生小鹿被捕食的風險；山區母鹿到高處生產，狼較難到達 | 研究 | 沒有 | 遠北苔原（產仔地）的狼較少，小鹿安全一些 |
+| 營養差的年份小鹿較輕，更容易被捕食 | 研究 | 沒有 | 和 1.8 的「體況」一起：前一年夏天蚊蟲多 → 隔年小鹿虛弱的比例高（可選） |
+| 夏季蚊蟲騷擾：馴鹿花更多時間逃到涼爽、有風但食物少的地方；7 月中體脂幾乎歸零，9 月初回到最高 | 研究 | 沒有 | 夏末（7 月中）的馴鹿體況最差，秋季最好；可選：夏季馴鹿在高處、有風的地方 |
+| 冬末雪深、體力儲備低時，獵物最脆弱；深雪或硬雪殼、體況差、年齡是被捕食的主要因素 | 研究 | 沒有 | 和白尾鹿共用雪況；冬末馴鹿虛弱的比例高 |
+| 馴鹿冬天選雪淺（< 50 公分）的地方挖雪覓食；硬而易碎的雪殼反而好挖 | 研究 | 沒有 | 深雪時馴鹿聚在雪淺處（林線） |
+| 狼的趾間有蹼，能在雪殼上跑，獵物會陷下去 | 推論（科普） | 沒有 | 硬雪殼對狼有利（同白尾鹿） |
+| 冬季狼的獵殺率模型：每隻狼每天約 0.08 頭成年馴鹿（Porcupine 鹿群，模型假設值） | 研究（模型） | — | 只作參考，不直接用 |
+| 狼獾追馴鹿可長達 4～62 公里，追到馴鹿累垮 | 研究 | 狼獾不狩獵 | 不採用（狼獾維持搶食者） |
+| 跳進湖、河裡甩掉狼 | 查不到來源 | — | 不採用 |
+
+**和目前遊戲最大的差異**
+1. 冬季遊戲裡完全沒有馴鹿；真實的馴鹿冬天在林線、北方針葉林過冬 → 建議冬季馴鹿出現在苔原林線。
+2. 夏季真實的馴鹿在更北的產仔地、夏季範圍 → 建議夏季馴鹿只在遠北苔原，春季北遷時經過開闊苔原，秋季南遷時再經過。
+3. 產仔季（春末）小馴鹿特別好抓，但母鹿散開、難找；目前小馴鹿全年一樣。
+
+**查不到、需要你補的**
+- 狼追馴鹿的成功率、平均追逐距離（找到的只有個案）。Mech《Wolves on the Hunt》、Kuyt 1972（CWS Report Series No. 21）應該有，但這次讀不到全文。
+- 狼對成年馴鹿的挑選（老、病、傷的比例）。
+- 狼和馴鹿在深雪、雪殼上的直接比較。
+
+來源：Hayes & Russell〈Predation rate by wolves on the Porcupine caribou herd〉（Rangifer，septentrio.uit.no/index.php/rangifer/article/view/1624）；Yukon〈Ecology and management of wolves in the Porcupine caribou range〉（emrlibrary.gov.yk.ca）；Klaczek 2015（Bathurst 鹿群的苔原狼築巢，wrrb.ca）；NPS〈Caribou group size〉（nps.gov/articles/000/caribou-group-size.htm）；ADF&G Western Arctic Herd 個案（adfg.alaska.gov）；ADF&G 小馴鹿死亡研究（Sellers et al. 1998；07-02-09-caribou）；Earth.com／EurekAlert 2025 GPS 頸圈研究報導（山區與低地小鹿的捕食者差異）；DeMars & Boutin（wildlifescience.ca）；Frontiers in Ecology and Evolution 2022（Central Arctic Herd 夏季食物與蚊蟲，doi 10.3389/fevo.2022.899585）；NPS〈Bou migration, climate, pests〉；ADF&G Delta 鹿群 1997（Valkenburg）；Murie《The Wolves of Mount McKinley》（1944，nps.gov parkhistory fauna5）；ADF&G〈Winter wolf predation〉（wo-pred03f）；USGS〈Winter wolf predation in a multiple ungulate prey system, Gates of the Arctic〉；Canadian Field-Naturalist（掠食成功的脆弱因素回顧）；Rangifer 雪況與挖雪研究（septentrio、eludamos）；ADN〈What's the Usain Bolt of Alaska's land-based critters〉（速度）。
+
 ## 資料來源
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
