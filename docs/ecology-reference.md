@@ -479,6 +479,45 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Hayes & Russell〈Predation rate by wolves on the Porcupine caribou herd〉（Rangifer，septentrio.uit.no/index.php/rangifer/article/view/1624）；Yukon〈Ecology and management of wolves in the Porcupine caribou range〉（emrlibrary.gov.yk.ca）；Klaczek 2015（Bathurst 鹿群的苔原狼築巢，wrrb.ca）；NPS〈Caribou group size〉（nps.gov/articles/000/caribou-group-size.htm）；ADF&G Western Arctic Herd 個案（adfg.alaska.gov）；ADF&G 小馴鹿死亡研究（Sellers et al. 1998；07-02-09-caribou）；Earth.com／EurekAlert 2025 GPS 頸圈研究報導（山區與低地小鹿的捕食者差異）；DeMars & Boutin（wildlifescience.ca）；Frontiers in Ecology and Evolution 2022（Central Arctic Herd 夏季食物與蚊蟲，doi 10.3389/fevo.2022.899585）；NPS〈Bou migration, climate, pests〉；ADF&G Delta 鹿群 1997（Valkenburg）；Murie《The Wolves of Mount McKinley》（1944，nps.gov parkhistory fauna5）；ADF&G〈Winter wolf predation〉（wo-pred03f）；USGS〈Winter wolf predation in a multiple ungulate prey system, Gates of the Arctic〉；Canadian Field-Naturalist（掠食成功的脆弱因素回顧）；Rangifer 雪況與挖雪研究（septentrio、eludamos）；ADN〈What's the Usain Bolt of Alaska's land-based critters〉（速度）。
 
+## 苔原狼（2026-10-08 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察、專家說法；**推論**＝一般說法或來源不一。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 加拿大的苔原（遷徙型）狼和北方森林（定居型）狼是兩個遺傳族群：苔原狼跟著馴鹿在巢穴區與林線以南的越冬地之間遷移（每年約 1,500 公里），森林狼全年守在定居獵物附近 | 研究（Musiani 等 2007，404 隻、衛星頸圈） | 苔原狼跟著馴鹿漫遊 | 一致 |
+| 毛色：苔原狼 93% 是淺色，森林狼只有 38%；黑色的狼在苔原極少（黑毛基因頻率 0.02 對森林 0.19） | 研究 | 苔原狼「毛色偏淺」 | 一致；玩家的森林狼與黑狼都屬於森林型，黑狼在苔原出現會很不尋常 |
+| 體型：北方苔原的狼普遍偏大（灰狼成年公狼平均約 41 公斤，體重差異很大，較大的亞種在北方苔原）；歐亞的苔原狼公狼平均 40～49 公斤、母狼 36.6～41 公斤，500 隻樣本中最重 52 公斤；北美最大的通常被認為是麥肯錫河谷狼（可達約 79 公斤） | 推論（各來源說法不一，沒有找到北美貧瘠地狼的體重研究） | **「牠們比你瘦小一些」**，力量值比黑狼低 | 改成「不比你小，甚至更高大」；使用者查到的也是苔原地區的狼普遍偏大。森林狼（以明尼蘇達一帶為例）通常比北方的狼小 |
+| 遷移型的狼不守固定領域（見「北美馴鹿」一節） | 研究 | 苔原狼的關係值（熟悉、友善） | 一致：沒有固定領域，比較不會為了地盤和你衝突 |
+
+**和目前遊戲的差異**
+- 遊戲寫苔原狼「比你瘦小一些，腿卻很長」，力量值也設得比黑狼低（苔原狼約 126，壯年黑狼約 142）。照資料應該改成和你差不多大、甚至更高大，腿長、毛色淺。
+- 牠們一對的戰力本來就比單隻黑狼強（另一隻會插進來），體型改大後要重跑戰鬥模擬，避免苔原狼變得太難應付。
+
+**查不到的**：北美貧瘠地（苔原）狼的體重研究。
+
+## 狼獾（2026-10-08 Claude Code 查，待使用者對比）
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 體型：長 65～107 公分，體重 9～25 公斤（特大公的可達 32 公斤），公的比母的大 30%、可重一倍；陸地上最大的鼬科 | 研究／記述（動物園、百科） | 力量值約 110（狼的成年約 130） | 體重只有狼的一半左右，力量值算是偏高；但牠以兇猛出名，「很少放棄」的設定合理 |
+| 挪威：架相機的 29 具狼殺殘骸，**秋冬 100% 有狼獾來吃，夏季只有 18%** | 研究（Springer 2023，s00265-023-03423-6） | 狼獾全年一樣會來搶食 | 狼獾主要在秋冬出現在殘骸旁，夏季少見 |
+| 冬季狼獾回到狼殘骸的次數是單狼的 3.6 倍、狼群的 6.7 倍，待的時間多 10～25 倍，是吃掉狼殘骸的主力 | 研究（同上） | 苔原的殘骸會被偷吃（消失倍率 2） | 一致：冬季在苔原留下的殘骸，很快會被狼獾吃光 |
+| 狼對狼獾主要是「提供食物」（促進），狼獾會避免和狼正面接觸 | 研究 | 狼獾會為了殘骸和你交戰、很少放棄 | 狼獾多半趁你不在時吃；正面衝突時牠更常退開（「讓牠吃一段」的選項保留） |
+| 全年藏食：吃不完的帶走、分散藏在平均 1.1 公里外，偏好陡峭崎嶇處（冷藏、防偷） | 研究（NINA，38 隻 GPS 狼獾） | 沒有 | 狼獾偷走的肉不會留在原地（殘骸消失得快）；可選：狼也能找到狼獾的藏食 |
+| 冬季很依賴駝鹿、馴鹿的殘骸；能殺死比自己大很多的獵物，但多半是虛弱或陷在深雪裡的 | 研究／記述 | 狼獾不狩獵 | 不採用（狼獾維持搶屍者） |
+| 冬季食物少時更常吃腐肉；當地馴鹿體重越低，吃腐肉的機率越高 | 研究（FAO AGRIS） | — | 冬末狼獾更常出現 |
+| 幼崽 1～4 月在雪洞裡出生 | 記述 | — | 不採用 |
+| 狼殺狼獾的紀錄：這次沒有找到 | — | 苔原狼圍攻狼獾的事件、你可以咬死狼獾 | 狼群圍攻狼獾是遊戲的設定，沒有找到直接根據；先保留，有資料再調整 |
+
+**和目前遊戲的差異**
+1. 狼獾應該以秋冬為主，夏季很少出現在殘骸旁。
+2. 狼獾吃狼殘骸的份量很大（待得久、來得勤），而且會把肉藏走；遊戲的「苔原殘骸消失得快」方向對。
+3. 狼獾會避開狼；「很少放棄」可以保留在牠已經佔住殘骸、或被逼到角落時，主動找狼打架應該少一些。
+4. 苔原狼圍攻狼獾目前沒有找到真實紀錄。
+
+來源：Musiani 等 2007（Molecular Ecology，consevol.org；wrrb.ca）；UCLA 黑毛基因研究（ioes.ucla.edu）；NWT 政府（gov.nt.ca）；Wikipedia〈Tundra wolf〉；San Diego Zoo〈Gray wolf〉；WorldAtlas（最大的狼）；Springer 2023（狼與狼獾在狼殘骸的互動，s00265-023-03423-6）；SLU（Rauset、Mattisson 等的狼獾研究）；FAO AGRIS〈Predation or scavenging? Prey body condition influences decision-making in … the wolverine〉；NINA〈Refrigeration or anti-theft? Food-caching behavior of Wolverines in Scandinavia〉；Columbus Zoo〈Wolverine〉；Statistics Norway（大型食肉動物死亡原因）。
+
 ## 案例：黃石的「06」母狼（832F）（2026-10-08 使用者補充，經 ChatGPT 整理）
 
 | 項目 | 內容 | 可信度 |
