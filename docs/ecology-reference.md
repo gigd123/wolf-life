@@ -398,6 +398,43 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Newsome & Ripple 2015（Journal of Animal Ecology，thomasnewsome.com）；Oecologia 2018（s00442-018-4133-3，克羅埃西亞 Plitvice 的狐狸對狼尿的反應）；Wildlife Online〈Red Fox Predators〉；Great Lakes Echo〈Rare wolf attack on baby foxes found on Isle Royale〉；PeerJ 2018（PMC6074758，美洲獅殘骸上的狐狸）；EPA 研究計畫（黃石狼殺殘骸的食腐者）；Yahoo News（紅狐抓走狼幼崽的影片）；Yukon 政府〈Red fox〉；Tennessee WHEP 2026 野生動物手冊；Australian Wildlife Research（WR9910677，育幼期的活動）；白俄羅斯幼狐食性研究（FAO AGRIS）；Ripple 2013、Scientific Reports 2021（中型掠食者釋放）。
 
+## 灰熊（2026-10-08 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察、專家說法；**推論**＝一般說法或來源不明。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 冬眠（黃石，1981～99）：公熊 10 月第 2 週起入洞、12 月第 2 週前 90% 入洞；母熊 9 月第 4 週起、11 月第 4 週前 90%。出洞：公熊最早 2 月第 1 週、4 月第 4 週前 90%；母熊最早 3 月第 3 週、5 月第 1 週前 90%。冬眠平均：公熊 131 天、沒帶幼熊的母熊 151 天、帶新生幼熊的母熊 171 天 | 研究（USGS） | 冬季完全沒有灰熊；春夏秋一樣多 | 大致相符；可細分：**春初**只有公熊（剛出洞、很餓），**帶幼熊的母熊要到春末**才出現；**秋末**母熊先入洞，只剩公熊 |
+| 出洞順序（黃石國家公園）：公熊 3 月初到中旬，獨居母熊與帶一兩歲幼熊的母熊 3 月底到 4 月中，帶新生幼熊的母熊最晚（4 月中到 5 月初）；暖冬會提早，體況差的可能回洞 | 研究／記述 | 母熊全年出現機率一樣 | 春季的母熊遭遇集中在春末 |
+| 北方出洞比南方晚 | 推論（專家說法） | — | 苔原的灰熊比森林晚出現（可選） |
+| 灰熊搶狼的獵物：黃石狼研究者 Doug Smith 說在狼的殘骸旁「灰熊幾乎總是贏」，曾看到一頭熊擋住 24 隻狼 | 記述（專家） | 灰熊搶食是常見事件；單狼可以把灰熊耗走（速度快的狼 17～27%） | 單狼要從灰熊口中守住殘骸幾乎不可能；狼群都不一定行 |
+| 熊想要狼的獵物時，狼會試著守，但通常趕不走熊；**帶幼熊的母熊很少成功搶到狼的獵物** | 記述（NPS） | 母熊搶食和一般灰熊一樣 | 搶食的多半是公熊或獨居的熊；母熊多半是「遭遇」而不是「搶食」 |
+| 公熊通常最後拿到殘骸，即使是年輕的熊或母熊先發現 | 記述（熊類生物學家 Servheen） | — | 搶食者以大公熊為主 |
+| 熊在場時，狼在小型殘骸（< 50 公斤）待得更久，在大型殘骸（> 200 公斤）待得更短；熊搶走食物後，狼的獵殺頻率**下降**（不是上升） | 研究（Metz 等，黃石；Tallian 等） | 被搶後玩家通常會再去狩獵 | 小殘骸值得守，大殘骸被熊佔了就讓（可當成知識提示） |
+| 狼創造的殘骸養了熊，但熊對狼主要是敵對的 | 研究（Tallian） | — | 狼的大型獵物會吸引熊（有殘骸的區域灰熊出現率提高，可選） |
+| 春末夏初灰熊會用嗅覺找藏在草叢裡的新生幼鹿（麋鹿）；斯堪地那維亞的研究中，熊和狼都吃新生小駝鹿，熊會先抓走，讓狼要找更久 | 研究（USGS 黃石；Tallian） | 灰熊不狩獵 | 春末幼鹿季，灰熊在附近的區域幼鹿較少（可選）；探索可能撞見灰熊在找幼鹿 |
+| 致命衝突少見：通常是狼群殺死熊的幼崽，或熊殺死單隻狼（有灰熊殺死狼幼崽的紀錄） | 記述 | 灰熊可能把狼打死（瀕危後硬打） | 方向相符；獨居狼被灰熊殺死應該很少，除非自己硬打 |
+| 狼群在狼窩附近會不斷繞著熊騷擾把熊趕走；一頭熊被五隻狼趕離狼窩，熊沒碰到任何一隻狼 | 記述（NPS、Doug Smith） | — | Phase 3 狼群與狼窩 |
+| 一群狼殺死兩隻一歲灰熊（母熊護也沒用）；九隻狼殺死帶幼熊的母黑熊 | 推論（二手）／記述（黑熊） | — | 只有狼群才可能；獨居狼不做 |
+| 灰熊加入狼群的追獵、等狼殺死後搶走（影片） | 記述（新聞） | — | 有趣但罕見，不採用 |
+
+**和目前遊戲最大的差異**
+1. **單狼對灰熊太有希望**：專家說殘骸旁灰熊「幾乎總是贏」，一頭熊能擋住 24 隻狼；遊戲裡速度快的單狼騷擾灰熊有 17～27% 能把牠耗走（1.7 調過）。照寫實應該再降，或只限「熊不是真的想要」的情況。
+2. **母熊不太搶食**：真實帶幼熊的母熊很少搶到狼的獵物；搶食的主要是大公熊。遊戲的「母熊」也會來搶食。
+3. **季節細節**：春初只有剛出洞、很餓的公熊；帶新生幼熊的母熊到春末才出現；秋末母熊先入洞。遊戲春夏秋都一樣。
+4. **灰熊也在獵幼鹿**：春末夏初會和狼搶新生幼鹿（遊戲沒有）。
+
+**和目前設定相符的**
+- 冬季沒有灰熊（冬眠）。
+- 灰熊會搶狼的殘骸，狼通常守不住。
+- 致命衝突少見；瀕危後還硬打才可能死。
+
+**查不到的**
+- 灰熊搶到狼殘骸的確切比例（網路上流傳的「約 50%」沒有出處，不採用）。
+- 阿拉斯加、北極地區的冬眠時間（北方應該更晚出洞、更早入洞）。
+
+來源：USGS〈Grizzly bear denning chronology and movements in the Greater Yellowstone Ecosystem〉（pubs.usgs.gov/publication/70159902）；黃石國家公園出洞說明與新聞（Daily Montanan 2026、Vice、Bozeman Daily Chronicle）；Idaho Capital Sun／Daily Montanan 2022〈When a bear tries to steal elk from wolves in Yellowstone〉（Metz 等研究）；International Wolf Center〈Wolves and Brown Bears〉、〈Wildly rare video shows Yellowstone bear join in wolf hunt〉；Explore Big Sky〈Wolves, bears are wary rivals as they compete for food〉（Tallian）；yellowstonepark.com〈Grizzly bear vs wolves〉（Doug Smith）；NPS science series 14 第 8 章；Field & Stream（灰熊搶狼群獵物）；USGS〈Use of ungulates by Yellowstone grizzly bears〉；bearstudy.org；Arctic 期刊（狼殺北極熊幼崽）；Canadian Field-Naturalist；Pitchstone Waters。
+
 ## 獨居狼與大型獵物（2026-10-08 使用者補充，網路討論）
 
 來源是 WolfQuest 玩家社群的討論（Reddit r/WolfQuestGame，2024），可信度**低**，只當作方向參考；其中一位自稱住在狼出沒地區、觀察多年。
