@@ -479,6 +479,26 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Hayes & Russell〈Predation rate by wolves on the Porcupine caribou herd〉（Rangifer，septentrio.uit.no/index.php/rangifer/article/view/1624）；Yukon〈Ecology and management of wolves in the Porcupine caribou range〉（emrlibrary.gov.yk.ca）；Klaczek 2015（Bathurst 鹿群的苔原狼築巢，wrrb.ca）；NPS〈Caribou group size〉（nps.gov/articles/000/caribou-group-size.htm）；ADF&G Western Arctic Herd 個案（adfg.alaska.gov）；ADF&G 小馴鹿死亡研究（Sellers et al. 1998；07-02-09-caribou）；Earth.com／EurekAlert 2025 GPS 頸圈研究報導（山區與低地小鹿的捕食者差異）；DeMars & Boutin（wildlifescience.ca）；Frontiers in Ecology and Evolution 2022（Central Arctic Herd 夏季食物與蚊蟲，doi 10.3389/fevo.2022.899585）；NPS〈Bou migration, climate, pests〉；ADF&G Delta 鹿群 1997（Valkenburg）；Murie《The Wolves of Mount McKinley》（1944，nps.gov parkhistory fauna5）；ADF&G〈Winter wolf predation〉（wo-pred03f）；USGS〈Winter wolf predation in a multiple ungulate prey system, Gates of the Arctic〉；Canadian Field-Naturalist（掠食成功的脆弱因素回顧）；Rangifer 雪況與挖雪研究（septentrio、eludamos）；ADN〈What's the Usain Bolt of Alaska's land-based critters〉（速度）。
 
+## 案例：黃石的「06」母狼（832F）（2026-10-08 使用者補充，經 ChatGPT 整理）
+
+| 項目 | 內容 | 可信度 |
+| --- | --- | --- |
+| 生平 | 2006 年生於 Agate Creek 狼群；約 2008 年離群、獨自生活一段時間；2009 年起在 Lamar Valley 活動，2010 年和 755M、754M 建立 Lamar Canyon 狼群，2010～2012 年每年繁殖（2011 年 5 隻幼狼全部活到年底）；2012/12/6 離開公園邊界後在懷俄明州被合法獵殺，約 6 歲 8 個月 | 研究（Yellowstone Wolf Project 年度報告 2010、2011、2013；NPCA） |
+| 單狼獵麋鹿 | 長時間追趕把麋鹿耗累 → 靠速度超過 → 繞到前方突然停下 → 從正面撲上去咬頸部。正面攻擊非常危險（蹄子可以致命） | 記述（Audubon；Rick McIntyre 等觀察者） |
+| 獨力養家 | 2010 年兩隻公狼狩獵效率不好，06 自己去獵大型獵物養第一胎 4 隻幼狼 | 記述（Audubon） |
+| 能力來源 | 不是單一能力高，而是體能、經驗、技巧與願意承擔風險的組合；「體型比一般母狼大」這點未查證 | 推論 |
+| 「頭狼」 | 官方用語是建群成員、繁殖母狼；野生狼群是家庭，地位不只看力量（年齡、經驗、親緣、繁殖） | 研究（NPS） |
+| 死後 | 核心繁殖母狼死亡後，755M 因和剩下的母狼有親緣在繁殖季離開，2013 年狼群開始分裂 | 研究（2013 年度報告） |
+
+**對遊戲的意義**
+- 她的一生正好是《狼之一生》的路線：離群 → 獨居求生 → 找到伴侶 → 建立狼群 → 繁殖 → 成為傳奇獵手。
+- 支持 1.8 的方向：一般單狼獵健康大型獵物很難，但不是不可能；高技巧、高速度、經驗豐富、願意冒險的狼，在獵物疲累時能完成罕見的單狼獵殺。
+- 遊戲裡已經有類似 06 的選項：搏鬥的「直取咽喉」（成功率較低、被反擊的風險高、能直接殺死）。1.8 可以讓它在「獵物已經被耗累」時更有機會，配合「單狼擊退灰熊變稀有」，讓傳奇狼的條件來自少數高風險的成功。
+- Phase 3：狼群地位依年齡、經驗、親緣與繁殖，不只看力量；核心繁殖狼死亡會讓狼群改變甚至分裂。
+- 參考資料庫：Yellowstone Wolf Project 1995～2025 年的年度報告（NPS〈Science Publications & Reports〉）。
+
+來源：Yellowstone Wolf Project Annual Report 2010、2011、2013（nps.gov/yell）；National Parks Conservation Association〈Death of Alpha Wolf Sparks Renewed Concern over Hunting near Yellowstone〉；Audubon〈A Walk on Yellowstone's Wild Side〉；International Wolf Center〈Wolf '06 of Lamar Canyon〉（2011 春季刊）。
+
 ## 資料來源
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
