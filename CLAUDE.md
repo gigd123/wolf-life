@@ -14,6 +14,7 @@
 
 | 檔案 | 內容 | 何時讀 |
 | --- | --- | --- |
+| `docs/project-overview.md` | 給其他人或 AI 看的總覽：目前的遊戲內容與後續規劃 | 第一次接觸專案、或要對外說明時 |
 | `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
