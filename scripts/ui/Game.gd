@@ -22,6 +22,7 @@ var explore_hint_label: Label
 var status_icons: Dictionary = {}
 var sleeping_now: bool = false # 睡覺結算期間（QA-70）
 var woken_encounter: Dictionary = {}
+var stamina_icon: TextureRect = null # 有圖示時取代文字
 var stamina_warning: Label # 頂部「體力不支」（QA-55；最低體力的規則在 1.7 定）
 var log_box: RichTextLabel
 
@@ -207,6 +208,19 @@ func _build_ui() -> void:
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
+	# 有「體力不支」圖示（status.exhausted）就用圖示，沒有就用文字
+	var exhausted_tex: Texture2D = ArtLibrary.icon("status.exhausted")
+	if exhausted_tex != null:
+		var ex_icon := TextureRect.new()
+		ex_icon.texture = exhausted_tex
+		ex_icon.custom_minimum_size = Vector2(20, 20)
+		ex_icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		ex_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		ex_icon.tooltip_text = tr("ui.stamina_low") + "：" + tr("ui.stamina_low.tip")
+		ex_icon.mouse_filter = Control.MOUSE_FILTER_PASS
+		ex_icon.visible = false
+		status_row.add_child(ex_icon)
+		stamina_icon = ex_icon
 	stamina_warning = Label.new()
 	stamina_warning.text = tr("ui.stamina_low")
 	stamina_warning.tooltip_text = tr("ui.stamina_low.tip")
@@ -410,7 +424,8 @@ func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
 		icon.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
-	rect.texture = ArtLibrary.terrain_background(terrain, GameTime.current_season()) if terrain != "" else null
+	rect.texture = ArtLibrary.terrain_background(terrain, GameTime.current_season(),
+		GameState.burn_state(GameState.current_region) in ["burning", "ash"]) if terrain != "" else null
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
 func _overlay_style() -> StyleBoxFlat:
@@ -951,7 +966,10 @@ func _refresh() -> void:
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
 	status_icons["cold"].visible = GameState.is_freezing()
-	stamina_warning.visible = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
+	var low_stamina: bool = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
+	stamina_warning.visible = low_stamina and stamina_icon == null
+	if stamina_icon != null:
+		stamina_icon.visible = low_stamina
 
 	var season: String = GameTime.current_season()
 	var map_id: String = GameState.current_map()

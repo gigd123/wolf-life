@@ -101,8 +101,13 @@ static func region_background(region_id: String, season: String) -> Texture2D:
 	return texture(str(table.get(region_id + "@" + season, table.get(region_id, ""))))
 
 # 地形背景；有 terrain@season（例如苔原的冬季版）就用季節版。
-static func terrain_background(terrain: String, season: String = "") -> Texture2D:
+# burned：區域剛燒過（燃燒中或焦黑期），有「地形@burned」的圖就用（QA-72），沒有就用一般的。
+static func terrain_background(terrain: String, season: String = "", burned: bool = false) -> Texture2D:
 	var table: Dictionary = _cfg().get("terrain_backgrounds", {})
+	if burned:
+		var tex := texture(str(table.get(terrain + "@burned", "")))
+		if tex != null:
+			return tex
 	return texture(str(table.get(terrain + "@" + season, table.get(terrain, ""))))
 
 # 屍體（art.json 的 carcasses）；沒有對應的圖回傳 null。
