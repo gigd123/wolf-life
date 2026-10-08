@@ -146,7 +146,8 @@
   "events": {
     "blizzard_sign": "res://assets/art/events/blizzard_sign.png",
     "fire_sign": "res://assets/art/events/fire_sign.png",
-    "wolverine_mobbed": "res://assets/art/events/wolverine_mobbed.png"
+    "wolverine_mobbed": "res://assets/art/events/wolverine_mobbed.png",
+    "tundra_joint_hunt": "res://assets/art/events/tundra_joint_hunt.png"
   },
   "terrain_backgrounds": {
     "ice": "res://assets/art/backgrounds/terrain/ice.png",
