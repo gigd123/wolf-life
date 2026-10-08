@@ -255,7 +255,7 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 **對雪況規則的修正**：雪的效果要依體型與腳的承重分開算，不能一律「雪越深對狼越有利」。
 - 白尾鹿（腿短、體輕）：深雪、硬雪殼對狼有利（鹿陷得比狼深）。
 - 駝鹿（腿長、體重大）：深雪、硬雪殼對狼不利，或至少不利於狼的追擊（狼在深雪裡掙扎，雪殼妨礙狼、不妨礙駝鹿）；只有極深的雪才拖慢駝鹿。
-- 北美馴鹿（蹄大）：待查；目前只有「冬天選雪淺處覓食」與幼鹿在深雪中被追上的記述。
+- 北美馴鹿（蹄大）：深雪會縮小馴鹿的速度優勢，狼較能追上（書：幼鹿逃進深雪被追上的案例；整體敘述）。硬雪殼看雪面能不能承受各自的重量：撐得住馴鹿、撐不住狼時馴鹿有利；撐不住馴鹿時馴鹿也被拖慢（推論，沒有具體案例編號）。
 - 1.8 的雪況做成「每種獵物各自的雪況加減」，而不是一個全體通用的加成。
 
 **駝鹿的反擊依狀態**（取代固定的反擊機率）
@@ -268,8 +268,21 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 | 老、受傷、虛弱 | 防禦變差 |
 | 後腿受傷 | 跑得慢，也踢得比較弱 |
 
-**仍待確認**
-- 北美馴鹿在深雪、雪殼中和狼的比較。
+**三種大型獵物的對照（2026-10-08 整理，含使用者補充）**
+
+| | 北美馴鹿 | 駝鹿 | 白尾鹿 |
+| --- | --- | --- | --- |
+| 核心防禦 | 逃跑、群體 | 站定反擊（壯年）／逃跑（老弱） | 逃跑（翹尾旗後急轉） |
+| 狼找的 | 群裡掉隊、幼鹿、弱者 | 「會跑的那一頭」：老、弱、受傷 | 幼鹿、虛弱、深雪中的鹿 |
+| 健康成年 | 很難追到 | 站著就能嚇退狼 | 沒雪或淺雪時很快甩開 |
+| 反擊 | 有（角、蹄），被逼到水裡或包圍時才回頭，不是主要風險 | 非常危險（踢、踩、衝撞） | 蹄能傷狼；淺雪時較危險 |
+| 深雪 | 縮小馴鹿的優勢 | 不利於狼 | 對狼大幅有利 |
+| 硬雪殼 | 看雪面撐不撐得住（推論） | 妨礙狼、不妨礙駝鹿（書，案例 56） | 對狼有利（使用者資料） |
+| 水 | 過河拉開距離、站在水裡用角防禦 | 水邊是避難處 | 跳水甩狼（半參考） |
+| 狼的打法 | 試探群體、挑弱者、追逐 | 測試 → 找會逃的 → 從後方長時間消耗（可分好幾天） | 看雪況：深雪長距離跟隨，否則挑弱者短追 |
+| 遊戲的核心問題 | 群裡有沒有弱者？ | 這一頭敢不敢跑？ | 雪夠不夠深？這一頭健不健康？ |
+
+另：「以群計」49～56% 的成功率意思是「這群裡出現一個抓得到的個體」，不是一群有一半機率被殺。
 
 來源：Mech《The Wolves of Isle Royale》（NPS Fauna Series No. 7，1966；npshistory.com/series/fauna/7）；isleroyalewolf.org〈The Population Biology of Isle Royale Wolves and Moose〉；Canadian Field-Naturalist（Isle Royale 狼在水中攻擊駝鹿 2008；獵物殺死的狼的紀錄）；Alces 期刊（〈Wolf predation on moose – a case study using hunter observations〉、Riding Mountain 夏季食性、Samuel 2007 冬蜱與駝鹿死亡回顧）；Michigan Tech〈Wolf-avoidance strategies of moose〉；ADF&G Alaska Fish & Wildlife News（駝鹿怎麼踢）；Minnesota DNR 狼管理計畫（North Shore Journal 2026 報導）；Ecology Letters 2010（Peterson 等，駝鹿骨關節炎，mtu.edu）；Frontiers in Ecology and Evolution 2022（Hoy, Vucetich & Peterson，狼依年齡與骨關節炎挑選駝鹿）；Duluth News Tribune〈New research confirms old theory: wolves really do prefer old and sick moose〉；European Wilderness Society 單狼攻擊駝鹿影片；瑞典 SLU 研究（stud.epsilon.slu.se/12940）；CBC〈Coyotes are moose killers〉；USGS〈Observation of a wolf killed by a deer〉；NPS Fauna Series No. 5（Murie，深雪中的駝鹿）。
 
