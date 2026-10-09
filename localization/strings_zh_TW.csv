@@ -539,6 +539,7 @@ debug.already_adult,已經不是次成年期了
 debug.auto.done,模擬完成，已交還給你
 summary.adult_body,成年時：{text}
 summary.potential,巔峰上限：{list}
+summary.adult_stats,成年時的能力：{list}
 combat.option.attack,直接攻擊
 combat.option.threaten,威嚇
 combat.option.probe,試探

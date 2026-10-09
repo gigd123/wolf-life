@@ -87,6 +87,12 @@ func _ready() -> void:
 		for stat in Growth.ALL_STATS:
 			caps.append(tr("stat." + stat) + " " + str(int(round(float(potential.get(stat, 0.0))))))
 		_add_line(box, tr("summary.potential").replace("{list}", "　".join(caps)))
+		var adult_stats: Dictionary = log_data.get("adult_stats", {})
+		if not adult_stats.is_empty():
+			var now: Array[String] = []
+			for stat in Growth.ALL_STATS:
+				now.append(tr("stat." + stat) + " " + str(int(round(float(adult_stats.get(stat, 0.0))))))
+			_add_line(box, tr("summary.adult_stats").replace("{list}", "　".join(now)))
 
 	var regions_visited: Array = log_data.get("regions_visited", [])
 	_add_line(box, tr("summary.regions_visited").replace("{count}", str(regions_visited.size())))

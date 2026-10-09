@@ -418,6 +418,11 @@ func _settle_adulthood() -> void:
 			bonus[stat] = g
 	life_log["adult_bonus"] = bonus
 	wolf.clamp_stats()
+	# 成年那一刻的能力值（含成年的成長），一生回顧與試玩紀錄用來比較兩隻狼；死亡時的能力值已經過老年衰退
+	var adult_stats: Dictionary = {"age": snapped(wolf.age_years, 0.01)}
+	for stat in Growth.ALL_STATS:
+		adult_stats[stat] = snapped(float(wolf.get(stat)), 0.1)
+	life_log["adult_stats"] = adult_stats
 	life_log["adult_body"] = adult_body_key()
 	_queue_notice({"type": "adult_transition"})
 
