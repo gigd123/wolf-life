@@ -21,6 +21,7 @@
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
 | `docs/progress.md` | 進度紀錄（由你維護） | 每次開始與結束時 |
 | `docs/progress-archive.md` | 從 progress.md 移出的已完成步驟細節、模擬結果、已解決的待確認 | 需要查過去的實作細節或決定時 |
+| `docs/testing-guide.md` | 遇過的 bug 歸類、每次改動要跑的檢查、回歸測試案例、headless 測試寫法、模擬基準值 | 修 bug、做完一個步驟要測試時；修完新的 QA 時更新 |
 | `docs/playtest-checklist.md` | 試玩驗證清單：剩下的驗收與目視確認項目、觸發方法；使用者在這份打勾 | 使用者回報試玩結果時 |
 
 `SPEC.md` 與 `DESIGN.md` 衝突時，以 `SPEC.md` 為準；差異列在 `SPEC.md` 的「與 DESIGN.md 的差異」。
@@ -44,6 +45,7 @@
 ## Godot 檢查
 
 - 修改 `.gd` / `.tscn` / `project.godot` 後，執行 `bash tools/godot_check.sh` 確認匯入、編譯、主場景啟動都沒有錯誤，再 commit。
+- 新增或修改文案後，執行 `python3 tools/check_keys.py` 確認翻譯鍵沒有漏（QA-66）。其他檢查項目見 `docs/testing-guide.md`。
 - 雲端 session 會由 SessionStart hook（`tools/install_godot.sh`）自動安裝 Godot headless；本機請設定 `GODOT=<Godot console 執行檔路徑>`。
 - 雲端沒有畫面，UI 排版與視覺效果需由使用者在本機 Godot 編輯器確認。完成需要目視確認的步驟時，在 `progress.md` 列出要使用者檢查的項目。
 
