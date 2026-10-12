@@ -32,6 +32,7 @@ const STAGE_NAMES := {
 
 var wolf: Wolf
 var animal_id: String
+var ambush_bonus: float = 0.0 # 守在水邊時看到的獵物：潛近與撲抓的加成（Phase 1.7b 探索改版）
 var life_stage: String
 var depth: String
 var terrain: String
@@ -320,6 +321,9 @@ func _pounce_option(id: String) -> Dictionary:
 		t -= penalty
 	if pounce_bonus > 0.0:
 		factors.append({"key": "factor.found_hiding", "good": true, "weight": pounce_bonus})
+	if ambush_bonus > 0.0:
+		factors.append({"key": "factor.ambush_water", "good": true, "weight": ambush_bonus})
+		t += ambush_bonus
 	if reaction == "counter":
 		factors.append({"key": "factor.cornered", "good": false, "weight": 0.0, "info": true})
 	var value: float = float(cfg.get("base", 0.7)) + diff + w + t + pounce_bonus + float(opt.get("bonus", 0.0))
@@ -364,6 +368,9 @@ func _stalk_option(id: String) -> Dictionary:
 	if stealth > 0.0:
 		factors.append({"key": "factor.tendency.stealth", "good": true, "weight": stealth})
 		t += stealth
+	if ambush_bonus > 0.0:
+		factors.append({"key": "factor.ambush_water", "good": true, "weight": ambush_bonus})
+		t += ambush_bonus
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
 	var value: float = float(cfg.get("base", 0.58)) + diff + w + t + stalk_bonus + float(opt.get("bonus", 0.0))

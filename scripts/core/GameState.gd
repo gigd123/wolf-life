@@ -41,6 +41,10 @@ var pending_events: Array = []
 var events_today: int = 0
 # 陌生灰狼的範圍（開新狼時決定）；在範圍內連續停留的時段數。
 var stranger_territory: String = ""
+# 會延續的個體（Phase 1.7b 探索改版）：[{id, region, animal, stage, trait, until}]，until 是 days_lived 的期限。存檔。
+var notables: Array = []
+var hunting_notable: int = 0 # 正在獵的是哪一頭（獵到就從 notables 移除）
+var routine_running: bool = false # 「照常過日子」代為行動中：知識最多累積到「通常」
 var territory_periods: int = 0
 # 具名 NPC 狼（SPEC 1.6「陌生灰狼」）：{id: NpcWolf}。陌生灰狼的範圍同步在 stranger_territory（牠死了就是空字串）。
 var npcs: Dictionary = {}
@@ -82,6 +86,7 @@ func new_game(start_den: String) -> void:
 	den_region = start_den
 	current_region = start_den
 	found_sleep_spots = {}
+	notables = []
 	region_depletion = {}
 	wind_dir = RNGService.randi_range(0, 3)
 	region_knowledge = {start_den: {"visited": true, "features": []}}
@@ -611,7 +616,9 @@ func _die(cause: String) -> void:
 # --- Player actions ---
 
 func available_actions() -> Array[String]:
-	var actions: Array[String] = ["explore", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
+	var actions: Array[String] = ["explore", "explore_modes", "find_sleep_spot", "short_rest", "rest_until", "sleep"]
+	if can_routine():
+		actions.append("routine")
 	var region: Dictionary = EncounterSystem.region_data(current_region)
 	if not region.get("gather_weights", {}).is_empty():
 		actions.append("gather")
@@ -784,13 +791,18 @@ func _feature_known_here(flag: String) -> bool:
 			return true
 	return false
 
-func action_explore() -> Dictionary:
+func action_explore(mode: String = "trail") -> Dictionary:
 	_record_action("explore")
+	if mode != "trail":
+		record_decision("explore." + mode)
+	var mc := ExploreSystem.mode_cfg(mode)
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
-	GameTime.advance_turns(int(costs.get("explore", 1)))
+	GameTime.advance_turns(int(costs.get("explore", 1)) + int(mc.get("turns", 0)))
 	if not wolf.alive:
 		return {}
 	_spend_action_stamina("explore")
+	wolf.stamina -= float(mc.get("stamina", 0))
+	wolf.clamp_stats()
 	Growth.train_activity(wolf, "explore")
 	# 暴風雪中什麼都看不見，也不能狩獵
 	if blizzard_here():
@@ -820,8 +832,13 @@ func action_explore() -> Dictionary:
 		"prey_knowledge": prey_knowledge_mults(current_region, GameTime.current_period()),
 		"weather": weather,
 		"stranger_territory": stranger_territory,
+		"mode": mode,
+		"marks": _nearby_marks(),
+		"notables": _notables_here(),
 	})
 	match current_discovery.get("kind", ""):
+		"mark":
+			Growth.learn_flat(wolf, "perception", "explore_perception")
 		"feature":
 			var knowledge: Dictionary = region_knowledge.get(current_region, {"visited": true, "features": []})
 			knowledge["features"].append(current_discovery["feature_id"])
@@ -831,8 +848,113 @@ func action_explore() -> Dictionary:
 			# 新鮮線索與直接目擊自動累積「獵物出沒」知識；陳舊線索要玩家選「記下」。
 			if current_discovery.get("source_kind", "") == "prey" and (current_discovery.get("fresh", false) or not current_discovery.get("fresh_known", true)):
 				_learn_prey_sighting(current_discovery["source"])
+			# 看到受傷的成體：記下牠，幾天內在這一區可能再遇到（提案之十 D）
+			if current_discovery.get("injured", false) and not current_discovery.get("again", false):
+				_add_notable(current_discovery)
 	state_changed.emit()
 	return current_discovery
+
+# 附近其他狼的氣味：黑狼的範圍在這一區或相鄰；苔原狼這陣子在這一區或相鄰。
+func _nearby_marks() -> Array:
+	var list: Array = []
+	var near: Array = adjacent_regions().duplicate()
+	near.append(current_region)
+	var npc := stranger()
+	if npc != null and npc.alive and stranger_territory != "" and near.has(stranger_territory):
+		list.append({"who": "stranger_wolf", "region": stranger_territory})
+	var t: String = tundra_wolves_region()
+	if t != "" and near.has(t):
+		list.append({"who": "tundra_wolf", "region": t})
+	return list
+
+func _notables_here() -> Array:
+	var today: int = int(life_log.get("days_lived", 1))
+	notables = notables.filter(func(n): return int(n.get("until", 0)) >= today)
+	return notables.filter(func(n): return str(n.get("region", "")) == current_region)
+
+func _add_notable(d: Dictionary) -> void:
+	var id: int = int(life_log.get("next_notable_id", 1))
+	life_log["next_notable_id"] = id + 1
+	var entry := {"id": id, "region": current_region, "animal": str(d.get("source", "")), "stage": str(d.get("life_stage", "adult")),
+		"trait": str(d.get("trait", "lame")), "until": int(life_log.get("days_lived", 1)) + int(GameData.discovery.get("notable", {}).get("days", 5))}
+	notables.append(entry)
+	current_discovery["notable_id"] = id
+
+# 啃別人吃剩的殘骸（提案之十 B）：一點點飽食度、1 回合。
+func eat_remains() -> int:
+	current_discovery = {}
+	GameTime.advance_turns(1)
+	var gain: int = int(GameData.discovery.get("remains_hunger", 6))
+	wolf.hunger += gain
+	wolf.clamp_stats()
+	record_decision("explore.remains")
+	state_changed.emit()
+	return gain
+
+# 探索到有值得注意的發現為止（提案之十 E）：最多 max_tries 次；回傳 {"discovery": 最後的發現, "skipped": [略過的發現]}。
+func action_explore_until(mode: String = "trail") -> Dictionary:
+	var skipped: Array = []
+	var tries: int = int(GameData.discovery.get("until", {}).get("max_tries", 4))
+	var d: Dictionary = {}
+	for i in tries:
+		d = action_explore(mode)
+		if d.is_empty() or not wolf.alive or is_notable_discovery(d) or pending_events.size() > 0:
+			break
+		skipped.append(d)
+		if i < tries - 1:
+			clear_discovery()
+	return {"discovery": d, "skipped": skipped}
+
+# 照常過日子（Phase 1.7b，提案之十 E）：成年後才能用；大火、暴風雪、進食、遭遇中不能用。
+func can_routine() -> bool:
+	if wolf == null or not wolf.alive or wolf.life_stage() == Wolf.LifeStage.SUBADULT:
+		return false
+	if not fire.is_empty() or blizzard_here() or is_feeding() or not current_discovery.is_empty() or not pending_events.is_empty():
+		return false
+	return true
+
+# 代為行動 days 天（沿用自動玩家），遇到值得注意的事就停下。回傳摘要：{reason, encounter, days, prey, nights}。
+func run_routine(days: int, style: String) -> Dictionary:
+	var before_prey: Dictionary = life_log.get("prey_count", {}).duplicate()
+	var before_days: int = int(life_log.get("days_lived", 1))
+	var before_den: int = int(life_log.get("stats", {}).get("nights", {}).get("den", 0))
+	var before_wild: int = int(life_log.get("wild_nights", 0))
+	_record_action("routine")
+	record_decision("routine." + style)
+	auto_playing = true
+	routine_running = true
+	var ap := AutoPlayer.new("small_only", "cautious")
+	ap.start_routine(days, style)
+	var guard := 0
+	while not ap.done() and guard < days + 2:
+		ap.step(1)
+		guard += 1
+	if ap.stop_reason == "" and wolf.alive:
+		ap.stop_reason = "done"
+	ap.finish()
+	routine_running = false
+	var gained: Dictionary = {}
+	for k in life_log.get("prey_count", {}).keys():
+		var n: int = int(life_log["prey_count"][k]) - int(before_prey.get(k, 0))
+		if n > 0:
+			gained[k] = n
+	state_changed.emit()
+	return {"reason": ap.stop_reason, "encounter": ap.stop_encounter, "days": int(life_log.get("days_lived", 1)) - before_days,
+		"prey": gained, "den_nights": int(life_log.get("stats", {}).get("nights", {}).get("den", 0)) - before_den,
+		"wild_nights": int(life_log.get("wild_nights", 0)) - before_wild, "alive": wolf.alive}
+
+# 值得停下來的發現：新鮮可追的獵物、直接看到的獵物、危險的線索、殘骸、地點、其他狼、記著的那頭。
+func is_notable_discovery(d: Dictionary) -> bool:
+	match str(d.get("kind", "")):
+		"nothing":
+			return false
+		"clue":
+			if d.get("source_kind", "") == "gather":
+				return false
+			if d.get("source_kind", "") == "prey":
+				return d.get("fresh", false) or d.get("clue", "") == "sight" or d.get("injured", false)
+			return true
+	return true
 
 func track_chance() -> Dictionary:
 	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty())
@@ -878,6 +1000,7 @@ func action_track() -> Dictionary:
 		var worst := HuntSystem.main_negative_factor(info["factors"])
 		var reason: String = "" if worst.is_empty() else "reason." + str(worst["key"]).trim_prefix("factor.").replace(".", "_")
 		return {"success": false, "reason_key": reason}
+	hunting_notable = int(d.get("notable_id", 0))
 	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true,
 		str(d.get("location", "")), bool(d.get("injured", false)))}
 
@@ -885,8 +1008,11 @@ func action_track() -> Dictionary:
 func action_hunt_sighted() -> HuntSystem:
 	var d: Dictionary = current_discovery
 	current_discovery = {}
-	return start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false,
+	hunting_notable = int(d.get("notable_id", 0))
+	var h := start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false,
 		str(d.get("location", "")), bool(d.get("injured", false)))
+	h.ambush_bonus = float(d.get("ambush", 0.0))
+	return h
 
 # 採集探索到的採集物。
 func action_gather_discovered() -> String:
@@ -1024,6 +1150,9 @@ func learn(entry: Dictionary) -> int:
 	if key == "":
 		return 0
 	var existing: Dictionary = knowledge.get(key, entry.duplicate())
+	# 照常過日子（代為行動）時，知識最多累積到「通常」，「確定」要自己經歷（Phase 1.7b）
+	if routine_running and int(existing.get("count", 0)) + 1 >= int(GameData.knowledge.get("confirm_count", 3)):
+		return int(existing.get("count", 0))
 	existing["count"] = int(existing.get("count", 0)) + 1
 	knowledge[key] = existing
 	if existing["count"] <= int(GameData.knowledge.get("confirm_count", 3)):
@@ -1939,6 +2068,9 @@ func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	if new_rank > current_rank:
 		life_log["biggest_prey"] = animal_id
 		life_log["biggest_prey_stage"] = life_stage
+	if hunting_notable != 0:
+		notables = notables.filter(func(n): return int(n.get("id", 0)) != hunting_notable)
+		hunting_notable = 0
 	# 第一次獨自獵倒成年的大型獵物（Phase 1.7b 的里程碑）
 	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(life_stage, {})
 	if not life_log.has("first_big_kill") and life_stage != "juvenile" \
@@ -3652,6 +3784,7 @@ func to_dict() -> Dictionary:
 		"den_region": den_region,
 		"current_region": current_region,
 		"found_sleep_spots": found_sleep_spots,
+		"notables": notables,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
@@ -3688,6 +3821,7 @@ func load_from_dict(data: Dictionary) -> void:
 	den_region = data.get("den_region", "")
 	current_region = data.get("current_region", den_region)
 	found_sleep_spots = data.get("found_sleep_spots", {})
+	notables = data.get("notables", [])
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})

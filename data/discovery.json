@@ -10,6 +10,18 @@
   "juvenile_chance": 0.3,
   "adult_variants": { "white_tailed_deer": { "buck": 0.4 } },
   "injured_chance": 0.08,
+  "_modes_comment": "探索方式（Phase 1.7b，提案之十）。turns／stamina：比照一般探索的額外時間與體力（stamina 負的代表比較省力）；nothing_mult：什麼都沒發現的機率倍率；feature_mult：發現具名地點的倍率；threat_mult：灰熊、黑狼線索的權重倍率；clues：獵物線索只會是這幾種；remains：發現別人吃剩的殘骸的機率；mark：發現其他狼的氣味標記的機率（牠們在這一區或相鄰時）；spot：知道這個地點時的加成（spot_nothing_mult、spot_fresh_bonus）；needs：要有這種地形或地點才能用；ambush：在水邊伏著，看到的獵物可以伏擊（潛近成功率 + ambush_bonus）；dawn_dusk_mult：清晨、黃昏獵物來喝水的倍率（其他時段 nothing 變多）。",
+  "modes": {
+    "trail": { "turns": 0, "stamina": 0, "nothing_mult": 1.0, "feature_mult": 1.0, "threat_mult": 1.0, "remains": 0.04, "mark": 0.04 },
+    "ridge": { "turns": 0, "stamina": 2, "nothing_mult": 1.2, "feature_mult": 1.2, "threat_mult": 2.0, "clues": ["sight", "scent"], "remains": 0.12, "mark": 0.08, "spot": "lookout", "spot_nothing_mult": 0.5, "spot_fresh_bonus": 0.15, "wind_good_chance": 0.5, "wind_bad_nothing_mult": 2.0 },
+    "water": { "turns": 1, "stamina": -2, "nothing_mult": 1.4, "feature_mult": 0.5, "threat_mult": 0.5, "clues": ["sight"], "remains": 0.0, "mark": 0.0, "needs": ["stream", "river_willow", "hidden_pool"], "ambush": true, "ambush_bonus": 0.12, "dawn_dusk_mult": 0.5, "spot": "hidden_pool", "spot_nothing_mult": 0.7 },
+    "border": { "turns": 0, "stamina": 3, "nothing_mult": 1.0, "feature_mult": 1.0, "threat_mult": 3.0, "remains": 0.05, "mark": 0.35 }
+  },
+  "_notable_comment": "會延續的個體（提案之十 D）：探索看到受傷、跛腳、年老的成體時記下牠，days 天內在同一區探索、同種獵物出現時有 again_chance 的機率又是牠。",
+  "notable": { "days": 5, "again_chance": 0.35, "traits": { "lame": 2, "old": 1 } },
+  "remains_hunger": 6,
+  "_until_comment": "探索到有值得注意的發現為止：最多 max_tries 次探索（每次照常花時間與體力），平淡的結果（陳舊的線索、什麼都沒有、採集物）一次帶過。",
+  "until": { "max_tries": 4 },
   "clue_weights": {
     "white_tailed_deer": { "scent": 3, "track": 3, "sound": 1, "sign": 2, "sight": 1 },
     "hare": { "scent": 1, "track": 3, "sound": 1, "sign": 2, "sight": 2 },

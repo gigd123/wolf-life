@@ -2,7 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
-const ACTION_ORDER := ["explore", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
 const CURRENT_REGION_COLOR := Color(1.0, 0.86, 0.45) # 地圖上目前位置的字與框
@@ -1347,6 +1347,10 @@ func _on_action_button(action_id: String) -> void:
 	match action_id:
 		"explore":
 			_show_discovery(GameState.action_explore())
+		"explore_modes":
+			_show_explore_modes()
+		"routine":
+			_show_routine_menu()
 		"gather":
 			var result := GameState.action_gather()
 			if result.get("found", false):
@@ -1469,6 +1473,13 @@ func _show_discovery(d: Dictionary) -> void:
 			encounter_overlay.visible = false
 			_on_action_button("return_to_carcass")
 		)
+	if d.get("kind", "") == "remains":
+		_add_encounter_button(tr("ui.eat_remains"), func():
+			var gain: int = GameState.eat_remains()
+			_log(tr("log.eat_remains").replace("{n}", str(gain)))
+			encounter_overlay.visible = false
+			_refresh()
+		)
 	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
 		_add_threat_options(d)
 	elif d.get("kind", "") == "clue":
@@ -1576,6 +1587,83 @@ func _sign_of(animal_id: String, life_stage: String) -> String:
 	var signs: Dictionary = GameData.discovery.get("signs", {})
 	return str(signs.get(animal_id + "." + life_stage, signs.get(animal_id, "browse")))
 
+# 照常過日子（Phase 1.7b，提案之十 E）：選天數與方式，代為行動，有事就停下、交還給你。
+func _show_routine_menu() -> void:
+	encounter_message.text = tr("routine.title")
+	encounter_detail.text = tr("routine.hint")
+	_set_wolf_pose(encounter_sprite, "walk")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	for style in ["small", "big", "heal"]:
+		for days in [1, 3]:
+			var s: String = style
+			var n: int = days
+			_add_encounter_button(tr("routine.option." + style).replace("{n}", str(days)), func():
+				encounter_overlay.visible = false
+				_run_routine(n, s)
+			)
+	_add_encounter_button(tr("ui.leave"), func(): encounter_overlay.visible = false)
+	encounter_overlay.visible = true
+
+func _run_routine(days: int, style: String) -> void:
+	var res := GameState.run_routine(days, style)
+	var parts: Array[String] = []
+	for k in res.get("prey", {}).keys():
+		parts.append("%s %d" % [tr("animal." + str(k)), int(res["prey"][k])])
+	var prey_text: String = "、".join(parts) if not parts.is_empty() else tr("routine.no_prey")
+	var body: String = tr("routine.summary").replace("{days}", str(int(res.get("days", 0)))).replace("{prey}", prey_text) \
+		.replace("{den}", str(int(res.get("den_nights", 0)))).replace("{wild}", str(int(res.get("wild_nights", 0))))
+	body += "\n\n" + tr("routine.stop." + str(res.get("reason", "done")))
+	_log(body.replace("\n\n", ""))
+	if not res.get("alive", true):
+		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	_show_card(tr("routine.card_title"), body)
+	if not (res.get("encounter", {}) as Dictionary).is_empty():
+		_on_encounter_triggered(res["encounter"])
+	elif not GameState.current_discovery.is_empty():
+		_show_discovery(GameState.current_discovery)
+	_process_events()
+
+# 換個方式探索（Phase 1.7b 探索改版）：獸徑、登高嗅風、守在水邊、巡邊界，以及「探索到有值得注意的發現為止」。
+func _show_explore_modes() -> void:
+	encounter_message.text = tr("explore.modes.title")
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "walk")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	var known: Array = GameState.known_features(GameState.current_region)
+	for mode in ["trail", "ridge", "water", "border"]:
+		if not ExploreSystem.mode_available(mode, GameState.current_region, known):
+			continue
+		var spot: String = str(ExploreSystem.mode_cfg(mode).get("spot", ""))
+		var label: String = tr("explore.mode." + mode + (".spot" if spot != "" and known.has(spot) else ""))
+		var m: String = mode
+		_add_encounter_button(label, func():
+			encounter_overlay.visible = false
+			_show_discovery(GameState.action_explore(m))
+		)
+	_add_encounter_button(tr("explore.mode.until"), func():
+		encounter_overlay.visible = false
+		var res := GameState.action_explore_until()
+		var skipped: Array = res.get("skipped", [])
+		if not skipped.is_empty():
+			_log(tr("explore.until.skipped").replace("{n}", str(skipped.size())))
+		var d: Dictionary = res.get("discovery", {})
+		if not d.is_empty() and GameState.is_notable_discovery(d):
+			_show_discovery(d)
+		elif not d.is_empty():
+			_log(_discovery_text(d))
+			GameState.clear_discovery()
+			_log(tr("explore.until.none"))
+			_refresh()
+		else:
+			_refresh()
+		_process_events()
+	)
+	_add_encounter_button(tr("ui.leave"), func(): encounter_overlay.visible = false)
+	encounter_overlay.visible = true
+
 func _discovery_text(d: Dictionary) -> String:
 	var location: String = tr("explore.location." + str(d.get("location", "")))
 	match d.get("kind", ""):
@@ -1584,9 +1672,19 @@ func _discovery_text(d: Dictionary) -> String:
 		"carcass":
 			return tr("explore.carcass" + (".frozen" if d.get("frozen", false) else "")).replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d["animal_id"])))
+		"nothing" when d.get("wind_bad", false):
+			return tr("explore.ridge.wind_bad")
+		"nothing" when str(d.get("mode", "")) == "water":
+			return tr("explore.water.nothing").replace("{location}", location)
 		"nothing":
 			return tr("explore.nothing").replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))
+		"remains":
+			return tr("explore.remains").replace("{location}", location).replace("{animal}", tr("animal." + str(d["animal_id"])))
+		"mark":
+			var who_key: String = "explore.mark." + str(d.get("who", ""))
+			return tr(who_key + (".here" if str(d.get("region", "")) == GameState.current_region else ".near")) \
+				.replace("{location}", location).replace("{region}", tr("region." + str(d.get("region", ""))))
 		"feature":
 			return tr("explore.feature").replace("{location}", location) \
 				.replace("{feature}", tr("feature." + str(d["feature_id"])))
@@ -1602,7 +1700,10 @@ func _discovery_text(d: Dictionary) -> String:
 		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
 	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
 	if d.get("injured", false):
-		animal = tr("explore.injured") + animal
+		# 會延續的個體：寫出牠的特徵（跛腳、年老），再遇到時「又是那頭…」（提案之十 D）
+		animal = tr("explore.trait." + str(d.get("trait", "injured"))) + animal
+		if d.get("again", false):
+			return tr("explore.again").replace("{location}", location).replace("{animal}", animal)
 	# 已經「確定」的事件壓縮成一行，不重新演出完整文字。
 	if (d.get("fresh", false) or d.get("clue", "") == "sight") and GameState.is_confirmed({"type": "prey", "animal": d["source"],
 			"region": GameState.current_region, "period": GameTime.current_period()}):
@@ -1620,6 +1721,8 @@ func _discovery_text(d: Dictionary) -> String:
 		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + _sign_of(str(d["source"]), str(d.get("life_stage", "adult")))))
 	if not d.get("fresh_known", true):
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
+	if d.has("ambush"):
+		text += tr("explore.water.ambush")
 	return text
 
 # 發現畫面的圖：目擊到的動物用動物圖，採集物用物品圖示，其他用線索圖示。

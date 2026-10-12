@@ -15,7 +15,23 @@ extends RefCounted
 static func _cfg() -> Dictionary:
 	return GameData.discovery
 
-# ctx：region_id, season, period, depletion, wind_dir, known_features(Array)
+# 探索方式（Phase 1.7b）：trail 沿獸徑走、ridge 登高嗅風、water 守在水邊、border 巡一圈邊界。
+static func mode_cfg(mode: String) -> Dictionary:
+	return _cfg().get("modes", {}).get(mode, _cfg().get("modes", {}).get("trail", {}))
+
+# 這一區能不能用這種方式（守在水邊要有溪流、河谷柳叢或知道水潭）。
+static func mode_available(mode: String, region_id: String, known_features: Array) -> bool:
+	var needs: Array = mode_cfg(mode).get("needs", [])
+	if needs.is_empty():
+		return true
+	var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+	for n in needs:
+		if terrains.has(n) or known_features.has(n):
+			return true
+	return false
+
+# ctx：region_id, season, period, depletion, wind_dir, known_features(Array)；
+# Phase 1.7b 另外有 mode（探索方式）、marks（附近其他狼的氣味：[{who, region}]）、notables（這一區會延續的個體）。
 static func generate(ctx: Dictionary) -> Dictionary:
 	var cfg := _cfg()
 	var region_id: String = ctx["region_id"]
@@ -23,6 +39,16 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var terrains: Array = region.get("terrains", ["dense_forest"])
 	var location: String = terrains[RNGService.randi_range(0, terrains.size() - 1)]
 	var known_features: Array = ctx.get("known_features", [])
+	var mode: String = str(ctx.get("mode", "trail"))
+	var mc := mode_cfg(mode)
+	var spot_known: bool = mc.has("spot") and known_features.has(str(mc["spot"]))
+	# 守在水邊：在水邊等，看到的就是來喝水的獵物
+	if mode == "water":
+		for t in ["stream", "river_willow"]:
+			if terrains.has(t):
+				location = t
+	# 登高嗅風看風向：順風時遠處的氣味都聞得到，逆風時幾乎沒用（文字寫出來）
+	var wind_good: bool = mode != "ridge" or RNGService.chance(float(mc.get("wind_good_chance", 0.5)) + (0.25 if spot_known else 0.0))
 
 	var mults := feature_prey_mults(known_features)
 	var knowledge_mults: Dictionary = ctx.get("prey_knowledge", {})
@@ -39,8 +65,29 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var nothing_min: float = float(cfg.get("nothing_chance_min", 0.08))
 	var nothing_max: float = float(cfg.get("nothing_chance_max", 0.15))
 	var nothing_chance: float = nothing_min + (nothing_max - nothing_min) * clamp(1.0 - ratio, 0.0, 1.0)
+	nothing_chance *= float(mc.get("nothing_mult", 1.0))
+	if spot_known:
+		nothing_chance *= float(mc.get("spot_nothing_mult", 1.0))
+	if not wind_good:
+		nothing_chance *= float(mc.get("wind_bad_nothing_mult", 1.0))
+	if mode == "water" and not ctx["period"] in ["dawn", "dusk"]:
+		nothing_chance = 1.0 - (1.0 - nothing_chance) * float(mc.get("dawn_dusk_mult", 1.0))
 	if RNGService.chance(nothing_chance):
-		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights)}
+		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights), "mode": mode, "wind_bad": not wind_good}
+
+	# 別人吃剩的殘骸（骨頭、碎肉）與其他狼的氣味標記（Phase 1.7b 的多樣結果）
+	var scorched_now: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
+	if not scorched_now and RNGService.chance(float(mc.get("remains", 0.0))):
+		var big: Array = []
+		for animal_id in weights.keys():
+			if str(GameData.animals.get(animal_id, {}).get("size", "small")) != "small":
+				big.append(animal_id)
+		if not big.is_empty():
+			return {"kind": "remains", "location": location, "animal_id": big[RNGService.randi_range(0, big.size() - 1)], "mode": mode}
+	var marks: Array = ctx.get("marks", [])
+	if not marks.is_empty() and RNGService.chance(float(mc.get("mark", 0.0))):
+		var m: Dictionary = marks[RNGService.randi_range(0, marks.size() - 1)]
+		return {"kind": "mark", "location": location, "who": str(m.get("who", "")), "region": str(m.get("region", region_id)), "mode": mode}
 
 	# 燒過一片焦黑（ctx.burn = burning／ash）：找不到次要特徵與採集物（SPEC 1.6「火後」）
 	var scorched: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
@@ -48,7 +95,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	for f in ([] if scorched else region.get("secondary_features", [])):
 		if not known_features.has(f):
 			unknown.append(f)
-	if not unknown.is_empty() and RNGService.chance(float(cfg.get("feature_chance", 0.12))):
+	if not unknown.is_empty() and RNGService.chance(float(cfg.get("feature_chance", 0.12)) * float(mc.get("feature_mult", 1.0))):
 		return {"kind": "feature", "location": location, "feature_id": unknown[RNGService.randi_range(0, unknown.size() - 1)]}
 
 	var sources: Dictionary = {}
@@ -60,7 +107,11 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		sources[item_id] = float(gather[item_id]) * float(cfg.get("gather_source_weight_mult", 0.5))
 	var threats := threat_weights(region_id, ctx["season"], str(ctx.get("stranger_territory", "?")))
 	for threat_id in threats.keys():
-		sources[threat_id] = threats[threat_id]
+		sources[threat_id] = float(threats[threat_id]) * float(mc.get("threat_mult", 1.0))
+	# 守在水邊只看得到來喝水的獵物（不採集）
+	if mode == "water":
+		for item_id in gather.keys():
+			sources.erase(item_id)
 	if sources.is_empty():
 		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights)}
 	var source: String = RNGService.weighted_pick(sources)
@@ -87,6 +138,13 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			clue_weights["scent"] = float(clue_weights["scent"]) * float(storm_cfg.get("scent_mult", 0.2))
 	if weather == "after_rain" and clue_weights.has("track"):
 		clue_weights["track"] = float(clue_weights["track"]) * float(storm_cfg.get("after_track_mult", 2.0))
+	# 探索方式限制線索種類（登高嗅風：遠遠看到或聞到；守在水邊：直接看到）
+	var only: Array = mc.get("clues", [])
+	if not only.is_empty():
+		var limited: Dictionary = {}
+		for c in only:
+			limited[c] = float(clue_weights.get(c, 1.0))
+		clue_weights = limited
 	var clue: String = RNGService.weighted_pick(clue_weights)
 
 	var fresh: bool = true
@@ -109,11 +167,28 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			if RNGService.chance(float(variants[variant])):
 				life_stage = variant
 				break
+	if spot_known and not fresh:
+		fresh = RNGService.chance(float(mc.get("spot_fresh_bonus", 0.0)))
 	# 偶爾遇到受傷的成體（走簡易狩獵流程）。
 	var injured: bool = life_stage != "juvenile" and RNGService.chance(float(cfg.get("injured_chance", 0.08)))
-	return {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
+	var result := {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
 		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage,
-		"injured": injured}
+		"injured": injured, "mode": mode}
+	if bool(mc.get("ambush", false)):
+		result["ambush"] = float(mc.get("ambush_bonus", 0.1))
+	# 會延續的個體（提案之十 D）：這一區記著的那頭（跛腳、年老）又出現了
+	var n_cfg: Dictionary = cfg.get("notable", {})
+	for n in ctx.get("notables", []):
+		if str(n.get("animal", "")) == source and RNGService.chance(float(n_cfg.get("again_chance", 0.35))):
+			result["life_stage"] = str(n.get("stage", "adult"))
+			result["injured"] = true
+			result["notable_id"] = int(n.get("id", 0))
+			result["trait"] = str(n.get("trait", "lame"))
+			result["again"] = true
+			return result
+	if injured:
+		result["trait"] = str(RNGService.weighted_pick(n_cfg.get("traits", {"lame": 1})))
+	return result
 
 # 灰熊依區域的競爭動物季節權重，陌生灰狼依固定的區域權重。
 # stranger_territory：陌生灰狼目前的範圍（"" = 牠已經死了，不再有牠的線索；"?" = 不考慮）。

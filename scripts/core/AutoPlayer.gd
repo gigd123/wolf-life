@@ -10,11 +10,21 @@ extends RefCounted
 # 除錯「跳到次成年期最後一天」用 start_from_current() + stop_before_adult。
 
 const MAX_YEARS := 15.0
+# 照常過日子時不必停下的小事件：照常處理（獵物靠近就獵、聽到狼嚎、下雨）
+const ROUTINE_IGNORE := ["prey_nearby", "howl", "storm", "storm_end", "after_rain"]
 const MAX_ACTIONS_PER_DAY := 80
 
 var prey: String
 var style: String
 var stop_before_adult: bool = false
+# 「照常過日子」（Phase 1.7b，提案之十 E）：代為行動 routine_days 天，遇到值得注意的事就停下、交還給玩家。
+# routine_style："small" 在附近獵小獵物、"big" 找大型獵物、"heal" 養傷（待在巢穴休息）。
+var routine: bool = false
+var routine_style: String = "small"
+var routine_end_day: int = 0
+var routine_start_injury: int = 0
+var stop_reason: String = ""
+var stop_encounter: Dictionary = {}
 var _finished: bool = false
 var _encounter: Dictionary = {}
 
@@ -72,14 +82,59 @@ func step(days: int) -> void:
 func _on_encounter(encounter: Dictionary) -> void:
 	_encounter = encounter
 
+# 開始照常過日子（呼叫端要先設 GameState.auto_playing = true）。
+func start_routine(days: int, style_policy: String) -> void:
+	routine = true
+	routine_style = style_policy
+	prey = "small_only" if style_policy != "big" else "deer_focus"
+	style = "cautious"
+	routine_end_day = int(GameState.life_log.get("days_lived", 1)) + days
+	routine_start_injury = GameState.wolf.injury
+	_connect()
+
+# 照常過日子要不要停下：有遭遇或事件、受傷變重、餓或血量低、換季到期、天數到了。
+func _routine_stop() -> bool:
+	if not _encounter.is_empty():
+		stop_reason = "encounter"
+		stop_encounter = _encounter
+		_encounter = {}
+	elif GameState.pending_events.any(func(e): return not ROUTINE_IGNORE.has(str(e.get("type", "")))):
+		stop_reason = "event"
+	elif GameState.wolf.injury > routine_start_injury:
+		stop_reason = "injured"
+	elif GameState.wolf.hunger < 40.0 and routine_style != "heal":
+		stop_reason = "hungry"
+	elif GameState.wolf.hunger < 25.0:
+		stop_reason = "hungry"
+	elif GameState.wolf.health < GameState.wolf.health_max * 0.5 and routine_style != "heal":
+		stop_reason = "hurt"
+	elif GameTime.season_due():
+		stop_reason = "season"
+	elif int(GameState.life_log.get("days_lived", 1)) >= routine_end_day:
+		stop_reason = "done"
+	elif routine_style == "heal" and GameState.wolf.injury == Wolf.Injury.NONE and GameState.wolf.health >= GameState.wolf.health_max * 0.95:
+		stop_reason = "healed"
+	if stop_reason != "":
+		_finished = true
+		return true
+	return false
+
 func _play_day() -> void:
 	var start_day: int = GameTime.day
 	var guard := 0
 	while not done() and GameTime.day == start_day and guard < MAX_ACTIONS_PER_DAY:
 		guard += 1
+		if routine and _routine_stop():
+			return
 		_handle_pending()
 		if done():
 			return
+		if routine and routine_style == "heal":
+			if GameTime.current_period() == "predawn":
+				GameState.action_sleep()
+			elif not _go_home():
+				GameState.action_short_rest()
+			continue
 		if GameTime.current_period() == "predawn":
 			GameState.action_sleep()
 			continue
@@ -150,6 +205,11 @@ func _handle_pending() -> void:
 
 func _explore_once() -> void:
 	var d: Dictionary = GameState.action_explore()
+	# 照常過日子：值得注意的發現（危險的線索、其他狼、殘骸、地點、記著的那頭…）留給玩家
+	if routine and _routine_notable(d):
+		stop_reason = "discovery"
+		_finished = true
+		return
 	if d.get("kind", "") == "tundra_wolves":
 		_meet_tundra(bool(d.get("charge", false)))
 		return
@@ -211,6 +271,17 @@ func _explore_once() -> void:
 		GameState.clear_discovery()
 		return
 	_play_hunt(hunt)
+
+func _routine_notable(d: Dictionary) -> bool:
+	var kind: String = str(d.get("kind", ""))
+	# 新發現的地點照常記下、剩肉照常啃、受傷的獵物照常獵；其他狼、殘骸、危險的線索交給玩家
+	if kind == "remains":
+		GameState.eat_remains()
+		return false
+	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
+	if kind in ["carcass", "tundra_wolves", "tundra_mob"]:
+		return true
+	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
 func _play_hunt(hunt: HuntSystem) -> void:
 	var guard := 0

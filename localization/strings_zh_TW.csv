@@ -398,6 +398,7 @@ feature.good_sleep_spot,一處好睡處
 feature.game_trail,獵物常走的小徑
 feature.fox_den,狐狸洞穴
 feature.hidden_pool,隱蔽的水潭
+feature.lookout,一處視野開闊的高處（瞭望點）
 region_main.stream_valley,一條溪流從山區流進林緣
 region_main.deep_forest,樹林茂密，溪水從林間穿過
 region_main.forest_edge_meadow,樹林在這裡漸漸稀疏，外面是開闊的空地
@@ -1115,3 +1116,47 @@ yearling.body,你已經和成年的狼一樣高了，腿也長了。可是看獵
 first_big_kill.title,第一次
 first_big_kill.body,你獨自扳倒了一頭{animal}。牠倒下時，你才發現自己的腿在發抖。從今天起，你不再只是撿別人剩下的了。
 summary.first_big_kill,第一次獨自獵倒成年的大型獵物：{age} 歲（{animal}）
+action.explore_modes,換個方式探索…
+explore.modes.title,要怎麼探索？
+explore.mode.trail,沿獸徑走（找獵物）
+explore.mode.ridge,登高嗅風（看遠處、找殘骸與其他動物，看風向）
+explore.mode.ridge.spot,上瞭望點嗅風（你知道一處好的高處）
+explore.mode.water,守在水邊（多花時間，清晨黃昏最有機會）
+explore.mode.water.spot,守在水潭邊（你知道一處隱蔽的水潭）
+explore.mode.border,巡一圈邊界（找其他狼與灰熊的痕跡，比較累）
+explore.mode.until,探索到有值得注意的發現為止（最多半天）
+explore.until.skipped,你在這一帶轉了 {n} 圈，只看到些陳舊的痕跡。
+explore.until.none,這半天沒有什麼值得停下來的。
+explore.ridge.wind_bad,你爬上高處，可是風從背後吹來，什麼也聞不到。
+explore.water.nothing,你伏在{location}的水邊等了好一陣子，沒有動物來喝水。
+explore.water.ambush,牠低頭喝水，還沒發現你。
+explore.remains,{location}，你發現一具被吃剩的{animal}殘骸，骨頭上還掛著一點肉。
+explore.mark.stranger_wolf.here,{location}，樹根上有新鮮的尿痕，是那隻黑狼留下的。牠最近就在這一帶。
+explore.mark.stranger_wolf.near,{location}，你聞到黑狼的氣味標記，從{region}那邊延過來。
+explore.mark.tundra_wolf.here,{location}，雪地上有苔原狼刨過的痕跡和氣味標記，牠們最近就在這一帶。
+explore.mark.tundra_wolf.near,{location}，你聞到苔原狼的氣味，是從{region}那邊過來的。
+explore.trait.lame,跛腳的
+explore.trait.old,年老的
+explore.trait.injured,受傷的
+explore.again,{location}，又是那頭{animal}。牠還在這一帶。
+ui.eat_remains,啃剩下的肉
+log.eat_remains,你撕下骨頭上剩的一點肉（飽食度 +{n}）。
+factor.ambush_water,在水邊伏擊
+action.routine,照常過日子…
+routine.title,這幾天要怎麼過？
+routine.hint,你照平常的方式過日子，遇到值得注意的事就會停下來，交給你決定。
+routine.option.small,在附近獵小獵物 {n} 天
+routine.option.big,找大型獵物 {n} 天
+routine.option.heal,待在巢穴養傷 {n} 天
+routine.card_title,這幾天
+routine.summary,過了 {days} 天：獵到 {prey}；在巢穴睡了 {den} 晚，在野外 {wild} 晚。
+routine.no_prey,什麼也沒獵到
+routine.stop.done,日子平平靜靜地過去了。
+routine.stop.healed,傷養好了。
+routine.stop.encounter,有東西出現在你面前。
+routine.stop.event,周圍起了變化。
+routine.stop.discovery,你發現了值得注意的東西。
+routine.stop.injured,你受了傷，停了下來。
+routine.stop.hungry,你餓了，得好好找吃的。
+routine.stop.hurt,你的傷勢不輕，停了下來。
+routine.stop.season,季節快要變了。
