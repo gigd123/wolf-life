@@ -387,7 +387,7 @@ func _pounce_option(id: String) -> Dictionary:
 	_add_terrain_factor(factors, t)
 	_add_common_factors(factors)
 	if mother_nearby:
-		var penalty: float = float(_reaction_cfg().get("mother_pounce_penalty", 0.1))
+		var penalty: float = float(GameData.animals.get(animal_id, {}).get("protect_penalty", _reaction_cfg().get("mother_pounce_penalty", 0.1)))
 		factors.append({"key": "factor.mother_nearby", "good": false, "weight": penalty})
 		t -= penalty
 	if pounce_bonus > 0.0:
@@ -724,7 +724,7 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 	var notes: Array = []
 	var damage: float = 0.0
 	# 護幼：母鹿可能衝過來。
-	if mother_nearby and RNGService.chance(float(cfg.get("mother_charge_chance", 0.35))):
+	if mother_nearby and RNGService.chance(float(GameData.animals.get(animal_id, {}).get("protect_charge", cfg.get("mother_charge_chance", 0.35)))):
 		damage += _hurt_wolf(int(cfg.get("mother_damage_min", 8)), int(cfg.get("mother_damage_max", 18)))
 		notes.append("hunt.mother.charge")
 	pounce_bonus = 0.0

@@ -684,6 +684,16 @@ func black_bear_mult() -> float:
 		return 0.0
 	return float(cfg.get("regions", {}).get(current_region, 0.0))
 
+func _coyote_cfg() -> Dictionary:
+	return GameData.balance.get("coyote", {})
+
+# 郊狼在這一區的倍率：你常待的區域郊狼少（同狐狸）
+func coyote_mult() -> float:
+	var m: float = float(_coyote_cfg().get("regions", {}).get(current_region, 0.0))
+	if m > 0.0 and int(life_log.get("region_periods", {}).get(current_region, 0)) >= int(_feeding_cfg().get("fox", {}).get("frequent_periods", 12)):
+		m *= float(_coyote_cfg().get("frequent_mult", 0.5))
+	return m
+
 func _cougar_here() -> float:
 	return float(_cougar_cfg().get("regions", {}).get(current_region, 0.0))
 
@@ -2523,6 +2533,8 @@ func feed_once() -> Dictionary:
 			event = "cougar"
 		elif RNGService.chance(float(_black_bear_cfg().get("feed_chance", 0.06)) * black_bear_mult()):
 			event = "black_bear"
+		elif RNGService.chance(float(_coyote_cfg().get("feed_chance", 0.1)) * coyote_mult()):
+			event = "coyote"
 		# 年輕的挑戰者來搶殘骸（1.9b 第 2 步）
 		elif challenger_due() and RNGService.chance(0.5):
 			_ensure_challenger()
@@ -2625,6 +2637,8 @@ func action_return_to_carcass() -> Dictionary:
 		event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
 	elif RNGService.chance(float(_black_bear_cfg().get("return_chance", 0.12)) * black_bear_mult()):
 		event = "black_bear"
+	elif RNGService.chance(float(_coyote_cfg().get("return_chance", 0.18)) * coyote_mult()):
+		event = "coyote"
 	elif RNGService.chance(fox_chance(float(cfg.get("return_fox_chance", 0.2)))):
 		event = "fox"
 	state_changed.emit()
@@ -2694,7 +2708,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
-	if animal_id in ["cougar", "black_bear"]:
+	if animal_id in ["cougar", "black_bear", "coyote"]:
 		identify(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
@@ -2716,6 +2730,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 		"carcass":
 			match animal_id:
 				"grizzly_bear", "cougar", "black_bear": c.yields = ["grab", "abandon"]
+				"coyote": c.yields = ["ignore"]
 				"wolverine": c.yields = ["share", "abandon"]
 				"tundra_wolf": c.yields = ["let_eat", "guard_together", "abandon"]
 				_: c.yields = ["ignore"]
@@ -2854,14 +2869,14 @@ func finish_combat(c: Combat) -> Dictionary:
 func _carcass_after_combat(c: Combat) -> void:
 	var by_bear: bool = c.animal_id == "grizzly_bear"
 	# 咬死來偷肉的狐狸：殘骸還是你的；狐狸通常不吃，餓壞了才吃（1.8 第 6 步）
-	if c.outcome == "killed" and c.animal_id == "red_fox":
+	if c.outcome == "killed" and c.animal_id in ["red_fox", "coyote"]:
 		var f: Dictionary = _feeding_cfg().get("fox", {})
 		if wolf.hunger < float(f.get("eat_hunger", 20)):
 			wolf.hunger += float(f.get("eat_value", 15))
 			wolf.clamp_stats()
-			log_message.emit(tr("fox.killed.eaten"))
+			log_message.emit(tr("fox.killed.eaten").replace("{animal}", tr("animal." + c.animal_id)))
 		else:
-			log_message.emit(tr("fox.killed.left"))
+			log_message.emit(tr("fox.killed.left").replace("{animal}", tr("animal." + c.animal_id)))
 		return
 	match c.outcome:
 		"drove_off":

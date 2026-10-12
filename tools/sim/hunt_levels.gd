@@ -15,7 +15,8 @@ const LEVELS := [["次成年", 40.0], ["成年", 60.0], ["巔峰", 78.0]]
 const PREY := [["white_tailed_deer", "juvenile"], ["white_tailed_deer", "adult"], ["white_tailed_deer", "buck"], ["red_fox", "adult"],
 	["caribou", "juvenile"], ["caribou", "adult"], ["moose", "juvenile"], ["moose", "adult"],
 	["elk", "juvenile"], ["elk", "adult"], ["elk", "buck"], ["mule_deer", "adult"], ["mule_deer", "buck"],
-	["bighorn_sheep", "adult"], ["bighorn_sheep", "buck"], ["beaver", "adult"]]
+	["bighorn_sheep", "adult"], ["bighorn_sheep", "buck"], ["beaver", "adult"],
+	["bison", "adult"], ["bison", "juvenile"], ["pronghorn", "adult"], ["pronghorn", "juvenile"]]
 
 func _env_int(key: String, fallback: int) -> int:
 	var v := OS.get_environment(key)
@@ -44,6 +45,8 @@ func _process(_d):
 				var terrains: Array = ["treeline", "open_tundra", "river_willow", "rocky", "esker"] if spec[0] in ["caribou", "moose"] else ["stream", "dense_forest", "forest_edge", "clearing", "fallen_logs"]
 				if spec[0] == "bighorn_sheep":
 					terrains = ["cliff", "scree", "alpine_meadow"]
+				if spec[0] in ["bison", "pronghorn"]:
+					terrains = ["prairie", "rolling_hills"] if OS.get_environment("SNOW") == "" else ["prairie"]
 				if spec[0] == "beaver":
 					terrains = ["stream", "river_willow"]
 				if spec[0] == "mule_deer":

@@ -1912,7 +1912,7 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 		_show_challenger({"first": int(GameState.life_log.get("challenger_visits", 0)) == 0}, true)
 		return
 	# 美洲獅回來找牠的獵物、黑熊被氣味引來（Phase 2 第 3 步）
-	if event in ["cougar", "black_bear"]:
+	if event in ["cougar", "black_bear", "coyote"]:
 		var known: bool = GameState.is_identified(event)
 		if not intro_logged:
 			_log(tr("scavenger.%s.%s%s" % [event, "returning" if returning else "arrive", "" if known else ".first"]))

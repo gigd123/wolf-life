@@ -51,6 +51,19 @@
       "buck": { "sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "bison": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/bison_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "herd": "res://assets/art/sprites/animals/bison_herd.png" } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/bison_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "pronghorn": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/pronghorn_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/pronghorn_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "coyote": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/coyote_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "attack": "res://assets/art/sprites/animals/coyote_bite.png", "hurt": "res://assets/art/sprites/animals/coyote_hurt.png" } }
+    },
     "cougar": {
       "adult": { "sheet": "res://assets/art/sprites/animals/cougar_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "attack": "res://assets/art/sprites/animals/cougar_bite.png", "hurt": "res://assets/art/sprites/animals/cougar_hurt.png", "threaten": "res://assets/art/sprites/animals/cougar_threaten.png" } }

@@ -189,6 +189,9 @@
       "cougar": {
         "adult": { "speed": 74, "power": 135, "hp": 110, "damage": [13, 25], "parts": { "face": 0.3, "shoulder": 0.4, "leg": 0.3 }, "give_up_ratio": 0.42, "threat_resist": 0.3 }
       },
+      "coyote": {
+        "adult": { "speed": 68, "power": 45, "hp": 30, "damage": [3, 8], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.75, "threat_resist": -0.1 }
+      },
       "black_bear": {
         "adult": { "speed": 50, "power": 125, "hp": 160, "damage": [10, 22], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.45, "threat_resist": 0.15, "stamina": 150, "swing_cost": 6, "hurt_drain": 0.5, "stamina_give_up": 0.3, "hit_divisor": 300 }
       }
@@ -351,6 +354,9 @@
   "_black_bear_comment": "黑熊（Phase 2 第 3 步）：森林與山腳的搶食者，春夏秋（冬眠）。在牠的區域進食時每段 feed_chance、回到殘骸時 return_chance 找上門。",
   "black_bear": { "regions": { "forest_east": 0.8, "forest_north": 0.6, "forest_west": 1.0, "forest_south": 0.8, "mountain_foothills": 1.0, "mountain_headwaters": 0.7 },
     "seasons": ["spring", "summer", "autumn"], "feed_chance": 0.06, "return_chance": 0.12 },
+  "_coyote_comment": "郊狼（Phase 2 第 5 步）：草原、山地的搶屍者，成對或小群；牠們怕你，但會來偷殘骸。在牠們的區域進食時每段 feed_chance、回到殘骸時 return_chance 找上門；你常待的區域（同狐狸的 frequent_periods）× frequent_mult。咬死的郊狼通常不吃（同狐狸）。",
+  "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
+    "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
   "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },
@@ -377,7 +383,9 @@
       "moose": { "adult": 5, "juvenile": 2 },
       "elk": { "adult": 4, "buck": 4, "juvenile": 2 },
       "mule_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
-      "bighorn_sheep": { "adult": 3, "buck": 3 }
+      "bighorn_sheep": { "adult": 3, "buck": 3 },
+      "bison": { "adult": 6, "juvenile": 2 },
+      "pronghorn": { "adult": 2 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

@@ -341,7 +341,7 @@ func _feed_loop() -> void:
 			_scavenger(ev)
 
 func _scavenger(ev: String) -> void:
-	if ev in ["cougar", "black_bear"]:
+	if ev in ["cougar", "black_bear", "coyote"]:
 		play_combat(GameState.start_combat(ev, "adult", "carcass"))
 		return
 	if ev == "challenger":
