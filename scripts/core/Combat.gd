@@ -15,6 +15,7 @@ const PHASE_NAMES := {Phase.STANDOFF: "standoff", Phase.EXCHANGE: "exchange", Ph
 
 var wolf: Wolf
 var animal_id: String
+var end_stamina: float = 0.0 # 結束時扣掉的體力（1.8 第 1 步）
 var life_stage: String
 var context: String
 var mother: bool = false
@@ -67,6 +68,7 @@ func set_npc(p_npc: NpcWolf) -> void:
 
 func _init(p_wolf: Wolf, p_animal: String, p_stage: String, p_context: String, p_mother: bool = false) -> void:
 	wolf = p_wolf
+	wolf.begin_burst()
 	animal_id = p_animal
 	life_stage = p_stage
 	context = p_context
@@ -280,7 +282,7 @@ func choose(id: String) -> Dictionary:
 	if opt.is_empty():
 		return {"notes": []}
 	decisions.append("combat." + id)
-	wolf.stamina -= float(opt.get("stamina", 0.0))
+	wolf.spend_breath(float(opt.get("stamina", 0.0)))
 	wolf.clamp_stats()
 	# 瀕危後仍選擇繼續戰鬥（攻擊、閃避），這一回合才可能戰死。
 	# 不想殺狼的對手（狼獾）：任何一擊都不會致死。

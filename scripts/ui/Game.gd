@@ -2320,6 +2320,8 @@ func _render_hunt_stage() -> void:
 			header += "\n" + tr("combat.danger")
 	if not hunt_notes.is_empty():
 		header += "\n" + "　".join(hunt_notes)
+	if GameState.wolf.in_burst:
+		header += "\n" + tr("hunt.breath").replace("{n}", str(int(round(GameState.wolf.breath)))).replace("{max}", str(int(round(GameState.wolf.breath_max))))
 	hunt_message.text = header
 	for opt in current_hunt.options():
 		var id: String = opt["id"]
@@ -2410,7 +2412,8 @@ func _format_cost(info: Dictionary) -> String:
 	var parts: Array[String] = []
 	var stamina: int = int(round(float(info.get("stamina", 0.0))))
 	if stamina > 0:
-		parts.append(_icon_bb("stat.stamina") + tr("cost.stamina").replace("{n}", str(stamina)))
+		# 狩獵、戰鬥中扣的是喘（1.8 第 1 步）
+		parts.append(_icon_bb("stat.stamina") + tr("cost.breath" if GameState.wolf != null and GameState.wolf.in_burst else "cost.stamina").replace("{n}", str(stamina)))
 	var next: Dictionary = info.get("next_bonus", {})
 	if float(next.get("value", 0.0)) > 0.0:
 		parts.append(tr("cost.next_bonus").replace("{stage}", tr("cost.stage." + str(next["stage"]))) \
@@ -3011,6 +3014,8 @@ func _render_combat() -> void:
 	# 每回合的結果寫在下方的遭遇紀錄（編號），描述只留雙方的狀態
 	if FightRules.in_danger(GameState.wolf):
 		lines.append(tr("combat.danger"))
+	if GameState.wolf.in_burst:
+		lines.append(tr("hunt.breath").replace("{n}", str(int(round(GameState.wolf.breath)))).replace("{max}", str(int(round(GameState.wolf.breath_max)))))
 	hunt_message.text = "\n".join(lines)
 	for opt in c.options():
 		var id: String = opt["id"]

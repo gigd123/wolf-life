@@ -62,6 +62,51 @@ func life_stage() -> int:
 		return LifeStage.ADULT
 	return LifeStage.ELDER
 
+# --- 喘（1.8 第 1 步「狩獵的時間與體力」）---
+# 狩獵、戰鬥中的爆發用「喘」：開始時依目前的體力、速度、血量決定上限，短衝、出招扣喘；
+# 結束時喘就回滿，只依這一場用掉多少喘扣一次體力（耐力）。不存檔。
+var breath: float = 0.0
+var breath_max: float = 0.0
+var breath_spent: float = 0.0
+var in_burst: bool = false
+
+func begin_burst() -> void:
+	if in_burst:
+		return
+	var b: Dictionary = GameData.balance.get("burst", {})
+	var m: float = float(b.get("base", 50)) + stamina * float(b.get("per_stamina", 0.4)) + (effective_speed() - 50.0) * float(b.get("per_speed", 0.3))
+	if health < health_max * 0.5:
+		m *= float(b.get("low_health_mult", 0.8))
+	breath_max = clamp(m, float(b.get("min", 30)), float(b.get("max", 100)))
+	breath = breath_max
+	breath_spent = 0.0
+	in_burst = true
+
+func spend_breath(n: float) -> void:
+	if not in_burst:
+		stamina -= n
+		return
+	breath = max(0.0, breath - n)
+	breath_spent += n
+
+func catch_breath(ratio: float) -> void:
+	breath = min(breath_max, breath + breath_max * ratio)
+
+# 結束：扣一次體力（依用掉的喘），回傳扣了多少。
+func end_burst() -> float:
+	if not in_burst:
+		return 0.0
+	in_burst = false
+	var b: Dictionary = GameData.balance.get("burst", {})
+	var cost: float = min(float(b.get("end_stamina_max", 12)), float(b.get("end_stamina_base", 2)) + breath_spent * float(b.get("end_stamina_per_breath", 0.08)))
+	stamina -= cost
+	clamp_stats()
+	return cost
+
+# 現在能用的爆發：狩獵、戰鬥中看喘，其他時候看體力。
+func burst_left() -> float:
+	return breath if in_burst else stamina
+
 func clamp_stats() -> void:
 	var smin: float = float(GameData.balance.get("stat_min", 0))
 	var smax: float = float(GameData.balance.get("stat_max", 100))

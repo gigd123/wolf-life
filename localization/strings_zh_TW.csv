@@ -1160,3 +1160,9 @@ routine.stop.injured,你受了傷，停了下來。
 routine.stop.hungry,你餓了，得好好找吃的。
 routine.stop.hurt,你的傷勢不輕，停了下來。
 routine.stop.season,季節快要變了。
+cost.breath,喘 {n}
+hunt.breath,喘息 {n}／{max}
+hunt.option.catch_breath,停下喘口氣
+hunt.catch_breath.ok,你停下來大口喘氣，牠也拉開了一段距離，但還在視線裡。
+hunt.catch_breath.lost,你停下來喘氣，再抬頭時牠已經不見了。
+factor.prey_may_escape,牠可能趁機跑掉

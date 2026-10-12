@@ -32,6 +32,8 @@ const STAGE_NAMES := {
 
 var wolf: Wolf
 var animal_id: String
+var pending_turns: int = 0 # 狩獵中累積的時間，結束時一次結算（1.8 第 1 步）
+var end_stamina: float = 0.0 # 結束時扣掉的體力
 var ambush_bonus: float = 0.0 # 守在水邊時看到的獵物：潛近與撲抓的加成（Phase 1.7b 探索改版）
 var life_stage: String
 var depth: String
@@ -84,6 +86,7 @@ var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
 func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mod: float = 0.0,
 		p_wind_dir: int = 0, p_prey_dir: int = 0, p_terrain: String = "", p_injured: bool = false) -> void:
 	wolf = p_wolf
+	wolf.begin_burst()
 	start_heavy = wolf.injury == Wolf.Injury.HEAVY
 	animal_id = p_animal_id
 	life_stage = p_life_stage
@@ -233,6 +236,11 @@ func options() -> Array:
 				for id in opts.keys():
 					if _option_available(opts[id]):
 						list.append(_chase_option(id))
+				# 喘不過氣時可以停下喘口氣（1.8 第 1 步）：喘回來一半，獵物也喘口氣，可能就此跑掉
+				if wolf.in_burst and wolf.breath < wolf.breath_max * 0.5 and chase_round > 0:
+					var b: Dictionary = GameData.balance.get("burst", {})
+					list.append({"id": "catch_breath", "label_key": "hunt.option.catch_breath", "turns": 0, "stamina": 0.0,
+						"factors": [{"key": "factor.prey_may_escape", "good": false, "weight": float(b.get("catch_breath_escape", 0.25)), "info": true}]})
 		Stage.FIGHT:
 			for id in FightRules.move_ids():
 				var info := FightRules.chance(wolf, prey_counter_attack, id, fight_state)
@@ -417,7 +425,7 @@ func _chase_option(id: String) -> Dictionary:
 	var cost: float = float(opt.get("stamina", 10)) * (1.0 - pursuit)
 	if pursuit > 0.0:
 		factors.append({"key": "factor.tendency.pursuit", "good": true, "weight": 0.0, "info": true, "n": int(round(pursuit * 100.0))})
-	var exhausted: float = 0.15 if wolf.stamina - cost <= 0.0 else 0.0
+	var exhausted: float = 0.15 if wolf.burst_left() - cost <= 0.0 else 0.0
 	if exhausted > 0.0:
 		factors.append({"key": "factor.tired", "good": false, "weight": exhausted})
 	_add_common_factors(factors)
@@ -473,9 +481,10 @@ func _harass_option() -> Dictionary:
 
 # 雙方體力的描述（每回合追擊顯示）。感知高時才看得到獵物體力的精確數字。
 func wolf_stamina_key() -> String:
-	if wolf.stamina >= 60.0:
+	var ratio: float = wolf.breath / max(1.0, wolf.breath_max) if wolf.in_burst else wolf.stamina / 100.0
+	if ratio >= 0.6:
 		return "stamina.wolf.fresh"
-	if wolf.stamina >= 30.0:
+	if ratio >= 0.3:
 		return "stamina.wolf.panting"
 	return "stamina.wolf.exhausted"
 
@@ -585,7 +594,7 @@ func choose(id: String) -> Dictionary:
 	if opt.is_empty():
 		return {"success": false}
 	decisions.append(stage_name() + "." + id)
-	wolf.stamina -= float(opt.get("stamina", 0.0))
+	wolf.spend_breath(float(opt.get("stamina", 0.0)))
 	var res: Dictionary
 	match stage:
 		Stage.POUNCE: res = _do_search(opt) if hiding else _do_pounce(opt)
@@ -594,6 +603,7 @@ func choose(id: String) -> Dictionary:
 		Stage.CHASE:
 			match id:
 				"harass": res = _do_harass(opt)
+				"catch_breath": res = _do_catch_breath()
 				"attack_standing": res = _do_attack_standing()
 				_: res = _do_chase(opt)
 		Stage.FIGHT: res = _do_fight(opt)
@@ -698,6 +708,14 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 		return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted}
 	# 選擇繞到下風處時，已經依當下風向重新站位，不算「風向轉了」。
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
+
+func _do_catch_breath() -> Dictionary:
+	var b: Dictionary = GameData.balance.get("burst", {})
+	wolf.catch_breath(float(b.get("catch_breath", 0.5)))
+	prey_stamina_cur = min(prey_stamina_max, prey_stamina_cur + float(b.get("catch_breath_prey", 20)))
+	if RNGService.chance(float(b.get("catch_breath_escape", 0.25))):
+		return _flee("hunt.catch_breath.lost", [], false)
+	return {"success": false, "text_key": "hunt.catch_breath.ok", "turns": 1}
 
 func _do_chase(opt: Dictionary) -> Dictionary:
 	var cfg: Dictionary = _tuning().get("chase", {})

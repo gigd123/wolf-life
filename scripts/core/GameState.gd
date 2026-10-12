@@ -1482,6 +1482,10 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 		return
 	if turns <= 0:
 		return
+	# 1.8 第 1 步：狩獵內部的步驟不各自花時間，結束時一次結算（finish_hunt）
+	if hunt != null:
+		hunt.pending_turns += turns
+		return
 	GameTime.advance_turns(turns)
 	_check_death()
 
@@ -1489,6 +1493,11 @@ func spend_hunt_turns(turns: int, hunt: HuntSystem = null) -> void:
 # 獵物逃走時，留下一條往某個地形去的新鮮足跡（current_discovery），可以再追。
 func finish_hunt(hunt: HuntSystem) -> void:
 	wind_dir = hunt.wind_dir
+	# 長距離跟隨、多次試探：結束時多花 1～2 回合；喘回滿，依用掉的喘扣一次體力（1.8 第 1 步）
+	var extra: int = min(hunt.pending_turns, int(GameData.balance.get("burst", {}).get("extra_turns_max", 2)))
+	hunt.end_stamina = wolf.end_burst()
+	if extra > 0 and wolf.alive:
+		GameTime.advance_turns(extra)
 	if hunt.decisions.any(func(d): return str(d).begins_with("fight.")):
 		_push_on_injury(hunt.start_heavy)
 	FightRules.danger_to_heavy(wolf, hunt.fight_state.get("parts", {"leg": 0.5, "shoulder": 0.5}), hunt.animal_id + ".hunt")
@@ -2169,6 +2178,10 @@ func _after_bear_first_win() -> void:
 func finish_combat(c: Combat) -> Dictionary:
 	for d in c.decisions:
 		record_decision(d)
+	# 戰鬥：喘回滿、扣一次體力；打得久（超過 combat_free_rounds 回合）多花 1 回合（1.8 第 1 步）
+	c.end_stamina = wolf.end_burst()
+	if c.rounds > int(GameData.balance.get("burst", {}).get("combat_free_rounds", 3)) and wolf.alive:
+		GameTime.advance_turns(1)
 	if c.rounds > 0:
 		_push_on_injury(c.start_heavy)
 	_record_combat_log(c)
