@@ -95,6 +95,7 @@ QA-02（行動紀錄被擠出視窗）、03（地圖按鈕的字被截掉）、0
 
 - **文件 patch 的錨點失效**：用 python 改文件時，一定用 `assert s.count(a)==1`；錨點找不到就停下來重找，不要用 `replace` 默默不改。
 - **JSON 被整檔重新排版**：`json.dump` 會把整個 `art.json` 改成另一種格式。資料檔只用文字插入，改完再 `json.load` 驗證格式正確。
+- **資料表裡的 `_xxx_comment` 鍵**：JSON 用 `_comment` 寫說明，但程式逐一走訪某個表（例如 `GameData.maps().keys()`）時會讀到字串而當掉（QA-75：山地、草原加進 `maps` 的說明讓 `ice_shortcuts()` 一進遊戲就報錯）。走訪的表在載入時拿掉非 Dictionary 的項目，或走訪時跳過 `_` 開頭的鍵；新增說明鍵後，用 headless 腳本跑一次會走訪該表的函式。
 - **SPEC 引用區塊的縮排**：套用提案時，`  >` 這種有縮排的引用行容易漏掉，套用後 diff 檢查每一段。
 - **GDScript**：`match` 不能用非常數的 pattern（改用 if）；headless 測試腳本的 `_process` 要寫成 `-> bool` 並在每條路徑回傳值；以 `-s` 執行時 autoload 還沒載入，不能直接引用 class_name 的列舉。
 - **暫存檔**：測試腳本叫 `probe_tmp.gd`，用完刪掉（含 `.uid`）；`.gitignore` 已排除 `probe_tmp*`，但不要用 `git add -A` 加整個根目錄。

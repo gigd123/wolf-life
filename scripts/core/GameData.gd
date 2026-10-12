@@ -18,6 +18,11 @@ func _ready() -> void:
 	balance = _load_json("res://data/balance.json")
 	animals = _load_json("res://data/animals.json")
 	regions_root = _load_json("res://data/regions.json")
+	# maps 裡的 _xxx_comment 是說明文字，不是地圖；拿掉以免逐一走訪地圖時讀到字串。
+	var map_table: Dictionary = regions_root.get("maps", {})
+	for key in map_table.keys():
+		if not map_table[key] is Dictionary:
+			map_table.erase(key)
 	discovery = _load_json("res://data/discovery.json")
 	knowledge = _load_json("res://data/knowledge.json")
 	events = _load_json("res://data/events.json")
