@@ -729,6 +729,9 @@ fire.option.flee,逃往{region}　平安率 {n}%
 fire.option.flee_unknown,逃往{region}（沒去過）　平安率 {n}%
 fire.option.stream,到溪邊避難　平安率 {n}%
 fire.option.den,躲進巢穴　平安率 {n}%
+fire.option.den_stay,繼續躲在巢穴深處　平安率 {n}%
+fire.smoke,大量濃煙竄了進來，你嗆得睜不開眼。洞外的火還在燒。
+fire.result.safe.den_stay,你把鼻子埋進最深處的土裡，熬到濃煙慢慢散去。
 fire.result.safe.flee,你一路狂奔，衝出了煙霧，逃到了{region}。
 fire.result.safe.stream,你伏在溪水裡，看著火從頭頂燒過去。
 fire.result.safe.den,你縮在巢穴深處，濃煙從洞口灌進來，但你撐過去了。

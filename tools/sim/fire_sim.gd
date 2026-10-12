@@ -46,6 +46,8 @@ func _process(_d):
 				GS.fire = {"origin": "forest_east", "phase": "burning", "ignite_at": 0, "noticed": true, "regions": {"forest_east": 0}, "burned": [], "alerted": [], "sheltered": ""}
 				var id: String = {"flee": "flee:forest_north", "stream": "stream", "den": "den"}[kind]
 				var res = GS.fire_escape(id)
+				if res["result"] == "smoke": # 巢穴濃煙竄入：這裡統計「繼續躲」
+					res = GS.fire_escape("den_stay")
 				counts[res["result"]] += 1
 			line += "  %s 平安 %2d%% 輕 %2d%% 重 %2d%% 死 %2d%%" % [kind, counts["safe"] / 20, counts["light"] / 20, counts["heavy"] / 20, counts["death"] / 20]
 		print(line)

@@ -112,12 +112,16 @@ func _handle_pending() -> void:
 			"driven_off":
 				GameState.apply_drive_off()
 			"fire_here":
-				var best: Dictionary = {}
-				for o in GameState.fire_escape_options():
-					if best.is_empty() or float(o["safe"]) > float(best["safe"]):
-						best = o
-				if not best.is_empty():
-					GameState.fire_escape(str(best["id"]))
+				# 巢穴濃煙竄入時會再選一次（提案之十一）
+				for attempt in 3:
+					var best: Dictionary = {}
+					for o in GameState.fire_escape_options():
+						if best.is_empty() or float(o["safe"]) > float(best["safe"]):
+							best = o
+					if best.is_empty():
+						break
+					if str(GameState.fire_escape(str(best["id"])).get("result", "")) != "smoke":
+						break
 			"stranger_confront":
 				if style == "assault":
 					play_combat(GameState.start_stranger_combat("territory"))

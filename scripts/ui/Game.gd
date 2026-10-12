@@ -2441,6 +2441,8 @@ func _show_fire_escape(event: Dictionary) -> void:
 		return
 	var region: String = str(event.get("region", GameState.current_region))
 	var text: String = tr("fire.here" + (".entered" if event.get("entered", false) else "")).replace("{region}", tr("region." + region))
+	if event.get("smoke", false):
+		text = tr("fire.smoke")
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
@@ -2465,6 +2467,10 @@ func _on_fire_escape(id: String) -> void:
 	if res.is_empty():
 		return
 	var result: String = str(res["result"])
+	if result == "smoke":
+		# 巢穴裡濃煙竄了進來：第二次逃生選擇（提案之十一）
+		_show_fire_escape({"region": GameState.current_region, "smoke": true})
+		return
 	if result == "safe":
 		_log(tr("fire.result.safe." + str(res["kind"])).replace("{region}", tr("region." + str(res["region"]))))
 	elif result != "death":

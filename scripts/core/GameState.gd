@@ -2295,7 +2295,8 @@ func fire_escape_options() -> Array:
 	if EncounterSystem.region_data(current_region).get("terrains", []).has("stream"):
 		list.append(_escape_option("stream", ""))
 	if current_region == den_region:
-		list.append(_escape_option("den", ""))
+		# 濃煙竄進巢穴之後（第二次逃生選擇），「繼續躲」的危險比第一次高
+		list.append(_escape_option("den_stay" if bool(fire.get("smoke", false)) else "den", ""))
 	return list
 
 func _escape_option(kind: String, region_id: String) -> Dictionary:
@@ -2347,15 +2348,29 @@ func fire_escape(id: String) -> Dictionary:
 		result = "light"
 	var flee: bool = opt["kind"] in ["flee", "other_map"]
 	if not flee:
-		fire["sheltered"] = current_region
+		# 躲在燃燒中的區域：直接快轉到這一區的火燒完（提案之十一）；巢穴途中可能濃煙竄入，跳第二次逃生選擇
+		var hid := _hide_until_fire_passes(str(opt["kind"]))
+		if hid == "smoke":
+			record_decision("fire." + str(opt["kind"]))
+			state_changed.emit()
+			return {"result": "smoke", "kind": opt["kind"], "region": ""}
+	if flee:
+		fire.erase("smoke")
 	# 一場大火裡最重的那次逃生記入一生回顧
 	var order := ["safe", "light", "heavy", "death"]
-	if not fire.has("result") or order.find(result) >= order.find(str(fire.get("result", "safe"))):
+	if fire.is_empty():
+		# 躲到火燒完時大火已經結束、寫進紀錄了：補上這次的結果
+		var fires: Array = life_log.get("fires", [])
+		if not fires.is_empty() and order.find(result) >= order.find(str(fires.back().get("result", "safe"))):
+			fires.back()["escape"] = opt["kind"]
+			fires.back()["result"] = result
+	elif not fire.has("result") or order.find(result) >= order.find(str(fire.get("result", "safe"))):
 		fire["escape"] = opt["kind"]
 		fire["escape_region"] = opt["region"]
 		fire["result"] = result
 	# 先記下逃生結果再過回合：大火可能在這一回合熄滅（_end_fire 會清空 fire），之後不能再寫 fire
-	GameTime.advance_turns(1)
+	if flee:
+		GameTime.advance_turns(1)
 	if flee:
 		wolf.stamina -= float(e.get("flee_stamina", 20))
 		action_move_silent(str(opt["region"]))
@@ -2382,6 +2397,25 @@ func fire_escape(id: String) -> Dictionary:
 	_check_fire_here()
 	state_changed.emit()
 	return {"result": result, "kind": opt["kind"], "region": opt["region"]}
+
+# 躲在燃燒中的區域（溪流、巢穴）：一回合一回合過到這一區的火燒完或大火結束（照常扣飽食度，不回體力、不能做別的事）。
+# 巢穴每過一個時段有機率濃煙竄入：停下來回傳 "smoke"（第二次逃生選擇）；繼續躲（den_stay）就不再判定。
+func _hide_until_fire_passes(kind: String) -> String:
+	fire["sheltered"] = current_region
+	var cfg: Dictionary = _fire_cfg().get("hide", {})
+	var smoke_chance: float = float(cfg.get("den_smoke_per_period", 0.3)) if kind == "den" else 0.0
+	var max_turns: int = int(cfg.get("max_periods", 8)) * GameTime.TURNS_PER_PERIOD
+	for i in range(max_turns):
+		if fire.is_empty() or not fire.get("regions", {}).has(current_region) or not wolf.alive:
+			break
+		var period_before: int = GameTime.period_index
+		GameTime.advance_turns(1)
+		if smoke_chance > 0.0 and GameTime.period_index != period_before and not fire.is_empty() \
+				and fire.get("regions", {}).has(current_region) and RNGService.chance(smoke_chance):
+			fire["smoke"] = true
+			fire["sheltered"] = ""
+			return "smoke"
+	return ""
 
 # 死在火裡：先把這場大火寫進一生回顧。
 func _end_fire_on_death() -> void:
