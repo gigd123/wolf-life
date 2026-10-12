@@ -2151,11 +2151,15 @@ func _update_fire() -> void:
 		if now >= int(fire["ignite_at"]):
 			fire["phase"] = "burning"
 			fire["regions"] = {str(fire["origin"]): now}
-			if not bool(fire.get("noticed", false)):
+			if not bool(fire.get("noticed", false)) and _fire_notice_range() != "":
 				fire["noticed"] = true
-				pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": true})
+				pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": true, "far": _fire_notice_range() == "far"})
 		_check_fire_here()
 		return
+	# 一直在別的地圖、沒察覺到的大火：回到森林（或森林旁的苔原林線）時，濃煙已經看得到了（1.7-1）
+	if not bool(fire.get("noticed", false)) and _fire_notice_range() != "":
+		fire["noticed"] = true
+		pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": true, "far": _fire_notice_range() == "far"})
 	# 燃燒：燒滿 burn_periods 的區域熄滅（記為燒過），其餘依機率延燒到相鄰區域。
 	var regions: Dictionary = fire["regions"]
 	var went_out: Array = []
@@ -2217,13 +2221,26 @@ func start_fire_warning(origin: String) -> void:
 
 # 感知越高越早察覺：聞到煙味、看到動物往同一個方向逃。
 func _maybe_notice_fire() -> void:
-	if bool(fire.get("noticed", false)):
+	# 起火前的徵兆只有人在森林裡才察覺得到；苔原林線要等真的燒起來、看到煙
+	if bool(fire.get("noticed", false)) or _fire_notice_range() != "near":
 		return
 	var n: Dictionary = _fire_cfg().get("notice", {})
 	var chance_value: float = min(float(n.get("max", 0.9)), float(n.get("base", 0.35)) + (wolf.effective_perception() - 40.0) * float(n.get("per_perception", 0.01)))
 	if RNGService.chance(chance_value):
 		fire["noticed"] = true
 		pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": false})
+
+# 察覺得到大火的範圍（1.7-1）：人在起火的地圖（森林）是 "near"；在和那張地圖相連的區域（苔原林線）只看得到遠處的煙，是 "far"；其他地方察覺不到，是 ""。
+func _fire_notice_range() -> String:
+	if fire.is_empty():
+		return ""
+	var fire_map: String = GameData.map_of(str(fire.get("origin", "")))
+	if current_map() == fire_map:
+		return "near"
+	for link in GameData.links_from(current_region):
+		if GameData.map_of(str(link["to"])) == fire_map:
+			return "far"
+	return ""
 
 # 火燒到你所在的區域：跳出逃生選擇（待在同一區只提示一次；躲在溪邊或巢穴就不再提示）。entered：自己走進還在燒的區域。
 func _check_fire_here(entered: bool = false) -> void:

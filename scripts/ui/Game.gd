@@ -213,10 +213,12 @@ func _build_ui() -> void:
 	if exhausted_tex != null:
 		var ex_icon := TextureRect.new()
 		ex_icon.texture = exhausted_tex
-		ex_icon.custom_minimum_size = Vector2(20, 20)
-		ex_icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		# 16×16 的圖放大兩倍顯示，旁邊照樣寫「體力不支」（1.7 試玩：圖太小、看不懂）
+		ex_icon.custom_minimum_size = Vector2(28, 28)
+		ex_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ex_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		ex_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		ex_icon.tooltip_text = tr("ui.stamina_low") + "：" + tr("ui.stamina_low.tip")
+		ex_icon.tooltip_text = tr("ui.stamina_low.tip")
 		ex_icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		ex_icon.visible = false
 		status_row.add_child(ex_icon)
@@ -967,7 +969,7 @@ func _refresh() -> void:
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
 	status_icons["cold"].visible = GameState.is_freezing()
 	var low_stamina: bool = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
-	stamina_warning.visible = low_stamina and stamina_icon == null
+	stamina_warning.visible = low_stamina
 	if stamina_icon != null:
 		stamina_icon.visible = low_stamina
 
@@ -1735,9 +1737,9 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 		encounter_detail.text = ""
 		_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
 		_clear_children(encounter_buttons_box)
-		_add_encounter_button(tr("tundra.wait.share"), func():
+		_add_encounter_button(_tt("tundra.wait.share"), func():
 			GameState.tundra_wait_choice(true)
-			_log(tr("tundra.wait.shared"))
+			_log(_tt("tundra.wait.shared"))
 			_show_feeding()
 		)
 		_add_encounter_button(tr("tundra.wait.keep"), func():
@@ -1849,7 +1851,8 @@ func _process_events() -> void:
 			_show_stranger_confront()
 			return
 		"fire_warning":
-			_show_event_message(tr("fire.warning." + ("late" if event.get("late", false) else "early")) \
+			var warn_key: String = "far" if event.get("far", false) else ("late" if event.get("late", false) else "early")
+			_show_event_message(tr("fire.warning." + warn_key) \
 				.replace("{origin}", tr("region." + str(event.get("origin", "")))), "white_tailed_deer", "fire_sign")
 			return
 		"fire_here":
@@ -1881,9 +1884,7 @@ func _process_events() -> void:
 			_show_tundra_howl(event)
 			return
 		"tundra_come":
-			if not event.get("charge", false):
-				_log(tr("tundra.come"))
-			_show_tundra_meet({"charge": event.get("charge", false), "location": ""})
+			_show_tundra_meet({"charge": event.get("charge", false), "location": "", "came": true})
 			return
 		"prey_nearby":
 			_show_prey_nearby(event)
@@ -2637,6 +2638,12 @@ func _show_ravens(event: Dictionary) -> void:
 func _pair_key() -> String:
 	return "pair" if GameState.tundra_pair().size() > 1 else "single"
 
+# 苔原狼的文案：只剩一隻時優先用「.single」的單數版本（1.7-3）。
+func _tt(key: String) -> String:
+	if GameState.tundra_pair().size() <= 1 and tr(key + ".single") != key + ".single":
+		return tr(key + ".single")
+	return tr(key)
+
 # 遇上苔原狼：避開、跟隨、威嚇、挑戰。牠們對你的態度依關係值。
 func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	var leader := GameState.tundra_leader()
@@ -2649,8 +2656,11 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 		_begin_combat(GameState.start_tundra_combat("meet", true), "attack")
 		return
 	var lines: Array[String] = []
-	lines.append(tr("tundra.meet.%s.%s" % ["first" if d.get("first", false) else "again", _pair_key()]))
-	lines.append(tr("tundra.attitude." + GameState.tundra_relation_key()))
+	if d.get("came", false): # 回應嚎叫後牠們循聲找來：開頭就是「找來了」，不再接「又出現在你面前」
+		lines.append(_tt("tundra.come"))
+	else:
+		lines.append(tr("tundra.meet.%s.%s" % ["first" if d.get("first", false) else "again", _pair_key()]))
+	lines.append(_tt("tundra.attitude." + GameState.tundra_relation_key()))
 	if extra != "":
 		lines.append(extra)
 	var remember: String = _remember_line("tundra_wolf", "adult")
@@ -2665,30 +2675,30 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("stranger.avoid"), func():
 		GameState.tundra_avoid()
-		_log(tr("tundra.avoided"))
+		_log(_tt("tundra.avoided"))
 		encounter_overlay.visible = false
 		_refresh()
 	)
 	if GameState.tundra_relation_key() == "friendly" and extra == "":
-		_add_encounter_button(tr("tundra.approach"), func():
+		_add_encounter_button(_tt("tundra.approach"), func():
 			var res := GameState.tundra_approach()
 			encounter_overlay.visible = false
 			if res.get("lead", false):
-				_log(tr("tundra.lead"))
+				_log(_tt("tundra.lead"))
 				_show_discovery(GameState.current_discovery)
 			else:
-				_log(tr("tundra.approached"))
+				_log(_tt("tundra.approached"))
 			_refresh()
 		)
 	if extra == "":
 		_add_encounter_button(tr("tundra.follow").replace("{n}", str(int(round(GameState.tundra_follow_chance() * 100.0)))), func():
 			var res := GameState.tundra_follow()
 			if res.get("success", false):
-				var text: String = tr("tundra.follow.success").replace("{text}", _tundra_compare_text(str(res["assessment"]["compare"])))
+				var text: String = _tt("tundra.follow.success").replace("{text}", _tundra_compare_text(str(res["assessment"]["compare"])))
 				_log(text)
 				_show_tundra_meet(d, text)
 			else:
-				_log(tr("tundra.follow.fail"))
+				_log(_tt("tundra.follow.fail"))
 				_begin_combat(GameState.start_tundra_combat("meet"))
 		)
 	_add_encounter_button(tr("combat.option.threaten"), func():
@@ -2734,7 +2744,7 @@ func _show_tundra_mob(d: Dictionary) -> void:
 	encounter_overlay.visible = true
 
 func _show_tundra_howl(event: Dictionary) -> void:
-	var text: String = tr("tundra.howl." + GameState.tundra_relation_key()).replace("{region}", tr("region." + str(event.get("region", ""))))
+	var text: String = _tt("tundra.howl." + GameState.tundra_relation_key()).replace("{region}", tr("region." + str(event.get("region", ""))))
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
@@ -2832,6 +2842,7 @@ func _show_stranger_confront() -> void:
 func _begin_combat(c: Combat, opp_action: String = "idle") -> void:
 	encounter_overlay.visible = false
 	current_combat = c
+	c.set_meta("tundra_relation_before", GameState.tundra_relation_key()) # 戰鬥後只有關係改變時才寫（1.7-3）
 	combat_notes = []
 	combat_wolf_pose = "hurt" if opp_action == "attack" else "threaten"
 	combat_opp_action = opp_action
@@ -2912,8 +2923,9 @@ func _finish_combat_ui() -> void:
 		# 咬死時後面有「那隻黑狼」卡片，不另外寫地盤（QA-67）
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.outcome == "drove_off":
 			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
-		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty():
-			_log(tr("tundra.relation." + GameState.tundra_relation_key()))
+		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty() \
+				and GameState.tundra_relation_key() != str(c.get_meta("tundra_relation_before", GameState.tundra_relation_key())):
+			_log(_tt("tundra.relation_change." + GameState.tundra_relation_key()))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)

@@ -714,6 +714,7 @@ debug.event.stranger_confront,黑狼現身（範圍）
 debug.npc_status,黑狼：{age} 歲　{stats}　{state}
 debug.npc_dead,（已死）
 fire.warning.early,風裡有一股焦味。鳥群從{origin}那邊飛過來，林間的動物都往同一個方向逃。
+fire.warning.far,南邊的天空飄著一道灰煙，風裡有淡淡的焦味。{origin}那一帶的森林燒起來了。
 fire.warning.late,遠處的天空泛著紅光，濃煙已經從{origin}升起。
 fire.here,火燒到了{region}！濃煙從林間湧來，樹冠劈啪作響。
 fire.here.entered,{region}的火還沒熄。濃煙從林間湧來，樹冠劈啪作響，熱氣撲在你臉上。
@@ -904,13 +905,22 @@ tundra.attitude.hostile,牠們一看到你就壓低了頭，頸毛豎起，喉�
 tundra.attitude.wary,牠們遠遠看著你，耳朵豎得直直的。
 tundra.attitude.familiar,牠們認得你的氣味，沒有走開，也沒有靠近。
 tundra.attitude.friendly,牠們看到你，尾巴輕輕搖了一下。
+tundra.attitude.hostile.single,牠一看到你就壓低了頭，頸毛豎起，喉嚨裡滾著低吼。
+tundra.attitude.wary.single,牠遠遠看著你，耳朵豎得直直的。
+tundra.attitude.familiar.single,牠認得你的氣味，沒有走開，也沒有靠近。
+tundra.attitude.friendly.single,牠看到你，尾巴輕輕搖了一下。
 tundra.avoided,你繞開了牠們，牠們也沒有跟上來。
+tundra.avoided.single,你繞開了牠，牠也沒有跟上來。
 tundra.follow,跟隨　成功率 {n}%
 tundra.follow.success,你遠遠跟著牠們走了一段。{text}
+tundra.follow.success.single,你遠遠跟著牠走了一段。{text}
 tundra.follow.fail,牠們早就發現你了，帶頭的那隻轉過身來。
+tundra.follow.fail.single,牠早就發現你了，轉過身來。
 tundra.howl.hostile,深夜，{region}那邊傳來苔原狼的嚎叫，聲音又短又急。
 tundra.howl.wary,深夜，{region}那邊傳來兩聲一高一低的狼嚎，和你聽過的都不一樣。
+tundra.howl.wary.single,深夜，{region}那邊傳來一聲拖得很長的狼嚎，和你聽過的都不一樣。
 tundra.howl.familiar,深夜，那對苔原狼又在{region}那邊嚎叫，像是在找什麼。
+tundra.howl.familiar.single,深夜，那隻苔原狼又在{region}那邊嚎叫，像是在找什麼。
 tundra.howl.friendly,深夜，熟悉的嚎叫從{region}那邊傳來，停了一下，像是在等你回應。
 tundra.howl.reply,回應嚎叫
 tundra.howl.silent,保持安靜
@@ -919,6 +929,14 @@ tundra.relation.hostile,那對苔原狼記住了你，把你當成敵人。
 tundra.relation.wary,那對苔原狼還在提防你。
 tundra.relation.familiar,那對苔原狼漸漸熟悉你的氣味了。
 tundra.relation.friendly,那對苔原狼已經把你當成自己人一樣看待。
+tundra.relation_change.hostile,牠們記住了這一次，從此把你當成敵人。
+tundra.relation_change.hostile.single,牠記住了這一次，從此把你當成敵人。
+tundra.relation_change.wary,牠們對你又多了幾分提防。
+tundra.relation_change.wary.single,牠對你又多了幾分提防。
+tundra.relation_change.familiar,牠們漸漸熟悉你的氣味了。
+tundra.relation_change.familiar.single,牠漸漸熟悉你的氣味了。
+tundra.relation_change.friendly,牠們看你的眼神不再帶著敵意。
+tundra.relation_change.friendly.single,牠看你的眼神不再帶著敵意。
 summary.tundra,和苔原狼相遇 {n} 次：{list}；最後牠們{relation}
 summary.tundra.relation.hostile,把你當成敵人
 summary.tundra.relation.wary,還在提防你
@@ -965,13 +983,19 @@ factor.combat.ally,苔原狼在一旁助攻
 tundra.charge.pair,那對苔原狼一看到你，頸毛一豎，一左一右撲了上來！
 tundra.charge.single,那隻苔原狼一看到你，頸毛一豎，直直撲了上來！
 tundra.approach,走近牠們
+tundra.approach.single,走近牠
 tundra.approached,你慢慢走近，牠們沒有走開。你們並肩走了一段路，牠們才轉往別的方向。
+tundra.approached.single,你慢慢走近，牠沒有走開。你們並肩走了一段路，牠才轉往別的方向。
 tundra.lead,你跟著牠們走過一道雪坡，坡下是一群正在低頭吃苔蘚的馴鹿。
+tundra.lead.single,你跟著牠走過一道雪坡，坡下是一群正在低頭吃苔蘚的馴鹿。
 tundra.come,嚎叫聲越來越近。那對苔原狼循著你的聲音找來了。
+tundra.come.single,嚎叫聲越來越近。那隻苔原狼循著你的聲音找來了。
 scavenger.tundra_wait,那對苔原狼在不遠處趴了下來，看著你吃，沒有靠近。
 tundra.wait.share,讓牠們一起吃
+tundra.wait.share.single,讓牠一起吃
 tundra.wait.keep,繼續吃
 tundra.wait.shared,你往旁邊挪了挪，牠們走過來，安靜地撕下一段肉。
+tundra.wait.shared.single,你往旁邊挪了挪，牠走過來，安靜地撕下一段肉。
 summary.tundra_outcome.approached,走近牠們
 summary.tundra_outcome.shared,一起吃你的獵物
 summary.tundra_outcome.kept,讓牠們在旁邊等
@@ -1043,7 +1067,11 @@ injury_source.blizzard,暴風雪
 ui.note_hint.prey,（不花時間；累積對這一帶獵物出沒的了解）
 ui.note_hint.threat,（不花時間；記住這一帶的危險，移動前會提醒）
 ui.stamina_low,體力不支
-ui.stamina_low.tip,體力快用完了：不能開始狩獵，練習的成長減半；體力用完時，戰鬥中的攻擊也不容易命中。休息或睡覺可以恢復。
+ui.stamina_low.tip,"體力快用完了：
+・不能開始狩獵
+・練習的成長減半
+・體力用完時，戰鬥中不容易打中
+休息或睡覺可以恢復。"
 river.cross.thaw,你踏上變薄的河冰，小心地往對岸走。
 blizzard.over.later,你離開的時候，苔原的暴風雪已經停了。雪原一片寂靜，雪堆得比你的肩膀還高。
 animal.grizzly_bear.mother,母灰熊
