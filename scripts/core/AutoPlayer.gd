@@ -224,6 +224,12 @@ func _explore_once() -> void:
 			_:
 				GameState.watch_tundra_mob()
 		return
+	if d.get("kind", "") == "lynx":
+		if d.get("has_kill", false) and style != "cautious":
+			play_combat(GameState.start_lynx_combat())
+		else:
+			GameState.clear_discovery()
+		return
 	if d.get("kind", "") == "cougar_ambush":
 		play_combat(GameState.start_cougar_ambush_combat())
 		return

@@ -1438,3 +1438,14 @@ scavenger.coyote.arrive,一隻郊狼被氣味引來，在不遠處繞圈子。
 scavenger.coyote.arrive.first,一隻比你瘦小得多、毛色灰黃的犬科動物在不遠處繞圈子，盯著你的獵物。
 scavenger.coyote.returning,你回來時，兩隻郊狼正在偷吃你的獵物。
 scavenger.coyote.returning.first,你回來時，兩隻毛色灰黃、比你瘦小的犬科動物正在偷吃你的獵物。
+animal.lynx,猞猁
+lynx.seen.unknown,一隻腿很長、耳尖有兩撮黑毛的灰色大貓從樹下走過，看了你一眼，沒入灌木叢。
+lynx.seen.known,一隻猞猁從樹下走過，看了你一眼，沒入灌木叢。
+lynx.kill.unknown,一隻耳尖有兩撮黑毛的灰色大貓正咬著一隻剛抓到的雪兔。牠看見你，耳朵往後一貼。
+lynx.kill.known,一隻猞猁正咬著一隻剛抓到的雪兔。牠看見你，耳朵往後一貼。
+lynx.drive_off,上前搶下牠的雪兔
+lynx.got_hare,牠丟下雪兔跳上樹逃走了，雪兔歸你。
+combat.stake.meet.lynx,牠叼著雪兔弓起背，低聲嘶吼，但眼睛在找退路。
+migration.tracks.autumn,地上一大片新鮮的鹿蹄印，全都朝著同一個方向——往{region}去了。天冷了，牠們在下山。
+migration.tracks.spring,泥地上一大片新鮮的鹿蹄印，全都朝著同一個方向——往{region}去了。雪在融，牠們在往高處走。
+migration.follow,跟著足跡往{region}走

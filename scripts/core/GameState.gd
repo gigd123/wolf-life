@@ -198,6 +198,7 @@ func _on_day_changed(_day: int) -> void:
 	_queue_day_summary(before_injury, before_injury_stat, before_poison)
 	_recover_region_depletion()
 	_update_marks()
+	_move_bison()
 	_heal_npcs()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
@@ -690,9 +691,78 @@ func _coyote_cfg() -> Dictionary:
 # 郊狼在這一區的倍率：你常待的區域郊狼少（同狐狸）
 func coyote_mult() -> float:
 	var m: float = float(_coyote_cfg().get("regions", {}).get(current_region, 0.0))
+	if current_region == bison_region():
+		m *= float(_migration_cfg().get("bison", {}).get("coyote_mult", 1.5))
 	if m > 0.0 and int(life_log.get("region_periods", {}).get(current_region, 0)) >= int(_feeding_cfg().get("fox", {}).get("frequent_periods", 12)):
 		m *= float(_coyote_cfg().get("frequent_mult", 0.5))
 	return m
+
+# --- 猞猁、季節遷徙（Phase 2 第 6 步）---
+func _lynx_cfg() -> Dictionary:
+	return GameData.balance.get("lynx", {})
+
+func _migration_cfg() -> Dictionary:
+	return GameData.balance.get("migration", {})
+
+func _maybe_lynx() -> bool:
+	var here: float = float(_lynx_cfg().get("regions", {}).get(current_region, 0.0))
+	if here <= 0.0 or blizzard_here():
+		return false
+	if not RNGService.chance(float(_lynx_cfg().get("chance", 0.04)) * here * clamp(hare_mult(false), 0.2, 2.0)):
+		return false
+	current_discovery = {"kind": "lynx", "location": _random_terrain(current_region), "has_kill": RNGService.chance(float(_lynx_cfg().get("kill_chance", 0.5))),
+		"known": is_identified("lynx")}
+	identify("lynx", false)
+	return true
+
+func start_lynx_combat() -> Combat:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	var c := start_combat("lynx", "adult", "meet", {"location": str(d.get("location", ""))})
+	c.set_meta("lynx_kill", bool(d.get("has_kill", false)))
+	return c
+
+# 遷徙的足跡：秋季後半往低處、春季前段往高處
+func _maybe_migration_tracks() -> bool:
+	var cfg := _migration_cfg()
+	var season: String = GameTime.current_season()
+	if season == "autumn" and GameTime.day < int(cfg.get("autumn_from_day", 5)):
+		return false
+	if season == "spring" and GameTime.day > int(cfg.get("spring_until_day", 6)):
+		return false
+	var to: String = str(cfg.get("regions", {}).get(season, {}).get(current_region, ""))
+	if to == "" or not RNGService.chance(float(cfg.get("track_chance", 0.1))):
+		return false
+	current_discovery = {"kind": "migration", "to": to, "season": season, "location": _random_terrain(current_region)}
+	return true
+
+func follow_migration() -> String:
+	var to: String = str(current_discovery.get("to", ""))
+	clear_discovery()
+	record_decision("migration.follow")
+	return to
+
+# 野牛群這陣子在哪一區（每天可能換）
+func bison_region() -> String:
+	if not life_log.has("bison_region"):
+		life_log["bison_region"] = str(RNGService.weighted_pick(_migration_cfg().get("bison", {}).get("herd_weights", {"grassland_plains": 1})))
+	return str(life_log["bison_region"])
+
+func _move_bison() -> void:
+	var b: Dictionary = _migration_cfg().get("bison", {})
+	if RNGService.chance(float(b.get("move_chance", 0.25))):
+		life_log["bison_region"] = str(RNGService.weighted_pick(b.get("herd_weights", {"grassland_plains": 1})))
+
+# 遷徙與野牛群對這一區獵物的倍率
+func _migration_mults(region_id: String, result: Dictionary) -> void:
+	var cfg := _migration_cfg()
+	if GameData.map_of(region_id) == "grassland":
+		var b: Dictionary = cfg.get("bison", {})
+		result["bison"] = float(result.get("bison", 1.0)) * float(b.get("here_mult", 2.5) if region_id == bison_region() else b.get("elsewhere_mult", 0.3))
+	if GameTime.current_season() == "autumn" and str(year_state().get("winter", "normal")) == "severe":
+		var m: float = float(cfg.get("severe_meadow_mult", 0.4)) if region_id == "mountain_meadow" else (float(cfg.get("severe_foothills_mult", 1.3)) if region_id == "mountain_foothills" else 1.0)
+		for a in ["elk", "mule_deer"]:
+			result[a] = float(result.get(a, 1.0)) * m
 
 func _cougar_here() -> float:
 	return float(_cougar_cfg().get("regions", {}).get(current_region, 0.0))
@@ -1098,6 +1168,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		state_changed.emit()
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
+	# 猞猁、遷徙的足跡（Phase 2 第 6 步）
+	if _maybe_lynx() or _maybe_migration_tracks():
+		state_changed.emit()
+		return current_discovery
 	# 美洲獅：伏擊、藏起來的獵物（Phase 2 第 3 步）
 	if _maybe_cougar():
 		state_changed.emit()
@@ -2708,7 +2782,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
-	if animal_id in ["cougar", "black_bear", "coyote"]:
+	if animal_id in ["cougar", "black_bear", "coyote", "lynx"]:
 		identify(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
@@ -2847,6 +2921,11 @@ func finish_combat(c: Combat) -> Dictionary:
 		_after_tundra_combat(c)
 	if c.context == "den":
 		_after_den_combat(c)
+	# 趕走剛抓到雪兔的猞猁，雪兔歸你（Phase 2 第 6 步）
+	if c.animal_id == "lynx" and c.won() and bool(c.get_meta("lynx_kill", false)):
+		wolf.hunger += float(_lynx_cfg().get("hare_value", 12))
+		wolf.clamp_stats()
+		result["lynx_hare"] = true
 	if c.npc != null and c.npc.id == "challenger":
 		c.npc.health = c.opp_hp
 		_after_challenger(c.won())
@@ -3015,6 +3094,7 @@ func hare_mult(with_season: bool = true) -> float:
 
 func prey_mults(region_id: String) -> Dictionary:
 	var result: Dictionary = region_depletion.get(region_id, {}).duplicate()
+	_migration_mults(region_id, result)
 	result["snowshoe_hare"] = float(result.get("snowshoe_hare", 1.0)) * hare_mult()
 	# 冬季的保護色：雪兔在雪地裡比較難被發現
 	for animal_id in GameData.animals.keys():

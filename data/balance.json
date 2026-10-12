@@ -189,6 +189,9 @@
       "cougar": {
         "adult": { "speed": 74, "power": 135, "hp": 110, "damage": [13, 25], "parts": { "face": 0.3, "shoulder": 0.4, "leg": 0.3 }, "give_up_ratio": 0.42, "threat_resist": 0.3 }
       },
+      "lynx": {
+        "adult": { "speed": 70, "power": 55, "hp": 40, "damage": [4, 10], "parts": { "face": 0.5, "leg": 0.5 }, "give_up_ratio": 0.8, "threat_resist": 0.0 }
+      },
       "coyote": {
         "adult": { "speed": 68, "power": 45, "hp": 30, "damage": [3, 8], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.75, "threat_resist": -0.1 }
       },
@@ -357,6 +360,15 @@
   "_coyote_comment": "郊狼（Phase 2 第 5 步）：草原、山地的搶屍者，成對或小群；牠們怕你，但會來偷殘骸。在牠們的區域進食時每段 feed_chance、回到殘骸時 return_chance 找上門；你常待的區域（同狐狸的 frequent_periods）× frequent_mult。咬死的郊狼通常不吃（同狐狸）。",
   "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
     "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
+  "_lynx_comment": "加拿大猞猁（Phase 2 第 6 步）：北方森林、山腳、林線的獨行貓科，主食雪兔，很少和狼衝突、多半退讓。探索時 chance × 區域倍率 × 這一年的雪兔倍率（雪兔低谷年猞猁變少）看到牠；kill_chance 的機率牠剛抓到一隻雪兔，可以把牠趕走、搶下雪兔（hare_value）。",
+  "lynx": { "regions": { "forest_north": 1.0, "forest_west": 0.5, "mountain_foothills": 0.8, "mountain_headwaters": 0.6, "tundra_south": 0.8 },
+    "chance": 0.04, "kill_chance": 0.5, "hare_value": 12 },
+  "_migration_comment": "季節遷徙（Phase 2 第 6 步）：秋季後半（autumn_from_day 之後）與春季前段（spring_until_day 之前），在這些區域探索時 track_chance 看到馬鹿、騾鹿遷徙的足跡，指向牠們要去的區域（regions）；可以跟著走。嚴冬的年份，秋季高山草甸的鹿 × severe_meadow_mult、山腳 × severe_foothills_mult（更早下山）。bison：野牛群每天 move_chance 換一區（herd_weights），在牠們那一區野牛 × here_mult、草原其他區 × elsewhere_mult，那一區的郊狼 × coyote_mult。",
+  "migration": { "track_chance": 0.1, "autumn_from_day": 5, "spring_until_day": 6,
+    "regions": { "autumn": { "mountain_meadow": "mountain_foothills", "mountain_canyon": "mountain_foothills", "mountain_headwaters": "mountain_foothills", "mountain_foothills": "forest_east" },
+      "spring": { "forest_east": "mountain_foothills", "mountain_foothills": "mountain_meadow", "mountain_headwaters": "mountain_meadow" } },
+    "severe_meadow_mult": 0.4, "severe_foothills_mult": 1.3,
+    "bison": { "move_chance": 0.25, "herd_weights": { "grassland_plains": 3, "grassland_hills": 2, "grassland_river": 1 }, "here_mult": 2.5, "elsewhere_mult": 0.3, "coyote_mult": 1.5 } },
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
   "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },

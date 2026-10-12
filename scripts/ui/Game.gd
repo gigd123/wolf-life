@@ -1526,6 +1526,12 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") in ["cougar_ambush", "cougar_cache"]:
 		_show_cougar(d)
 		return
+	if d.get("kind", "") == "lynx":
+		_show_lynx(d)
+		return
+	if d.get("kind", "") == "migration":
+		_show_migration(d)
+		return
 	var text := _discovery_text(d)
 	_log(text)
 	encounter_message.text = text
@@ -3155,6 +3161,44 @@ func _show_cougar(d: Dictionary) -> void:
 			_refresh())
 	encounter_overlay.visible = true
 
+# 猞猁（Phase 2 第 6 步）：看到牠；牠剛抓到雪兔時可以趕走牠搶下來。
+func _show_lynx(d: Dictionary) -> void:
+	var text: String = tr("lynx.%s.%s" % ["kill" if d.get("has_kill", false) else "seen", "known" if d.get("known", false) else "unknown"])
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "lynx", "adult", "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	if d.get("has_kill", false):
+		_add_encounter_button(tr("lynx.drive_off"), func():
+			_begin_combat(GameState.start_lynx_combat(), "move"))
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.clear_discovery()
+		encounter_overlay.visible = false
+		_refresh())
+	encounter_overlay.visible = true
+
+# 遷徙的足跡（Phase 2 第 6 步）：可以跟著走到牠們要去的區域。
+func _show_migration(d: Dictionary) -> void:
+	var to: String = str(d.get("to", ""))
+	var text: String = tr("migration.tracks." + str(d.get("season", "autumn"))).replace("{region}", tr("region." + to))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "walk")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("migration.follow").replace("{region}", tr("region." + to)), func():
+		var target: String = GameState.follow_migration()
+		encounter_overlay.visible = false
+		_on_region_button(target))
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.clear_discovery()
+		encounter_overlay.visible = false
+		_refresh())
+	encounter_overlay.visible = true
+
 # 最後一章（1.9b 第 2 步）：讓玩家選擇結束的方式
 func _show_lie_down() -> void:
 	encounter_message.text = tr("lie_down.prompt")
@@ -3452,6 +3496,8 @@ func _finish_combat_ui() -> void:
 			_log(_tt("tundra.relation_change." + GameState.tundra_relation_key()))
 		if c.context == "den" and bool(c.get_meta("pup_lost", false)):
 			_log_result(tr("tundra.den.pup_lost"))
+		if r.get("lynx_hare", false):
+			_log_result(tr("lynx.got_hare"))
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
