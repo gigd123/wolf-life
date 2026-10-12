@@ -537,6 +537,17 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Musiani 等 2007（Molecular Ecology，consevol.org；wrrb.ca）；UCLA 黑毛基因研究（ioes.ucla.edu）；NWT 政府（gov.nt.ca）；Wikipedia〈Tundra wolf〉；San Diego Zoo〈Gray wolf〉；WorldAtlas（最大的狼）；Springer 2023（狼與狼獾在狼殘骸的互動，s00265-023-03423-6）；SLU（Rauset、Mattisson 等的狼獾研究）；FAO AGRIS〈Predation or scavenging? Prey body condition influences decision-making in … the wolverine〉；NINA〈Refrigeration or anti-theft? Food-caching behavior of Wolverines in Scandinavia〉；Columbus Zoo〈Wolverine〉；Statistics Norway（大型食肉動物死亡原因）。
 
+## 次成年期與擴散（2026-10-12 Claude Code 查）
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 擴散的狼大多是一歲左右（11～12 個月）離開，也有 17～19 個月才走的；明尼蘇達的研究中，擴散的成狼、一歲狼、幼狼分別佔 8%、75%、16% | 研究（Mech & Gese，明尼蘇達 1969～1989） | 遊戲從 8 個月開始獨自生活偏早，用「領袖被射殺、走散」的開場解釋（DESIGN 長期構想的出生背景） |
+| 平均擴散年齡約 1.5～2.2 歲；擴散集中在 2～4 月與 10～11 月 | 研究（Wisconsin；明尼蘇達） | 2 歲成年和「找到地方定下來」的時間一致 |
+| 約 22 個月大性成熟 | 記述 | 2 歲成年可以接 Phase 3 的配對 |
+| 同年齡的狼，體型小的狩獵較差；要拉倒 2～6 倍大的馬鹿需要體重 | 研究（MacNulty，黃石） | 次成年期還沒長成時，搏鬥成年大型獵物要扣減 |
+| 單獨一隻狼殺死成年馬鹿的機率約 2% | 記述（黃石） | 單狼對健康成年大型獵物的成功率要很低 |
+| 定居的狼群常殺死闖入的擴散狼；衝突集中在領域邊界 | 記述／研究（阿拉斯加；Mech 1977） | 其他狼不會因為你年輕就容忍你；改成年輕時更容易被嚇退 |
+
 ## 案例：黃石的「06」母狼（832F）（2026-10-08 使用者補充，經 ChatGPT 整理）
 
 | 項目 | 內容 | 可信度 |
@@ -611,3 +622,4 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 - 美洲獅部分來自 2022 年的科普文章；野豬與熊的部分來自網路整理。案例可作為設計方向，但不宜當成精確的生物學結論或平衡數值。
 
 - 馬鹿、狼的耐力與繁殖（2026-10-12）：MacNulty 等 2011〈Nonlinear effects of group size on the success of wolves hunting elk〉（Behavioral Ecology；USGS、USU）；MacNulty 等 2014（獵野牛）；Smith 等 2004〈Winter prey selection and estimation of wolf kill rates in Yellowstone〉（JWM，Michigan Tech）；Stahler 2006〈Foraging and Feeding Ecology of the Gray Wolf〉；Yellowstone Wolf Cougar Elk Project 2025 年報（NPS）；Winnie（Montana State）〈Behavioral responses of elk to the threat of wolf predation〉；Childress & Lung（ScienceBase）；Barber-Meyer 等 2008〈Elk calf survival and mortality following wolf restoration〉（Wildlife Monographs／USGS）；French & French〈Grizzly bear predation on elk calves〉（Pelican Valley）；NPS〈Elk〉；Lewis & Clark〈The American Elk〉；SLU〈Wolf predation on moose and roe deer: chase distances and outcome〉；Canadian Field-Naturalist〈Long daily movements of wolves during pup rearing〉；wolf.org〈Wolf dens 101〉；Heard 1992、Parker 1973、Klaczek 2016（wrrb.ca）；Arctic〈Bathurst Island wolves〉（ucalgary）；Wisconsin DNR；Living with Wolves；Jackson Hole News & Guide〈Bears butting in on Yellowstone wolf kills〉（Metz 的研究）。
+- 次成年期與擴散（2026-10-12）：Mech & Gese〈Dispersal of wolves in northeastern Minnesota, 1969–1989〉（USGS）；Treves 等 2009〈Wolf dispersal〉；The Wildlife Society〈Young wolves disperse more when well fed〉；wolf.org〈What’s a lone wolf?〉；NPS〈Understanding the limits to wolf hunting ability〉（Yellowstone Science 24-1）；Living with Wolves；Alaska Science Forum〈Lone wolf’s days wandering are over〉；Mech 1977〈Wolf-pack buffer zones as prey reservoirs〉。
