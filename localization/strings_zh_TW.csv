@@ -1293,3 +1293,6 @@ year.hint.summer.wet,這個夏天雨下個不停，溪水漲得很高。
 year.hint.spring.hare_high,灌木叢裡到處是雪兔的足跡，多得數不清。
 year.hint.spring.hare_low,今年幾乎看不到雪兔的蹤影。
 summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。
+combat.anim.normal,動畫：一般（按一下切換；播放中按一下略過）
+combat.anim.fast,動畫：快（按一下切換；播放中按一下略過）
+combat.anim.off,動畫：略過（按一下切換）

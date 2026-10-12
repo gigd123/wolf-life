@@ -76,6 +76,7 @@ var current_hunt: HuntSystem = null
 var current_combat: Combat = null
 var combat_notes: Array[String] = []
 var combat_wolf_pose: String = "threaten"
+var combat_anim: CombatAnimator # 1.9 第 2 步：戰鬥回合的補間動畫
 var combat_opp_action: String = "idle"
 
 var rest_overlay: Panel
@@ -499,6 +500,14 @@ func _build_hunt_overlay() -> void:
 	sprite_row.add_child(hunt_wolf_sprite)
 	hunt_sprite = _make_creature_icon(40)
 	sprite_row.add_child(hunt_sprite)
+	combat_anim = CombatAnimator.new()
+	add_child(combat_anim)
+	combat_anim.wolf_icon = hunt_wolf_sprite
+	combat_anim.opp_icon = hunt_sprite
+	combat_anim.set_wolf_pose = func(pose: String): _set_wolf_pose(hunt_wolf_sprite, pose)
+	combat_anim.set_opp_action = func(action: String):
+		if current_combat != null:
+			_set_creature(hunt_sprite, current_combat.animal_id, current_combat.life_stage, action)
 	hunt_message = Label.new()
 	hunt_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hunt_message.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -3195,6 +3204,16 @@ func _render_combat() -> void:
 	for opt in c.options():
 		var id: String = opt["id"]
 		_add_hunt_choice(tr(opt["label_key"]), opt, func(): _on_combat_choice(id))
+	# 動畫速度（一般／快／略過），按一下切換
+	var anim_btn := Button.new()
+	anim_btn.text = tr("combat.anim." + CombatAnimator.mode())
+	anim_btn.flat = true
+	anim_btn.pressed.connect(func():
+		if combat_anim.playing:
+			combat_anim.skip()
+			return
+		anim_btn.text = tr("combat.anim." + CombatAnimator.next_mode()))
+	hunt_buttons_box.add_child(anim_btn)
 	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
 # 試玩指標：有成功率的選擇裡，是不是選了最高的那個。
@@ -3209,6 +3228,10 @@ func _metric_choice(opt: Dictionary, all: Array) -> void:
 
 func _on_combat_choice(id: String) -> void:
 	var c := current_combat
+	# 動畫播放中再按：略過剩下的演出
+	if combat_anim.playing:
+		combat_anim.skip()
+		return
 	for o in c.options():
 		if str(o.get("id", "")) == id:
 			_metric_choice(o, c.options())
@@ -3223,6 +3246,12 @@ func _on_combat_choice(id: String) -> void:
 		_log(text)
 	combat_wolf_pose = str(res.get("wolf_pose", "threaten"))
 	combat_opp_action = str(res.get("opp_action", "idle"))
+	# 照事件的順序播放這一回合（1.9 第 2 步）；播放中選項灰掉，按「動畫」那一行可略過
+	for b in hunt_buttons_box.get_children():
+		for n in ([b] + b.get_children()):
+			if n is Button and not (n as Button).flat:
+				(n as Button).disabled = true
+	await combat_anim.play(res.get("events", []))
 	_refresh()
 	if c.phase == Combat.Phase.DONE:
 		_finish_combat_ui()
