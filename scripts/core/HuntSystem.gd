@@ -79,7 +79,11 @@ var successful_options: Array[String] = [] # 這次狩獵成功過的選項（�
 var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風向每個階段都可能改變
 var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
-var herd_weak: float = 0.0 # 觀察鹿群時找出跑得慢的那一隻（北美馴鹿）：追擊加成
+var herd_weak: float = 0.0
+# 大型獵物的體況（1.8 第 3 步）："healthy" 健康、"average" 普通、"weak" 虛弱（老、病、傷、營養不良）；小型獵物與幼體是 ""。
+var condition: String = ""
+var condition_known: bool = false # 觀察成功（感知夠）、試探或翹尾旗之後看得出來
+var probed: bool = false # 試探過了 # 觀察鹿群時找出跑得慢的那一隻（北美馴鹿）：追擊加成
 var start_heavy: bool = false # 開始狩獵時已經是重傷（帶傷硬撐，1.7 第 2 步）
 var chase_style: Dictionary = {} # 1.7 第 4 步：獵物適合的追擊方式（animals.json chase_style：type、各方式的加減）
 var wind_failure: bool = false # 因風向轉變而失敗（試玩紀錄）
@@ -132,6 +136,7 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
 		fight_state["youth_penalty"] = float(youth.get("big_prey_penalty_young" if wolf.age_years < yearling else "big_prey_penalty_old", 0.0))
 	chase_style = stats.get("chase_style", {})
+	_roll_condition(p_injured)
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
@@ -236,6 +241,12 @@ func options() -> Array:
 					"factors": [{"key": "factor.standing_danger", "good": false, "weight": 0.0, "info": true}]})
 			else:
 				var opts: Dictionary = _tuning().get("chase", {}).get("options", {})
+				# 試探（1.8 第 3 步）：追一小段看牠會不會露出弱點；只花少量喘，看出體況，健康的就該放棄
+				if condition != "" and not probed and chase_round == 0:
+					var pc: Dictionary = _tuning().get("condition", {}).get("probe", {})
+					list.append({"id": "probe", "label_key": "hunt.option.probe", "turns": 0, "stamina": float(pc.get("stamina", 5)),
+						"prey_drain": float(pc.get("prey_drain", 5)),
+						"factors": [{"key": "factor.probe_info", "good": true, "weight": 0.0, "info": true}]})
 				for id in opts.keys():
 					if _option_available(opts[id]):
 						list.append(_chase_option(id))
@@ -245,6 +256,7 @@ func options() -> Array:
 					list.append({"id": "catch_breath", "label_key": "hunt.option.catch_breath", "turns": 0, "stamina": 0.0,
 						"factors": [{"key": "factor.prey_may_escape", "good": false, "weight": float(b.get("catch_breath_escape", 0.25)), "info": true}]})
 		Stage.FIGHT:
+			fight_state["prey_tired"] = 1.0 - prey_stamina_cur / prey_stamina_max
 			for id in FightRules.move_ids():
 				var info := FightRules.chance(wolf, prey_counter_attack, id, fight_state)
 				_add_common_factors(info["factors"])
@@ -382,6 +394,12 @@ func _stalk_option(id: String) -> Dictionary:
 	if ambush_bonus > 0.0:
 		factors.append({"key": "factor.ambush_water", "good": true, "weight": ambush_bonus})
 		t += ambush_bonus
+	# 體況：健康的獵物比較警覺（1.8 第 3 步）
+	var cs: float = float(_tuning().get("condition", {}).get("stalk", {}).get(condition, 0.0)) if condition != "" else 0.0
+	if cs != 0.0:
+		if condition_known:
+			factors.append({"key": "factor.condition." + condition, "good": cs > 0.0, "weight": abs(cs)})
+		t += cs
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
 	var value: float = float(cfg.get("base", 0.58)) + diff + w + t + stalk_bonus + float(opt.get("bonus", 0.0))
@@ -418,6 +436,12 @@ func _chase_option(id: String) -> Dictionary:
 	if snow_mod != 0.0:
 		factors.append({"key": "factor.snow." + snow + (".good" if snow_mod > 0.0 else ".bad"), "good": snow_mod > 0.0, "weight": abs(snow_mod)})
 		t += snow_mod
+	# 體況：看得出來才顯示原因，看不出來也照樣影響
+	var cm: float = condition_mod()
+	if cm != 0.0:
+		if condition_known:
+			factors.append({"key": "factor.condition." + condition, "good": cm > 0.0, "weight": abs(cm)})
+		t += cm
 	# 追太久成功率逐回合下降；獵物體力下降則較容易追上。
 	var fatigue: float = max(0, chase_round + 1 - int(cfg.get("free_rounds", 2))) * float(cfg.get("fatigue_per_round", 0.1))
 	if fatigue > 0.0:
@@ -585,6 +609,10 @@ func prey_state_keys() -> Array:
 	var keys: Array = []
 	keys.append("prey_state.alert" if prey_detection >= wolf.effective_perception() else "prey_state.calm")
 	keys.append("prey_state.strong" if prey_stamina >= 50.0 else "prey_state.tired")
+	# 體況：觀察成功且感知夠高時看得出來
+	if condition != "" and wolf.effective_perception() >= float(_tuning().get("condition", {}).get("see_perception", 50)):
+		condition_known = true
+		keys.append("prey_state.condition." + condition)
 	if prey_counter_attack >= 20.0:
 		keys.append("prey_state.dangerous")
 	# 感知夠高時看得出牠是哪一種跑法（1.7 第 4 步）
@@ -618,6 +646,7 @@ func choose(id: String) -> Dictionary:
 			match id:
 				"harass": res = _do_harass(opt)
 				"catch_breath": res = _do_catch_breath()
+				"probe": res = _do_probe()
 				"attack_standing": res = _do_attack_standing()
 				_: res = _do_chase(opt)
 		Stage.FIGHT: res = _do_fight(opt)
@@ -719,9 +748,25 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 	if _roll(float(opt["chance"])):
 		stage = Stage.CHASE
 		chase_bonus = float(stalk_opt.get("chase_bonus", 0.0))
+		# 健康的白尾鹿一被追就豎起白尾巴（翹尾旗）：等於告訴你「追了也是白追」（1.8 第 3 步）
+		if animal_id == "white_tailed_deer" and condition == "healthy":
+			condition_known = true
+			return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted, "notes": ["hunt.flag"]}
 		return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted}
 	# 選擇繞到下風處時，已經依當下風向重新站位，不算「風向轉了」。
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
+
+# 體況（1.8 第 3 步）：依季節的比例擲；受傷的個體算虛弱。效果加在追擊與搏鬥（balance.hunt.condition）。
+func _roll_condition(p_injured: bool) -> void:
+	var size: String = str(GameData.animals.get(animal_id, {}).get("size", "small"))
+	if size == "small" or life_stage == "juvenile":
+		return
+	var cfg: Dictionary = _tuning().get("condition", {})
+	condition = "weak" if p_injured else str(RNGService.weighted_pick(cfg.get("season", {}).get(GameTime.current_season(), {"healthy": 5, "average": 3, "weak": 2})))
+	fight_state["condition_bonus"] = float(cfg.get("fight", {}).get(condition, 0.0))
+
+func condition_mod() -> float:
+	return float(_tuning().get("condition", {}).get("chase", {}).get(condition, 0.0)) if condition != "" else 0.0
 
 func set_snow(state: String) -> void:
 	snow = state
@@ -729,6 +774,17 @@ func set_snow(state: String) -> void:
 	var by_stage: Dictionary = table.get(life_stage, table) if table.get(life_stage, null) is Dictionary else table
 	snow_mod = float(by_stage.get(state, 0.0))
 	fight_state["snow_bonus"] = snow_mod * float(_tuning().get("chase", {}).get("snow_fight_mult", 0.5))
+
+func _do_probe() -> Dictionary:
+	probed = true
+	condition_known = true
+	prey_stamina_cur = max(0.0, prey_stamina_cur - float(_tuning().get("condition", {}).get("probe", {}).get("prey_drain", 5)))
+	var notes: Array = ["hunt.condition." + condition]
+	if animal_id == "white_tailed_deer" and condition == "healthy":
+		notes = ["hunt.flag"]
+	if RNGService.chance(float(_tuning().get("condition", {}).get("probe", {}).get("escape", 0.1))):
+		return _flee("hunt.probe.lost", [], false)
+	return {"success": false, "text_key": "hunt.probe.done", "notes": notes, "turns": 1}
 
 func _do_catch_breath() -> Dictionary:
 	var b: Dictionary = GameData.balance.get("burst", {})
@@ -754,6 +810,12 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	var escape: float = float(cfg.get("escape_base", 0.3)) + over * float(cfg.get("escape_per_round", 0.1)) \
 		- (1.0 - prey_stamina_cur / prey_stamina_max) * 0.2
 	# 用錯方式更容易跟丟、用對方式比較咬得住（1.7 第 4 步）
+	# 體況：健康的獵物沒被追上就多半甩掉你；虛弱的跑不遠（1.8 第 3 步）
+	if condition != "":
+		escape += float(_tuning().get("condition", {}).get("escape", {}).get(condition, 0.0))
+	# 白尾鹿放下尾巴急轉：密林裡更容易跟丟（1.8 第 3 步）
+	if animal_id == "white_tailed_deer" and terrain == "dense_forest":
+		escape += float(cfg.get("deer_turn_escape", 0.1))
 	var style: float = float(chase_style.get(str(opt["id"]), 0.0))
 	if style < 0.0:
 		escape += float(cfg.get("style_escape_misfit", 0.25))

@@ -219,7 +219,7 @@
     "chase": {
       "base": 0.58, "speed_divisor": 110,
       "base_small": 0.75, "speed_divisor_small": 200,
-      "free_rounds": 2, "fatigue_per_round": 0.1,
+      "free_rounds": 2, "fatigue_per_round": 0.1, "deer_turn_escape": 0.1,
       "escape_base": 0.3, "escape_per_round": 0.1,
       "prey_tired_bonus": 0.25, "precise_perception": 60, "style_perception": 55, "style_escape_misfit": 0.25, "style_escape_fit": 0.1,
       "options": {
@@ -255,8 +255,18 @@
       "rocky": { "stalk": -0.05, "sprint": -0.1 },
       "esker": { "observe": 0.1, "stalk": -0.05 }
     },
+    "_condition_comment": "大型獵物的體況（1.8 第 3 步）：season 是各季健康／普通／虛弱的比例（冬末最多虛弱）；stalk、chase、fight 是對潛近、追擊與搏鬥成功率的加減，escape 是沒追上時就此跑掉的機率加減；看得出來（觀察成功且感知 ≥ see_perception、試探、白尾鹿翹尾旗）才在因素欄寫出原因。probe：試探花的喘、讓獵物耗掉的耐力、就此跑掉的機率。",
+    "condition": {
+      "season": { "spring": { "healthy": 4, "average": 3, "weak": 3 }, "summer": { "healthy": 6, "average": 3, "weak": 1 }, "autumn": { "healthy": 6, "average": 3, "weak": 1 }, "winter": { "healthy": 3, "average": 3, "weak": 4 } },
+      "stalk": { "healthy": -0.15, "average": -0.05, "weak": 0.05 },
+      "chase": { "healthy": -0.45, "average": -0.15, "weak": 0.2 },
+      "escape": { "healthy": 0.5, "average": 0.2, "weak": -0.1 },
+      "fight": { "healthy": -0.1, "average": 0.0, "weak": 0.15 },
+      "see_perception": 50,
+      "probe": { "stamina": 5, "prey_drain": 5, "escape": 0.1 }
+    },
     "fight": {
-      "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2,
+      "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2, "throat_tired_bonus": 0.3,
       "escape_chance_on_fail": 0.25, "extra_round_turns": 1,
       "counter_damage_min": 5, "counter_damage_max": 15, "counter_injury_damage": 12,
       "_parts_comment": "獵物反擊打中狼的部位（1.6 傷勢）：被踢中腿影響速度、搏鬥中受傷影響力量。狩獵中其他反擊（母鹿衝撞、受傷個體反撲）也用這個比例。",

@@ -1,8 +1,12 @@
 extends SceneTree
+
+func GameData_cond(c: String) -> float:
+	return float(root.get_node("GameData").balance.get("hunt", {}).get("condition", {}).get("fight", {}).get(c, 0.0))
 # 狩獵成功率依狼的能力（1.7 第 3、4 步）：次成年 40、成年 60、巔峰 78 的狼，對每種獵物各狩獵 RUNS 次。
 # 每個階段選成功率最高的選項；追擊階段可用 CHASE 環境變數固定方式（follow／sprint／空白 = 最高成功率）。
 # 印出：整體成功率、進入搏鬥的比例、搏鬥第一口的平均成功率、平均受傷。
 # 用法：bash tools/run_sim.sh hunt_levels 0 300　　CHASE=follow bash tools/run_sim.sh hunt_levels 0 300
+# 1.8：COND=healthy／average／weak 固定大型獵物的體況；SNOW=none／deep… 固定雪況（預設無雪）。
 
 const STAGE_DONE := 5
 const STAGE_CHASE := 2
@@ -21,7 +25,10 @@ func _process(_d):
 	GS.auto_playing = true
 	var runs := _env_int("RUNS", 300)
 	var chase_mode := OS.get_environment("CHASE")
-	print("== hunt_levels：每格 %d 次，追擊方式 %s" % [runs, chase_mode if chase_mode != "" else "最高成功率"])
+	var cond := OS.get_environment("COND")
+	var snow := OS.get_environment("SNOW")
+	GS.snow = {"forest": snow if snow != "" else "none", "tundra": snow if snow != "" else "none"}
+	print("== hunt_levels：每格 %d 次，追擊方式 %s，體況 %s，雪況 %s" % [runs, chase_mode if chase_mode != "" else "最高成功率", cond if cond != "" else "依季節", GS.snow["forest"]])
 	for lv in LEVELS:
 		var line := "[%s %d]" % [lv[0], int(lv[1])]
 		print(line)
@@ -34,6 +41,9 @@ func _process(_d):
 				GS.wolf.clear_injury()
 				var terrains: Array = ["treeline", "open_tundra", "river_willow", "rocky", "esker"] if spec[0] in ["caribou", "moose"] else ["stream", "dense_forest", "forest_edge", "clearing", "fallen_logs"]
 				var h = GS.start_hunt(spec[0], spec[1], -1, false, terrains[i % terrains.size()])
+				if cond != "" and h.condition != "":
+					h.condition = cond
+					h.fight_state["condition_bonus"] = float(GameData_cond(cond))
 				var g := 0
 				var fought := false
 				var hp0: float = GS.wolf.health

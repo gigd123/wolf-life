@@ -95,6 +95,16 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var penalty: float = float(state.get("penalty", 0.0))
 	if penalty > 0.0:
 		factors.append({"key": "factor.standing_danger", "good": false, "weight": penalty})
+	# 體況（1.8 第 3 步）
+	var cond: float = float(state.get("condition_bonus", 0.0))
+	if cond != 0.0:
+		penalty -= cond
+	# 獵物耗累時「直取咽喉」更有機會（參考黃石 06 母狼；被踢中的風險照舊）
+	if move == "bite_throat":
+		var tired_bonus: float = float(state.get("prey_tired", 0.0)) * float(_cfg().get("throat_tired_bonus", 0.3))
+		if tired_bonus > 0.02:
+			factors.append({"key": "factor.prey_exhausted", "good": true, "weight": tired_bonus})
+			penalty -= tired_bonus
 	var snow_bonus: float = float(state.get("snow_bonus", 0.0))
 	if snow_bonus != 0.0:
 		factors.append({"key": "factor.snow_fight." + ("good" if snow_bonus > 0.0 else "bad"), "good": snow_bonus > 0.0, "weight": abs(snow_bonus)})
