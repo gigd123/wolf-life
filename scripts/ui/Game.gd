@@ -673,7 +673,7 @@ func _build_debug_overlay() -> void:
 	right.add_child(event_row3)
 	_debug_button(event_row3, tr("debug.event.prey_nearby"), func():
 		debug_overlay.visible = false
-		GameState.pending_events.append({"type": "prey_nearby", "animal_id": "hare", "life_stage": "adult", "terrain": ""})
+		GameState.debug_prey_nearby()
 		_refresh()
 	)
 	_debug_button(event_row3, tr("debug.event.bear_passing"), func():
@@ -1015,9 +1015,17 @@ func _refresh() -> void:
 		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
 		var danger: String = " ⚠" if not GameState.known_dangers(region_id, GameTime.current_season()).is_empty() else ""
 		var burn: String = GameState.burn_state(region_id)
-		var fire_mark: String = tr("map." + burn) if burn != "" else ""
+		if burn == "regrowth" and GameState.regrowth_late(region_id):
+			burn = "regrown"
+		# 火況只用一個字標在名稱後（「新綠」兩個字會擠掉名稱），說明放在滑鼠提示；長滿嫩草後不再標示
+		var fire_mark: String = tr("map." + burn) if burn in ["burning", "ash", "regrowth"] else ""
 		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark
-		btn.tooltip_text = tr("ui.here") if is_current else ""
+		var tips: Array[String] = []
+		if is_current:
+			tips.append(tr("ui.here"))
+		if burn != "":
+			tips.append(tr("map.tip." + burn))
+		btn.tooltip_text = "\n".join(tips)
 		# 目前位置用亮框與亮字標出，不再在名稱後面加「[目前位置]」（按鈕寬度放不下，會被截掉）
 		if is_current:
 			btn.add_theme_stylebox_override("disabled", current_region_style)

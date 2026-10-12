@@ -514,7 +514,7 @@ adult_body.skill_stealth,你的腳步變得很輕，伏低時幾乎聽不見聲�
 adult_body.speed,你的腿變得修長，奔跑時步子又大又穩。
 adult_body.strength,你的肩頸變得粗壯，咬住了就不容易鬆口。
 adult_body.skill,你的動作變得俐落，每一步都落在該落的地方。
-adult_body.perception,你的耳朵和鼻子越來越靈，林子裡的動靜很少逃過你。
+adult_body.perception,你的耳朵和鼻子越來越靈，四周的動靜很少逃過你。
 adult_body.health_max,你的骨架撐開了，胸膛厚實，挨了傷也撐得住。
 adult_body.default,你的身體長開了，不再是那隻跟不上的小狼。
 elder_transition.title,老年
@@ -558,7 +558,7 @@ combat.standoff.title,對峙：{animal}
 combat.exchange.title,交鋒：{animal}
 combat.stake.carcass.grizzly_bear,牠想要你的獵物。
 combat.stake.carcass.red_fox,牠想從你的獵物上偷一口。
-combat.stake.encounter.grizzly_bear,你們在林間撞見了彼此，牠壓低了頭。
+combat.stake.encounter.grizzly_bear,你們冷不防撞見了彼此，牠壓低了頭。
 combat.stake.mother,牠身後有幼熊，牠會拚命。
 combat.remember,你記得：上次你還不是牠的對手。
 combat.remember_won,你記得：上次你贏了牠。
@@ -721,6 +721,7 @@ fire.arrive.ash,{region}剛燒過。地上一片焦黑，踩下去全是灰，�
 fire.arrive.ash.again,{region}還是一片焦黑，空氣裡仍有焦味。
 fire.arrive.ash.den,巢穴還在地下，但四周一片焦黑，洞口滿是嗆鼻的焦味。
 fire.arrive.regrowth,{region}焦黑的地上冒出了新芽，鹿的足跡又多了起來。
+fire.arrive.regrown,{region}燒過的地方已經長滿了嫩草和低矮的灌木，鹿常來這裡啃食新枝。
 fire.region_out,{region}的火熄了，只剩焦黑的樹幹；火還在{list}燒著。
 fire.spread,火往{region}蔓延過去了。
 fire.option.flee,逃往{region}　平安率 {n}%
@@ -740,7 +741,11 @@ log.made_den,你在{region}安了新家。
 action.make_den,在這裡安家
 map.burning, 火
 map.ash, 焦
-map.regrowth, 新綠
+map.regrowth, 芽
+map.tip.burning,正在燒
+map.tip.ash,大火剛燒過，一片焦黑：獵物稀少，找不到好睡處
+map.tip.regrowth,焦黑的地上冒出新芽：鹿比較多
+map.tip.regrown,燒過的地方長滿了嫩草和灌木：鹿比較多
 death.fire,葬身火海
 death_bio.fire,死在一場森林大火裡
 injury_source.fire,大火

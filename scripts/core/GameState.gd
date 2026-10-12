@@ -1229,9 +1229,10 @@ func _rest_period_events(cfg: Dictionary, gained_stamina: float) -> void:
 	var loc_mult: float = float(cfg.get("location_mult", {}).get(sleep_quality(), 1.0))
 	if _can_trigger_event() and RNGService.chance(float(cfg.get("prey_nearby_per_period", 0.06))):
 		var pn: Dictionary = _events_cfg().get("prey_nearby", {})
-		var animal: String = RNGService.weighted_pick(pn.get("animals", {"hare": 1}))
-		_queue_event({"type": "prey_nearby", "animal_id": animal,
-			"life_stage": str(pn.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
+		var animal: String = _nearby_prey_pick(pn)
+		if animal != "":
+			_queue_event({"type": "prey_nearby", "animal_id": animal,
+				"life_stage": str(pn.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
 	var weights: Dictionary = EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {})
 	if float(weights.get(GameTime.current_season(), 0)) > 0.0 and _can_trigger_event() \
 			and RNGService.chance(float(cfg.get("bear_per_period", 0.03)) * loc_mult * threat_mult()):
@@ -1614,9 +1615,23 @@ func _maybe_prey_nearby() -> void:
 	var cfg: Dictionary = _events_cfg().get("prey_nearby", {})
 	if not _can_trigger_event() or not RNGService.chance(float(cfg.get("rest_chance", 0.15))):
 		return
-	var animal: String = RNGService.weighted_pick(cfg.get("animals", {"hare": 1}))
+	var animal: String = _nearby_prey_pick(cfg)
+	if animal == "":
+		return
 	_queue_event({"type": "prey_nearby", "animal_id": animal,
 		"life_stage": str(cfg.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
+
+# 獵物靠近的動物：只從這一區這一季有出沒的動物裡挑（苔原不會有白尾鹿、森林不會有雪兔）。都沒有就不發生。
+func _nearby_prey_pick(cfg: Dictionary) -> String:
+	var here: Dictionary = EncounterSystem.region_data(current_region).get("prey_weights", {})
+	var candidates: Dictionary = {}
+	var all: Dictionary = cfg.get("animals", {"hare": 1})
+	for animal in all.keys():
+		if float(here.get(animal, {}).get(GameTime.current_season(), 0)) > 0.0:
+			candidates[animal] = all[animal]
+	if candidates.is_empty():
+		return ""
+	return str(RNGService.weighted_pick(candidates))
 
 func hunt_nearby_prey(event: Dictionary) -> HuntSystem:
 	return start_hunt(event["animal_id"], event["life_stage"], -1, false, str(event.get("terrain", "")))
@@ -2065,6 +2080,9 @@ func _describe_burned_arrival(region_id: String) -> void:
 	var state: String = burn_state(region_id)
 	if not state in ["ash", "regrowth"]:
 		return
+	# 草木新生分兩段：剛冒新芽（sprout_days 天內），之後已經長滿嫩草灌木（文字不同，各描述一次）
+	if state == "regrowth" and regrowth_late(region_id):
+		state = "regrown"
 	var seen: Dictionary = life_log.get("burn_seen", {})
 	var mark: String = "%s@%d" % [state, int(region_burn.get(region_id, 0))]
 	if str(seen.get(region_id, "")) == mark:
@@ -2089,6 +2107,14 @@ func burn_state(region_id: String) -> String:
 	if days < int(after.get("ash_days", 12)) + int(after.get("regrowth_days", 40)):
 		return "regrowth"
 	return ""
+
+# 草木新生的後段：焦黑期之後再過 sprout_days 天，新芽已經長成嫩草與灌木（鹿仍然比較多，地圖不再標示）。
+func regrowth_late(region_id: String) -> bool:
+	if burn_state(region_id) != "regrowth":
+		return false
+	var after: Dictionary = _fire_cfg().get("after", {})
+	var days: int = int(life_log.get("days_lived", 1)) - int(region_burn[region_id])
+	return days >= int(after.get("ash_days", 12)) + int(after.get("sprout_days", 10))
 
 # 獵物出現率的倍率：資源消耗 × 火後（焦黑時稀少、草木新生時鹿變多）。
 func prey_mults(region_id: String) -> Dictionary:
@@ -3440,6 +3466,15 @@ func debug_unlock_stranger() -> void:
 	identify("stranger_wolf")
 	life_log["stranger_observed"] = true
 	life_log["stranger_unlock"] = "subadult"
+
+# 獵物靠近：照這一區這一季的動物挑（苔原是雪兔或小馴鹿，森林是野兔或幼鹿）。
+func debug_prey_nearby() -> void:
+	var cfg: Dictionary = _events_cfg().get("prey_nearby", {})
+	var animal: String = _nearby_prey_pick(cfg)
+	if animal == "":
+		return
+	_queue_event({"type": "prey_nearby", "animal_id": animal,
+		"life_stage": str(cfg.get("life_stage", {}).get(animal, "adult")), "terrain": _random_terrain(current_region)})
 
 func debug_export_playtest_log() -> String:
 	return _write_playtest_log() if wolf != null else ""

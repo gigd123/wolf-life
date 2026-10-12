@@ -10,8 +10,8 @@
   },
   "prey_nearby": {
     "rest_chance": 0.15,
-    "animals": { "hare": 3, "white_tailed_deer": 1 },
-    "life_stage": { "hare": "adult", "white_tailed_deer": "juvenile" }
+    "animals": { "hare": 3, "snowshoe_hare": 3, "white_tailed_deer": 1, "caribou": 1 },
+    "life_stage": { "hare": "adult", "snowshoe_hare": "adult", "white_tailed_deer": "juvenile", "caribou": "juvenile" }
   },
   "_rest_comment": "快轉（休息到某時段）途中的事件（SPEC 1.6「快轉被事件打斷」）：每經過一個時段判定一次；危險事件的機率依休息地點（同睡處分級）。interrupt：會打斷快轉的事件，每次快轉最多打斷一次。",
   "rest": {
@@ -20,7 +20,7 @@
     "location_mult": { "den": 0.3, "good": 0.6, "normal": 1.0, "rough": 1.3 },
     "interrupt": ["bear_passing", "prey_nearby", "stranger_confront", "driven_off", "storm", "fire_warning", "fire_here", "blizzard_warning", "blizzard_here", "ice_break", "ravens"]
   },
-  "_fire_comment": "森林大火（SPEC 1.6「森林大火」）。year_chance：每年乾季（夏秋）發生一次的機率，夏季開始時擲骰並排定時間；cooldown_days：大火後幾天內不再發生（2 年 = 80 天）。warning_periods：起火前的徵兆時段數；notice：每個徵兆時段察覺的機率 = base + (感知 − 40) × per_perception。spread_chance：燃燒中的區域每個時段延燒到每個相鄰區域的機率；burn_periods：一個區域燒多久。escape：各逃生方式的危險度（越高越危險），再依體力、血量、速度與是否熟悉目的地調整；outcome：危險度 1 時死亡／重度燒傷／輕度燒傷的機率。after：燒過的區域 ash_days 天內是一片焦黑（獵物 ×0.3、找不到好睡處與採集物），之後 regrowth_days 天草木新生（鹿 ×1.5）。",
+  "_fire_comment": "森林大火（SPEC 1.6「森林大火」）。year_chance：每年乾季（夏秋）發生一次的機率，夏季開始時擲骰並排定時間；cooldown_days：大火後幾天內不再發生（2 年 = 80 天）。warning_periods：起火前的徵兆時段數；notice：每個徵兆時段察覺的機率 = base + (感知 − 40) × per_perception。spread_chance：燃燒中的區域每個時段延燒到每個相鄰區域的機率；burn_periods：一個區域燒多久。escape：各逃生方式的危險度（越高越危險），再依體力、血量、速度與是否熟悉目的地調整；outcome：危險度 1 時死亡／重度燒傷／輕度燒傷的機率。after：燒過的區域 ash_days 天內是一片焦黑（獵物 ×0.3、找不到好睡處與採集物），之後 regrowth_days 天草木新生（鹿 ×1.5）；其中前 sprout_days 天是剛冒新芽（地圖標「芽」），之後長滿嫩草灌木（地圖不標示）。",
   "fire": {
     "dry_seasons": ["summer", "autumn"],
     "start_days": [2, 7],
@@ -33,7 +33,7 @@
     "escape": { "flee": 0.55, "other_map": 0.4, "stream": 0.25, "den": 0.75, "unknown_region_mult": 1.3, "low_stamina": 0.3, "low_health": 0.3, "speed_divisor": 200, "flee_stamina": 20 },
     "outcome": { "death": 0.12, "heavy": 0.3, "light": 0.35 },
     "burn": { "light_damage": [8, 15], "heavy_damage": [20, 35], "light_days": 2, "heavy_days_min": 4, "heavy_days_max": 6 },
-    "after": { "ash_days": 12, "regrowth_days": 40, "ash_prey_mult": 0.3, "regrowth_prey_mult": { "white_tailed_deer": 1.5 } },
+    "after": { "ash_days": 12, "regrowth_days": 40, "sprout_days": 10, "ash_prey_mult": 0.3, "regrowth_prey_mult": { "white_tailed_deer": 1.5 } },
     "npc_death_chance": 0.3
   },
   "_tundra_comment": "苔原的事件（1.6 第 6d 步，見 docs/tundra-detail.md）。blizzard：冬季開始時擲 winter_chance，排定在冬季中；只影響苔原。notice：徵兆時段察覺的機率（同大火）。escape 的 low_hunger：躲著不動時飽食度低於 40 的危險度加成；retreat_stamina：頂風撤退額外消耗的體力。shelter 的 cold_mult 是風雪中嚴寒消耗的倍率（none = 沒有躲）。escape／outcome：同大火的平安率（沒有死亡，只有凍傷）。winter_kill：風雪後出現的凍死屍體。whiteout：開闊苔原、遠北偶爾起霧或刮白毛風。ice_break：春季進出河谷時要過河，move_chance 的機率河冰在腳下裂開：跳回岸上（成功率看速度）或趴低慢慢爬回（較穩、多花回合），失敗就落水（體力大減、受凍、輕傷不致死）。ravens：白天在苔原看到渡鴉盤旋（地圖上有屍體時機率較高）；跟過去 found_chance 的機率找到殘骸；feeding_bonus_per_turn：在苔原進食時，每多待一回合，搶食者找上門的機率再增加。",
