@@ -456,6 +456,9 @@ func _combat_choice(c: Combat) -> String:
 
 # 依風格挑選項（見 PREFER）；回傳空字典代表放棄。
 func _pick_option(hunt: HuntSystem) -> Dictionary:
+	# 搏鬥中瀕危：除了強攻型，都放手（瀕危後繼續才會被反殺，玩家隨時可以放棄）
+	if hunt.stage == HuntSystem.Stage.FIGHT and style != "assault" and FightRules.in_danger(GameState.wolf):
+		return {}
 	var opts: Array = hunt.options()
 	var prefer: Array = PREFER.get(style, []).duplicate()
 	# 閃避不連續用（否則會一直閃避拖下去）
