@@ -288,7 +288,7 @@ func choose(id: String) -> Dictionary:
 	# 不想殺狼的對手（狼獾）：任何一擊都不會致死。
 	var lethal: bool = phase == Phase.EXCHANGE and FightRules.in_danger(wolf) and id in ["bite", "lunge", "dodge", "pursue", "harass"] \
 		and not bool(opp.get("never_lethal", false))
-	var res: Dictionary = {"notes": [], "wolf_damage": 0.0, "opp_damage": 0.0, "wolf_pose": "threaten", "opp_action": "idle"}
+	var res: Dictionary = {"notes": [], "events": [], "wolf_damage": 0.0, "opp_damage": 0.0, "wolf_pose": "threaten", "opp_action": "idle"}
 	match id:
 		"threaten": _do_threaten(opt, res)
 		"probe": _do_probe(opt, res)
@@ -297,6 +297,7 @@ func choose(id: String) -> Dictionary:
 			desperate = true
 			_do_attack(opt, "bite", lethal, res)
 		"let_go":
+			_ev(res, "wolf", "let_go")
 			res["notes"].append("combat.let_go")
 			_end("drove_off")
 		"dodge": _do_dodge(opt, lethal, res)
@@ -308,11 +309,13 @@ func choose(id: String) -> Dictionary:
 			var submit_mult: float = float(NpcWolf.cfg(animal_id).get("interaction", {}).get("submit_damage_mult", 0.6))
 			if wolf.life_stage() == Wolf.LifeStage.SUBADULT:
 				submit_mult *= float(GameData.balance.get("youth", {}).get("submit_damage_mult", 1.0))
+			_ev(res, "wolf", "submit")
 			_opponent_strikes("bite", false, res, 1.0, submit_mult)
 			res["notes"].append("combat.submit")
 			res["wolf_pose"] = "submit"
 			_end("submit")
 		_:
+			_ev(res, "wolf", "leave")
 			_end(id) # yield／abandon／grab／ignore／share（讓狼獾吃一段）
 	if phase != Phase.DONE and wolf.health <= 0.0:
 		_end("died")
@@ -321,6 +324,15 @@ func choose(id: String) -> Dictionary:
 		"danger": FightRules.in_danger(wolf), "desperate": desperate, "notes": res.get("notes", [])})
 	rounds += 1
 	return res
+
+# 回合的事件序列（Phase 1.9 第 1 步）：戰鬥邏輯只產生事件，畫面照順序播放。
+# actor："wolf" 你、"opp" 對手、"partner" 對手的同伴、"ally" 你這邊的同伴（苔原狼）。
+# act：wolf 的 bite／lunge／harass／dodge／threaten／probe／retreat／submit／let_go／leave；
+# opp、partner 的 attack；ally 的 bite；opp 的 give_up／tired／submit／down。hit：有沒有成功（打中、閃開、嚇退…）；damage：造成的傷害。
+func _ev(res: Dictionary, actor: String, act: String, extra: Dictionary = {}) -> void:
+	var e: Dictionary = {"actor": actor, "act": act}
+	e.merge(extra)
+	res["events"].append(e)
 
 func _end(result: String) -> void:
 	outcome = result
@@ -335,7 +347,7 @@ func _practice(opt: Dictionary, success: bool) -> void:
 		fail_streak = 0 if success else fail_streak + 1
 
 # 對手打狼一下（lethal 見 FightRules.hurt_wolf）。
-func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0, dmg_mult: float = 1.0) -> bool:
+func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0, dmg_mult: float = 1.0, actor: String = "opp") -> bool:
 	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
 	if desperate:
 		hit_chance = min(0.95, hit_chance + float(opp.get("desperate_hit", 0.1)))
@@ -343,6 +355,7 @@ func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_overr
 	# 對手每次出手都耗耐力（打不打中都一樣）
 	_drain_opp(float(opp.get("swing_cost", 0.0)))
 	if not RNGService.chance(hit_chance):
+		_ev(res, actor, "attack", {"hit": false})
 		return false
 	var dmg_range: Array = opp.get("damage", [5, 10])
 	var dmg: float = float(RNGService.randi_range(int(dmg_range[0]), int(dmg_range[1]))) * dmg_mult
@@ -350,6 +363,7 @@ func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_overr
 		dmg *= 1.2
 	var hit := FightRules.hurt_wolf(wolf, dmg, opp.get("parts", {}), animal_id + "." + context, lethal)
 	damage_taken += float(hit["damage"])
+	_ev(res, actor, "attack", {"hit": true, "damage": float(hit["damage"]), "heavy": int(hit["severity"]) == Wolf.Injury.HEAVY})
 	res["wolf_damage"] = float(res.get("wolf_damage", 0.0)) + float(hit["damage"])
 	res["notes"].append("combat.opp_hit." + str(hit["part"]) if str(hit["part"]) != "" else "combat.opp_hit")
 	if int(hit["severity"]) == Wolf.Injury.HEAVY:
@@ -365,26 +379,31 @@ func _ally_turn(res: Dictionary) -> void:
 	var dmg: float = float(RNGService.randi_range(int(ally_damage[0]), int(ally_damage[1])))
 	opp_hp = max(0.0, opp_hp - dmg)
 	res["opp_damage"] = float(res.get("opp_damage", 0.0)) + dmg
+	_ev(res, "ally", "bite", {"hit": true, "damage": dmg})
 	res["notes"].append("combat.ally_hits")
 
 func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
 	_ally_turn(res)
 	if desperate and opp_hp <= 0.0:
+		_ev(res, "opp", "down")
 		res["notes"].append("combat.opp_killed")
 		res["opp_action"] = "down"
 		_end("killed")
 		return
 	if not desperate and opp_tired():
+		_ev(res, "opp", "tired")
 		res["notes"].append("combat.opp_tired")
 		_end("drove_off")
 		return
 	if not desperate and opp_hp / opp_hp_max < opp_give_up_ratio():
 		# 會示弱的對手（陌生灰狼）：低頭示弱，由你決定放牠走或追擊
 		if bool(opp.get("can_submit", false)):
+			_ev(res, "opp", "submit")
 			res["notes"].append("combat.opp_submits")
 			res["opp_action"] = "submit"
 			opp_submitted = true
 			return
+		_ev(res, "opp", "give_up")
 		res["notes"].append("combat.opp_gives_up")
 		_end("drove_off")
 		return
@@ -392,11 +411,14 @@ func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
 		res["opp_action"] = "hurt"
 	if partner_chance > 0.0 and phase != Phase.DONE and RNGService.chance(partner_chance):
 		res["notes"].append("combat.partner_joins")
-		_opponent_strikes(move, lethal, res, -1.0, partner_damage_mult)
+		_opponent_strikes(move, lethal, res, -1.0, partner_damage_mult, "partner")
 
 func _do_threaten(opt: Dictionary, res: Dictionary) -> void:
 	res["wolf_pose"] = "threaten"
-	if RNGService.chance(float(opt["chance"])):
+	var scared: bool = RNGService.chance(float(opt["chance"]))
+	_ev(res, "wolf", "threaten", {"hit": scared})
+	if scared:
+		_ev(res, "opp", "give_up")
 		res["notes"].append("combat.threaten.success")
 		_end("drove_off")
 		return
@@ -410,6 +432,7 @@ func _do_probe(opt: Dictionary, res: Dictionary) -> void:
 	state["probe_bonus"] = float(opt.get("next_bonus", {}).get("value", 0.0))
 	# 看出對手有多想要這場勝利
 	probe_reading = "resolute" if stake_mult >= 1.0 or float(opp.get("threat_resist", 0.3)) >= 0.4 else "wavering"
+	_ev(res, "wolf", "probe")
 	res["notes"].append("combat.probe." + probe_reading)
 	_practice(opt, true)
 	if _opponent_strikes("bite", false, res, float(opt.get("injury_risk", 0.15))):
@@ -425,9 +448,11 @@ func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) ->
 		var dmg: float = FightRules.wolf_damage(wolf, move)
 		opp_hp = max(0.0, opp_hp - dmg)
 		res["opp_damage"] = dmg
+		_ev(res, "wolf", move, {"hit": true, "damage": dmg})
 		_drain_opp(dmg * float(opp.get("hurt_drain", 0.0)))
 		res["notes"].append("combat.hit." + move)
 	else:
+		_ev(res, "wolf", move, {"hit": false})
 		res["notes"].append("combat.miss")
 	_practice(opt, hit)
 	_opponent_turn(move, lethal, res)
@@ -445,12 +470,21 @@ func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 		res["notes"].append("combat.opp_gives_up")
 		_end("drove_off")
 		return
+	_ev(res, "wolf", "dodge")
 	var was_hit: bool = _opponent_strikes("dodge", lethal, res)
+	res["events"].back()["dodged"] = not was_hit
 	if not was_hit:
 		state["next_bonus"] = float(FightRules.move_cfg("dodge").get("next_bonus", 0.1))
 		res["notes"].append("combat.dodge.success")
 	if ally_hit:
 		res["notes"].append("combat.ally_hits")
+		# 事件也照文字的順序：先你閃開，再苔原狼咬
+		var ally_ev: Dictionary = {}
+		for e in res["events"]:
+			if e["actor"] == "ally":
+				ally_ev = e
+		res["events"].erase(ally_ev)
+		res["events"].append(ally_ev)
 	_practice(opt, not was_hit)
 
 func _do_harass(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
@@ -466,14 +500,18 @@ func _do_harass(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 		opp_hp = max(0.0, opp_hp - dmg)
 		_drain_opp(dmg * float(opp.get("hurt_drain", 0.0)))
 		res["opp_damage"] = dmg
+		_ev(res, "wolf", "harass", {"hit": true, "damage": dmg})
 		res["notes"].append("combat.harass.hit")
 	else:
+		_ev(res, "wolf", "harass", {"hit": false})
 		res["notes"].append("combat.harass.miss")
 	_practice(opt, hit)
 	_opponent_turn("harass", lethal, res)
 
 func _do_retreat(opt: Dictionary, res: Dictionary) -> void:
-	if RNGService.chance(float(opt["chance"])):
+	var away: bool = RNGService.chance(float(opt["chance"]))
+	_ev(res, "wolf", "retreat", {"hit": away})
+	if away:
 		res["notes"].append("combat.retreat.success")
 		_practice(opt, true)
 		_end("retreated")
