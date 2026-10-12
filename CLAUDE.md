@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | `docs/project-overview.md` | 給其他人或 AI 看的總覽：目前的遊戲內容與後續規劃 | 第一次接觸專案、或要對外說明時 |
 | `docs/pre-2.0-plan.md` | Phase 2 之前的工作清單：順序、待寫的提案、要補的圖、待決定的建議 | 規劃接下來要做什麼時 |
-| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出） | 每次開發前 |
+| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
@@ -29,9 +29,13 @@
 
 ## 目前的任務順序
 
-1. **Phase 1.6、1.7 驗收**：都已實作完成；1.6 剩下的驗收併到 1.7 的試玩（`docs/playtest-checklist.md` 的 G 區），依回饋修正。苔原的細節在 `docs/tundra-detail.md`。
-2. **Phase 1.8 獵物生態與季節**：1.7 驗收之後，依 `SPEC.md` 的實作順序做（從第 1 步「狩獵的時間與體力」開始，共 10 步）。生態資料整理在 `docs/ecology-reference.md`，其他動物還缺的資料與素材在 `docs/animal-data-needs.md`。
-3. **Phase 1.9 戰鬥演出**：1.8 之後。
+整體清單與補圖在 `docs/pre-2.0-plan.md`。
+
+1. **Phase 1.6、1.7 驗收與 1.7 收尾**：1.6 剩下的驗收併到 1.7 的試玩（`docs/playtest-checklist.md`），依回饋修正；收尾項目見 SPEC 1.7「收尾」（大火躲避、1.7 試玩 bug、試玩紀錄的指標）。苔原的細節在 `docs/tundra-detail.md`。
+2. **Phase 1.7b 成長與探索的節奏**：次成年期改成 2 歲成年（兩段式成長）、探索改版與照常過日子。
+3. **Phase 1.8 獵物生態與季節**：依 `SPEC.md` 的實作順序做（從第 1 步「狩獵的時間與體力」開始，共 11 步）。生態資料整理在 `docs/ecology-reference.md`，其他動物還缺的資料與素材在 `docs/animal-data-needs.md`。
+4. **Phase 1.9 戰鬥演出**。
+5. **Phase 1.9b 地盤與老年**，之後進入 Phase 2。
 
 ## 工作規則
 
