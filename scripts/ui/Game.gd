@@ -1715,12 +1715,16 @@ func _discovery_text(d: Dictionary) -> String:
 	if d.get("fled", false):
 		return tr("explore.fled").replace("{animal}", _prey_name(d["source"], d.get("life_stage", "adult"))).replace("{location}", location)
 	var clue: String = str(d.get("clue", "track"))
+	if d.get("bugle", false):
+		return tr("explore.clue.bugle").replace("{location}", location)
 	# 有寫新不新鮮時，氣味用「陳舊的野兔氣味」，避免「陳舊的野兔的氣味」
 	var clue_key: String = "explore.clue." + clue + ("_fresh" if clue == "scent" and fresh != "" else "")
 	var text: String = tr(clue_key).replace("{location}", location).replace("{animal}", animal) \
 		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + _sign_of(str(d["source"]), str(d.get("life_stage", "adult")))))
 	if not d.get("fresh_known", true):
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
+	if d.get("hidden", false):
+		text += tr("explore.hidden_young")
 	if d.has("ambush"):
 		text += tr("explore.water.ambush")
 	return text

@@ -80,6 +80,7 @@ var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風
 var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
 var herd_weak: float = 0.0
+var in_herd: bool = false # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
 # 大型獵物的體況（1.8 第 3 步）："healthy" 健康、"average" 普通、"weak" 虛弱（老、病、傷、營養不良）；小型獵物與幼體是 ""。
 var condition: String = ""
 var condition_known: bool = false # 觀察成功（感知夠）、試探或翹尾旗之後看得出來
@@ -116,11 +117,17 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		depth = "simple"
 		prey_speed *= float(_reaction_cfg().get("injured_speed_mult", 0.8))
 	_roll_condition(p_injured)
+	_roll_herd()
+	# 繁殖期的雄鹿、公鹿心思不在警戒（1.8 第 5 步）
+	prey_detection += float(stats.get("season_detection", {}).get(GameTime.current_season(), 0.0))
 	_roll_reaction()
 	match depth:
 		"simple": stage = Stage.POUNCE
 		"full": stage = Stage.OBSERVE
 		_: stage = Stage.STALK
+	# 成群時可以先觀察鹿群、挑出最弱的那一隻
+	if in_herd and stage == Stage.STALK:
+		stage = Stage.OBSERVE
 	fight_state = {"wounds": 0, "next_bonus": 0.0, "counter_reduction": 0.0, "chase_bonus": 0.0, "tendency_bonus": 0.0}
 	# 個別獵物的搏鬥特性（例如駝鹿：更難制伏、正面踢擊更重、多半踢中腿）
 	var fight_mods: Dictionary = stats.get("fight", {})
@@ -182,6 +189,10 @@ func _roll_reaction() -> void:
 	if table.has("protect") and RNGService.chance(float(table["protect"])):
 		mother_nearby = true
 		reaction = "protect"
+
+# 已經走到潛近之後（鹿群看到你了）：用在「對鹿群失手」
+func stage_reached_stalk() -> bool:
+	return decisions.any(func(d): return str(d).begins_with("stalk.") or str(d).begins_with("chase.") or str(d).begins_with("fight."))
 
 func stage_name() -> String:
 	return STAGE_NAMES.get(stage, "")
@@ -363,7 +374,7 @@ func _observe_option() -> Dictionary:
 	var factors: Array = []
 	var diff: float = (wolf.effective_perception() - prey_detection) / float(cfg.get("perception_divisor", 140))
 	_add_alert_factor(factors, diff)
-	if bool(GameData.animals.get(animal_id, {}).get("herd", false)):
+	if in_herd:
 		factors.append({"key": "factor.herd", "good": true, "weight": 0.0, "info": true})
 	var t: float = _terrain_mod("observe")
 	_add_terrain_factor(factors, t)
@@ -399,6 +410,11 @@ func _stalk_option(id: String) -> Dictionary:
 	if ambush_bonus > 0.0:
 		factors.append({"key": "factor.ambush_water", "good": true, "weight": ambush_bonus})
 		t += ambush_bonus
+	# 成群：很多雙眼睛（1.8 第 5 步）
+	if in_herd:
+		var hp: float = float(_tuning().get("herd", {}).get("stalk_penalty", 0.08))
+		factors.append({"key": "factor.herd_eyes", "good": false, "weight": hp})
+		t -= hp
 	# 體況：健康的獵物比較警覺（1.8 第 3 步）
 	var cs: float = float(_tuning().get("condition", {}).get("stalk", {}).get(condition, 0.0)) if condition != "" else 0.0
 	if cs != 0.0:
@@ -620,7 +636,7 @@ func prey_state_keys() -> Array:
 	keys.append("prey_state.alert" if prey_detection >= wolf.effective_perception() else "prey_state.calm")
 	keys.append("prey_state.strong" if prey_stamina >= 50.0 else "prey_state.tired")
 	# 體況：觀察成功且感知夠高時看得出來
-	if condition != "" and wolf.effective_perception() >= float(_tuning().get("condition", {}).get("see_perception", 50)):
+	if condition != "" and (condition_known or wolf.effective_perception() >= float(_tuning().get("condition", {}).get("see_perception", 50))):
 		condition_known = true
 		keys.append("prey_state.condition." + condition)
 	if prey_counter_attack >= 20.0:
@@ -744,8 +760,12 @@ func _do_observe(opt: Dictionary) -> Dictionary:
 		observed = true
 		stalk_bonus = float(cfg.get("stalk_bonus", 0.06))
 		# 鹿群：看出哪一隻跑得慢
-		if bool(GameData.animals.get(animal_id, {}).get("herd", false)):
-			herd_weak = float(GameData.animals.get(animal_id, {}).get("herd_weak_bonus", 0.15))
+		if in_herd:
+			_pick_weakest()
+			# 整群都健康：看清楚了也沒有好下手的，該放棄
+			if condition == "healthy":
+				return {"success": true, "text_key": "hunt.herd.all_healthy", "prey_state": prey_state_keys()}
+			herd_weak = float(GameData.animals.get(animal_id, {}).get("herd_weak_bonus", 0.0))
 			return {"success": true, "text_key": "hunt.herd.found_weak", "prey_state": prey_state_keys()}
 		return {"success": true, "text_key": "hunt.observe.success", "prey_state": prey_state_keys()}
 	# 觀察失敗：獵物察覺到動靜，變得更警覺，但還沒逃。
@@ -772,8 +792,49 @@ func _roll_condition(p_injured: bool) -> void:
 	if size == "small" or life_stage == "juvenile":
 		return
 	var cfg: Dictionary = _tuning().get("condition", {})
-	condition = "weak" if p_injured else str(RNGService.weighted_pick(cfg.get("season", {}).get(GameTime.current_season(), {"healthy": 5, "average": 3, "weak": 2})))
+	condition = "weak" if p_injured else _pick_condition()
 	fight_state["condition_bonus"] = float(cfg.get("fight", {}).get(condition, 0.0))
+
+# 依季節擲體況；個別生命階段可以覆寫（animals.json condition_season，例如冬末繁殖期後的公鹿）。
+func _pick_condition() -> String:
+	var season: String = GameTime.current_season()
+	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(life_stage, {})
+	var table: Dictionary = stats.get("condition_season", {}).get(season,
+		_tuning().get("condition", {}).get("season", {}).get(season, {"healthy": 5, "average": 3, "weak": 2}))
+	return str(RNGService.weighted_pick(table))
+
+# 成群（1.8 第 5 步）：herd 的動物一律成群；其他依季節的機率（herd_by_season × herd_stage_mult）。受傷、落單的幼體不算。
+func _roll_herd() -> void:
+	var data: Dictionary = GameData.animals.get(animal_id, {})
+	if injured:
+		return
+	if bool(data.get("herd", false)):
+		in_herd = true
+		return
+	if life_stage == "juvenile" or not data.has("herd_by_season"):
+		return
+	var chance: float = float(data["herd_by_season"].get(GameTime.current_season(), 0.0)) * float(data.get("herd_stage_mult", {}).get(life_stage, 1.0))
+	in_herd = RNGService.chance(chance)
+
+# 觀察鹿群成功：多擲幾次體況，挑出最弱的那一隻（有虛弱的就會被找出來）。
+func _pick_weakest() -> void:
+	if condition == "":
+		return
+	var order: Array = ["healthy", "average", "weak"]
+	var best: String = condition
+	for i in int(_tuning().get("herd", {}).get("weakest_rolls", 2)):
+		var c: String = _pick_condition()
+		if order.find(c) > order.find(best):
+			best = c
+	if best != condition:
+		condition = best
+		fight_state["condition_bonus"] = float(_tuning().get("condition", {}).get("fight", {}).get(condition, 0.0))
+		# 換了目標，重新看牠會不會站定
+		var by_cond: Dictionary = _reaction_table().get("stand_by_condition", {})
+		if reaction == "stand" or reaction == "flee":
+			if by_cond.has(condition):
+				reaction = "stand" if RNGService.chance(float(by_cond[condition])) else "flee"
+	condition_known = true
 
 func condition_mod() -> float:
 	return float(_tuning().get("condition", {}).get("chase", {}).get(condition, 0.0)) if condition != "" else 0.0

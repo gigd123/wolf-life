@@ -30,6 +30,12 @@
       "adult": { "single": "res://assets/art/sprites/animals/moose.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/moose_walk_strip.png", "frame": [82, 76], "frames": 4 } }, "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
       "juvenile": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png" } }
     },
+    "elk": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/elk_cow_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "herd": "res://assets/art/sprites/animals/elk_herd.png" } },
+      "buck": { "sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
     "grizzly_bear": {
       "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
@@ -183,6 +189,7 @@
   "carcasses": {
     "white_tailed_deer": "res://assets/art/sprites/animals/carcass_deer.png",
     "caribou": "res://assets/art/sprites/animals/carcass_caribou.png",
+    "elk": "res://assets/art/sprites/animals/carcass_elk.png",
     "moose": "res://assets/art/sprites/animals/carcass_moose.png"
   },
   "icons": {

@@ -1197,3 +1197,13 @@ hunt.turn_charge,牠跑著跑著突然回過頭，朝你衝過來！你閃得不
 factor.prey_terrain.good,這裡的地形對牠不利
 factor.prey_terrain.bad,這裡的地形對牠有利
 explore.trait.wounded,被你咬傷的
+animal.elk,馬鹿
+prey_name.elk.adult,母馬鹿
+prey_name.elk.buck,公馬鹿
+prey_name.elk.juvenile,小馬鹿
+injury_source.elk.hunt,獵馬鹿
+death_bio.combat.elk.hunt,在和馬鹿的搏鬥中倒下
+factor.herd_eyes,鹿群裡很多雙眼睛
+hunt.herd.all_healthy,你看了一遍鹿群：每一隻都很壯，腳步輕快。追了大概也是白追。
+explore.clue.bugle,{location}，遠處傳來公馬鹿高亢的吼叫聲，一聲接著一聲。
+explore.hidden_young,母鹿在附近徘徊不走——牠的孩子大概就躲在附近的草裡。

@@ -265,6 +265,8 @@
       "see_perception": 50,
       "probe": { "stamina": 5, "prey_drain": 5, "escape": 0.1 }
     },
+    "_herd_comment": "1.8 第 5 步：成群的獵物。stalk_penalty：潛近時很多雙眼睛；weakest_rolls：觀察鹿群成功時多擲幾次體況、挑最弱的；spooked：對鹿群失手後，這一區這種獵物 spooked_days 天內警覺 + detection。",
+    "herd": { "stalk_penalty": 0.08, "weakest_rolls": 2, "spooked_detection": 10, "spooked_days": 1 },
     "fight": {
       "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2, "throat_tired_bonus": 0.3,
       "escape_chance_on_fail": 0.25, "extra_round_turns": 1,
@@ -283,7 +285,8 @@
     "segments": {
       "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
       "caribou": { "adult": 3, "juvenile": 2 },
-      "moose": { "adult": 5, "juvenile": 2 }
+      "moose": { "adult": 5, "juvenile": 2 },
+      "elk": { "adult": 4, "buck": 4, "juvenile": 2 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

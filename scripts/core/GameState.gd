@@ -1028,7 +1028,7 @@ func action_track() -> Dictionary:
 		return {"success": false, "reason_key": reason}
 	hunting_notable = int(d.get("notable_id", 0))
 	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true,
-		str(d.get("location", "")), bool(d.get("injured", false)))}
+		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)))}
 
 # 直接目擊獵物：不用追蹤，直接進入狩獵（從潛近開始）。
 func action_hunt_sighted() -> HuntSystem:
@@ -1036,7 +1036,7 @@ func action_hunt_sighted() -> HuntSystem:
 	current_discovery = {}
 	hunting_notable = int(d.get("notable_id", 0))
 	var h := start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false,
-		str(d.get("location", "")), bool(d.get("injured", false)))
+		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)))
 	h.ambush_bonus = float(d.get("ambush", 0.0))
 	return h
 
@@ -1471,7 +1471,7 @@ func action_sleep() -> Dictionary:
 # from_tracking：經由追蹤找到獵物（追蹤的感知成長在 action_track 結算）。terrain：遭遇時的地形，空字串則隨機取區域的地形。
 # injured：受傷個體，一律走簡易流程。
 func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
-		terrain: String = "", injured: bool = false) -> HuntSystem:
+		terrain: String = "", injured: bool = false, hidden: bool = false) -> HuntSystem:
 	var depth: String = "simple" if injured else HuntSystem.depth_of(animal_id, life_stage)
 	_stat_inc("hunts_by_animal", animal_id) # 判斷準不準（Phase 1.7b）看同一種獵物狩獵過幾次
 	GameTime.advance_turns(HuntSystem.depth_turns(depth))
@@ -1481,11 +1481,18 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 		detection_mod = float(GameData.balance.get("night_prey_detection_mod", -10))
 	if weather == "storm":
 		detection_mod += float(_storm_cfg().get("detection_mod", -10))
+	# 剛對鹿群失手：這一帶的鹿跺腳、噴鼻息，短時間內更難接近（1.8 第 5 步）
+	if is_spooked(current_region, animal_id):
+		detection_mod += float(GameData.balance.get("hunt", {}).get("herd", {}).get("spooked_detection", 10))
 	if prey_dir < 0:
 		prey_dir = RNGService.randi_range(0, 3)
 	if terrain == "":
 		terrain = _random_terrain(current_region)
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
+	# 夏季躲在草裡的幼鹿：一開始就要搜尋
+	if hidden and hunt.stage == HuntSystem.Stage.POUNCE:
+		hunt.hiding = true
+		hunt.hid_once = true
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
 	hunt.set_snow(snow_state())
@@ -1494,6 +1501,17 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
 	hunt.fight_state["source"] = animal_id + ".hunt"
 	return hunt
+
+func is_spooked(region_id: String, animal_id: String) -> bool:
+	var table: Dictionary = life_log.get("spooked", {}).get(region_id, {})
+	return int(table.get(animal_id, -1)) >= int(life_log.get("days_lived", 1))
+
+func _spook(region_id: String, animal_id: String) -> void:
+	var all: Dictionary = life_log.get("spooked", {})
+	var table: Dictionary = all.get(region_id, {})
+	table[animal_id] = int(life_log.get("days_lived", 1)) + int(GameData.balance.get("hunt", {}).get("herd", {}).get("spooked_days", 1))
+	all[region_id] = table
+	life_log["spooked"] = all
 
 func _random_terrain(region_id: String) -> String:
 	var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
@@ -1535,6 +1553,8 @@ func finish_hunt(hunt: HuntSystem) -> void:
 			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
 	else:
+		if hunt.in_herd and hunt.stage_reached_stalk():
+			_spook(current_region, hunt.animal_id)
 		# 分次狩獵（1.8 第 4 步）：咬傷但沒制伏的大型獵物帶傷留在這一帶幾天，之後再遇到時更好抓
 		if int(hunt.fight_state.get("wounds", 0)) > 0 and wolf.alive \
 				and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) == "large" and hunt.life_stage != "juvenile":

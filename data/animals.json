@@ -4,12 +4,17 @@
     "type": "prey",
     "size": "medium",
     "name_key": "animal.white_tailed_deer",
+    "_herd_comment": "1.8 第 5 步：herd_by_season 是成體成群的機率（冬季最大、產仔季最小）；成群時潛近較難（很多雙眼睛），但可以先觀察鹿群、挑出最弱的一隻。herd_stage_mult：各生命階段的倍率（雄鹿多半落單）。",
+    "herd_by_season": { "spring": 0.3, "summer": 0.1, "autumn": 0.4, "winter": 0.7 },
+    "herd_stage_mult": { "buck": 0.4 },
     "period_activity": { "dawn": 2.0, "day": 0.5, "dusk": 2.0 },
     "depth": { "juvenile": "simple", "adult": "standard", "buck": "full" },
     "reactions": { "buck": { "stand": 0.35 }, "juvenile": { "hide": 0.4, "protect": 0.5 } },
     "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "fight_power": 35, "hunger_value": 40 },
     "adult": { "detection": 55, "stamina": 55, "speed": 60, "counter_attack": 5, "fight_power": 50, "chase_style": { "type": "burst", "follow": -0.08, "sprint": 0.05 }, "hunger_value": 75 },
-    "buck": { "detection": 60, "stamina": 60, "speed": 62, "counter_attack": 25, "fight_power": 75, "chase_style": { "type": "burst_stand", "follow": -0.05, "sprint": 0.05 }, "hunger_value": 75 }
+    "buck": { "detection": 60, "stamina": 60, "speed": 62, "counter_attack": 25, "fight_power": 75, "chase_style": { "type": "burst_stand", "follow": -0.05, "sprint": 0.05 }, "hunger_value": 75,
+      "season_detection": { "autumn": -8 },
+      "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 } } }
   },
   "hare": {
     "type": "prey",
@@ -72,6 +77,29 @@
     "juvenile": { "detection": 40, "stamina": 40, "speed": 45, "counter_attack": 0, "fight_power": 50, "chase_style": { "type": "follows_mother", "follow": 0.0, "sprint": 0.05 }, "hunger_value": 60 },
     "adult": { "detection": 55, "stamina": 60, "speed": 60, "counter_attack": 45, "fight_power": 140, "chase_style": { "type": "stand", "follow": 0.05, "sprint": -0.05 }, "hunger_value": 150,
       "fight": { "difficulty": 0.35, "wounds_to_kill": 3, "counter_damage_mult": 1.8, "parts": { "leg": 0.7, "shoulder": 0.2, "face": 0.1 } } }
+  },
+  "elk": {
+    "snow": { "light": 0.0, "deep": 0.08, "crust": 0.05 },
+    "type": "prey",
+    "size": "large",
+    "name_key": "animal.elk",
+    "_comment": "馬鹿（1.8 第 5 步）：森林東、北、西部的林緣與草地。母鹿與幼鹿成大群（警戒高），公鹿小群；秋季繁殖期公鹿會吼叫、警戒低；冬季混群。和馴鹿一樣先讓鹿群跑起來（觀察、試探），找出跑得慢的那一隻；整群都健康就該放棄。所有馬鹿都用前蹄踢，公鹿另外用角。condition_season：各生命階段依季節覆寫體況比例（冬末公鹿繁殖期後體力耗盡）。",
+    "herd_by_season": { "spring": 0.6, "summer": 0.7, "autumn": 0.8, "winter": 0.9 },
+    "herd_stage_mult": { "buck": 0.5 },
+    "herd_weak_bonus": 0.1,
+    "period_activity": { "dawn": 1.6, "day": 0.7, "dusk": 1.6 },
+    "depth": { "juvenile": "simple", "adult": "full", "buck": "full" },
+    "reactions": { "adult": { "stand": 0.15, "stand_by_condition": { "healthy": 0.25, "average": 0.12, "weak": 0.05 } },
+      "buck": { "stand": 0.3, "stand_by_condition": { "healthy": 0.5, "average": 0.3, "weak": 0.1 } },
+      "juvenile": { "hide": 0.3, "protect": 0.5 } },
+    "terrain_chase": { "dense_forest": -0.05, "fallen_logs": -0.05 },
+    "juvenile": { "detection": 45, "stamina": 50, "speed": 55, "counter_attack": 0, "fight_power": 45, "chase_style": { "type": "follows_mother", "follow": 0.05, "sprint": 0.0 }, "hunger_value": 60 },
+    "adult": { "detection": 62, "stamina": 65, "speed": 66, "counter_attack": 35, "fight_power": 90, "chase_style": { "type": "endurance_herd", "follow": 0.05, "sprint": -0.05 }, "hunger_value": 120,
+      "fight": { "wounds_to_kill": 3, "counter_damage_mult": 1.3, "parts": { "leg": 0.5, "shoulder": 0.3, "face": 0.2 } } },
+    "buck": { "detection": 56, "stamina": 65, "speed": 64, "counter_attack": 50, "fight_power": 130, "chase_style": { "type": "burst_stand", "follow": 0.0, "sprint": 0.0 }, "hunger_value": 120,
+      "season_detection": { "autumn": -10 },
+      "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 }, "autumn": { "healthy": 4, "average": 4, "weak": 2 } },
+      "fight": { "wounds_to_kill": 3, "counter_damage_mult": 1.6, "parts": { "leg": 0.4, "shoulder": 0.35, "face": 0.25 } } }
   },
   "grizzly_bear": {
     "type": "competitor",

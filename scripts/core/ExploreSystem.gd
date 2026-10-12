@@ -145,6 +145,11 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		for c in only:
 			limited[c] = float(clue_weights.get(c, 1.0))
 		clue_weights = limited
+	# 繁殖期的公鹿會吼叫：聲音線索變多，聽到的是公鹿（1.8 第 5 步）
+	var bugle: Dictionary = cfg.get("bugle", {}).get(source, {})
+	var bugling: bool = not bugle.is_empty() and str(bugle.get("season", "")) == str(ctx["season"])
+	if bugling and clue_weights.has("sound"):
+		clue_weights["sound"] = float(clue_weights["sound"]) * float(bugle.get("sound_mult", 3.0))
 	var clue: String = RNGService.weighted_pick(clue_weights)
 
 	var fresh: bool = true
@@ -159,9 +164,13 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			fresh = true
 	# 逆風時氣味可判斷新鮮度；側風、順風時聞不出來。其他線索都看得出新舊。
 	var fresh_known: bool = clue != "scent" or wind == "headwind"
-	var life_stage: String = "juvenile" if RNGService.chance(float(cfg.get("juvenile_chance", 0.3))) else "adult"
+	# 幼體的機率依季節（1.8 第 5 步：產仔季幼體多、早冬的小馬鹿…）
+	var juv_chance: float = float(cfg.get("juvenile_season", {}).get(source, {}).get(ctx["season"], cfg.get("juvenile_chance", 0.3)))
+	var life_stage: String = "juvenile" if RNGService.chance(juv_chance) else "adult"
+	if bugling and clue == "sound":
+		life_stage = str(bugle.get("stage", "buck"))
 	# 成體的變體（例如白尾鹿雄鹿），狩獵深度不同。
-	if life_stage == "adult":
+	if life_stage == "adult" and not (bugling and clue == "sound"):
 		var variants: Dictionary = cfg.get("adult_variants", {}).get(source, {})
 		for variant in variants.keys():
 			if RNGService.chance(float(variants[variant])):
@@ -174,6 +183,13 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var result := {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
 		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage,
 		"injured": injured, "mode": mode}
+	if bugling and clue == "sound":
+		result["bugle"] = true
+	# 夏季剛出生的幼鹿躲在草裡、沒有氣味：找到的是母鹿留下的線索，要靠搜尋把牠找出來
+	if life_stage == "juvenile" and cfg.get("hidden_young", {}).get(source, []).has(str(ctx["season"])):
+		result["hidden"] = true
+		if result["clue"] == "scent":
+			result["clue"] = "track"
 	if bool(mc.get("ambush", false)):
 		result["ambush"] = float(mc.get("ambush_bonus", 0.1))
 	# 會延續的個體（提案之十 D）：這一區記著的那頭（跛腳、年老）又出現了
@@ -185,6 +201,8 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			result["notable_id"] = int(n.get("id", 0))
 			result["trait"] = str(n.get("trait", "lame"))
 			result["again"] = true
+			result.erase("hidden")
+			result.erase("bugle")
 			return result
 	if injured:
 		result["trait"] = str(RNGService.weighted_pick(n_cfg.get("traits", {"lame": 1})))
