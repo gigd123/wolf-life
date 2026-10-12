@@ -358,7 +358,8 @@
       "caribou": { "adult": 3, "juvenile": 2 },
       "moose": { "adult": 5, "juvenile": 2 },
       "elk": { "adult": 4, "buck": 4, "juvenile": 2 },
-      "mule_deer": { "adult": 3, "buck": 3, "juvenile": 2 }
+      "mule_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
+      "bighorn_sheep": { "adult": 3, "buck": 3 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

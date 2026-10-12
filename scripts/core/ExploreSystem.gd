@@ -119,6 +119,12 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	if sources.is_empty():
 		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights)}
 	var source: String = RNGService.weighted_pick(sources)
+	# 只出現在某些地形的動物（河狸在水邊、大角羊在岩坡）：地點換成那些地形（Phase 2 第 2 步）
+	var only_terrains: Array = cfg.get("source_terrains", {}).get(source, [])
+	if not only_terrains.is_empty():
+		var ok: Array = terrains.filter(func(t): return only_terrains.has(t))
+		if not ok.is_empty():
+			location = ok[RNGService.randi_range(0, ok.size() - 1)]
 
 	if threats.has(source):
 		var t_cfg: Dictionary = cfg.get("threat_sources", {}).get(source, {})

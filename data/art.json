@@ -7,6 +7,16 @@
       "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/deer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "bighorn_sheep": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/bighorn_ewe_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "herd": "res://assets/art/sprites/animals/bighorn_herd.png" } },
+      "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/bighorn_lamb_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
+    "beaver": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/beaver_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/beaver_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
     "mule_deer": {
       "adult": { "single": "res://assets/art/sprites/animals/muledeer_doe.png", "poses": { "herd": "res://assets/art/sprites/animals/muledeer_herd.png" }, "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/muledeer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
       "buck": { "single": "res://assets/art/sprites/animals/muledeer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/muledeer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
@@ -220,6 +230,7 @@
   },
   "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",
   "carcasses": {
+    "bighorn_sheep": "res://assets/art/sprites/animals/carcass_bighorn.png",
     "mule_deer": "res://assets/art/sprites/animals/carcass_muledeer.png",
     "white_tailed_deer": "res://assets/art/sprites/animals/carcass_deer.png",
     "caribou": "res://assets/art/sprites/animals/carcass_caribou.png",

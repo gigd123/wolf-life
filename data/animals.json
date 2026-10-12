@@ -122,6 +122,36 @@
       "season_detection": { "autumn": -8 },
       "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 } } }
   },
+  "bighorn_sheep": {
+    "snow": { "light": 0.0, "deep": 0.05, "crust": 0.0 },
+    "type": "prey",
+    "size": "medium",
+    "name_key": "animal.bighorn_sheep",
+    "_comment": "大角羊（Phase 2 第 2 步）：岩壁峽谷，成群、視力好。refuge：活動多在離岩壁不遠處，一被追就往岩壁跑；開始狩獵時依地形擲牠離岩壁近不近（near_chance），近的話潛近較難、沒追上時多半就此逃上岩壁（escape），離得遠才有機會（far_bonus）。對狼是很少得手的獵物。",
+    "herd": true,
+    "herd_weak_bonus": 0.05,
+    "period_activity": { "dawn": 1.3, "day": 1.2, "dusk": 1.3, "night": 0.3 },
+    "depth": { "juvenile": "simple", "adult": "standard", "buck": "standard" },
+    "reactions": { "buck": { "stand": 0.2 }, "juvenile": { "protect": 0.4 } },
+    "refuge": { "kind": "cliff", "near_chance": { "cliff": 0.9, "scree": 0.7, "alpine_meadow": 0.4, "default": 0.5 }, "escape": 0.6, "stalk_penalty": 0.15, "pounce_penalty": 0.25, "far_bonus": 0.05 },
+    "juvenile": { "detection": 45, "stamina": 30, "speed": 52, "counter_attack": 0, "fight_power": 25, "hunger_value": 30 },
+    "adult": { "detection": 72, "stamina": 45, "speed": 62, "counter_attack": 8, "fight_power": 50, "chase_style": { "type": "climber", "follow": -0.05, "sprint": 0.05 }, "hunger_value": 60 },
+    "buck": { "detection": 66, "stamina": 50, "speed": 60, "counter_attack": 30, "fight_power": 78, "chase_style": { "type": "climber", "follow": -0.05, "sprint": 0.05 }, "hunger_value": 70,
+      "season_detection": { "autumn": -12 },
+      "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 } } }
+  },
+  "beaver": {
+    "type": "prey",
+    "size": "small",
+    "name_key": "animal.beaver",
+    "_comment": "河狸（Phase 2 第 2 步）：溪流與水潭。要伏擊、待在下風處；離水越遠越好抓，一下水就沒了（refuge kind water）。秋季為了儲存冬糧離水比較遠；冬季在冰下，抓不到（區域權重冬季 0）。",
+    "period_activity": { "dawn": 1.4, "day": 0.3, "dusk": 2.0, "night": 1.6 },
+    "depth": { "juvenile": "simple", "adult": "simple" },
+    "reactions": {},
+    "refuge": { "kind": "water", "near_chance": { "default": 0.5 }, "season_near": { "spring": 0.5, "summer": 0.55, "autumn": 0.4 }, "escape": 0.5, "pounce_penalty": 0.5, "far_bonus": 0.0, "ambush_mult": 0.5 },
+    "juvenile": { "detection": 40, "stamina": 15, "speed": 30, "counter_attack": 0, "fight_power": 15, "hunger_value": 20 },
+    "adult": { "detection": 58, "stamina": 20, "speed": 35, "counter_attack": 5, "fight_power": 25, "hunger_value": 30 }
+  },
   "grizzly_bear": {
     "type": "competitor",
     "size": "large",

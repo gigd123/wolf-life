@@ -81,7 +81,9 @@ var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}�
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
 var herd_weak: float = 0.0
 var in_herd: bool = false
-var tundra_help: int = 0 # 1.8 第 9 步：一起狩獵的苔原狼隻數 # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
+var tundra_help: int = 0
+var refuge_near: bool = false # Phase 2 第 2 步：獵物離牠的避難處（岩壁、水）近不近
+var refuge: Dictionary = {} # 1.8 第 9 步：一起狩獵的苔原狼隻數 # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
 # 大型獵物的體況（1.8 第 3 步）："healthy" 健康、"average" 普通、"weak" 虛弱（老、病、傷、營養不良）；小型獵物與幼體是 ""。
 var condition: String = ""
 var condition_known: bool = false # 觀察成功（感知夠）、試探或翹尾旗之後看得出來
@@ -119,6 +121,7 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		prey_speed *= float(_reaction_cfg().get("injured_speed_mult", 0.8))
 	_roll_condition(p_injured)
 	_roll_herd()
+	_roll_refuge()
 	# 繁殖期的雄鹿、公鹿心思不在警戒（1.8 第 5 步）
 	prey_detection += float(stats.get("season_detection", {}).get(GameTime.current_season(), 0.0))
 	_roll_reaction()
@@ -394,6 +397,7 @@ func _pounce_option(id: String) -> Dictionary:
 		t += ambush_bonus
 	if reaction == "counter":
 		factors.append({"key": "factor.cornered", "good": false, "weight": 0.0, "info": true})
+	t += _refuge_factor(factors, "pounce_penalty")
 	var value: float = float(cfg.get("base", 0.7)) + diff + w + t + pounce_bonus + float(opt.get("bonus", 0.0))
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": int(opt.get("turns", 0)), "stamina": float(opt.get("stamina", 0))}
@@ -439,6 +443,7 @@ func _stalk_option(id: String) -> Dictionary:
 	if ambush_bonus > 0.0:
 		factors.append({"key": "factor.ambush_water", "good": true, "weight": ambush_bonus})
 		t += ambush_bonus
+	t += _refuge_factor(factors, "stalk_penalty")
 	# 成群：很多雙眼睛（1.8 第 5 步）
 	if in_herd:
 		var hp: float = float(_tuning().get("herd", {}).get("stalk_penalty", 0.08))
@@ -723,7 +728,13 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 		damage += _hurt_wolf(int(cfg.get("mother_damage_min", 8)), int(cfg.get("mother_damage_max", 18)))
 		notes.append("hunt.mother.charge")
 	pounce_bonus = 0.0
-	if _roll(float(opt["chance"])):
+	var pounce_hit: bool = _roll(float(opt["chance"]))
+	# 河狸就在水邊：撲空就鑽進水裡，沒了（Phase 2 第 2 步）
+	if not pounce_hit and refuge_near and str(refuge.get("kind", "")) == "water":
+		stage = Stage.DONE
+		result = Result.PREY_FLED
+		return {"success": false, "text_key": "hunt.refuge.water", "notes": notes, "damage": damage}
+	if pounce_hit:
 		var won := _kill("hunt.pounce.success")
 		won["notes"] = notes
 		won["damage"] = damage
@@ -853,6 +864,32 @@ func _roll_herd() -> void:
 	var chance: float = float(data["herd_by_season"].get(GameTime.current_season(), 0.0)) * float(data.get("herd_stage_mult", {}).get(life_stage, 1.0))
 	in_herd = RNGService.chance(chance)
 
+# 避難處（Phase 2 第 2 步）：大角羊的岩壁、河狸的水。依地形與季節擲牠離避難處近不近。
+func _roll_refuge() -> void:
+	refuge = GameData.animals.get(animal_id, {}).get("refuge", {})
+	if refuge.is_empty():
+		return
+	var near: Dictionary = refuge.get("near_chance", {})
+	var chance: float = float(near.get(terrain, near.get("default", 0.5)))
+	chance = float(refuge.get("season_near", {}).get(GameTime.current_season(), chance))
+	refuge_near = RNGService.chance(chance)
+
+# 避難處的因素：近的話寫出來並扣分，遠的話是機會
+func _refuge_factor(factors: Array, penalty_key: String) -> float:
+	if refuge.is_empty():
+		return 0.0
+	var kind: String = str(refuge.get("kind", "cliff"))
+	if refuge_near:
+		var p: float = float(refuge.get(penalty_key, 0.0))
+		# 守在水邊伏擊（探索方式「守在水邊」）：河狸離水近也還有機會
+		if ambush_bonus > 0.0:
+			p *= float(refuge.get("ambush_mult", 1.0))
+		factors.append({"key": "factor.refuge_near." + kind, "good": false, "weight": p})
+		return -p
+	var b: float = float(refuge.get("far_bonus", 0.0))
+	factors.append({"key": "factor.refuge_far." + kind, "good": true, "weight": b})
+	return b
+
 # 觀察鹿群成功：多擲幾次體況，挑出最弱的那一隻（有虛弱的就會被找出來）。
 func _pick_weakest() -> void:
 	if condition == "":
@@ -936,6 +973,9 @@ func _do_chase_roll(opt: Dictionary, cfg: Dictionary) -> Dictionary:
 	# 用錯方式更容易跟丟、用對方式比較咬得住（1.7 第 4 步）
 	# 駝鹿逃進水裡就是避難處（1.8 第 4 步）
 	escape += float(GameData.animals.get(animal_id, {}).get("water_refuge", {}).get(terrain, 0.0))
+	# 離避難處近：沒追上就逃上岩壁、鑽進水裡（Phase 2 第 2 步）
+	if refuge_near:
+		escape += float(refuge.get("escape", 0.0))
 	# 對獵物有利的地形（騾鹿的岩坡、駝鹿的密林），沒追上時也更容易就此甩掉你（Phase 2 第 1 步）
 	escape -= float(GameData.animals.get(animal_id, {}).get("terrain_chase", {}).get(terrain, 0.0))
 	# 逃跑中的駝鹿可能突然回頭衝撞（1.8 第 4 步）

@@ -1365,3 +1365,17 @@ season_card.mountain.autumn.full,第一場寒流過後，高處的草轉黃了�
 season_card.mountain.autumn.short,寒流一來，鹿群就往山下移。
 season_card.mountain.winter.full,高處被深雪埋住，草甸上幾乎什麼都沒有。騾鹿和馬鹿都擠到山腳的林地裡過冬，雪地上滿是牠們的足跡。
 season_card.mountain.winter.short,深雪封住了高處，鹿群都在山腳過冬。
+animal.bighorn_sheep,大角羊
+prey_name.bighorn_sheep.adult,母大角羊
+prey_name.bighorn_sheep.buck,公大角羊
+prey_name.bighorn_sheep.juvenile,小羊
+animal.beaver,河狸
+prey_name.beaver.adult,河狸
+prey_name.beaver.juvenile,小河狸
+prey_style.climber,牠一被追就往岩壁跑，在石頭上跳得比你穩得多。
+factor.refuge_near.cliff,牠離岩壁很近
+factor.refuge_far.cliff,牠離岩壁很遠
+factor.refuge_near.water,牠就在水邊
+factor.refuge_far.water,牠離水很遠
+explore.sign.gnawed,被啃斷的樹（樹樁上滿是牙印）
+hunt.refuge.water,水面一響，牠已經鑽進水裡，只剩一圈圈的漣漪。
