@@ -557,7 +557,55 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 來源：Yellowstone Wolf Project Annual Report 2010、2011、2013（nps.gov/yell）；National Parks Conservation Association〈Death of Alpha Wolf Sparks Renewed Concern over Hunting near Yellowstone〉；Audubon〈A Walk on Yellowstone's Wild Side〉；International Wolf Center〈Wolf '06 of Lamar Canyon〉（2011 春季刊）。
 
+## 獵物：馬鹿（2026-10-12 Claude Code 查，待使用者對比）
+
+可信度：**研究**＝有研究或調查數據；**記述**＝野外觀察、專家說法；**推論**＝一般說法或來源不一。
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 拓荒以前，馬鹿是北美分布最廣的有蹄類，平原、林地、山區都有；Lewis 與 Clark 記錄牠們在林地比平原更多。1800 年代因濫獵與開墾大量消失 | 研究／記述（NPS、Lewis & Clark 紀錄） | 沒有馬鹿（DESIGN 排在 Phase 2 的森林西部、山地） | 時代背景（西部拓荒）的森林、林緣草地放馬鹿合理 |
+| 黃石冬季的狼殺馬鹿（1995～2000）：幼鹿 43%、母鹿 36%、公鹿 21%；狼偏好幼鹿、避開壯年母鹿，公鹿約照比例。早冬多殺幼鹿，冬末多殺公鹿 | 研究（Smith 等 2004） | — | 早冬的主要目標是幼鹿；冬末是繁殖期後體力耗盡的公鹿 |
+| 早冬（1995～2003）：幼鹿 51%、壯年母鹿 10%、老母鹿 20%、公鹿 19% | 研究（Stahler 2006） | — | 壯年母鹿很難得手（只佔 1 成）；老母鹿是成年中的主要目標 |
+| 狼獵公鹿的比例偏高，但公鹿對狼的警戒反而比母鹿低 | 研究（Winnie，Gallatin） | — | 公鹿不太躲，但被盯上時很危險（有角） |
+| 公鹿整個冬天保留鹿角；沒有角時用前蹄打架，前蹄更容易造成傷害；幼鹿長大一點也會踢 | 記述（NPS） | — | 公鹿用角、所有馬鹿都用前蹄反擊；冬末掉角後的公鹿反擊變弱 |
+| 狼會被馬鹿踢、頂、踩死（MacNulty 的觀察） | 記述 | — | 搏鬥健康的成年馬鹿有致命風險 |
+| 獵馬鹿的成功率在 4 隻狼以內隨隻數增加，超過 4 隻就不再明顯增加（多出來的狼出力變少）；獵野牛則要 9～13 隻才到頂 | 研究（MacNulty 等 2011、2014） | — | 合作狩獵的加成在約 4 隻時到頂（用在苔原狼群） |
+| 冬季的狩獵成功率（每次狩獵）：1997 年 26%、1998 年 15% | 研究（Mech 等，黃石） | 狩獵整體偏容易 | 成年馬鹿的整體成功率應該不高；寫實程度 b 下拉大健康與虛弱的差距 |
+| 狼會先「試探」鹿群：靠近後讓鹿群跑起來，在追逐中篩出跑得慢、不想反抗的個體；對方健康就很快停下、換一頭 | 記述（多個來源，部分來自導覽紀錄） | 1.8 的試探與放棄 | 鹿群和馴鹿共用「試探 → 找弱者 → 放棄健康的」 |
+| 馬鹿群的大小主要受棲地影響；有狼時，母鹿的混合大群會變小、警戒變高，公鹿群反而略變大 | 研究（Montana State 的多項研究） | — | 群大小依季節與棲地；母鹿群警戒高（潛近難），公鹿群警戒低 |
+| 夏季幼鹿的主要掠食者是灰熊（死亡的 58～60%），狼只佔 14～17%；灰熊在 5 月成功率 71%、6 月 42%、7 月 7% | 研究（Barber-Meyer 等 2008；Pelican Valley） | — | 夏季幼鹿主要是灰熊的獵物，狼較少直接撞上幼鹿（和使用者的觀察一致） |
+| 幼鹿出生時間（約 5 月底到 6 月）這次沒有找到可靠的來源 | — | — | 先比照白尾鹿幼鹿，之後再查 |
+
+**和目前遊戲的差異**：遊戲沒有馬鹿。若加入，馬鹿是「有群體、會用前蹄反擊、公鹿有角」的大型獵物，介於白尾鹿與駝鹿之間；主要目標依季節變化（早冬幼鹿、冬末公鹿、全年老母鹿）。
+
+## 狼的移動、追擊與耐力（2026-10-12 Claude Code 查，配合 ChatGPT 的建議）
+
+| 生態事實 | 可信度 | 目前遊戲 | 可以轉成的規則 |
+| --- | --- | --- | --- |
+| 狼平常以每小時約 8～13 公里小跑，可以維持好幾個小時；一天常走 30～50 公里（加拿大北極島的狼育幼期一天來回 40 公里） | 記述／研究（Canadian Field-Naturalist） | 移動、探索都扣體力，幾回合就喘 | 「耐力」是狼的強項：長距離移動、跟隨消耗很少 |
+| 衝刺每小時 55～65 公里，但只能維持幾分鐘、不到 1.5 公里；第一段沒追上就退成穩定的大步慢跑 | 記述（多個來源，品質不一） | 短衝扣 30 體力 | 「喘」是短期的爆發；短衝扣很多，但很快就回來 |
+| 平均追擊距離：獵駝鹿約 76 公尺、獵狍約 237 公尺（斯堪地那維亞，316 次）；獵野牛平均 4.9 公里 | 研究（SLU；Wood Buffalo） | 追擊最多幾回合 | 大部分追擊很短，一下子就決定；對大型群居獵物才會長追 |
+| 狼常常「試探」獵物：追一小段看牠會不會露出弱點，大部分很快就結束、放棄 | 記述（Mech 等 2015《Wolves on the Hunt》，二手） | 1.8 的試探 | 試探花很少的喘與時間；放棄是常態 |
+| 狼的強項不是比每種鹿都耐跑，而是長距離移動、持續追蹤、反覆試探、利用地形與同伴 | 推論（使用者提供的 ChatGPT 整理） | — | 不把狼設計成「耐力一定比鹿高」；每種獵物有自己的爆發與耐力 |
+
+**對遊戲的修正**：體力拆成「喘」（狩獵與戰鬥中的爆發，結束後很快回復）與「耐力」（一天的活動量，睡覺回復）；見 SPEC 提案之八。
+
+## 狼的繁殖與幼狼（2026-10-12 Claude Code 查，用在苔原狼繁殖）
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 一年只生一窩，春季（約 4～5 月）出生；一窩通常 4～6 隻，北極的平均約 4 隻 | 記述／研究（wolf.org、多個來源） | 苔原狼每年春天可能生一窩，約 3～4 隻 |
+| 苔原的狼約 5 月初就在巢穴，比馴鹿早 2～3 週；多在林線附近做窩，不特別靠近馴鹿的產仔地 | 研究（NWT，Heard 1992；Cluff） | 苔原狼的巢穴在苔原林線一帶；春夏這對狼會留在巢穴附近 |
+| 幼狼前 6 週在巢穴裡或附近；夏季搬到地面上的「集合點」，一處待幾週再換 | 記述 | 夏季苔原狼在固定的地點出沒，可以找到牠們的巢穴或集合點 |
+| 秋季（6～8 個月大）幼狼開始跟著狼群移動、學打獵；北極的狼 8～9 月就帶著幼狼長途移動 | 記述／研究（Bathurst Island） | 秋季開始，幼狼跟著苔原狼一起行動 |
+| 第一年的存活率：約一半，有的地區只有 29%；主要死因是餓死，其次是疾病、天氣、掠食 | 記述／研究（明尼蘇達） | 幼狼第一年有高死亡率；馴鹿少、冬季嚴寒的年份死得更多 |
+| 遷徙型的苔原狼群：秋冬平均約 3 隻，夏季約 1.7 隻（1960 年代的 Kaminuriak 研究，資料舊） | 研究（Parker 1973） | 苔原狼群不大；上限 6 隻合理，平常多半 2～4 隻 |
+| 灰熊常搶狼的獵物；有灰熊在時，狼在小屍體旁待得更久、在大屍體旁待得較短 | 研究（Metz，黃石） | 數量多的狼群比較能撐，但搶食的結果仍以灰熊佔上風為主 |
+| 「8～12 隻的大狼群比較敢對抗灰熊、偶爾逼退牠」只在沒有出處的網站看到 | 推論（來源不可靠） | 數量對灰熊的影響要保守，加成小、有上限 |
+
 ## 資料來源
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
 - 美洲獅部分來自 2022 年的科普文章；野豬與熊的部分來自網路整理。案例可作為設計方向，但不宜當成精確的生物學結論或平衡數值。
+
+- 馬鹿、狼的耐力與繁殖（2026-10-12）：MacNulty 等 2011〈Nonlinear effects of group size on the success of wolves hunting elk〉（Behavioral Ecology；USGS、USU）；MacNulty 等 2014（獵野牛）；Smith 等 2004〈Winter prey selection and estimation of wolf kill rates in Yellowstone〉（JWM，Michigan Tech）；Stahler 2006〈Foraging and Feeding Ecology of the Gray Wolf〉；Yellowstone Wolf Cougar Elk Project 2025 年報（NPS）；Winnie（Montana State）〈Behavioral responses of elk to the threat of wolf predation〉；Childress & Lung（ScienceBase）；Barber-Meyer 等 2008〈Elk calf survival and mortality following wolf restoration〉（Wildlife Monographs／USGS）；French & French〈Grizzly bear predation on elk calves〉（Pelican Valley）；NPS〈Elk〉；Lewis & Clark〈The American Elk〉；SLU〈Wolf predation on moose and roe deer: chase distances and outcome〉；Canadian Field-Naturalist〈Long daily movements of wolves during pup rearing〉；wolf.org〈Wolf dens 101〉；Heard 1992、Parker 1973、Klaczek 2016（wrrb.ca）；Arctic〈Bathurst Island wolves〉（ucalgary）；Wisconsin DNR；Living with Wolves；Jackson Hole News & Guide〈Bears butting in on Yellowstone wolf kills〉（Metz 的研究）。
