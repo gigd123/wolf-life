@@ -10,8 +10,8 @@
   },
   "prey_nearby": {
     "rest_chance": 0.15,
-    "animals": { "hare": 3, "snowshoe_hare": 3, "white_tailed_deer": 1, "caribou": 1 },
-    "life_stage": { "hare": "adult", "snowshoe_hare": "adult", "white_tailed_deer": "juvenile", "caribou": "juvenile" }
+    "animals": { "snowshoe_hare": 3, "white_tailed_deer": 1, "caribou": 1 },
+    "life_stage": { "snowshoe_hare": "adult", "white_tailed_deer": "juvenile", "caribou": "juvenile" }
   },
   "_rest_comment": "快轉（休息到某時段）途中的事件（SPEC 1.6「快轉被事件打斷」）：每經過一個時段判定一次；危險事件的機率依休息地點（同睡處分級）。interrupt：會打斷快轉的事件，每次快轉最多打斷一次。",
   "rest": {

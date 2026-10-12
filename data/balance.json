@@ -280,6 +280,8 @@
       }
     }
   },
+  "_hare_cycle_comment": "1.8 第 6 步：雪兔約 10 年的族群週期。mult 是每一年雪兔出沒權重的倍率（低谷到高峰約 16 倍），每年春天往下一年；新遊戲從隨機一年開始。late_summer_mult：夏季後半、秋季前 late_autumn_days 天，雪兔是狼的重要食物（幼兔長大、到處都是）。",
+  "hare_cycle": { "mult": [0.15, 0.3, 0.6, 1.0, 1.6, 2.4, 2.0, 1.0, 0.4, 0.2], "late_summer_mult": 1.4, "late_autumn_days": 7 },
   "feeding": {
     "_comment": "分段進食與搶食（SPEC「狩獵後續事件」）。沒列在 segments 的獵物一次吃完。",
     "segments": {
@@ -291,6 +293,8 @@
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,
     "fox_chance": 0.12,
+    "_fox_comment": "1.8 第 6 步：狐狸來偷殘骸的機率倍率。winter_mult 冬季、hare_low_mult 雪兔低谷年（週期倍率 < hare_low）更常來、更大膽；frequent_mult 你常待的區域（這一季待過 frequent_periods 個時段以上）狐狸較少。咬死狐狸通常不吃，飽食度低於 eat_hunger 時才吃（eat_value）。",
+    "fox": { "winter_mult": 1.5, "hare_low_mult": 1.5, "hare_low": 0.5, "frequent_mult": 0.6, "frequent_periods": 12, "eat_hunger": 20, "eat_value": 15 },
     "carcass_days": 2, "carcass_loss_per_period": 0.15,
     "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2
   },

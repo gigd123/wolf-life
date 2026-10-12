@@ -126,6 +126,8 @@ func new_game(start_den: String) -> void:
 		"days_lived": 1,
 		"death_cause": "",
 	}
+	# 雪兔的族群週期（1.8 第 6 步）：從隨機一年開始
+	life_log["hare_year"] = RNGService.randi_range(0, GameData.balance.get("hare_cycle", {}).get("mult", [1.0]).size() - 1)
 	# 第一次可以和陌生灰狼直接互動的時機：50% 在次成年期、50% 在成年後（都要先遠距觀察過）
 	life_log["stranger_unlock"] = "subadult" if RNGService.chance(float(_stranger_cfg().get("unlock_subadult_chance", 0.5))) else "adult"
 	var start_season: String = GameData.balance.get("start_season", "winter")
@@ -151,6 +153,10 @@ func _on_period_changed(_period_index: int) -> void:
 	if wolf == null or not wolf.alive:
 		return
 	var balance: Dictionary = GameData.balance
+	# 這一季在各區域待了幾個時段（狐狸避開你常待的區域，1.8 第 6 步）
+	var rp: Dictionary = life_log.get("region_periods", {})
+	rp[current_region] = int(rp.get(current_region, 0)) + 1
+	life_log["region_periods"] = rp
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
 	var cold := cold_cost()
 	wolf.hunger -= float(cold["hunger"])
@@ -215,6 +221,10 @@ func _on_season_changed(_season_index: int) -> void:
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
 		_roam_tundra_wolves(true)
+		life_log["region_periods"] = {}
+		if GameTime.current_season() == "spring":
+			var years: int = GameData.balance.get("hare_cycle", {}).get("mult", [1.0]).size()
+			life_log["hare_year"] = (int(life_log.get("hare_year", 0)) + 1) % max(1, years)
 		var fed_ratio: float = _season_fed_ratio()
 		Growth.settle_season(wolf, fed_ratio)
 		_apply_elder_decay()
@@ -1990,7 +2000,19 @@ func scavenge_chances() -> Dictionary:
 		bear += bonus
 		if _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")):
 			wolverine = float(_wolverine_cfg().get("feed_chance", 0.1)) + bonus
-	return {"bear": clamp(bear, 0.0, 0.95), "fox": float(cfg.get("fox_chance", 0.12)), "wolverine": clamp(wolverine, 0.0, 0.95)}
+	return {"bear": clamp(bear, 0.0, 0.95), "fox": fox_chance(float(cfg.get("fox_chance", 0.12))), "wolverine": clamp(wolverine, 0.0, 0.95)}
+
+# 狐狸來偷殘骸（1.8 第 6 步）：冬季、雪兔低谷年更常來；你常待的區域狐狸較少。
+func fox_chance(base: float) -> float:
+	var f: Dictionary = _feeding_cfg().get("fox", {})
+	var c: float = base
+	if GameTime.current_season() == "winter":
+		c *= float(f.get("winter_mult", 1.5))
+	if hare_mult(false) < float(f.get("hare_low", 0.5)):
+		c *= float(f.get("hare_low_mult", 1.5))
+	if int(life_log.get("region_periods", {}).get(current_region, 0)) >= int(f.get("frequent_periods", 12)):
+		c *= float(f.get("frequent_mult", 0.6))
+	return clamp(c, 0.0, 0.9)
 
 # 吃一段：1 回合、飽食度 + 一段。之後判定搶食事件。回傳 {"gain", "event": "bear"|"fox"|""}。
 func feed_once() -> Dictionary:
@@ -2104,7 +2126,7 @@ func action_return_to_carcass() -> Dictionary:
 		event = "wolverine"
 	elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
 		event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
-	elif RNGService.chance(float(cfg.get("return_fox_chance", 0.2))):
+	elif RNGService.chance(fox_chance(float(cfg.get("return_fox_chance", 0.2)))):
 		event = "fox"
 	state_changed.emit()
 	return {"event": event, "own": own}
@@ -2300,6 +2322,16 @@ func finish_combat(c: Combat) -> Dictionary:
 # 搶食後獵物的去留：趕走對手就繼續吃；叼走一塊、不理狐狸、退讓、撤退都會失去部分或全部。
 func _carcass_after_combat(c: Combat) -> void:
 	var by_bear: bool = c.animal_id == "grizzly_bear"
+	# 咬死來偷肉的狐狸：殘骸還是你的；狐狸通常不吃，餓壞了才吃（1.8 第 6 步）
+	if c.outcome == "killed" and c.animal_id == "red_fox":
+		var f: Dictionary = _feeding_cfg().get("fox", {})
+		if wolf.hunger < float(f.get("eat_hunger", 20)):
+			wolf.hunger += float(f.get("eat_value", 15))
+			wolf.clamp_stats()
+			log_message.emit(tr("fox.killed.eaten"))
+		else:
+			log_message.emit(tr("fox.killed.left"))
+		return
 	match c.outcome:
 		"drove_off":
 			return
@@ -2414,8 +2446,21 @@ func regrowth_late(region_id: String) -> bool:
 	return days >= int(after.get("ash_days", 12)) + int(after.get("sprout_days", 10))
 
 # 獵物出現率的倍率：資源消耗 × 火後（焦黑時稀少、草木新生時鹿變多）。
+# 雪兔週期這一年的倍率（夏末秋初再乘 late_summer_mult）。
+func hare_mult(with_season: bool = true) -> float:
+	var cfg: Dictionary = GameData.balance.get("hare_cycle", {})
+	var table: Array = cfg.get("mult", [1.0])
+	var m: float = float(table[int(life_log.get("hare_year", 0)) % table.size()])
+	if with_season:
+		var season: String = GameTime.current_season()
+		var half: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10)) / 2
+		if (season == "summer" and GameTime.day > half) or (season == "autumn" and GameTime.day <= int(cfg.get("late_autumn_days", 7))):
+			m *= float(cfg.get("late_summer_mult", 1.4))
+	return m
+
 func prey_mults(region_id: String) -> Dictionary:
 	var result: Dictionary = region_depletion.get(region_id, {}).duplicate()
+	result["snowshoe_hare"] = float(result.get("snowshoe_hare", 1.0)) * hare_mult()
 	# 冬季的保護色：雪兔在雪地裡比較難被發現
 	for animal_id in GameData.animals.keys():
 		var camo: float = HuntSystem.camouflage(animal_id)

@@ -707,6 +707,9 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 		return {"success": false, "text_key": "hunt.counter.miss", "notes": notes, "damage": damage, "turns": 1}
 	# 躲藏：一次狩獵最多躲一次，之後要靠感知找出來。
 	var hide_chance: float = float(_reaction_table().get("hide", 0.0))
+	# 白毛的雪兔在沒雪的褐色地上無處可躲，只能跑（1.8 第 6 步）
+	if camouflage(animal_id) < 0.0:
+		hide_chance = 0.0
 	if not hid_once and RNGService.chance(hide_chance):
 		hiding = true
 		hid_once = true

@@ -1207,3 +1207,5 @@ factor.herd_eyes,鹿群裡很多雙眼睛
 hunt.herd.all_healthy,你看了一遍鹿群：每一隻都很壯，腳步輕快。追了大概也是白追。
 explore.clue.bugle,{location}，遠處傳來公馬鹿高亢的吼叫聲，一聲接著一聲。
 explore.hidden_young,母鹿在附近徘徊不走——牠的孩子大概就躲在附近的草裡。
+fox.killed.eaten,你餓壞了，連狐狸也吃了下去。
+fox.killed.left,你把狐狸的屍體丟在一旁，沒有吃牠。
