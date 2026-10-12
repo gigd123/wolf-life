@@ -3,7 +3,7 @@
   "frame_size": [48, 32],
   "animals": {
     "white_tailed_deer": {
-      "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
+      "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png", "poses": { "herd": "res://assets/art/sprites/animals/deer_herd.png" }, "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
       "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/deer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },

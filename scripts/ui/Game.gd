@@ -2388,8 +2388,8 @@ func _render_hunt_stage() -> void:
 	var animal_name: String = _hunt_prey_name()
 	# 追擊時獵物在跑；狼的姿勢依階段：觀察、潛近伏低，追擊奔跑，撲抓、搏鬥撲擊
 	var prey_action: String = "move" if current_hunt.stage == HuntSystem.Stage.CHASE else "idle"
-	# 成群的獵物（北美馴鹿）在觀察階段顯示整群
-	var herd: bool = bool(GameData.animals.get(current_hunt.animal_id, {}).get("herd", false)) and current_hunt.life_stage != "juvenile"
+	# 成群的獵物（馴鹿、馬鹿、成群的白尾鹿）在觀察階段顯示整群
+	var herd: bool = current_hunt.in_herd and current_hunt.life_stage != "juvenile"
 	if herd and current_hunt.stage == HuntSystem.Stage.OBSERVE:
 		prey_action = "herd"
 	# 搏鬥時獵物擺出反擊的姿勢（有圖的才會換，例如駝鹿的踢擊）
