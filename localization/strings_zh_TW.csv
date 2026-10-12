@@ -1209,3 +1209,87 @@ explore.clue.bugle,{location}，遠處傳來公馬鹿高亢的吼叫聲，一聲
 explore.hidden_young,母鹿在附近徘徊不走——牠的孩子大概就躲在附近的草裡。
 fox.killed.eaten,你餓壞了，連狐狸也吃了下去。
 fox.killed.left,你把狐狸的屍體丟在一旁，沒有吃牠。
+bear_steal.hint,牠低頭撕咬著肉，背對著你。單憑你自己守不住，也搶不回來——但牠吃得專心的時候，也許能偷到一點。
+bear_steal.bite,趁牠低頭，衝進去咬一塊就跑
+bear_steal.carry_whole,整個叼了就跑
+bear_steal.carry_leg,撕下一整條後腿拖走
+bear_steal.danger,（失手時牠會追上來）
+bear_steal.confront,上前和牠對峙
+bear_steal.still,灰熊還在殘骸旁，牠抬頭往你這邊看了一眼，又低頭撕咬。
+bear_steal.result.bite.ok,你衝進去撕下一塊肉，在牠轉頭之前就退開了。
+bear_steal.result.bite.fail,牠一揮掌，你縮身退開，什麼也沒咬到。
+bear_steal.result.carry.whole,你叼起整塊殘骸拔腿就跑。灰熊追了幾步，又回去嗅地上的血跡。
+bear_steal.result.carry.leg,你咬住一條後腿，連拖帶扯地撕了下來，拖著它跑遠了。
+bear_steal.result.carry.fail,灰熊吼了一聲追上來，一掌把你掃倒在地。你掙扎著爬起來逃開，損失了 {n} 點血量。
+tundra.size.bigger,牠們的個子比你高大，肩膀幾乎到你的頭頂。
+tundra.size.bigger.single,牠的個子比你高大，肩膀幾乎到你的頭頂。
+tundra.size.equal,牠們的個子和你差不多。
+tundra.size.equal.single,牠的個子和你差不多。
+tundra.size.smaller,你現在比牠們壯了一圈。
+tundra.size.smaller.single,你現在比牠壯了一圈。
+tundra.mob.side_wolverine,幫狼獾
+tundra.mob.grab,趁亂去搶殘骸
+tundra.mob.side.won,你朝苔原狼撲過去，牠們被兩面夾擊，退開了。狼獾沒有趕你，你們各自低頭撕咬。你損失了 {n} 點血量。
+tundra.mob.side.lost,苔原狼轉過來對付你，你被咬了好幾口，只能退開。你損失了 {n} 點血量。
+tundra.mob.grab.got,你趁牠們纏鬥，衝進去咬住殘骸撕下一塊。
+tundra.mob.grab.missed,你衝進去，卻被混亂擠開，什麼也沒咬到。
+tundra.mob.grab.turned,其中一隻轉頭咬了你一口，你損失了 {n} 點血量。
+tundra.mob.watch.both_left,牠們對峙了好一陣子，最後苔原狼走開，狼獾也叼著一塊肉溜走了。
+tundra.hunt.seen,遠處，那對苔原狼正朝一群{animal}奔去，一前一後，把牠們趕得四散。
+tundra.hunt.seen.single,遠處，那隻苔原狼正追著{animal}，一路把牠們趕得四散。
+tundra.hunt.hint,牠們已經把獵物趕動了。現在跟上去，能看出誰跑得慢；但獵到了，牠們也要分一份。
+tundra.hunt.hint.single,牠已經把獵物趕動了。現在跟上去，能看出誰跑得慢；但獵到了，牠也要分一份。
+tundra.hunt.join,跟上去一起追
+tundra.hunt.watch,在遠處看
+tundra.hunt.watch.killed,牠們把落後的那一頭撲倒在地上，低頭吃了起來。
+tundra.hunt.watch.killed.single,牠把落後的那一頭撲倒在地上，低頭吃了起來。
+tundra.hunt.watch.missed,追了一陣，獵物越跑越遠，牠們停下來喘著氣，放棄了。
+tundra.hunt.watch.missed.single,追了一陣，獵物越跑越遠，牠停下來喘著氣，放棄了。
+tundra.hunt.leftover,你在殘骸邊緣等著，等牠們吃飽走開，撿了剩下的。
+tundra.hunt.leftover.single,你在殘骸邊緣等著，等牠吃飽走開，撿了剩下的。
+tundra.hunt.followed,那對苔原狼聽到動靜，從坡後跟了上來。
+tundra.hunt.followed.single,那隻苔原狼聽到動靜，從坡後跟了上來。
+tundra.hunt.shared,苔原狼也圍上來吃了一部分。
+tundra.hunt.shared.single,那隻苔原狼也湊上來吃了一部分。
+tundra.young_left,一隻年輕的苔原狼離開了這一群，往遠方去找自己的地方。
+tundra.pack.extra,牠們身後還跟著 {n} 隻年輕的狼。
+tundra.den.clue,坡下的土堆裡傳出細細的嗚咽聲，洞口滿是新鮮的足跡。那對苔原狼的巢穴就在這裡。
+tundra.den.clue.single,坡下的土堆裡傳出細細的嗚咽聲，洞口滿是新鮮的足跡。那隻苔原狼的巢穴就在這裡。
+tundra.den.approach,靠近巢穴看看
+tundra.den.approach.seen,牠們看著你走近，沒有阻止。幾隻毛茸茸的幼狼從洞口探出頭來，又縮了回去。
+tundra.den.approach.seen.single,牠看著你走近，沒有阻止。幾隻毛茸茸的幼狼從洞口探出頭來，又縮了回去。
+tundra.den.approach.warned,苔原狼豎起頸毛衝到洞口前，對你齜牙低吼。你退開了。
+tundra.den.approach.charge,苔原狼一看到你接近巢穴，就直接撲了上來。
+tundra.den.bear,一頭灰熊正嗅著地面，朝苔原狼的巢穴走去。成年的苔原狼已經擋在洞口前。
+tundra.den.bear.mother,一頭帶著幼熊的母熊正朝苔原狼的巢穴走去。成年的苔原狼已經擋在洞口前。
+tundra.den.threaten,和苔原狼一起衝出去包圍牠
+tundra.den.watch,在旁邊看
+tundra.den.result.drove_off,你和苔原狼從兩邊衝出去，咬牠的後腿、又跳開。灰熊轉了幾圈，悻悻地走了。
+tundra.den.result.drove_off.single,你和那隻苔原狼從兩邊衝出去，咬牠的後腿、又跳開。灰熊轉了幾圈，悻悻地走了。
+tundra.den.result.fight,灰熊沒有退，牠站起身，朝最近的你揮掌。
+tundra.den.watch.held,苔原狼輪番撲上去騷擾，灰熊終於放棄，轉身走開了。
+tundra.den.watch.held.single,那隻苔原狼拚命撲上去騷擾，灰熊終於放棄，轉身走開了。
+tundra.den.watch.pup_lost,灰熊衝破了苔原狼的阻擋，扒開洞口。等牠離開，洞裡少了一隻幼狼的聲音。
+tundra.den.watch.lost_nothing,灰熊扒了幾下洞口，被苔原狼咬得不耐煩，最後還是走了。幼狼都還在。
+tundra.den.pup_lost,灰熊離開前扒開了洞口，巢穴裡少了一隻幼狼。
+year.title,第 {n} 年
+year.headline.near_death,這一年你差點就沒能活下來。
+year.headline.fire,這一年，大火燒過了你走過的地方。
+year.headline.stranger_win,這一年，你打贏了那隻黑狼。
+year.headline.bear_steal,這一年，你從灰熊口中搶到了肉。
+year.headline.big_prey,這一年，你獵倒了比自己大得多的獵物。
+year.headline.den_moved,這一年，你換了一個地方安家。
+year.headline.tundra,這一年，你和苔原狼一起奔跑過。
+year.headline.hare_year,這一年到處都是雪兔。
+year.headline.quiet,平平靜靜的一年。
+year.kills,獵到 {n} 隻獵物
+year.biggest,最大的獵物：{animal}
+year.heavy,重傷 {n} 次
+year.changes,能力的變化：{list}
+year.hint.winter.severe,這個冬天的雪來得特別早，積得又深又厚。
+year.hint.winter.mild,這個冬天暖得出奇，雪下了又融。
+year.hint.summer.dry,這個夏天幾乎沒有下雨，草地乾得發黃。
+year.hint.summer.wet,這個夏天雨下個不停，溪水漲得很高。
+year.hint.spring.hare_high,灌木叢裡到處是雪兔的足跡，多得數不清。
+year.hint.spring.hare_low,今年幾乎看不到雪兔的蹤影。
+summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。

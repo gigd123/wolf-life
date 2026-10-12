@@ -128,6 +128,8 @@ func new_game(start_den: String) -> void:
 	}
 	# 雪兔的族群週期（1.8 第 6 步）：從隨機一年開始
 	life_log["hare_year"] = RNGService.randi_range(0, GameData.balance.get("hare_cycle", {}).get("mult", [1.0]).size() - 1)
+	_roll_year()
+	_start_year_stats()
 	# 第一次可以和陌生灰狼直接互動的時機：50% 在次成年期、50% 在成年後（都要先遠距觀察過）
 	life_log["stranger_unlock"] = "subadult" if RNGService.chance(float(_stranger_cfg().get("unlock_subadult_chance", 0.5))) else "adult"
 	var start_season: String = GameData.balance.get("start_season", "winter")
@@ -153,6 +155,9 @@ func _on_period_changed(_period_index: int) -> void:
 	if wolf == null or not wolf.alive:
 		return
 	var balance: Dictionary = GameData.balance
+	# 年度回顧：差點死掉（血量掉到 15% 以下）
+	if wolf.health < wolf.health_max * 0.15:
+		_year_flag("near_death")
 	# 這一季在各區域待了幾個時段（狐狸避開你常待的區域，1.8 第 6 步）
 	var rp: Dictionary = life_log.get("region_periods", {})
 	rp[current_region] = int(rp.get(current_region, 0)) + 1
@@ -220,6 +225,9 @@ func _on_season_changed(_season_index: int) -> void:
 		_age_npcs()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
+		if GameTime.current_season() == "spring":
+			_new_year()
+		_tundra_breeding_season()
 		_roam_tundra_wolves(true)
 		life_log["region_periods"] = {}
 		if GameTime.current_season() == "spring":
@@ -294,6 +302,17 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 			lines.append({"key": str(line["full"] if first else line["short"])})
 		elif _notice_condition(str(line.get("if", ""))):
 			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
+	# 年況的徵兆（1.8 第 11 步）：不直接說，從季節卡片察覺
+	var hint: String = ""
+	match season:
+		"winter":
+			hint = str(year_state().get("winter", "normal"))
+		"summer":
+			hint = str(year_state().get("summer", "normal"))
+		"spring":
+			hint = "hare_high" if hare_mult(false) >= 1.6 else ("hare_low" if hare_mult(false) <= 0.3 else "normal")
+	if hint != "normal":
+		lines.append({"key": "year.hint.%s.%s" % [season, hint]})
 	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
 
 # 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
@@ -664,6 +683,8 @@ func cold_cost(region_id: String = "") -> Dictionary:
 	if blizzard_active() and GameData.map_of(region_id) == _blizzard_map():
 		var shelter: String = str(blizzard.get("shelter", "")) if blizzard.get("shelter_region", "") == region_id else ""
 		mult *= float(_blizzard_cfg().get("cold_mult", {}).get(shelter if shelter != "" else "none", 1.0))
+	if GameTime.current_season() == "winter":
+		mult *= float(year_effects("winter").get("cold_mult", 1.0))
 	return {"hunger": float(table.get("hunger", 0)) * mult, "stamina": float(table.get("stamina", 0)) * mult}
 
 # 頂部的嚴寒圖示：苔原的冬季。
@@ -824,7 +845,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		state_changed.emit()
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
-	if _maybe_tundra_mob() or _maybe_meet_tundra_wolves():
+	if _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -847,6 +868,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"weather": weather,
 		"stranger_territory": stranger_territory,
 		"mode": mode,
+		"berries_mult": float(year_effects("summer").get("berries", 1.0)),
 		"marks": _nearby_marks(),
 		"notables": _notables_here(),
 	})
@@ -880,8 +902,90 @@ func _update_snow() -> void:
 		var w: Dictionary = table.get(season + "_" + phase, table.get(season, {"none": 1}))
 		snow[map_id] = str(RNGService.weighted_pick(_snow_year_weights(w, season)))
 
-func _snow_year_weights(w: Dictionary, _season: String) -> Dictionary:
-	return w
+# 年況（1.8 第 11 步）：冬季、秋末、春初的雪況依這一年的冬季
+func _snow_year_weights(w: Dictionary, season: String) -> Dictionary:
+	var fx: Dictionary = year_effects("winter").get("snow", {})
+	if fx.is_empty() or season == "summer" or (season == "spring" and GameTime.day > 3) or (season == "autumn" and GameTime.day <= 5):
+		return w
+	var out: Dictionary = {}
+	for k in w.keys():
+		out[k] = float(w[k]) * float(fx.get(k, 1.0))
+	return out
+
+# --- 年況與年度回顧（1.8 第 11 步，提案之十二 A）---
+func _year_cfg() -> Dictionary:
+	return GameData.balance.get("year", {})
+
+func year_state() -> Dictionary:
+	return life_log.get("year", {"winter": "normal", "summer": "normal"})
+
+# kind："winter" 或 "summer"：這一年那一季的效果（balance.year.effects）
+func year_effects(kind: String) -> Dictionary:
+	return _year_cfg().get("effects", {}).get(str(year_state().get(kind, "normal")), {})
+
+func _roll_year() -> void:
+	var cfg := _year_cfg()
+	var winter: String = str(RNGService.weighted_pick(cfg.get("winter", {"normal": 1})))
+	var streak: int = int(life_log.get("severe_streak", 0))
+	if winter == "severe" and streak >= int(cfg.get("severe_max_streak", 2)):
+		winter = "normal"
+	life_log["severe_streak"] = streak + 1 if winter == "severe" else 0
+	life_log["year"] = {"winter": winter, "summer": str(RNGService.weighted_pick(cfg.get("summer", {"normal": 1}))), "hare": int(life_log.get("hare_year", 0))}
+
+# 春天：先結算去年（年度回顧卡），再決定今年的年況
+func _new_year() -> void:
+	var last: Dictionary = year_state()
+	life_log["year_harsh"] = str(last.get("winter", "normal")) == "severe"
+	life_log["year_mild_last"] = str(last.get("winter", "normal")) == "mild"
+	_queue_year_review()
+	_roll_year()
+	_start_year_stats()
+
+func _start_year_stats() -> void:
+	var snap: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		snap[stat] = float(wolf.get(stat)) if wolf != null else 0.0
+	life_log["year_stats"] = {"kills": 0, "biggest": "", "biggest_stage": "", "heavy_start": wolf.heavy_injury_count if wolf != null else 0,
+		"snap": snap, "flags": []}
+
+func _year_flag(flag: String) -> void:
+	var ys: Dictionary = life_log.get("year_stats", {})
+	var flags: Array = ys.get("flags", [])
+	if not flags.has(flag):
+		flags.append(flag)
+	ys["flags"] = flags
+	life_log["year_stats"] = ys
+
+# 一年的摘要：依優先順序挑一句總結，加上這一年的數字
+func year_summary() -> Dictionary:
+	var ys: Dictionary = life_log.get("year_stats", {})
+	var flags: Array = ys.get("flags", [])
+	var headline: String = "quiet"
+	for f in ["near_death", "fire", "stranger_win", "big_prey", "den_moved", "tundra", "bear_steal", "hare_year"]:
+		if flags.has(f) or (f == "hare_year" and hare_mult(false) >= 1.6):
+			headline = f
+			break
+	var changes: Dictionary = {}
+	var snap: Dictionary = ys.get("snap", {})
+	for stat in SLEEP_SUMMARY_STATS:
+		if snap.has(stat):
+			changes[stat] = float(wolf.get(stat)) - float(snap[stat])
+	return {"headline": headline, "kills": int(ys.get("kills", 0)), "biggest": str(ys.get("biggest", "")), "biggest_stage": str(ys.get("biggest_stage", "")),
+		"heavy": wolf.heavy_injury_count - int(ys.get("heavy_start", 0)), "changes": changes, "year": year_state()}
+
+func _queue_year_review() -> void:
+	if wolf == null:
+		return
+	var n: int = int(life_log.get("year_no", 0)) + 1
+	life_log["year_no"] = n
+	var s := year_summary()
+	s["n"] = n
+	s["age"] = snapped(wolf.age_years, 0.1)
+	var years: Array = life_log.get("years", [])
+	years.append({"n": n, "age": s["age"], "headline": s["headline"], "kills": s["kills"], "biggest": s["biggest"], "biggest_stage": s["biggest_stage"],
+		"heavy": s["heavy"], "winter": str(s["year"].get("winter", "normal")), "summer": str(s["year"].get("summer", "normal"))})
+	life_log["years"] = years
+	_queue_notice({"type": "year_review", "summary": s})
 
 func snow_state(region_id: String = "") -> String:
 	if region_id == "":
@@ -1087,6 +1191,104 @@ func note_discovery() -> bool:
 func _bear_cfg() -> Dictionary:
 	return GameData.balance.get("bear_encounter", {})
 
+# 灰熊的季節階段（1.8 第 7 步）：春季分春初、春、春末（各三分之一），其他照季節。
+func bear_phase() -> String:
+	var season: String = GameTime.current_season()
+	if season != "spring":
+		return season
+	var n: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10))
+	if GameTime.day <= n / 3:
+		return "spring_early"
+	if GameTime.day > n * 2 / 3:
+		return "spring_late"
+	return "spring"
+
+func _bear_phase_cfg() -> Dictionary:
+	return _bear_cfg().get("phases", {}).get(bear_phase(), {})
+
+# 幼鹿季（春末、夏初）：灰熊也在找幼鹿
+func _fawn_bear_season() -> bool:
+	var f: Dictionary = _bear_cfg().get("fawn", {})
+	var phase: String = bear_phase()
+	if not f.get("phases", []).has(phase):
+		return false
+	return phase != "summer" or GameTime.day <= int(f.get("summer_days", 5))
+
+# --- 從灰熊口中搶肉（1.8 第 7 步，提案之九）---
+func _steal_cfg() -> Dictionary:
+	return _bear_cfg().get("steal", {})
+
+func bear_steal_chance(kind: String) -> float:
+	var s: Dictionary = _steal_cfg().get(kind, {})
+	var avg: float = (wolf.effective_speed() + wolf.effective_skill()) * 0.5
+	var tries: int = int(current_feeding.get("steal_tries", 0))
+	return HuntSystem.clamp_chance(float(s.get("base", 0.5)) + (avg - 60.0) / float(s.get("divisor", 150)) - float(s.get("per_try", 0.1)) * tries)
+
+# 叼走的話能帶走幾段：小殘骸整個，大殘骸撕一條後腿（2～3 段）
+func bear_carry_segments() -> int:
+	var left: int = int(current_feeding.get("segments_left", 0))
+	if HuntSystem.feeding_segments(str(current_feeding.get("animal_id", "")), str(current_feeding.get("life_stage", ""))) <= int(_steal_cfg().get("small_max_segments", 2)):
+		return left
+	var seg: Array = _steal_cfg().get("carry", {}).get("leg_segments", [2, 3])
+	return min(left, int(seg[1]))
+
+func bear_carry_is_whole() -> bool:
+	return HuntSystem.feeding_segments(str(current_feeding.get("animal_id", "")), str(current_feeding.get("life_stage", ""))) <= int(_steal_cfg().get("small_max_segments", 2))
+
+# kind："bite" 咬一塊就跑、"carry" 整個叼走（或撕一條後腿）。回傳 {"outcome", "damage", "gain"}。
+func resolve_bear_steal(kind: String) -> Dictionary:
+	identify("grizzly_bear")
+	record_decision("scavenger." + kind)
+	var s: Dictionary = _steal_cfg().get(kind, {})
+	var chance: float = bear_steal_chance(kind)
+	current_feeding["steal_tries"] = int(current_feeding.get("steal_tries", 0)) + 1
+	GameTime.advance_turns(1)
+	var res := {"outcome": kind + ".fail", "damage": 0.0, "gain": 0.0}
+	if RNGService.chance(chance):
+		var segs: int = 1
+		if kind == "carry":
+			var seg: Array = s.get("leg_segments", [2, 3])
+			segs = int(current_feeding.get("segments_left", 0)) if bear_carry_is_whole() \
+				else min(int(current_feeding.get("segments_left", 0)), RNGService.randi_range(int(seg[0]), int(seg[1])))
+			res["outcome"] = "carry.whole" if bear_carry_is_whole() else "carry.leg"
+		else:
+			res["outcome"] = "bite.ok"
+		var gain: float = float(current_feeding.get("segment_value", 0)) * segs
+		wolf.hunger += gain
+		res["gain"] = gain
+		current_feeding["segments_left"] = int(current_feeding.get("segments_left", 0)) - segs
+		life_log["bear_steals"] = int(life_log.get("bear_steals", 0)) + 1
+		if int(life_log["bear_steals"]) == 1: # 第一次從灰熊口中搶到肉才算這一年的大事
+			_year_flag("bear_steal")
+		# 叼走就離開了；咬一塊之後熊還在，殘骸吃完也就結束
+		if kind == "carry" or int(current_feeding["segments_left"]) <= 0:
+			current_feeding = {}
+	else:
+		var parts: Dictionary = {"shoulder": 0.5, "leg": 0.5}
+		if kind == "bite":
+			if RNGService.chance(float(s.get("fail_hurt", 0.5))):
+				var d: Array = s.get("damage", [5, 12])
+				res["damage"] = float(FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(d[0]), int(d[1]))), parts, "grizzly_bear.steal", false)["damage"])
+		else:
+			# 熊追上來：獨狼很危險，已經帶傷時可能致命；苔原狼在旁邊會分散牠的注意
+			var heavy: bool = RNGService.chance(float(s.get("fail_heavy", 0.55)))
+			var d: Array = s.get("damage_heavy" if heavy else "damage_light", [10, 20])
+			var dmg: float = float(RNGService.randi_range(int(d[0]), int(d[1])))
+			if _tundra_wolves_here() and tundra_relation_key() == "friendly":
+				dmg *= float(s.get("tundra_mult", 0.5))
+			var lethal: bool = wolf.injury != Wolf.Injury.NONE
+			if lethal:
+				dmg *= float(s.get("injured_mult", 1.4))
+			res["damage"] = float(FightRules.hurt_wolf(wolf, dmg, parts, "grizzly_bear.steal", lethal)["damage"])
+			current_feeding = {}
+			if wolf.health <= 0.0:
+				die_in_combat("grizzly_bear", "adult", "steal")
+				return res
+	wolf.clamp_stats()
+	_check_death()
+	state_changed.emit()
+	return res
+
 func _abs_period() -> int:
 	return int(life_log.get("days_lived", 1)) * GameTime.PERIODS.size() + GameTime.period_index
 
@@ -1123,8 +1325,9 @@ func prepare_bear_encounter(encounter: Dictionary) -> Dictionary:
 		e["distant"] = true
 		return e
 	var cfg := _bear_cfg()
-	if GameTime.current_season() == "spring" and e.get("life_stage", "adult") == "adult" \
-			and RNGService.chance(float(cfg.get("mother_chance_spring", 0.4))):
+	# 帶幼熊的母熊依季節（1.8 第 7 步：春初只有公熊，春末開始有母熊，秋季母熊先少）
+	if e.get("life_stage", "adult") == "adult" \
+			and RNGService.chance(float(_bear_phase_cfg().get("mother", 0.0))):
 		e["mother"] = true
 	var direct: float = 0.0
 	if wolf.life_stage() != Wolf.LifeStage.ADULT:
@@ -1510,6 +1713,11 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	hunt.tendency = current_tendency()
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
 	hunt.fight_state["source"] = animal_id + ".hunt"
+	# 友善的苔原狼聽到動靜跟上來（1.8 第 9 步）
+	if hunt.tundra_help == 0 and _joint_cfg().get("prey", []).has(animal_id) and life_stage != "juvenile" \
+			and _tundra_wolves_here() and tundra_relation_key() == "friendly" and RNGService.chance(float(_joint_cfg().get("follow_chance", 0.3))):
+		hunt.apply_tundra_help(tundra_adults(), false)
+		log_message.emit(tr("tundra.hunt.followed" + ("" if tundra_pair().size() > 1 else ".single")))
 	return hunt
 
 func is_spooked(region_id: String, animal_id: String) -> bool:
@@ -1561,7 +1769,25 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
 			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)
+			# 幼鹿季：灰熊也在找幼鹿，剛獵到的幼體容易把牠引來（1.8 第 7 步）
+			var fawn: Dictionary = _bear_cfg().get("fawn", {})
+			if hunt.life_stage == "juvenile" and fawn.get("animals", []).has(hunt.animal_id) and _fawn_bear_season() \
+					and float(EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {}).get(GameTime.current_season(), 0)) > 0.0:
+				current_feeding["bear_bonus"] = float(fawn.get("bear_bonus", 0.2))
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
+		# 一起獵到的：苔原狼吃掉一部分，關係上升
+		if hunt.tundra_help > 0:
+			_tundra_relation_add("joint_hunt")
+			_tundra_record("hunt", "joint_" + hunt.animal_id)
+			life_log["joint_hunts"] = int(life_log.get("joint_hunts", 0)) + 1
+			if int(life_log["joint_hunts"]) == 1: # 第一次和苔原狼一起獵到
+				_year_flag("tundra")
+			if not current_feeding.is_empty():
+				var e: Array = _joint_cfg().get("eat_segments", [1, 2])
+				var eaten: int = min(int(current_feeding["segments_left"]) - 1, RNGService.randi_range(int(e[0]), int(e[1])) + max(0, tundra_adults() - 2))
+				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - max(0, eaten)
+				current_feeding["with_tundra"] = true
+			log_message.emit(tr("tundra.hunt.shared" + ("" if tundra_pair().size() > 1 else ".single")))
 	else:
 		if hunt.in_herd and hunt.stage_reached_stalk():
 			_spook(current_region, hunt.animal_id)
@@ -1828,7 +2054,7 @@ func _update_weather() -> void:
 				weather = "clear"
 	# 暴風雪期間不會同時下暴雨；冬季不下暴雨（QA-69，Phase 2 其他地圖冬季改成暴風雪）
 	if weather == "clear" and not blizzard_here() and cfg.get("seasons", ["spring", "summer", "autumn"]).has(GameTime.current_season()) \
-			and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05)) * (float(cfg.get("fire_mult", 0.3)) if not fire.is_empty() else 1.0)):
+			and _can_trigger_event() and RNGService.chance(float(cfg.get("period_chance", 0.05)) * (float(cfg.get("fire_mult", 0.3)) if not fire.is_empty() else 1.0) * float(year_effects("summer").get("storm", 1.0))):
 		start_storm()
 
 func start_storm() -> void:
@@ -1989,6 +2215,7 @@ func is_feeding() -> bool:
 func scavenge_chances() -> Dictionary:
 	var cfg := _feeding_cfg()
 	var bear: float = float(cfg.get("bear_base", 0.1)) + float(cfg.get("bear_per_turn", 0.1)) * int(current_feeding.get("turns_stayed", 0))
+	bear += float(current_feeding.get("bear_bonus", 0.0))
 	if GameTime.current_period() == "night":
 		bear += float(cfg.get("night_bonus", 0.05))
 	if current_feeding.get("terrain", "") == "dense_forest":
@@ -1999,7 +2226,8 @@ func scavenge_chances() -> Dictionary:
 		var bonus: float = float(_ravens_cfg().get("feeding_bonus_per_turn", 0.04)) * int(current_feeding.get("turns_stayed", 0))
 		bear += bonus
 		if _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")):
-			wolverine = float(_wolverine_cfg().get("feed_chance", 0.1)) + bonus
+			wolverine = (float(_wolverine_cfg().get("feed_chance", 0.1)) + bonus) * wolverine_season_mult()
+	bear *= float(_bear_phase_cfg().get("scavenge_mult", 1.0))
 	return {"bear": clamp(bear, 0.0, 0.95), "fox": fox_chance(float(cfg.get("fox_chance", 0.12))), "wolverine": clamp(wolverine, 0.0, 0.95)}
 
 # 狐狸來偷殘骸（1.8 第 6 步）：冬季、雪兔低谷年更常來；你常待的區域狐狸較少。
@@ -2119,10 +2347,10 @@ func action_return_to_carcass() -> Dictionary:
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
 		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"]}
 	var event: String = ""
-	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult()):
+	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult() * float(_bear_phase_cfg().get("scavenge_mult", 1.0))):
 		event = "bear"
 	elif _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")) \
-			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25))):
+			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25)) * wolverine_season_mult()):
 		event = "wolverine"
 	elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
 		event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
@@ -2144,7 +2372,7 @@ func _decay_carcasses() -> void:
 			loss *= float(_blizzard_cfg().get("winter_kill", {}).get("loss_mult", 0.3))
 		# 苔原的殘骸還會被狼獾偷吃
 		if _wolverine_alive() and GameData.map_of(str(c["region_id"])) == str(_wolverine_cfg().get("map", "tundra")):
-			loss *= float(_wolverine_cfg().get("carcass_loss_mult", 1.0))
+			loss *= float(_wolverine_cfg().get("carcass_loss_mult", 1.0)) * (float(_wolverine_cfg().get("winter_loss_mult", 1.0)) if GameTime.current_season() == "winter" else 1.0)
 		if RNGService.chance(loss):
 			continue
 		kept.append(c)
@@ -2155,9 +2383,17 @@ func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	prey_count[animal_id] = int(prey_count.get(animal_id, 0)) + 1
 	life_log["prey_count"] = prey_count
 	_deplete_region(current_region, animal_id)
+	var ys: Dictionary = life_log.get("year_stats", {})
+	ys["kills"] = int(ys.get("kills", 0)) + 1
+	if _prey_rank(animal_id, life_stage) > _prey_rank(str(ys.get("biggest", "")), str(ys.get("biggest_stage", "adult"))):
+		ys["biggest"] = animal_id
+		ys["biggest_stage"] = life_stage
+	life_log["year_stats"] = ys
 	var current_rank: int = _prey_rank(str(life_log.get("biggest_prey", "")), str(life_log.get("biggest_prey_stage", "adult")))
 	var new_rank: int = _prey_rank(animal_id, life_stage)
 	if new_rank > current_rank:
+		if new_rank >= 100: # 一生最大的獵物刷新（駝鹿、馬鹿）才算這一年的大事
+			_year_flag("big_prey")
 		life_log["biggest_prey"] = animal_id
 		life_log["biggest_prey_stage"] = life_stage
 	if hunting_notable != 0:
@@ -2189,6 +2425,13 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 		_learn_danger(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
+	# 和友善的苔原狼一起吃殘骸時灰熊來搶：牠們在你這一邊騷擾灰熊（1.8 第 9 步；不算單獨擊退）
+	if animal_id == "grizzly_bear" and context == "carcass" and (bool(current_feeding.get("with_tundra", false)) \
+			or (_tundra_wolves_here() and tundra_relation_key() == "friendly")):
+		var ba: Dictionary = _joint_cfg().get("bear_ally", {})
+		c.ally_chance = clamp(float(ba.get("ally_chance", 0.3)) * tundra_count_effect(), 0.0, 0.6)
+		c.ally_damage = ba.get("ally_damage", [6, 12])
+		c.set_meta("tundra_ally", true)
 	c.tendency = current_tendency()
 	c.terrain = str(current_feeding.get("terrain", "")) if context == "carcass" else str(encounter.get("location", ""))
 	if c.terrain == "":
@@ -2311,6 +2554,8 @@ func finish_combat(c: Combat) -> Dictionary:
 			_after_mob_combat(c)
 	elif c.npc != null and TUNDRA_WOLF_IDS.has(c.npc.id):
 		_after_tundra_combat(c)
+	if c.context == "den":
+		_after_den_combat(c)
 	if c.won() and c.animal_id == "grizzly_bear" and c.life_stage == "adult" and c.ally_chance <= 0.0:
 		_after_bear_first_win()
 	GameTime.advance_turns(1)
@@ -2388,7 +2633,7 @@ func _maybe_schedule_fire() -> void:
 	var per_day: int = GameTime.PERIODS.size()
 	if _abs_period() - last_fire_abs < int(cfg.get("cooldown_days", 80)) * per_day:
 		return
-	if RNGService.chance(float(cfg.get("year_chance", 0.15))):
+	if RNGService.chance(float(cfg.get("year_chance", 0.15)) * float(year_effects("summer").get("fire", 1.0))):
 		var pick: String = str(dry[RNGService.randi_range(0, dry.size() - 1)])
 		if pick == season:
 			fire_at = _fire_time_this_season(cfg)
@@ -2446,6 +2691,15 @@ func regrowth_late(region_id: String) -> bool:
 	return days >= int(after.get("ash_days", 12)) + int(after.get("sprout_days", 10))
 
 # 獵物出現率的倍率：資源消耗 × 火後（焦黑時稀少、草木新生時鹿變多）。
+# 年況對大型獵物體況的倍率（1.8 第 11 步）：嚴冬冬季虛弱多；暖冬後春季駝鹿被冬蜱拖垮
+func year_weak_mult(animal_id: String) -> float:
+	var season: String = GameTime.current_season()
+	if season == "winter":
+		return float(year_effects("winter").get("weak_mult", 1.0))
+	if season == "spring" and animal_id == "moose" and bool(life_log.get("year_mild_last", false)):
+		return float(_year_cfg().get("effects", {}).get("mild", {}).get("moose_tick_spring", 1.0))
+	return 1.0
+
 # 雪兔週期這一年的倍率（夏末秋初再乘 late_summer_mult）。
 func hare_mult(with_season: bool = true) -> float:
 	var cfg: Dictionary = GameData.balance.get("hare_cycle", {})
@@ -2592,6 +2846,7 @@ func _check_fire_here(entered: bool = false) -> void:
 		return
 	fire["alerted"].append(current_region)
 	pending_events.append({"type": "fire_here", "region": current_region, "entered": entered})
+	_year_flag("fire")
 
 func _region_burned(region_id: String) -> void:
 	region_burn[region_id] = int(life_log.get("days_lived", 1))
@@ -2810,6 +3065,7 @@ func action_make_den() -> void:
 	list.append({"from": den_region, "to": current_region, "age": snapped(wolf.age_years, 0.1)})
 	life_log["den_moves"] = list
 	den_region = current_region
+	_year_flag("den_moved")
 	log_message.emit(tr("log.made_den").replace("{region}", tr("region." + current_region)))
 	if not den_bonus().is_empty():
 		log_message.emit(tr("log.made_den.bonus." + current_region))
@@ -2941,6 +3197,7 @@ func _after_stranger_combat(c: Combat) -> float:
 	var skill_gain: float = 0.0
 	match c.outcome:
 		"drove_off", "killed":
+			_year_flag("stranger_win")
 			# 第一次打贏牠、這一戰沒有受重傷：技巧大幅成長一次（SPEC「陌生灰狼」勝負的結果）。
 			# 只看第一次勝利，之後再打贏也不會有，避免反覆找牠打來刷成長。
 			if not bool(life_log.get("stranger_first_win", false)):
@@ -3213,7 +3470,7 @@ func _end_blizzard() -> void:
 	var wk: Dictionary = _blizzard_cfg().get("winter_kill", {})
 	var regions: Array = GameData.map_regions(_blizzard_map())
 	var today: int = int(life_log.get("days_lived", 1))
-	var kills: int = RNGService.randi_range(int(wk.get("count_min", 1)), int(wk.get("count_max", 3)))
+	var kills: int = RNGService.randi_range(int(wk.get("count_min", 1)), int(wk.get("count_max", 3))) + int(year_effects("winter").get("winter_kill_extra", 0))
 	for i in kills:
 		var region_id: String = str(regions[RNGService.randi_range(0, regions.size() - 1)])
 		var animal_id: String = str(RNGService.weighted_pick(wk.get("animals", {"caribou": 1})))
@@ -3380,11 +3637,23 @@ func _wolverine_alive() -> bool:
 	return npc != null and npc.alive
 
 # 狼獾來搶食：進入戰鬥模式（對峙時可以讓牠吃一段換牠離開，或放棄）。
-func start_wolverine_combat() -> Combat:
+# waiting：你正在吃時牠找上門（多半在附近等），趕走牠比較容易（1.8 第 8 步）。
+func start_wolverine_combat(waiting: bool = false) -> Combat:
 	identify("wolverine")
 	var c := start_combat("wolverine", "adult", "carcass")
 	c.set_npc(wolverine())
+	if waiting:
+		c.stake_mult *= float(_wolverine_cfg().get("waiting_stake_mult", 0.5))
 	return c
+
+# 狼獾的季節倍率（秋冬為主、夏季很少）
+func wolverine_season_mult() -> float:
+	var table: Dictionary = _wolverine_cfg().get("season_mult", {})
+	var season: String = GameTime.current_season()
+	var n: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10))
+	if season == "winter" and GameTime.day > n / 2 and table.has("winter_late"):
+		return float(table["winter_late"])
+	return float(table.get(season, 1.0))
 
 func _wolverine_record(c: Combat) -> void:
 	var npc := wolverine()
@@ -3430,6 +3699,9 @@ func _roam_tundra_wolves(force: bool = false) -> void:
 	if not force and not RNGService.chance(float(_tundra_cfg().get("roam_change_per_day", 0.4))):
 		return
 	var weights: Dictionary = _tundra_cfg().get("roam", {}).get(GameTime.current_season(), {})
+	# 春夏育幼：留在巢穴附近（1.8 第 10 步）
+	if tundra_pups() > 0 and GameTime.current_season() in ["spring", "summer"]:
+		weights = {str(_breeding_cfg().get("den_region", "tundra_south")): 1}
 	if weights.is_empty():
 		return
 	var region: String = RNGService.weighted_pick(weights)
@@ -3555,6 +3827,7 @@ func start_tundra_combat(context: String, charge: bool = false) -> Combat:
 	var key := tundra_relation_key()
 	if tundra_pair().size() > 1:
 		c.partner_chance = float(_tundra_effects().get("hostile_partner_chance", 0.3)) if key == "hostile" else float(_tundra_cfg().get("partner_chance", 0.2))
+		c.partner_chance = clamp(c.partner_chance * tundra_count_effect(), 0.0, 0.7) # 數量多更危險（1.8 第 10 步）
 		c.partner_damage_mult = float(_tundra_cfg().get("partner_damage_mult", 0.6))
 	if key == "familiar" and context == "carcass":
 		c.stake_mult *= float(_tundra_effects().get("familiar_stake_mult", 0.7))
@@ -3610,13 +3883,233 @@ func _after_tundra_combat(c: Combat) -> void:
 
 # --- 苔原狼圍攻狼獾（兩隻苔原狼都在、狼獾還活著） ---
 
+func _joint_cfg() -> Dictionary:
+	return _tundra_cfg().get("joint", {})
+
+# 撞見苔原狼在追馴鹿或駝鹿（熟悉以上，1.8 第 9 步）
+func _maybe_tundra_hunt() -> bool:
+	if not _tundra_wolves_here() or blizzard_here() or wolf.life_stage() == Wolf.LifeStage.SUBADULT and wolf.age_years < 1.0:
+		return false
+	var key := tundra_relation_key()
+	if not RNGService.chance(float(_joint_cfg().get("meet_chance", {}).get(key, 0.0))):
+		return false
+	var prey: Dictionary = {}
+	var weights: Dictionary = EncounterSystem.region_data(current_region).get("prey_weights", {})
+	for a in _joint_cfg().get("prey", []):
+		var w: float = float(weights.get(a, {}).get(GameTime.current_season(), 0))
+		if w > 0.0:
+			prey[a] = w
+	if prey.is_empty():
+		return false
+	current_discovery = {"kind": "tundra_hunt", "animal_id": RNGService.weighted_pick(prey), "location": _random_terrain(current_region)}
+	return true
+
+# 加入牠們的狩獵：直接從追擊開始（鹿群已經被衝散）
+func join_tundra_hunt() -> HuntSystem:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	record_decision("tundra.hunt.join")
+	var h := start_hunt(str(d["animal_id"]), "adult", -1, false, str(d.get("location", "")))
+	h.apply_tundra_help(tundra_adults(), true)
+	return h
+
+# 觀望：牠們有時獵到；熟悉以上可以在殘骸邊緣等著吃剩的。回傳 {"result": "killed"|"missed", "leftover"}。
+func watch_tundra_hunt() -> Dictionary:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	GameTime.advance_turns(1)
+	record_decision("tundra.hunt.watch")
+	Growth.learn_flat(wolf, "perception", "track_perception")
+	var killed: bool = RNGService.chance(float(_joint_cfg().get("watch_kill", 0.4)))
+	var leftover: bool = killed and tundra_relation_key() in ["familiar", "friendly"]
+	if leftover:
+		var a: String = str(d["animal_id"])
+		var total: float = float(GameData.animals.get(a, {}).get("adult", {}).get("hunger_value", 0))
+		var per: int = HuntSystem.feeding_segments(a, "adult")
+		current_feeding = {"animal_id": a, "life_stage": "adult", "segments_left": int(_joint_cfg().get("leftover_segments", 1)),
+			"segment_value": total / max(1, per), "turns_stayed": 0, "terrain": str(d.get("location", "")), "shared": true}
+	_tundra_record("hunt", "watched_" + ("killed" if killed else "missed"))
+	state_changed.emit()
+	return {"result": "killed" if killed else "missed", "leftover": leftover}
+
+# --- 苔原狼繁殖（1.8 第 10 步）---
+# life_log["tundra_young"]：{"pups": 今年的幼狼隻數, "young": 年輕的成狼隻數, "born": [出生時你的年齡…], "knows_you": 生下時關係熟悉以上}
+func _breeding_cfg() -> Dictionary:
+	return _tundra_cfg().get("breeding", {})
+
+func _tundra_young() -> Dictionary:
+	return life_log.get("tundra_young", {"pups": 0, "young": 0})
+
+func tundra_pups() -> int:
+	return int(_tundra_young().get("pups", 0)) if not tundra_pair().is_empty() else 0
+
+func tundra_young_adults() -> int:
+	return int(_tundra_young().get("young", 0)) if not tundra_pair().is_empty() else 0
+
+# 會幫忙的成狼隻數（這對狼 + 年輕的成狼；當年的幼狼不算）
+func tundra_adults() -> int:
+	return tundra_pair().size() + tundra_young_adults()
+
+# 看得到的隻數：秋冬幼狼開始跟著行動
+func tundra_pack_size() -> int:
+	var n: int = tundra_adults()
+	if GameTime.current_season() in ["autumn", "winter"]:
+		n += tundra_pups()
+	return n
+
+# 隻數的效果（遞減，約 4 隻到頂）
+func tundra_count_effect(count: int = -1) -> float:
+	var table: Array = _breeding_cfg().get("count_effect", [0.0, 1.0, 1.0])
+	var n: int = tundra_adults() if count < 0 else count
+	return float(table[clamp(n, 0, table.size() - 1)])
+
+# 嚴冬或馴鹿少的年（第 11 步的年況接上；目前看 life_log.year_harsh）
+func _harsh_year() -> bool:
+	return bool(life_log.get("year_harsh", false))
+
+func _tundra_breeding_season() -> void:
+	var cfg := _breeding_cfg()
+	var y: Dictionary = _tundra_young()
+	if tundra_pair().is_empty():
+		life_log["tundra_young"] = {"pups": 0, "young": 0}
+		return
+	match GameTime.current_season():
+		"spring":
+			# 活過冬天的幼狼算年輕的成狼；兩隻都活著才生
+			y["young"] = int(y.get("young", 0)) + int(y.get("pups", 0))
+			y["pups"] = 0
+			var chance: float = float(cfg.get("birth_chance", 0.8)) * (float(cfg.get("harsh_mult", 0.5)) if _harsh_year() else 1.0)
+			if tundra_pair().size() >= 2 and RNGService.chance(chance):
+				var l: Array = cfg.get("litter", [3, 4])
+				y["pups"] = RNGService.randi_range(int(l[0]), int(l[1]))
+				y["knows_you"] = tundra_relation_key() in ["familiar", "friendly"]
+				var born: Array = y.get("born", [])
+				born.append(snapped(wolf.age_years, 0.1))
+				y["born"] = born
+				life_log["tundra_litters"] = int(life_log.get("tundra_litters", 0)) + 1
+			# 整群最多 max_pack 隻：超過時年輕的離開
+			var over: int = tundra_pair().size() + int(y["young"]) + int(y["pups"]) - int(cfg.get("max_pack", 6))
+			if over > 0:
+				var leave: int = min(over, int(y["young"]))
+				y["young"] = int(y["young"]) - leave
+				if leave > 0 and is_identified("tundra_wolf"):
+					log_message.emit(tr("tundra.young_left").replace("{n}", str(leave)))
+		"autumn", "winter":
+			var p: float = float(cfg.get("pup_death", 0.3)) * (float(cfg.get("harsh_death_mult", 1.4)) if _harsh_year() else 1.0)
+			var alive: int = 0
+			for i in int(y.get("pups", 0)):
+				if not RNGService.chance(p):
+					alive += 1
+			y["pups"] = alive
+	life_log["tundra_young"] = y
+
+# 在巢穴區探索：發現巢穴的線索，或撞見灰熊朝巢穴走去（春夏、有幼狼時）
+func _maybe_tundra_den() -> bool:
+	var cfg := _breeding_cfg()
+	if tundra_pups() <= 0 or not GameTime.current_season() in ["spring", "summer"] or blizzard_here():
+		return false
+	if current_region != str(cfg.get("den_region", "tundra_south")) or not _tundra_wolves_here():
+		return false
+	var bear_ok: bool = float(EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {}).get(GameTime.current_season(), 0)) > 0.0
+	if bear_ok and is_identified("grizzly_bear") and RNGService.chance(float(cfg.get("den_bear", {}).get("chance", 0.04))):
+		current_discovery = {"kind": "tundra_den_bear", "location": _random_terrain(current_region),
+			"mother": RNGService.chance(float(_bear_phase_cfg().get("mother", 0.0)))}
+		return true
+	if RNGService.chance(float(cfg.get("den_clue_chance", 0.08))):
+		current_discovery = {"kind": "tundra_den", "location": _random_terrain(current_region), "pups": tundra_pups()}
+		return true
+	return false
+
+# 靠近巢穴：友善時牠們讓你看一眼；否則拚命保護（關係下降，可能撲上來）。回傳 {"result": "seen"|"warned"|"charge"}。
+func approach_tundra_den() -> Dictionary:
+	clear_discovery()
+	GameTime.advance_turns(1)
+	record_decision("tundra.den.approach")
+	if tundra_relation_key() == "friendly":
+		_tundra_record("den", "seen")
+		state_changed.emit()
+		return {"result": "seen"}
+	_tundra_relation_add("den_intrude")
+	var charge: bool = RNGService.chance(float(_breeding_cfg().get("den_charge", 0.4)))
+	_tundra_record("den", "charged" if charge else "warned")
+	state_changed.emit()
+	return {"result": "charge" if charge else "warned"}
+
+func tundra_den_threaten_chance(mother: bool) -> float:
+	var b: Dictionary = _breeding_cfg().get("den_bear", {})
+	var c: float = float(b.get("threaten_base", 0.72)) + float(b.get("per_adult", 0.04)) * max(0, tundra_adults() - 2) \
+		+ (FightRules.wolf_power(wolf) - 60.0) / float(b.get("power_divisor", 200))
+	if mother:
+		c -= float(b.get("mother_penalty", 0.15))
+	return HuntSystem.clamp_chance(c)
+
+func _lose_tundra_pup() -> bool:
+	var y: Dictionary = _tundra_young()
+	if int(y.get("pups", 0)) <= 0:
+		return false
+	y["pups"] = int(y["pups"]) - 1
+	life_log["tundra_young"] = y
+	return true
+
+# 一起威嚇灰熊（熟悉以上）。回傳 {"result": "drove_off"|"fight"}；"fight" 時接 start_den_combat。
+func den_bear_threaten() -> Dictionary:
+	var d: Dictionary = current_discovery
+	record_decision("tundra.den.threaten")
+	GameTime.advance_turns(1)
+	if RNGService.chance(tundra_den_threaten_chance(bool(d.get("mother", false)))):
+		clear_discovery()
+		_tundra_relation_add("den_defend")
+		_tundra_record("den", "bear_driven_off")
+		life_log["den_defended"] = int(life_log.get("den_defended", 0)) + 1
+		_year_flag("tundra")
+		state_changed.emit()
+		return {"result": "drove_off"}
+	return {"result": "fight"}
+
+# 熊沒被嚇退：和熊打，苔原狼同一邊（隻數越多越常插進來）；熊沒有要守什麼，比搶食時更早離開。
+func start_den_combat() -> Combat:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	var c := start_combat("grizzly_bear", "adult", "den", {"mother": bool(d.get("mother", false))})
+	var b: Dictionary = _breeding_cfg().get("den_bear", {})
+	c.ally_chance = clamp(float(b.get("ally_base", 0.2)) + float(b.get("ally_per_adult", 0.08)) * tundra_adults() * tundra_count_effect() / max(1.0, float(tundra_adults())), 0.0, 0.7)
+	c.ally_damage = b.get("ally_damage", [6, 12])
+	c.phase = Combat.Phase.EXCHANGE
+	return c
+
+func _after_den_combat(c: Combat) -> void:
+	if c.won():
+		_tundra_relation_add("den_defend")
+		_tundra_record("den", "bear_fought_off", c.damage_taken)
+		life_log["den_defended"] = int(life_log.get("den_defended", 0)) + 1
+		_year_flag("tundra")
+	else:
+		var lost: bool = RNGService.chance(float(_breeding_cfg().get("den_bear", {}).get("lose_pup", 0.6))) and _lose_tundra_pup()
+		_tundra_record("den", "pup_lost" if lost else "bear_stayed", c.damage_taken)
+		c.set_meta("pup_lost", lost)
+
+# 旁觀：苔原狼自己守。回傳 {"result": "held"|"pup_lost"|"lost_nothing"}。
+func den_bear_watch() -> Dictionary:
+	clear_discovery()
+	record_decision("tundra.den.watch")
+	GameTime.advance_turns(1)
+	var b: Dictionary = _breeding_cfg().get("den_bear", {})
+	var result: String = "held"
+	if not RNGService.chance(float(b.get("watch_hold", 0.8))):
+		result = "pup_lost" if RNGService.chance(float(b.get("lose_pup", 0.6))) and _lose_tundra_pup() else "lost_nothing"
+	_tundra_record("den", "watched_" + result)
+	state_changed.emit()
+	return {"result": result}
+
 func _mob_cfg() -> Dictionary:
 	return _tundra_cfg().get("mob", {})
 
 func _maybe_tundra_mob() -> bool:
 	if not _tundra_wolves_here() or tundra_pair().size() < 2 or not _wolverine_alive() or blizzard_here():
 		return false
-	if not RNGService.chance(float(_mob_cfg().get("mob_chance", 0.05))):
+	if not _mob_cfg().get("seasons", ["autumn", "winter"]).has(GameTime.current_season()):
+		return false
+	if not RNGService.chance(float(_mob_cfg().get("mob_chance", 0.05)) * wolverine_season_mult()):
 		return false
 	current_discovery = {"kind": "tundra_mob", "location": _random_terrain(current_region),
 		"wolverine_known": is_identified("wolverine"), "tundra_known": is_identified("tundra_wolf")}
@@ -3642,11 +4135,7 @@ func _after_mob_combat(c: Combat) -> void:
 	_tundra_relation_add("help_won" if won else "help_tried")
 	_tundra_record("mob", "helped_won" if won else "helped_" + c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
 	if won and tundra_relation_key() != "hostile":
-		var segments: int = int(_mob_cfg().get("share_segments", 1))
-		var total: float = float(GameData.animals.get("caribou", {}).get("adult", {}).get("hunger_value", 0))
-		var per: int = HuntSystem.feeding_segments("caribou", "adult")
-		current_feeding = {"animal_id": "caribou", "life_stage": "adult", "segments_left": segments,
-			"segment_value": total / max(1, per), "turns_stayed": 0, "terrain": c.terrain, "shared": true}
+		_mob_share(c.terrain)
 
 # 在旁邊看：多半是狼獾被趕走，偶爾被咬死。回傳 {"result": "drove_off"|"killed"|"held"}。
 func watch_tundra_mob() -> Dictionary:
@@ -3655,7 +4144,11 @@ func watch_tundra_mob() -> Dictionary:
 	var m := _mob_cfg()
 	var result: String = "held"
 	var roll: float = RNGService.randf()
-	if roll < float(m.get("watch_kill", 0.1)):
+	var kill: float = float(m.get("watch_kill", 0.1))
+	var drive: float = min(0.85, float(m.get("watch_drive_off", 0.55)) * tundra_count_effect())
+	if roll >= kill + drive and roll < kill + drive + float(m.get("watch_both_left", 0.15)):
+		result = "both_left"
+	elif roll < kill:
 		result = "killed"
 		var npc := wolverine()
 		npc.die("tundra_wolves")
@@ -3667,6 +4160,70 @@ func watch_tundra_mob() -> Dictionary:
 	Growth.learn_flat(wolf, "perception", "track_perception")
 	state_changed.emit()
 	return {"result": result}
+
+# 圍攻狼獾時的分到的肉（馴鹿殘骸的一段）
+func _mob_share(terrain: String) -> void:
+	var segments: int = int(_mob_cfg().get("share_segments", 1))
+	var total: float = float(GameData.animals.get("caribou", {}).get("adult", {}).get("hunger_value", 0))
+	var per: int = HuntSystem.feeding_segments("caribou", "adult")
+	current_feeding = {"animal_id": "caribou", "life_stage": "adult", "segments_left": segments,
+		"segment_value": total / max(1, per), "turns_stayed": 0, "terrain": terrain, "shared": true}
+
+# 幫狼獾（1.8 第 8 步）：和苔原狼交手；牠們退開後你和狼獾分食。不論成敗都算動手。回傳 {"result": "won"|"lost", "damage"}。
+func mob_side_wolverine() -> Dictionary:
+	var terrain: String = str(current_discovery.get("location", ""))
+	clear_discovery()
+	GameTime.advance_turns(1)
+	record_decision("tundra.mob.side_wolverine")
+	var m := _mob_cfg()
+	var leader := tundra_leader()
+	var chance: float = HuntSystem.clamp_chance(float(m.get("side_base", 0.35)) + (FightRules.wolf_power(wolf) - leader.power()) / float(m.get("side_divisor", 120)))
+	var won: bool = RNGService.chance(chance)
+	var d: Array = m.get("side_damage" if won else "side_fail_damage", [8, 16])
+	var dmg: float = float(FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(d[0]), int(d[1]))), _tundra_cfg_parts(), "tundra_wolf.carcass", false)["damage"])
+	_tundra_relation_add("fight")
+	_tundra_record("mob", "sided_wolverine_" + ("won" if won else "lost"), dmg)
+	if won:
+		_mob_share(terrain)
+	_check_death()
+	state_changed.emit()
+	return {"result": "won" if won else "lost", "damage": dmg}
+
+# 自己搶（1.8 第 8 步）：趁亂去咬殘骸；苔原狼或狼獾可能轉而對付你，關係小降。回傳 {"result": "got"|"missed", "turned", "damage"}。
+func mob_grab() -> Dictionary:
+	var terrain: String = str(current_discovery.get("location", ""))
+	clear_discovery()
+	GameTime.advance_turns(1)
+	record_decision("tundra.mob.grab")
+	var m := _mob_cfg()
+	var got: bool = RNGService.chance(float(m.get("grab_chance", 0.7)))
+	var turned: bool = RNGService.chance(float(m.get("grab_turn", 0.35)))
+	var dmg: float = 0.0
+	if turned:
+		var d: Array = m.get("grab_damage", [6, 14])
+		dmg = float(FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(d[0]), int(d[1]))), _tundra_cfg_parts(), "tundra_wolf.carcass", false)["damage"])
+	_tundra_relation_add("grab")
+	_tundra_record("mob", "grabbed_" + ("got" if got else "missed"), dmg)
+	if got:
+		_mob_share(terrain)
+	_check_death()
+	state_changed.emit()
+	return {"result": "got" if got else "missed", "turned": turned, "damage": dmg}
+
+func _tundra_cfg_parts() -> Dictionary:
+	return NpcWolf.cfg("tundra_wolf").get("combat", {}).get("parts", {"leg": 0.5, "shoulder": 0.5})
+
+# 苔原狼的體型和你相比（1.8 第 8 步）："bigger" 牠們比你高大、"equal" 差不多、"smaller" 你比牠們壯。
+func tundra_size_key() -> String:
+	var leader := tundra_leader()
+	if leader == null:
+		return "equal"
+	match power_compare(leader.power()):
+		"much_stronger", "stronger":
+			return "bigger"
+		"much_weaker", "weaker":
+			return "smaller"
+	return "equal"
 
 func leave_tundra_mob() -> void:
 	clear_discovery()

@@ -224,6 +224,25 @@ func _explore_once() -> void:
 			_:
 				GameState.watch_tundra_mob()
 		return
+	if d.get("kind", "") == "tundra_den_bear":
+		if style == "assault" and GameState.tundra_relation_key() in ["familiar", "friendly"]:
+			if GameState.den_bear_threaten()["result"] == "fight":
+				play_combat(GameState.start_den_combat())
+		else:
+			GameState.den_bear_watch()
+		return
+	if d.get("kind", "") == "tundra_den":
+		GameState.clear_discovery()
+		return
+	if d.get("kind", "") == "tundra_hunt":
+		# 苔原狼在狩獵（1.8 第 9 步）：謹慎型觀望，其他加入
+		if style == "cautious" or GameState.too_tired_to_hunt():
+			GameState.watch_tundra_hunt()
+			_feed_loop()
+		else:
+			var h := GameState.join_tundra_hunt()
+			_play_hunt(h)
+		return
 	if d.get("kind", "") != "clue":
 		GameState.clear_discovery()
 		return
@@ -279,7 +298,7 @@ func _routine_notable(d: Dictionary) -> bool:
 		GameState.eat_remains()
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "tundra_wolves", "tundra_mob"]:
+	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
@@ -308,8 +327,15 @@ func _feed_loop() -> void:
 func _scavenger(ev: String) -> void:
 	if ev == "bear" and not GameState.is_identified("grizzly_bear"):
 		GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
+	elif ev == "bear" and style != "assault":
+		# 認得的灰熊（1.8 第 7 步）：健康時咬一塊就跑，成功率夠高可以再試；謹慎的直接放棄
+		while style != "cautious" and GameState.is_feeding() and GameState.wolf.alive and GameState.wolf.injury == Wolf.Injury.NONE \
+				and GameState.bear_steal_chance("bite") >= 0.4:
+			GameState.resolve_bear_steal("bite")
+		if GameState.is_feeding():
+			GameState.resolve_scavenger(ev, "abandon")
 	elif ev == "wolverine":
-		play_combat(GameState.start_wolverine_combat())
+		play_combat(GameState.start_wolverine_combat(true))
 	elif ev == "tundra_wolves":
 		play_combat(GameState.start_tundra_combat("carcass"))
 	elif ev == "tundra_wait":

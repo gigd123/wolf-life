@@ -117,6 +117,11 @@ func _ready() -> void:
 		_add_line(box, tr("summary.heavy_injuries").replace("{count}", str(wolf.heavy_injury_count)))
 		for record in wolf.old_injuries:
 			_add_line(box, _old_injury_line(record))
+	# 一年一段的章節（1.8 第 11 步）
+	for y in log_data.get("years", []):
+		var line: String = tr("summary.year_entry").replace("{n}", str(int(y.get("n", 0)))).replace("{age}", "%.1f" % float(y.get("age", 0.0))) \
+			.replace("{headline}", tr("year.headline." + str(y.get("headline", "quiet")))).replace("{kills}", str(int(y.get("kills", 0))))
+		_add_line(box, line)
 	# 去過的大地圖（1.6 第 6 步：苔原）
 	var maps_visited: Array = log_data.get("maps_visited", [])
 	if maps_visited.size() > 1:

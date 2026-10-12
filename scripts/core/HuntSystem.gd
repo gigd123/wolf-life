@@ -80,7 +80,8 @@ var storm: bool = false # 暴雨：雨聲掩蓋腳步（潛近較容易），風
 var tendency: Dictionary = {} # 目前的主要狩獵傾向 {"type", "effect"}（見 GameState.current_tendency）
 var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」），記錄狩獵傾向
 var herd_weak: float = 0.0
-var in_herd: bool = false # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
+var in_herd: bool = false
+var tundra_help: int = 0 # 1.8 第 9 步：一起狩獵的苔原狼隻數 # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
 # 大型獵物的體況（1.8 第 3 步）："healthy" 健康、"average" 普通、"weak" 虛弱（老、病、傷、營養不良）；小型獵物與幼體是 ""。
 var condition: String = ""
 var condition_known: bool = false # 觀察成功（感知夠）、試探或翹尾旗之後看得出來
@@ -189,6 +190,34 @@ func _roll_reaction() -> void:
 	if table.has("protect") and RNGService.chance(float(table["protect"])):
 		mother_nearby = true
 		reaction = "protect"
+
+# 苔原狼一起狩獵（1.8 第 9 步）：幫忙是改變條件，不直接加成功率。
+# 鹿群：牠們衝散鹿群，等於替你做完試探，群裡有弱者就會被逼出來；整群都健康照樣該放棄。
+# 駝鹿：一隻從側面牽制，踢擊分散到不同的狼，你比較容易從後方咬。
+func apply_tundra_help(count: int, already_chasing: bool) -> void:
+	tundra_help = count
+	var j: Dictionary = NpcWolf.cfg("tundra_wolf").get("interaction", {}).get("joint", {})
+	if in_herd:
+		_pick_weakest()
+		probed = true
+		if condition != "healthy":
+			herd_weak = float(GameData.animals.get(animal_id, {}).get("herd_weak_bonus", 0.0))
+	elif condition != "":
+		probed = true
+		condition_known = true
+	# 隻數越多效果越大（遞減，約 4 隻到頂，1.8 第 10 步）
+	var table: Array = NpcWolf.cfg("tundra_wolf").get("interaction", {}).get("breeding", {}).get("count_effect", [0.0, 1.0, 1.0])
+	var mult: float = float(table[clamp(count, 0, table.size() - 1)])
+	if in_herd and herd_weak > 0.0:
+		herd_weak *= mult
+	if size_of(animal_id) == "large":
+		fight_state["counter_reduction"] = float(fight_state.get("counter_reduction", 0.0)) + float(j.get("moose_counter_reduction", 0.3)) * mult
+		fight_state["next_bonus"] = float(fight_state.get("next_bonus", 0.0)) + float(j.get("moose_fight_bonus", 0.1)) * mult
+	if already_chasing and stage in [Stage.OBSERVE, Stage.STALK]:
+		stage = Stage.CHASE
+
+static func size_of(p_animal_id: String) -> String:
+	return str(GameData.animals.get(p_animal_id, {}).get("size", "small"))
 
 # 已經走到潛近之後（鹿群看到你了）：用在「對鹿群失手」
 func stage_reached_stalk() -> bool:
@@ -803,7 +832,9 @@ func _pick_condition() -> String:
 	var season: String = GameTime.current_season()
 	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(life_stage, {})
 	var table: Dictionary = stats.get("condition_season", {}).get(season,
-		_tuning().get("condition", {}).get("season", {}).get(season, {"healthy": 5, "average": 3, "weak": 2}))
+		_tuning().get("condition", {}).get("season", {}).get(season, {"healthy": 5, "average": 3, "weak": 2})).duplicate()
+	# 年況（1.8 第 11 步）
+	table["weak"] = float(table.get("weak", 0)) * GameState.year_weak_mult(animal_id)
 	return str(RNGService.weighted_pick(table))
 
 # 成群（1.8 第 5 步）：herd 的動物一律成群；其他依季節的機率（herd_by_season × herd_stage_mult）。受傷、落單的幼體不算。

@@ -103,6 +103,10 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		if float(weights[animal_id]) > 0.0:
 			sources[animal_id] = weights[animal_id]
 	var gather := {} if scorched else EncounterSystem.gather_weights(region_id, ctx["season"])
+	# 年況：乾夏漿果少、濕夏多（1.8 第 11 步）
+	for item_id in gather.keys():
+		if str(item_id).contains("berr"):
+			gather[item_id] = float(gather[item_id]) * float(ctx.get("berries_mult", 1.0))
 	for item_id in gather.keys():
 		sources[item_id] = float(gather[item_id]) * float(cfg.get("gather_source_weight_mult", 0.5))
 	var threats := threat_weights(region_id, ctx["season"], str(ctx.get("stranger_territory", "?")))

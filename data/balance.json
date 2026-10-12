@@ -34,7 +34,23 @@
     "_comment": "灰熊遭遇（DESIGN.md「灰熊行為」）：辨識前一律遠距目擊；辨識後進入戰鬥模式（combat）。direct：次成年與老年的狼、或護幼的母熊，可能不示威直接攻擊（戰鬥從交鋒開始）。",
     "direct_attack_chance": 0.25, "direct_damage_min": 10, "direct_damage_max": 25,
     "mother_chance_spring": 0.4, "mother_direct_mult": 2.0,
-    "observe_turns": 1
+    "observe_turns": 1,
+    "_season_comment": "1.8 第 7 步：灰熊的季節。春季分三段（每段一季天數的三分之一）：春初是剛出洞、很餓的公熊（mother 0、搶食 ×1.3），春末帶幼熊的母熊開始出現；秋季逐漸減少、母熊先少。mother：遭遇時是帶幼熊母熊的機率；scavenge_mult：來搶殘骸的倍率（搶食的多半是公熊）。fawn：春末、夏初灰熊也在找幼鹿，獵到幼體時灰熊被引來的額外機率。",
+    "phases": {
+      "spring_early": { "mother": 0.0, "scavenge_mult": 1.3 },
+      "spring": { "mother": 0.25, "scavenge_mult": 1.1 },
+      "spring_late": { "mother": 0.45, "scavenge_mult": 1.0 },
+      "summer": { "mother": 0.35, "scavenge_mult": 1.0 },
+      "autumn": { "mother": 0.15, "scavenge_mult": 0.7 },
+      "winter": { "mother": 0.0, "scavenge_mult": 0.0 }
+    },
+    "fawn": { "phases": ["spring_late", "summer"], "summer_days": 5, "bear_bonus": 0.2, "animals": ["white_tailed_deer", "elk", "moose", "caribou"] },
+    "_steal_comment": "從灰熊口中搶肉（提案之九）：bite 咬一塊就跑（得 1 段，失手多半輕傷、不會致命，每試一次 −per_try）；carry 整個叼走（小殘骸 small_max_segments 段以內整個帶走，大殘骸撕一條後腿 leg_segments 段；失手時熊追上來，fail_heavy 的機率重傷，已經帶傷時可能致命）。成功率 = base + ((速度 + 技巧) / 2 − 60) / divisor；苔原狼在場（友善）時熊被分散，carry 的失手傷害 × tundra_mult。",
+    "steal": {
+      "bite": { "base": 0.6, "divisor": 150, "per_try": 0.12, "fail_hurt": 0.5, "damage": [5, 12] },
+      "carry": { "base": 0.4, "divisor": 150, "per_try": 0.1, "fail_heavy": 0.55, "damage_light": [8, 16], "damage_heavy": [22, 34], "leg_segments": [2, 3], "tundra_mult": 0.5, "injured_mult": 1.4 },
+      "small_max_segments": 2
+    }
   },
   "_power_label_comment": "搏鬥與戰鬥的「力量佔優／勢均力敵／牠很難纏」標籤：力量差（換算後的 diff）≥ stronger 才顯示佔優，≤ weaker 顯示難纏，中間是勢均力敵。只影響顯示，不影響成功率（2026-10-02 使用者同意）。",
   "power_label": { "stronger": 0.15, "weaker": -0.05 },
@@ -64,13 +80,16 @@
       "other_death_per_season": 0.01,
       "heal_per_day": 10,
       "combat": { "damage_per_strength": 0.12, "parts": { "leg": 0.5, "face": 0.3, "shoulder": 0.2 }, "give_up_ratio": 0.15, "threat_resist": 0.5, "can_submit": false, "never_lethal": true, "desperate_hit": 0.25, "desperate_damage": 1.3 },
-      "interaction": { "map": "tundra", "feed_chance": 0.1, "return_chance": 0.25, "carcass_loss_mult": 2.0, "replace_chance_per_season": 0.5 }
+      "_season_comment": "1.8 第 8 步：狼獾以秋冬為主（秋冬幾乎每具殘骸都有、夏季很少），season_mult 乘在 feed_chance、return_chance 與圍攻；冬季後半是 winter_late。waiting_stake_mult：你正在吃時牠多半在附近等，這時趕走牠比較容易（利害倍率 ×）；winter_loss_mult：冬季殘骸被牠帶走、藏起來，消失得更快。",
+      "interaction": { "map": "tundra", "feed_chance": 0.1, "return_chance": 0.25, "carcass_loss_mult": 2.0, "replace_chance_per_season": 0.5,
+        "season_mult": { "spring": 0.5, "summer": 0.18, "autumn": 1.0, "winter": 1.0, "winter_late": 1.2 }, "waiting_stake_mult": 0.5, "winter_loss_mult": 1.3 }
     },
     "tundra_wolf": {
       "_comment": "苔原狼（1.6 第 6e 步）：跟著馴鹿遷徙的一對狼（tundra_wolf 與 tundra_wolf_mate），和玩家同種；比灰狼小一些（能力約 85%，速度略快），比郊狼強很多。之後（Phase 3）依關係值決定能不能配對或加入狼群，1.6 只記錄關係值。",
       "sex": "male",
       "start_age": [2.5, 4.0],
-      "start_stats": { "speed": [70, 76], "strength": [60, 66], "skill": [60, 66], "perception": [58, 64], "health_max": [90, 100] },
+      "_size_comment": "1.8 第 8 步：北方苔原的狼普遍偏大，實力改成和壯年黑狼差不多（約 100%～110%），腿長、速度略快。",
+      "start_stats": { "speed": [72, 78], "strength": [68, 76], "skill": [64, 70], "perception": [60, 66], "health_max": [102, 112] },
       "ages": { "peak_end": 5.0, "elder": 6.5 },
       "elder_decay_per_season": { "speed": 1.5, "strength": 1.0, "skill": 0.3, "perception": 0.5, "health_max": 1.5 },
       "old_age_death": { "base": 0.03, "per_year": 0.05 },
@@ -92,8 +111,21 @@
         "partner_chance": 0.2, "partner_damage_mult": 0.6,
         "let_eat_segments": 2,
         "_mob_comment": "圍攻狼獾（兩隻苔原狼都在、狼獾還活著）：在牠們所在的區域探索時 mob_chance 遇上。幫忙時從交鋒開始，狼獾的耐力只剩 start_hp_ratio，每回合 ally_chance 的機率苔原狼咬中牠（ally_damage）。旁觀時 watch_drive_off 的機率狼獾被趕走、watch_kill 的機率被咬死。幫忙趕走後牠們分你 share_segments 段。",
-        "mob": { "mob_chance": 0.05, "start_hp_ratio": 0.7, "ally_chance": 0.5, "ally_damage": [6, 10], "watch_drive_off": 0.7, "watch_kill": 0.1, "share_segments": 1 },
-        "relation": { "howl_reply": 1, "avoid": 1, "yield": 1, "let_eat": 2, "guard_together": 1, "fight": -2, "killed": -5, "help_won": 3, "help_tried": 1,
+        "_joint_comment": "苔原狼協同狩獵（1.8 第 9 步，提案之六）：meet_chance 依關係（熟悉、友善）在牠們的區域探索時撞見牠們在追馴鹿或駝鹿；follow_chance 友善時你自己獵馴鹿、駝鹿，牠們聽到動靜跟上來。幫忙是改變條件：馴鹿群被衝散（等於做完試探、弱者被逼出來）；駝鹿被從側面牽制（moose_counter_reduction 減少踢中你的機會、moose_fight_bonus 從後方咬）。獵到後牠們吃掉 eat_segments 段。觀望時 watch_kill 的機率牠們獵到；熟悉以上可以在殘骸邊緣等著吃剩的（leftover_segments 段）。bear_ally：一起吃殘骸時灰熊來搶，牠們在你這一邊騷擾灰熊（每回合 ally_chance 咬中）。",
+        "joint": { "meet_chance": { "familiar": 0.06, "friendly": 0.12 }, "follow_chance": 0.3, "prey": ["caribou", "moose"],
+          "moose_counter_reduction": 0.3, "moose_fight_bonus": 0.1, "eat_segments": [1, 2], "watch_kill": 0.4, "leftover_segments": 1,
+          "bear_ally": { "ally_chance": 0.3, "ally_damage": [6, 12] } },
+        "_breeding_comment": "苔原狼繁殖（1.8 第 10 步）：每年春天兩隻都活著時 birth_chance 生 litter 隻（harsh_mult：前一年嚴冬或馴鹿少時，第 11 步的年況接上）；整群最多 max_pack 隻，超過時年輕的離開。春夏留在 den_region 的巢穴附近；在那裡探索 den_clue_chance 發現巢穴的線索，靠近時（友善以外）關係 den_intrude、den_charge 的機率撲上來。幼狼在秋季、冬季開始時各有 pup_death 的機率死掉（約一半活到隔年春天，嚴冬 × harsh_death_mult），隔年春天活下來的算年輕的成狼。count_effect：成狼隻數對一起狩獵、對抗灰熊、圍攻狼獾的效果倍率（遞減，約 4 隻到頂）。den_bear：春夏在巢穴區探索 chance 撞見灰熊朝巢穴走去；一起威嚇 threaten_base + 每多一隻成狼 per_adult + (你的力量值 − 60) / power_divisor，母熊 − mother_penalty；沒嚇退就和熊打（苔原狼插進來咬，ally_base + per_adult）；旁觀 watch_hold 牠們自己守住，沒守住 lose_pup 失去一隻幼狼。",
+        "breeding": { "birth_chance": 0.8, "harsh_mult": 0.5, "litter": [3, 4], "max_pack": 6, "den_region": "tundra_south",
+          "den_clue_chance": 0.08, "den_charge": 0.4, "pup_death": 0.3, "harsh_death_mult": 1.4,
+          "count_effect": [0.0, 1.0, 1.0, 1.25, 1.4, 1.45, 1.5],
+          "den_bear": { "chance": 0.04, "threaten_base": 0.72, "per_adult": 0.04, "power_divisor": 200, "mother_penalty": 0.15,
+            "ally_base": 0.2, "ally_per_adult": 0.08, "ally_damage": [6, 12], "watch_hold": 0.8, "lose_pup": 0.6 } },
+        "_mob18_comment": "1.8 第 8 步：只在 seasons（秋冬）發生。旁觀時多一種「僵持後各自離開」（watch_both_left）。幫狼獾：和苔原狼交手，成功率 = side_base + (你的力量值 − 帶頭那隻的) / side_divisor，成功後你和狼獾分食 share_segments 段；不論成敗都算動手（關係 fight）。自己搶：grab_chance 搶到 share_segments 段，grab_turn 的機率牠們之一轉而對付你（grab_damage），關係 grab。",
+        "mob": { "mob_chance": 0.05, "start_hp_ratio": 0.7, "ally_chance": 0.5, "ally_damage": [6, 10], "watch_drive_off": 0.55, "watch_kill": 0.1, "watch_both_left": 0.15, "share_segments": 1,
+          "seasons": ["autumn", "winter"], "side_base": 0.35, "side_divisor": 120, "side_damage": [6, 16], "side_fail_damage": [10, 22],
+          "grab_chance": 0.7, "grab_turn": 0.35, "grab_damage": [6, 14] },
+        "relation": { "howl_reply": 1, "avoid": 1, "yield": 1, "let_eat": 2, "guard_together": 1, "fight": -2, "killed": -5, "help_won": 3, "help_tried": 1, "grab": -1, "joint_hunt": 2, "den_intrude": -2, "den_defend": 4,
           "levels": { "hostile": -3, "familiar": 3, "friendly": 6 } },
         "_effects_comment": "關係值影響牠們的反應。敵視：遇上時 hostile_charge 的機率直接撲上來，爭食機率 × hostile_carcass_mult，另一隻插進來的機率變 hostile_partner_chance，回應嚎叫會把牠們引來（howl_come_chance）。熟悉：爭食時 stake 倍率 × familiar_stake_mult（比較容易被嚇退）。友善：爭食時不動手、在旁邊等；遇上時可以「走近牠們」，friendly_lead_chance 的機率帶你找到馴鹿（馴鹿在這一區出沒的季節）；回應嚎叫時 howl_come_chance 的機率牠們過來找你。避開只在關係低於「熟悉」時加分。",
         "effects": { "hostile_charge": 0.35, "hostile_carcass_mult": 2.0, "hostile_partner_chance": 0.3, "familiar_stake_mult": 0.7,
@@ -104,7 +136,7 @@
       "_comment": "苔原狼的另一隻（母狼）：其餘設定同 tundra_wolf（base）。",
       "base": "tundra_wolf",
       "sex": "female",
-      "start_stats": { "speed": [70, 76], "strength": [56, 62], "skill": [60, 66], "perception": [60, 66], "health_max": [85, 95] }
+      "start_stats": { "speed": [72, 78], "strength": [64, 70], "skill": [64, 70], "perception": [62, 68], "health_max": [96, 106] }
     }
   },
   "combat": {
@@ -129,7 +161,7 @@
       "probe": { "stamina": 4, "bonus": 0.08, "swipe_chance": 0.15 }
     },
     "_stake_comment": "對手為什麼在這裡：stake 倍率越高，越不容易被威嚇、越晚放棄。",
-    "stake_mult": { "carcass": 1.0, "encounter": 0.85, "mother": 1.6, "meet": 1.0, "territory": 1.2, "mob": 0.8 },
+    "stake_mult": { "carcass": 1.0, "encounter": 0.85, "mother": 1.6, "meet": 1.0, "territory": 1.2, "mob": 0.8, "den": 0.6 },
     "win": { "clean_ratio": 0.15, "clean_mult": 1.5, "costly_ratio": 0.4 },
     "_injury_comment": "danger_is_heavy：戰鬥或狩獵結束時還在瀕危（血量低於上限的 danger_ratio），就算重傷（QA-46，2026-10-05 使用者決定）：差點被打死的傷不是睡一覺就好，重傷時睡覺的血量回復減半、要好幾天才痊癒。",
     "injury": { "light_damage": 8, "heavy_damage": 22, "light_days": 2, "heavy_days_min": 3, "heavy_days_max": 5, "danger_is_heavy": true },
@@ -278,6 +310,19 @@
         "bite_throat": { "bonus": -0.15, "strength_weight": 0.4, "kill": true, "wound_bonus": 0.2, "counter_mult": 1.4, "train_mult": 1.5, "trains": ["skill", "strength"] },
         "dodge": { "bonus": 0.1, "strength_weight": 0.2, "next_bonus": 0.1, "counter_reduction": 0.5, "counter_mult": 0.2, "trains": ["skill"] }
       }
+    }
+  },
+  "_year_comment": "年況（1.8 第 11 步，提案之十二 A）：每年春天決定這一年的冬季（暖冬、一般、嚴冬）與夏季（乾、一般、濕），不直接告訴玩家，從季節卡片、雪況、獵物的體況慢慢察覺。severe_max_streak：嚴冬最多連續幾年。snow：冬季（含秋末、春初）的雪況權重倍率；weak_mult：冬季虛弱的比例倍率（大型獵物）；moose_tick_spring：暖冬後春季駝鹿虛弱的倍率（冬蜱）；cold_mult：苔原嚴寒消耗；winter_kill_extra：風雪後凍死的動物多幾具。summer：fire 大火的年機率倍率、berries 漿果倍率、storm 暴雨倍率。",
+  "year": {
+    "winter": { "mild": 0.25, "normal": 0.5, "severe": 0.25 },
+    "summer": { "dry": 0.25, "normal": 0.5, "wet": 0.25 },
+    "severe_max_streak": 2,
+    "effects": {
+      "mild": { "snow": { "none": 1.8, "light": 1.0, "deep": 0.4, "crust": 0.6 }, "weak_mult": 0.8, "moose_tick_spring": 1.8, "cold_mult": 0.85 },
+      "normal": {},
+      "severe": { "snow": { "none": 0.5, "light": 1.0, "deep": 1.8, "crust": 1.4 }, "weak_mult": 1.5, "cold_mult": 1.2, "winter_kill_extra": 1 },
+      "dry": { "fire": 1.8, "berries": 0.6, "storm": 0.7 },
+      "wet": { "fire": 0.4, "berries": 1.2, "storm": 1.5 }
     }
   },
   "_hare_cycle_comment": "1.8 第 6 步：雪兔約 10 年的族群週期。mult 是每一年雪兔出沒權重的倍率（低谷到高峰約 16 倍），每年春天往下一年；新遊戲從隨機一年開始。late_summer_mult：夏季後半、秋季前 late_autumn_days 天，雪兔是狼的重要食物（幼兔長大、到處都是）。",
