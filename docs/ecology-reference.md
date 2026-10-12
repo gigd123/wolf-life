@@ -617,6 +617,100 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 | 熊靠近巢穴時，成狼衝出去包圍騷擾，一隻在前吸引注意、一隻從後面咬；一頭大熊約 5 分鐘就退走，沒有狼受傷；帶幼熊的母熊被騷擾一小時仍留下來 | 記述（Murie，麥金利山，NPS 歷史文獻） | 和苔原狼一起守巢穴，嚇走的機會高，母熊比較固執（提案之九） |
 | 「8～12 隻的大狼群比較敢對抗灰熊、偶爾逼退牠」只在沒有出處的網站看到 | 推論（來源不可靠） | 數量對灰熊的影響要保守，加成小、有上限 |
 
+## Phase 2 的新地圖與動物（2026-10-13 Claude Code 查，待使用者對比）
+
+用在提案之十三（Phase 2「季節與地圖」）。可信度：研究＝有論文或長期研究計畫；記述＝管理單位、科普、觀察紀錄；推論＝沒有直接資料、依相近的資料推的。
+
+**騾鹿**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 騾鹿體型較重、平地跑不快，遇到危險用四腳同時離地的「彈跳」（stotting）逃跑；這種跑法適合崎嶇地形，在平地反而吃虧 | 研究（華盛頓州 GPS 研究，Dellinger 等 2019，Oecologia） | 騾鹿在岩坡、山地追擊時狼不利；在平地、草原好追（和白尾鹿相反：白尾鹿靠平地衝刺） |
+| 有狼的地方，騾鹿往更高、更陡、更多岩石的地方移動；白尾鹿則留在平緩地形 | 研究（同上） | 騾鹿多在山地岩坡、丘陵；被追時往上坡跑 |
+| 往高處躲狼，反而進入美洲獅的地盤 | 研究（同上） | 騾鹿多的岩坡也是美洲獅出沒的地方 |
+| 騾鹿夏季在高處、冬季在低處，單程 20～30 公里（有的超過 100 公里）；秋季遇到寒流、暴風雪就往下走，春季在中途停留等雪融 | 研究／記述（懷俄明、Grand Teton、USGS） | 騾鹿夏季在高山草甸、冬季在山腳；秋末的暴風雪後大量下山；春季分段往上 |
+
+**大角羊**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 大角羊靠「逃生地形」（陡峭岩壁）躲掠食者，活動多在離岩壁 100～300 公尺內 | 研究（多個大角羊研究） | 大角羊多半在岩壁附近；離岩壁近時狼幾乎抓不到 |
+| 這種躲法對狼這類追擊型掠食者很有效，對美洲獅這類伏擊者沒用 | 研究（Jasper；綜述） | 狼獵大角羊成功率很低；美洲獅是牠們主要的掠食者 |
+| 育空的研究：因為逃生地形多，狼的數量和大角羊（Dall 羊）的數量幾乎沒有關係 | 研究（育空） | 大角羊是狼「很少得手」的獵物，不能當主食 |
+
+**美洲野牛**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 黃石的狼獵野牛，成功率要到 9～13 隻狼才持平，比馬鹿難約 3 倍；少於 9 隻幾乎不可能 | 研究（MacNulty 等 2014，PLoS ONE） | 單狼獵成年野牛幾乎不可能；留給 Phase 3 群獵 |
+| 狼獵到的野牛多半是小牛、老弱受傷、陷在深雪裡的 | 記述（黃石、Wood Buffalo） | 單狼的機會：落單的小牛、老弱、冬末深雪裡的 |
+| 雪深超過 30 公分後，狼才開始獵野牛（冬末） | 研究（阿爾伯塔 2023 碩論，林地野牛） | 深雪、冬季長的年份，野牛變得比較好抓（接 1.8 的雪況與年況） |
+| 春末夏初狼群專找有小牛的野牛群；母牛護小牛的方法：跑到母牛身邊、跑到公牛身邊、逃進水裡 | 研究（Carbyn & Trottier 1988，Arctic） | 小牛的季節：母牛、公牛會擋，小牛會逃進水裡 |
+| 獵野牛的平均追擊距離約 4.9 公里（見「狼的移動、追擊與耐力」） | 研究 | 野牛是少數要長追的獵物 |
+
+**叉角羚**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 叉角羚衝刺可維持時速 70～80 公里，視力極好，成羚幾乎不受狼、郊狼影響 | 記述（NPS） | 單狼追不到成羚 |
+| 被吃掉的小羚多半是郊狼殺的；狼趕走郊狼的地方，小羚存活率反而提高 | 研究／記述（黃石、Grand Teton，Berger 等） | 初夏的小羚是唯一的機會；郊狼是牠們主要的掠食者（和你搶小羚） |
+
+**河狸**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 狼用伏擊獵河狸，會等在下風處（河狸嗅覺很好）；Voyageurs 記錄了 990 次以上的伏擊 | 研究（Voyageurs Wolf Project，Behavioral Ecology） | 河狸要「守在水邊」伏擊，逆風才有機會（接探索方式「守在水邊」） |
+| 河狸一半的覓食時間在離池塘 15 公尺內；離得更遠的那一半覓食佔了 76% 的伏擊、85% 的獵殺 | 研究（Voyageurs） | 河狸離水越遠越好抓；一下水就沒了 |
+| 春秋河狸最容易被獵；無冰期河狸可佔 Voyageurs 狼食物的 4 成（其他地區多半 3 成以下） | 研究／記述 | 春、夏、秋的溪流區；冬季結冰後幾乎抓不到 |
+| 狼常殺死出去開新水壩的年輕河狸 | 研究（Voyageurs） | 春季分散的年輕河狸比較好抓 |
+
+**美洲獅**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 狼會跟蹤美洲獅、搶牠的獵物；反過來美洲獅很少搶狼的；兩者的相遇有 42% 發生在美洲獅的獵殺點 | 研究（黃石 9 年 GPS，PNAS 2026） | 找到美洲獅藏起來的獵物時可以搶；搶屍是牠們主要的衝突 |
+| 美洲獅改吃鹿（吃得快）後，被搶的機率只剩吃馬鹿時的六分之一 | 研究（同上） | 美洲獅的殘骸如果是大型獵物，比較容易找到、搶到 |
+| 美洲獅會把獵物拖走藏起來、用草和土蓋住，之後回來吃 | 記述 | 美洲獅的「藏屍」是一種探索結果（被蓋住的殘骸） |
+| 黃石：狼殺死了 12 隻成年美洲獅死亡中的 2 隻（2016～2024）；華盛頓州近十年有 6 隻狼被美洲獅殺死的紀錄 | 研究／記述 | 互相都可能致命；群狼通常佔上風，單狼對美洲獅危險（SPEC 1.6 的勝算表沿用） |
+
+**黑熊**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 黑熊和狼的衝突多半是黑熊輸，尤其是對狼群；偶爾有成年黑熊趕走獨狼、殺死獨狼的紀錄 | 記述（Canadian Field-Naturalist） | 黑熊比灰熊弱：單狼有機會嚇走牠，但牠也可能趕走你 |
+| 熊（多半是棕熊）會搶狼的獵物，狼很少出現在熊的獵物旁 | 研究（斯堪地那維亞，Ordiz 2020） | 黑熊也會搶食，只是比灰熊容易趕走 |
+| 狼群會騷擾落單的熊，把牠趕離巢穴與屍體 | 記述（NPS 歷史文獻） | 沿用灰熊的對峙；黑熊的放棄門檻較低 |
+
+**郊狼**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 狼回到黃石後郊狼減少約 4～5 成：搶食物、攻擊、失去地盤 | 記述／研究（NPS；Berger 等 2007） | 郊狼和你的關係：牠怕你、但會來偷你的殘骸 |
+| 郊狼常在狼的獵物旁偷吃，狼會追咬牠們最多 15 分鐘；一個冬季的觀察中 33 次衝突有 10 次郊狼被咬死，多在馬鹿屍體旁 | 記述（Crabtree，黃石） | 殘骸旁的郊狼可以驅趕、咬死；咬死的郊狼通常不吃（比照狐狸） |
+| 但大部分郊狼不是被狼殺的，而是避開有狼的地方（Grand Teton：16% 被狼殺） | 研究（Berger 等 2007） | 你常活動的區域郊狼少（比照狐狸） |
+
+**加拿大猞猁**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 沒有找到狼直接殺死猞猁的紀錄；文獻多在討論狼透過壓制郊狼、間接幫助猞猁（有爭議） | 研究（Ripple 等 2011 vs Squires 等 2012） | 猞猁很少和狼衝突，遇到時多半退讓；主要是「看得到、和你搶雪兔」的動物 |
+| 猞猁主食雪兔，族群跟著雪兔週期起伏 | 記述（見「野兔與雪兔」） | 雪兔低谷年猞猁變少（接 1.8 第 6 步） |
+
+**季節遷徙**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 馬鹿、騾鹿春季跟著積雪融化、植物冒芽往高處走，深雪年延後；秋季因食物減少、雪深往低處走，每年走同一條路線 | 研究（USGS 黃石北部馬鹿；科羅拉多） | 馬鹿、騾鹿夏季在高山草甸、冬季在山腳與森林；嚴冬（年況）時更早、更多下來 |
+| 黃石的狼回來後，馬鹿的遷徙時間、路線、去的地方都沒有明顯改變 | 研究（USGS） | 遷徙由季節與雪決定，不受玩家影響 |
+| 冬季黃石的狼獵物約 85% 是馬鹿 | 記述（NPS） | 冬季山腳、森林的馬鹿是主要目標 |
+| 下山時家族小群合成大群，有時幾百頭 | 記述（Teton Land Trust） | 秋末、冬季山腳的馬鹿群很大（成群的規則照 1.8） |
+
+**野豬**
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 美國的野化豬都是人帶來的家豬：1500 年代西班牙人帶到東南部，之後英法移民的豬放養後野化；純種歐亞野豬到 1890 年才第一次被引進（新罕布夏的私人獵場） | 記述（多個州的野生動物機構、extension.org） | 拓荒時代西部的北方森林、草原沒有野生野豬，從動物表拿掉 |
+
 ## 資料來源
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
@@ -624,3 +718,4 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 
 - 馬鹿、狼的耐力與繁殖（2026-10-12）：MacNulty 等 2011〈Nonlinear effects of group size on the success of wolves hunting elk〉（Behavioral Ecology；USGS、USU）；MacNulty 等 2014（獵野牛）；Smith 等 2004〈Winter prey selection and estimation of wolf kill rates in Yellowstone〉（JWM，Michigan Tech）；Stahler 2006〈Foraging and Feeding Ecology of the Gray Wolf〉；Yellowstone Wolf Cougar Elk Project 2025 年報（NPS）；Winnie（Montana State）〈Behavioral responses of elk to the threat of wolf predation〉；Childress & Lung（ScienceBase）；Barber-Meyer 等 2008〈Elk calf survival and mortality following wolf restoration〉（Wildlife Monographs／USGS）；French & French〈Grizzly bear predation on elk calves〉（Pelican Valley）；NPS〈Elk〉；Lewis & Clark〈The American Elk〉；SLU〈Wolf predation on moose and roe deer: chase distances and outcome〉；Canadian Field-Naturalist〈Long daily movements of wolves during pup rearing〉；wolf.org〈Wolf dens 101〉；Heard 1992、Parker 1973、Klaczek 2016（wrrb.ca）；Arctic〈Bathurst Island wolves〉（ucalgary）；Wisconsin DNR；Living with Wolves；Jackson Hole News & Guide〈Bears butting in on Yellowstone wolf kills〉（Metz 的研究）。
 - 次成年期與擴散（2026-10-12）：Mech & Gese〈Dispersal of wolves in northeastern Minnesota, 1969–1989〉（USGS）；Treves 等 2009〈Wolf dispersal〉；The Wildlife Society〈Young wolves disperse more when well fed〉；wolf.org〈What’s a lone wolf?〉；NPS〈Understanding the limits to wolf hunting ability〉（Yellowstone Science 24-1）；Living with Wolves；Alaska Science Forum〈Lone wolf’s days wandering are over〉；Mech 1977〈Wolf-pack buffer zones as prey reservoirs〉。
+- Phase 2 的新地圖與動物（2026-10-13）：Dellinger 等 2019〈Contrasting antipredator responses of mule deer and white-tailed deer to wolves〉（Oecologia；University of Washington 新聞稿）；Canadian Field-Naturalist 的大角羊逃生地形研究；Springer〈Wolf predation on sheep〉（Jasper）；育空政府〈Effects of wolf predation in Dall sheep population〉；Sul Ross Borderlands Research Institute（沙漠大角羊）；MacNulty 等 2014〈Influence of group size on the success of wolves hunting bison〉（PLoS ONE）；Carbyn & Trottier 1988〈Descriptions of wolf attacks on bison calves in Wood Buffalo National Park〉（Arctic）；University of Alberta 2023 碩論（林地野牛與狼）；NPS〈Pronghorn〉、〈Coyote〉、〈Elk〉；National Geographic〈Of pronghorn and predators〉；WyoFile〈Yellowstone pronghorn find sanctuary in the shadow of the wolf〉；Voyageurs Wolf Project（National Geographic、Quetico Superior、Gable & Windels 2018 JWM）；PNAS 2026〈Diets, dominance hierarchies, and kleptoparasitism drive asymmetrical interactions between wolves and cougars〉（PMC12890783）；KUOW〈Washington cougars are killing wolves at a surprising rate〉；Canadian Field-Naturalist（黑熊與狼）；Ordiz 等 2020（Diversity）；NPS〈Wolves of Mount McKinley〉第 8 章；Berger 等 2007、High Country News〈Top dog loses〉；Ripple 等 2011、Squires 等 2012（Wildlife Society Bulletin）；USGS〈Migration of northern Yellowstone elk〉；Grand Teton〈Mule deer migration study〉、USGS 懷俄明騾鹿遷徙資料；Teton Land Trust〈Seasonal movement of elk and moose〉；extension.org〈Feral hog history〉、Mississippi State〈Wild pig history〉。
