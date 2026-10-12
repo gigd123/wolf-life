@@ -74,6 +74,12 @@ func _play_event(e: Dictionary, wolf_home: Vector2, opp_home: Vector2) -> void:
 	var dmg: float = float(e.get("damage", 0.0))
 	match actor:
 		"wolf":
+			# 被對手搶先打中、攻擊被打斷（1.9 第 3 步）：才剛起步就被打回來
+			if bool(e.get("interrupted", false)):
+				_pose(true, "hurt")
+				await _dash(wolf_icon, wolf_home, 1.0, 8.0, 0.1)
+				await _return(wolf_icon, wolf_home)
+				return
 			match act:
 				"bite", "lunge":
 					_pose(true, "bite")

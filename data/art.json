@@ -64,6 +64,20 @@
         }
       }
     },
+    "challenger": {
+      "adult": {
+        "sheet": "res://assets/art/sprites/wolf/wolf_challenger_sheet.png",
+        "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
+        "poses": {
+          "threaten": "res://assets/art/sprites/wolf/wolf_challenger_threaten.png",
+          "attack": "res://assets/art/sprites/wolf/wolf_challenger_bite.png",
+          "dodge": "res://assets/art/sprites/wolf/wolf_challenger_dodge.png",
+          "hurt": "res://assets/art/sprites/wolf/wolf_challenger_hurt.png",
+          "submit": "res://assets/art/sprites/wolf/wolf_challenger_submit.png",
+          "stalk": "res://assets/art/sprites/wolf/wolf_challenger_stalk.png"
+        }
+      }
+    },
     "stranger_wolf": {
       "adult": {
         "sheet": "res://assets/art/sprites/wolf/wolf_stranger_sheet.png",

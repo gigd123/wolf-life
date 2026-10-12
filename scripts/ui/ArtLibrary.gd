@@ -33,6 +33,9 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 	var seasonal: String = life_stage + "@" + GameTime.current_season()
 	if table.has(seasonal):
 		entry = table[seasonal]
+	# 1.9 第 4 步：正式的多格動畫（strips 裡有這個動作）優先於單張姿勢，換圖不用改程式
+	if entry.get("strips", {}).has(action) and action != "walk" and _setup_strip(icon, entry["strips"][action]):
+		return true
 	# 單張姿勢（例如陌生灰狼的威嚇、撲咬、示弱）優先於 spritesheet 的列
 	if entry.get("poses", {}).has(action):
 		var pose := texture(str(entry["poses"][action]))
@@ -87,6 +90,15 @@ static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float =
 	return true
 
 # 灰狼的單張姿勢：stalk／pounce／eat／sleep。
+# 灰狼姿勢的多格動畫（1.9 第 4 步）：art.json 的 wolf.stages.<階段>.strips 或 wolf.strips 有這個姿勢就用，沒有回傳 false
+static func setup_wolf_strip(icon: AnimatedIcon, pose: String, stage: String = "") -> bool:
+	var strips: Dictionary = _wolf_stage(stage).get("strips", {})
+	if not strips.has(pose):
+		strips = _cfg().get("wolf", {}).get("strips", {})
+	if not strips.has(pose):
+		return false
+	return _setup_strip(icon, strips[pose])
+
 static func wolf_pose(pose: String, stage: String = "") -> Texture2D:
 	var tex := texture(str(_wolf_stage(stage).get("poses", {}).get(pose, "")))
 	if tex != null:

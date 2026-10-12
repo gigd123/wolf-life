@@ -5,7 +5,8 @@ extends SceneTree
 # 統計：趕走對手（勝）、撤退、戰死的比例，平均受傷，重傷率，回合數。
 # 用法：bash tools/run_sim.sh combat_sim 0 400
 
-const WOLVES := [["次成年 40", 40, 40, 40, 80], ["成年 60", 60, 60, 60, 100], ["巔峰 78", 78, 72, 70, 110]]
+const WOLVES := [["次成年 40", 40, 40, 40, 80], ["成年 60", 60, 60, 60, 100], ["巔峰 78", 78, 72, 70, 110],
+	["成年 快（速度 80）", 60, 60, 80, 100], ["成年 慢（速度 45）", 60, 60, 45, 100]]
 const OPPONENTS := [["灰熊（搶食）", "grizzly_bear", "adult", "carcass", false], ["灰熊（遭遇）", "grizzly_bear", "adult", "encounter", false],
 	["母熊", "grizzly_bear", "adult", "encounter", true], ["幼熊", "grizzly_bear", "juvenile", "encounter", false],
 	["狐狸（偷食）", "red_fox", "adult", "carcass", false],

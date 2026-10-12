@@ -2,7 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den", "mark", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
 const CURRENT_REGION_COLOR := Color(1.0, 0.86, 0.45) # 地圖上目前位置的字與框
@@ -416,6 +416,9 @@ func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, ac
 
 func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
 	var stage: String = _wolf_stage_key()
+	# 有正式的多格動畫就用（1.9 第 4 步）
+	if ArtLibrary.setup_wolf_strip(icon, pose, stage):
+		return
 	# 走路、嚎叫在 spritesheet 裡（wolf_sheet 的列），其他姿勢是單張
 	if pose in ["walk", "howl"]:
 		if ArtLibrary.setup_wolf(icon, pose, 8.0 if pose == "walk" else 4.0, stage):
@@ -1376,6 +1379,11 @@ func _on_action_button(action_id: String) -> void:
 			_show_rest_overlay()
 		"make_den":
 			GameState.action_make_den()
+		"lie_down":
+			_show_lie_down()
+		"mark":
+			var r: String = GameState.action_mark()
+			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
 		"return_to_carcass":
 			var res := GameState.action_return_to_carcass()
 			if res.get("gone", false) or res.is_empty():
@@ -1474,6 +1482,12 @@ func _show_discovery(d: Dictionary) -> void:
 		return
 	if d.get("kind", "") in ["tundra_den", "tundra_den_bear"]:
 		_show_tundra_den(d)
+		return
+	if d.get("kind", "") == "overmarked":
+		_show_overmarked(d)
+		return
+	if d.get("kind", "") == "challenger":
+		_show_challenger(d, false)
 		return
 	var text := _discovery_text(d)
 	_log(text)
@@ -1852,6 +1866,9 @@ func _scavenger_text_key(event: String) -> String:
 
 # intro_logged：發現殘骸的經過已經交代過（_show_found_scavenger），這裡不再寫「你回來時」。
 func _show_scavenger(event: String, returning: bool, intro_logged: bool = false) -> void:
+	if event == "challenger":
+		_show_challenger({"first": int(GameState.life_log.get("challenger_visits", 0)) == 0}, true)
+		return
 	if event == "tundra_wait":
 		var text: String = tr("scavenger.tundra_wait")
 		_log(text)
@@ -2310,6 +2327,8 @@ func _show_region_info() -> void:
 		lines.append("　" + tr("ui.region_info.features") + "：" + "、".join(parts))
 		if visited and data.has("den_bonus"):
 			lines.append("　" + tr("ui.region_info.den_bonus." + region_id))
+		if GameState.is_own_territory(region_id):
+			lines.append("　" + tr("ui.region_info.territory").replace("{n}", str(GameState.mark_days_left(region_id))))
 	region_info_text.text = "\n".join(lines)
 	region_info_overlay.visible = true
 
@@ -3051,6 +3070,74 @@ func _show_tundra_den(d: Dictionary) -> void:
 	_add_encounter_button(tr("ui.leave"), func():
 		GameState.clear_discovery()
 		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
+# 最後一章（1.9b 第 2 步）：讓玩家選擇結束的方式
+func _show_lie_down() -> void:
+	encounter_message.text = tr("lie_down.prompt")
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "sleep")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("lie_down.confirm"), func():
+		encounter_overlay.visible = false
+		_log(tr("lie_down.text"))
+		GameState.action_lie_down()
+		_on_wolf_died(GameState.wolf.death_cause)
+	)
+	_add_encounter_button(tr("lie_down.cancel"), func(): encounter_overlay.visible = false)
+	encounter_overlay.visible = true
+
+# 年輕的挑戰者（1.9b 第 2 步）：讓牠、或對峙。carcass：牠來搶殘骸。
+func _show_challenger(d: Dictionary, carcass: bool) -> void:
+	var key: String = "challenger." + ("first" if d.get("first", false) else "again") + ("." + ("carcass" if carcass else ("territory" if d.get("territory", false) else "meet")))
+	var text: String = tr(key)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "challenger", "adult", "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", GameState.current_feeding.get("terrain", ""))))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("challenger.confront"), func():
+		_begin_combat(GameState.start_challenger_combat("carcass" if carcass else ("territory" if d.get("territory", false) else "meet")), "move")
+	)
+	_add_encounter_button(tr("challenger.yield." + ("carcass" if carcass else "meet")), func():
+		GameState.challenger_yield()
+		encounter_overlay.visible = false
+		_log(tr("challenger.yielded"))
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
+# 黑狼的標記蓋在你的地盤上（1.9b 第 1 步）：重新標記、去找牠、讓出。
+func _show_overmarked(d: Dictionary) -> void:
+	var text: String = tr("territory.overmarked." + ("known" if GameState.is_identified("stranger_wolf") else "unknown"))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("territory.remark"), func():
+		GameState.clear_discovery()
+		encounter_overlay.visible = false
+		var r: String = GameState.action_mark()
+		_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
+		_refresh()
+	)
+	_add_encounter_button(tr("territory.seek"), func():
+		var res := GameState.seek_stranger_from_mark()
+		if res.has("combat"):
+			_begin_combat(res["combat"], "move")
+		else:
+			_show_discovery(res["discovery"])
+	)
+	_add_encounter_button(tr("territory.yield"), func():
+		GameState.yield_territory()
+		encounter_overlay.visible = false
+		_log(tr("territory.yielded"))
 		_refresh()
 	)
 	encounter_overlay.visible = true

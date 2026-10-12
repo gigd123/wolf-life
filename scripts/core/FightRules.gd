@@ -65,7 +65,12 @@ static func move_ids() -> Array:
 static func power(wolf: Wolf, move: String) -> float:
 	var m: Dictionary = _cfg().get("moves", {}).get(move, {})
 	var sw: float = float(m.get("strength_weight", 1.0))
-	return wolf.effective_strength() * sw + wolf.effective_skill() * (2.0 - sw)
+	return (wolf.effective_strength() * sw + wolf.effective_skill() * (2.0 - sw)) * _teeth_power(wolf)
+
+# 牙齒磨損對搏鬥力量值的折扣（1.9b 第 2 步）
+static func _teeth_power(wolf: Wolf) -> float:
+	var share: float = float(GameData.balance.get("elder", {}).get("teeth", {}).get("power_share", 0.5))
+	return 1.0 - (1.0 - wolf.teeth_mult()) * share
 
 static func chance(wolf: Wolf, prey_counter: float, move: String, state: Dictionary) -> Dictionary:
 	var cfg := _cfg()
@@ -79,6 +84,8 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var diff: float = (power(wolf, move) - prey_power) / float(cfg.get("power_divisor", 130))
 	# 標籤把體型差一起算進去（獵物力量值已經包含體型；舊式要再扣 difficulty），免得對駝鹿也顯示「力量佔優」
 	factors.append(_power_factor(diff - (0.0 if has_power else float(state.get("difficulty", 0.0)))))
+	if wolf.teeth_mult() < 1.0:
+		factors.append({"key": "factor.worn_teeth", "good": false, "weight": 0.0, "info": true})
 	var chase_bonus: float = float(state.get("chase_bonus", 0.0))
 	if chase_bonus > 0.0:
 		factors.append({"key": "factor.chase_bonus", "good": true, "weight": chase_bonus})
@@ -222,7 +229,7 @@ static func wolf_damage(wolf: Wolf, move: String) -> float:
 	var d: Dictionary = combat_cfg().get("wolf_damage", {})
 	var spread: float = float(d.get("spread", 3))
 	return (float(d.get("base", 6)) + wolf.effective_strength() * float(d.get("strength_mult", 0.12)) + RNGService.randf_range(-spread, spread)) \
-		* float(move_cfg(move).get("damage_mult", 1.0))
+		* float(move_cfg(move).get("damage_mult", 1.0)) * wolf.teeth_mult()
 
 # 撤退：看速度與腿傷；瀕危時對手多半只想把你趕走，成功率提高；謹慎型加成。
 static func retreat_chance(wolf: Wolf, cautious: float) -> Dictionary:

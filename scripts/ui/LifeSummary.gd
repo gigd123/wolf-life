@@ -301,5 +301,9 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 	if stranger_line != "":
 		parts.append(stranger_line)
 	var age: String = "%.1f" % (wolf.age_years if wolf != null else 0.0)
-	parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", _death_bio(log_data)))
+	# 最後一章：自己選擇躺下的狼有專屬的結尾（1.9b 第 2 步）
+	if str(log_data.get("death_cause", "")) == "lay_down":
+		parts.append(tr("bio.lay_down").replace("{age}", age).replace("{region}", tr("region." + str(log_data.get("lie_down_region", "")))))
+	else:
+		parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", _death_bio(log_data)))
 	return "，".join(parts) + "。"

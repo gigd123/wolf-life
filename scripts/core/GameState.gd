@@ -197,6 +197,7 @@ func _on_day_changed(_day: int) -> void:
 	_apply_daily_hunger_penalty()
 	_queue_day_summary(before_injury, before_injury_stat, before_poison)
 	_recover_region_depletion()
+	_update_marks()
 	_heal_npcs()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
@@ -304,6 +305,9 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
 	# 年況的徵兆（1.8 第 11 步）：不直接說，從季節卡片察覺
 	var hint: String = ""
+	# 老狼看得最準：秋天就感覺得到這個冬天（1.9b 第 2 步）
+	if wolf != null and wolf.life_stage() == Wolf.LifeStage.ELDER and season == "autumn" and str(year_state().get("winter", "normal")) != "normal":
+		lines.append({"key": "year.hint.elder.winter." + str(year_state()["winter"])})
 	match season:
 		"winter":
 			hint = str(year_state().get("winter", "normal"))
@@ -453,6 +457,7 @@ func _check_life_stage_transition(prev_stage: int) -> void:
 	if prev_stage != Wolf.LifeStage.ELDER and stage == Wolf.LifeStage.ELDER:
 		life_log["elder_age"] = snapped(wolf.age_years, 0.01)
 		_queue_notice({"type": "elder_transition"})
+		_schedule_challenger(_elder_cfg().get("challenger", {}).get("first_days", [5, 15]))
 
 func _settle_adulthood() -> void:
 	var potential := Growth.settle_potential(wolf)
@@ -659,7 +664,187 @@ func available_actions() -> Array[String]:
 		actions.append("return_to_carcass")
 	if can_make_den_here():
 		actions.append("make_den")
+	if can_mark_here():
+		actions.append("mark")
+	if can_lie_down():
+		actions.append("lie_down")
 	return actions
+
+# --- 老年（Phase 1.9b 第 2 步）---
+func _elder_cfg() -> Dictionary:
+	return GameData.balance.get("elder", {})
+
+func challenger() -> NpcWolf:
+	return npcs.get("challenger", null)
+
+func _schedule_challenger(days: Array) -> void:
+	life_log["challenger_day"] = int(life_log.get("days_lived", 1)) + RNGService.randi_range(int(days[0]), int(days[1]))
+
+# 年輕的挑戰者該來了嗎（老年、到了日子）
+func challenger_due() -> bool:
+	if wolf == null or wolf.life_stage() != Wolf.LifeStage.ELDER or not life_log.has("challenger_day"):
+		return false
+	return int(life_log.get("days_lived", 1)) >= int(life_log["challenger_day"])
+
+func _ensure_challenger() -> NpcWolf:
+	if challenger() == null or not challenger().alive:
+		npcs["challenger"] = NpcWolf.create("challenger", current_region)
+		life_log["challenger_visits"] = 0
+	return challenger()
+
+# 牠找上門：探索時（在地盤時說要搶地盤）或吃東西時（搶殘骸）。回傳要不要觸發。
+func _maybe_challenger_explore() -> bool:
+	if not challenger_due() or blizzard_here() or not RNGService.chance(float(_elder_cfg().get("challenger", {}).get("explore_chance", 0.5))):
+		return false
+	_ensure_challenger()
+	current_discovery = {"kind": "challenger", "location": _random_terrain(current_region), "first": int(life_log.get("challenger_visits", 0)) == 0,
+		"territory": is_own_territory()}
+	return true
+
+func start_challenger_combat(context: String) -> Combat:
+	clear_discovery()
+	var npc := _ensure_challenger()
+	var c := start_combat("challenger", "adult", context)
+	c.set_npc(npc)
+	return c
+
+# 讓牠：殘骸讓給牠、或這一帶的地盤讓出；牠下次來得更快
+func challenger_yield() -> void:
+	record_decision("challenger.yield")
+	clear_discovery()
+	if not current_feeding.is_empty():
+		current_feeding = {}
+	if is_own_territory():
+		var marks: Dictionary = life_log.get("marks", {})
+		marks.erase(current_region)
+		life_log["marks"] = marks
+	_after_challenger(false)
+	state_changed.emit()
+
+# 每次牠來過：打贏了牠走，過一陣子再來而且更強；讓了或輸了，牠下次來得更快
+func _after_challenger(won: bool) -> void:
+	var cfg: Dictionary = _elder_cfg().get("challenger", {})
+	var npc := _ensure_challenger()
+	life_log["challenger_visits"] = int(life_log.get("challenger_visits", 0)) + 1
+	var list: Array = life_log.get("challenger_meetings", [])
+	list.append({"age": snapped(wolf.age_years, 0.1), "won": won})
+	life_log["challenger_meetings"] = list
+	var days: Array = cfg.get("return_days", [10, 16])
+	var mult: float = 1.0 if won else float(cfg.get("yield_return_mult", 0.6))
+	_schedule_challenger([int(int(days[0]) * mult), int(int(days[1]) * mult)])
+	if won:
+		life_log["challenger_wins"] = int(life_log.get("challenger_wins", 0)) + 1
+		var g: float = float(cfg.get("grow", 3))
+		for stat in ["speed", "strength", "skill", "health_max"]:
+			npc.set(stat, float(npc.get(stat)) + g)
+	npc.health = npc.health_max
+
+# 最後一章：很老、很虛弱時可以選擇「找一個安靜的地方躺下」
+func can_lie_down() -> bool:
+	if wolf == null or wolf.life_stage() != Wolf.LifeStage.ELDER:
+		return false
+	var cfg: Dictionary = _elder_cfg().get("lie_down", {})
+	var adult_end: float = float(GameData.balance.get("life_stage_ages", {}).get("adult_end", 6.0))
+	return wolf.age_years - adult_end >= float(cfg.get("min_elder_years", 3.0)) or wolf.health_max < float(cfg.get("max_health_below", 70))
+
+func action_lie_down() -> void:
+	record_decision("lie_down")
+	life_log["lie_down_region"] = current_region
+	_die("lay_down")
+
+# --- 地盤（Phase 1.9b 第 1 步）---
+# life_log["marks"]：{區域: 最後標記的那一天}；life_log["overmarked"]：{區域: true}（黑狼把牠的標記蓋在你的上面）
+func _territory_cfg() -> Dictionary:
+	return GameData.balance.get("territory", {})
+
+func can_mark_here() -> bool:
+	return wolf != null and wolf.life_stage() != Wolf.LifeStage.SUBADULT and not blizzard_here()
+
+func own_territories() -> Array:
+	var today: int = int(life_log.get("days_lived", 1))
+	var fade: int = int(_territory_cfg().get("fade_days", 5))
+	var list: Array = []
+	var marks: Dictionary = life_log.get("marks", {})
+	for r in marks.keys():
+		if today - int(marks[r]) <= fade:
+			list.append(r)
+	return list
+
+func is_own_territory(region_id: String = "") -> bool:
+	return own_territories().has(current_region if region_id == "" else region_id)
+
+# 這一區的標記還剩幾天（不是地盤就是 −1）
+func mark_days_left(region_id: String) -> int:
+	if not is_own_territory(region_id):
+		return -1
+	return int(_territory_cfg().get("fade_days", 5)) - (int(life_log.get("days_lived", 1)) - int(life_log.get("marks", {})[region_id]))
+
+# 標記：最多 max_regions 個區域，超過時最舊的那一個不再補（直接移除）。回傳 "new"／"refresh"／"remark"（蓋回黑狼的標記）。
+func action_mark() -> String:
+	_record_action("mark")
+	var cfg := _territory_cfg()
+	GameTime.advance_turns(int(cfg.get("mark_turns", 1)))
+	wolf.stamina -= float(cfg.get("mark_stamina", 2))
+	wolf.clamp_stats()
+	var marks: Dictionary = life_log.get("marks", {})
+	var result: String = "refresh" if is_own_territory() else "new"
+	var over: Dictionary = life_log.get("overmarked", {})
+	if over.has(current_region):
+		over.erase(current_region)
+		life_log["overmarked"] = over
+		result = "remark"
+	# 淡掉的標記清掉；超過上限時拿掉最舊的
+	for r in marks.keys():
+		if not own_territories().has(r):
+			marks.erase(r)
+	if not marks.has(current_region) and marks.size() >= int(cfg.get("max_regions", 2)):
+		var oldest: String = ""
+		for r in marks.keys():
+			if oldest == "" or int(marks[r]) < int(marks[oldest]):
+				oldest = r
+		marks.erase(oldest)
+	marks[current_region] = int(life_log.get("days_lived", 1))
+	life_log["marks"] = marks
+	life_log["marks_made"] = int(life_log.get("marks_made", 0)) + 1
+	state_changed.emit()
+	return result
+
+# 每天：黑狼可能把牠的標記蓋在你的地盤上（牠的範圍在你的地盤或相鄰時）
+func _update_marks() -> void:
+	var npc := stranger()
+	if npc == null or not npc.alive or npc.yielded_to_player or stranger_territory == "":
+		return
+	var near: Array = EncounterSystem.region_data(stranger_territory).get("adjacent", [])
+	for r in own_territories():
+		if (r == stranger_territory or near.has(r)) and RNGService.chance(float(_territory_cfg().get("overmark_chance", 0.15))):
+			var over: Dictionary = life_log.get("overmarked", {})
+			over[r] = true
+			life_log["overmarked"] = over
+
+func is_overmarked(region_id: String = "") -> bool:
+	return bool(life_log.get("overmarked", {}).get(current_region if region_id == "" else region_id, false)) and is_own_territory(region_id)
+
+# 讓出：這一區不再是你的地盤
+func yield_territory() -> void:
+	record_decision("territory.yield")
+	var marks: Dictionary = life_log.get("marks", {})
+	marks.erase(current_region)
+	life_log["marks"] = marks
+	var over: Dictionary = life_log.get("overmarked", {})
+	over.erase(current_region)
+	life_log["overmarked"] = over
+	clear_discovery()
+	state_changed.emit()
+
+# 去找牠：可以直接互動時是一場相遇（對峙），否則只是循著氣味找到牠的足跡
+func seek_stranger_from_mark() -> Dictionary:
+	record_decision("territory.seek")
+	clear_discovery()
+	if stranger_can_interact():
+		return {"combat": start_stranger_combat("meet")}
+	current_discovery = {"kind": "clue", "source_kind": "threat", "source": "stranger_wolf", "clue": "wolf_track", "location": _random_terrain(current_region),
+		"fresh": true, "fresh_known": true, "wind": "crosswind", "prey_dir": RNGService.randi_range(0, 3), "life_stage": "adult"}
+	return {"discovery": current_discovery}
 
 func current_map() -> String:
 	return GameData.map_of(current_region)
@@ -845,6 +1030,15 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		state_changed.emit()
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
+	# 年輕的挑戰者（1.9b 第 2 步）
+	if _maybe_challenger_explore():
+		state_changed.emit()
+		return current_discovery
+	# 黑狼的標記蓋在你的地盤上：在那一區探索時發現（1.9b 第 1 步）
+	if is_overmarked() and RNGService.chance(0.6):
+		current_discovery = {"kind": "overmarked", "location": _random_terrain(current_region)}
+		state_changed.emit()
+		return current_discovery
 	if _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
@@ -1393,6 +1587,10 @@ func learn(entry: Dictionary) -> int:
 	if routine_running and int(existing.get("count", 0)) + 1 >= int(GameData.knowledge.get("confirm_count", 3)):
 		return int(existing.get("count", 0))
 	existing["count"] = int(existing.get("count", 0)) + 1
+	# 自己的地盤：這一區的事記得比較快（1.9b 第 1 步）
+	if str(entry.get("region", "")) != "" and is_own_territory(str(entry["region"])) and not routine_running \
+			and RNGService.chance(float(_territory_cfg().get("knowledge_bonus", 0.3))):
+		existing["count"] = min(int(existing["count"]) + 1, int(GameData.knowledge.get("confirm_count", 3)))
 	knowledge[key] = existing
 	if existing["count"] <= int(GameData.knowledge.get("confirm_count", 3)):
 		knowledge_learned.emit(existing)
@@ -1506,7 +1704,7 @@ func action_find_sleep_spot() -> String:
 	var spot := ""
 	if _feature_known_here("sleep_spot"):
 		spot = "good"
-	elif EncounterSystem.find_sleep_spot(current_region):
+	elif EncounterSystem.find_sleep_spot(current_region) or (is_own_territory() and RNGService.chance(float(_territory_cfg().get("sleep_bonus", 0.15)))):
 		spot = "normal"
 		found_sleep_spots[current_region] = "normal"
 		var region: Dictionary = EncounterSystem.region_data(current_region)
@@ -2258,7 +2456,11 @@ func feed_once() -> Dictionary:
 	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
 	var event: String = ""
 	if int(current_feeding["segments_left"]) > 0:
-		if RNGService.chance(float(chances["bear"]) * threat_mult()):
+		# 年輕的挑戰者來搶殘骸（1.9b 第 2 步）
+		if challenger_due() and RNGService.chance(0.5):
+			_ensure_challenger()
+			event = "challenger"
+		elif RNGService.chance(float(chances["bear"]) * threat_mult()):
 			event = "bear"
 		elif RNGService.chance(float(chances["wolverine"])):
 			event = "wolverine"
@@ -2425,6 +2627,9 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 		_learn_danger(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
+	# 在自己的地盤和黑狼、苔原狼衝突：你更拚（1.9b 第 1 步）
+	if animal_id in ["stranger_wolf", "tundra_wolf"] and is_own_territory():
+		c.stake_mult *= float(_territory_cfg().get("stake_mult", 1.25))
 	# 和友善的苔原狼一起吃殘骸時灰熊來搶：牠們在你這一邊騷擾灰熊（1.8 第 9 步；不算單獨擊退）
 	if animal_id == "grizzly_bear" and context == "carcass" and (bool(current_feeding.get("with_tundra", false)) \
 			or (_tundra_wolves_here() and tundra_relation_key() == "friendly")):
@@ -2556,6 +2761,16 @@ func finish_combat(c: Combat) -> Dictionary:
 		_after_tundra_combat(c)
 	if c.context == "den":
 		_after_den_combat(c)
+	if c.npc != null and c.npc.id == "challenger":
+		c.npc.health = c.opp_hp
+		_after_challenger(c.won())
+		if not c.won():
+			if not current_feeding.is_empty() and c.context == "carcass":
+				current_feeding = {}
+			if c.context == "territory" and is_own_territory():
+				var marks: Dictionary = life_log.get("marks", {})
+				marks.erase(current_region)
+				life_log["marks"] = marks
 	if c.won() and c.animal_id == "grizzly_bear" and c.life_stage == "adult" and c.ally_chance <= 0.0:
 		_after_bear_first_win()
 	GameTime.advance_turns(1)
@@ -3208,6 +3423,9 @@ func _after_stranger_combat(c: Combat) -> float:
 					skill_gain = Growth.bonus(wolf, "skill", float(GameData.balance.get("growth", {}).get("stranger_first_win_skill", 4)))
 			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕
 			life_log["own_territory"] = npc.territory
+			var marks: Dictionary = life_log.get("marks", {})
+			marks[npc.territory] = int(life_log.get("days_lived", 1)) # 打贏的那一帶接上地盤（1.9b 第 1 步）
+			life_log["marks"] = marks
 			if c.outcome == "killed":
 				_queue_notice({"type": "stranger_killed", "region": npc.territory})
 			npc.yielded_to_player = true
@@ -3786,7 +4004,7 @@ func tundra_howl_reply(reply: bool) -> void:
 func _maybe_meet_tundra_wolves() -> bool:
 	if not _tundra_wolves_here() or blizzard_here():
 		return false
-	if not RNGService.chance(float(_tundra_cfg().get("meet_chance", 0.1))):
+	if not RNGService.chance(float(_tundra_cfg().get("meet_chance", 0.1)) * (float(_territory_cfg().get("tundra_meet_mult", 1.5)) if is_own_territory() else 1.0)):
 		return false
 	current_discovery = {"kind": "tundra_wolves", "location": _random_terrain(current_region), "first": not is_identified("tundra_wolf"),
 		"charge": tundra_relation_key() == "hostile" and RNGService.chance(float(_tundra_effects().get("hostile_charge", 0.35)))}

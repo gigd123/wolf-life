@@ -93,6 +93,21 @@ func stage_name() -> String:
 func _tendency_effect(type: String) -> float:
 	return float(tendency.get("effect", 0.0)) if tendency.get("type", "") == type else 0.0
 
+# 對手的速度（1.9 第 3 步）：具名的狼用牠自己的，其他看 opponents 的 speed
+func opp_speed() -> float:
+	if npc != null:
+		return npc.speed
+	return float(opp.get("speed", 55))
+
+func _first_cfg() -> Dictionary:
+	return FightRules.combat_cfg().get("first", {})
+
+# 這一招你先動的機率
+func first_chance(move: String) -> float:
+	var f := _first_cfg()
+	var v: float = float(f.get("base", 0.5)) + (wolf.effective_speed() + float(f.get("move_speed", {}).get(move, 0)) - opp_speed()) / float(f.get("divisor", 70))
+	return clamp(v, float(f.get("min", 0.15)), float(f.get("max", 0.85)))
+
 func opp_power() -> float:
 	return float(opp.get("power", 100))
 
@@ -228,6 +243,9 @@ func _attack_option(move: String, initiative: bool) -> Dictionary:
 	if ally_chance > 0.0:
 		factors = factors.duplicate()
 		factors.append({"key": "factor.combat.ally", "good": true, "weight": 0.0, "info": true})
+	if not initiative:
+		factors = factors.duplicate()
+		factors.append({"key": "factor.combat.first", "good": first_chance(move) >= 0.5, "weight": 0.0, "info": true, "n": int(round(first_chance(move) * 100))})
 	var opt := {"id": "attack" if initiative else move, "label_key": label, "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
 		"injury_risk": risk}
 	return _move_trains(opt, move)
@@ -244,6 +262,7 @@ func _harass_option() -> Dictionary:
 	var info := FightRules.attack_chance(wolf, opp_power(), "harass", _attack_state(false))
 	var factors: Array = _combat_factors(info["factors"])
 	factors.append({"key": "factor.combat.tiring", "good": true, "weight": 0.0, "info": true})
+	factors.append({"key": "factor.combat.first", "good": first_chance("harass") >= 0.5, "weight": 0.0, "info": true, "n": int(round(first_chance("harass") * 100))})
 	var opt := {"id": "harass", "label_key": "combat.option.harass", "chance": info["chance"], "chance_key": "chance_label.hit", "factors": factors,
 		"injury_risk": FightRules.opponent_hit_chance(wolf, opp_power(), "harass", float(opp.get("hit_divisor", 0.0)))}
 	return _move_trains(opt, "harass")
@@ -349,6 +368,10 @@ func _practice(opt: Dictionary, success: bool) -> void:
 # 對手打狼一下（lethal 見 FightRules.hurt_wolf）。
 func _opponent_strikes(move: String, lethal: bool, res: Dictionary, chance_override: float = -1.0, dmg_mult: float = 1.0, actor: String = "opp") -> bool:
 	var hit_chance: float = chance_override if chance_override >= 0.0 else FightRules.opponent_hit_chance(wolf, opp_power(), move, float(opp.get("hit_divisor", 0.0)))
+	# 你先動而咬中：牠被咬得一頓，反擊比較難打中（1.9 第 3 步）
+	if bool(state.get("stagger", false)) and actor == "opp":
+		hit_chance *= float(_first_cfg().get("stagger_mult", 0.8))
+		state["stagger"] = false
 	if desperate:
 		hit_chance = min(0.95, hit_chance + float(opp.get("desperate_hit", 0.1)))
 		dmg_mult *= float(opp.get("desperate_damage", 1.03))
@@ -382,7 +405,8 @@ func _ally_turn(res: Dictionary) -> void:
 	_ev(res, "ally", "bite", {"hit": true, "damage": dmg})
 	res["notes"].append("combat.ally_hits")
 
-func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
+# already_struck：對手這回合已經先出過手（1.9 第 3 步），不再反擊。
+func _opponent_turn(move: String, lethal: bool, res: Dictionary, already_struck: bool = false) -> void:
 	_ally_turn(res)
 	if desperate and opp_hp <= 0.0:
 		_ev(res, "opp", "down")
@@ -406,6 +430,8 @@ func _opponent_turn(move: String, lethal: bool, res: Dictionary) -> void:
 		_ev(res, "opp", "give_up")
 		res["notes"].append("combat.opp_gives_up")
 		_end("drove_off")
+		return
+	if already_struck:
 		return
 	if not _opponent_strikes(move, lethal, res) and float(res.get("opp_damage", 0.0)) > 0.0:
 		res["opp_action"] = "hurt"
@@ -438,9 +464,31 @@ func _do_probe(opt: Dictionary, res: Dictionary) -> void:
 	if _opponent_strikes("bite", false, res, float(opt.get("injury_risk", 0.15))):
 		res["notes"].append("combat.probe.swipe")
 
+# 先後（1.9 第 3 步）：對手先動時先挨牠一下，打中的話可能打斷你的攻擊。回傳 {"struck": 對手已經出過手, "interrupted"}。
+func _maybe_opp_first(move: String, lethal: bool, res: Dictionary, initiative: bool) -> Dictionary:
+	if initiative or RNGService.chance(first_chance(move)):
+		res["first"] = "wolf"
+		return {"struck": false, "interrupted": false}
+	res["first"] = "opp"
+	res["notes"].append("combat.first.opp")
+	var hit: bool = _opponent_strikes(move, lethal, res)
+	if hit and RNGService.chance(float(_first_cfg().get("interrupt", {}).get(move, 0.5))):
+		_ev(res, "wolf", move, {"hit": false, "interrupted": true})
+		res["notes"].append("combat.interrupted")
+		return {"struck": true, "interrupted": true}
+	return {"struck": true, "interrupted": false}
+
 func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) -> void:
+	var initiative: bool = phase == Phase.STANDOFF # 對峙中先出手：一定是你先動
 	phase = Phase.EXCHANGE
 	res["wolf_pose"] = "bite"
+	var first := _maybe_opp_first(move, lethal, res, initiative)
+	if first["interrupted"] or wolf.health <= 0.0:
+		state["next_bonus"] = 0.0
+		state["probe_bonus"] = 0.0
+		_practice(opt, false)
+		_opponent_turn(move, lethal, res, true)
+		return
 	var hit: bool = RNGService.chance(float(opt["chance"]))
 	state["next_bonus"] = 0.0
 	state["probe_bonus"] = 0.0
@@ -455,7 +503,9 @@ func _do_attack(opt: Dictionary, move: String, lethal: bool, res: Dictionary) ->
 		_ev(res, "wolf", move, {"hit": false})
 		res["notes"].append("combat.miss")
 	_practice(opt, hit)
-	_opponent_turn(move, lethal, res)
+	if hit and not first["struck"]:
+		state["stagger"] = true
+	_opponent_turn(move, lethal, res, first["struck"])
 
 func _do_dodge(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	res["wolf_pose"] = "dodge"
@@ -494,6 +544,11 @@ func _do_harass(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 	state["probe_bonus"] = 0.0
 	# 繞著牠打轉本身就讓牠追著消耗耐力；咬中再加一點傷害（被咬傷也會耗耐力）
 	_drain_opp(float(FightRules.move_cfg("harass").get("drain", 6.0)))
+	var first := _maybe_opp_first("harass", lethal, res, false)
+	if first["interrupted"] or wolf.health <= 0.0:
+		_practice(opt, false)
+		_opponent_turn("harass", lethal, res, true)
+		return
 	var hit: bool = RNGService.chance(float(opt["chance"]))
 	if hit:
 		var dmg: float = FightRules.wolf_damage(wolf, "harass")
@@ -506,7 +561,9 @@ func _do_harass(opt: Dictionary, lethal: bool, res: Dictionary) -> void:
 		_ev(res, "wolf", "harass", {"hit": false})
 		res["notes"].append("combat.harass.miss")
 	_practice(opt, hit)
-	_opponent_turn("harass", lethal, res)
+	if hit and not first["struck"]:
+		state["stagger"] = true
+	_opponent_turn("harass", lethal, res, first["struck"])
 
 func _do_retreat(opt: Dictionary, res: Dictionary) -> void:
 	var away: bool = RNGService.chance(float(opt["chance"]))

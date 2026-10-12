@@ -1296,3 +1296,39 @@ summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。
 combat.anim.normal,動畫：一般（按一下切換；播放中按一下略過）
 combat.anim.fast,動畫：快（按一下切換；播放中按一下略過）
 combat.anim.off,動畫：略過（按一下切換）
+combat.first.opp,牠搶先出手。
+combat.interrupted,你的攻擊被打斷了。
+factor.combat.first,先動的機會 {n}%
+action.mark,標記地盤
+log.mark.new,你在{region}的樹根、石頭上留下氣味，這一帶現在是你的地盤了。
+log.mark.refresh,你沿著{region}的邊界補上氣味。
+log.mark.remark,你把黑狼的氣味蓋掉，重新在{region}留下自己的記號。
+territory.overmarked.known,你留下記號的地方，蓋著一層新的氣味——是那隻黑狼。牠來過了。
+territory.overmarked.unknown,你留下記號的地方，蓋著一層陌生的狼的氣味。有誰來過，而且不怕你。
+territory.remark,蓋回自己的氣味
+territory.seek,循著氣味去找牠
+territory.yield,讓出這一帶
+territory.yielded,你不再在這一帶留下記號。
+ui.region_info.territory,你的地盤（標記還能撐 {n} 天）
+animal.challenger,年輕的狼
+action.lie_down,找一個安靜的地方躺下
+lie_down.prompt,你的腿已經不太聽使喚，牙也鈍了。也許是時候了——找一個安靜的地方躺下，不再起來。
+lie_down.confirm,躺下
+lie_down.cancel,還不是時候
+lie_down.text,你走到一處避風的地方，慢慢地躺了下來。風從遠處帶來熟悉的氣味，你閉上了眼睛。
+death.lay_down,自己選擇躺下
+death_bio.lay_down,在一個安靜的地方躺下，不再起來
+bio.lay_down,{age} 歲那年，牠在{region}找了一個安靜的地方躺下，再也沒有起來。
+year.hint.elder.winter.severe,你的骨頭比任何時候都早感覺到：今年的冬天會很難熬。
+year.hint.elder.winter.mild,空氣裡有種說不出的暖意，你知道今年的冬天不會太冷。
+factor.worn_teeth,牙齒磨鈍了
+challenger.first.meet,一隻年輕的狼站在不遠處盯著你。牠毛色偏紅，肩膀還很瘦，眼神卻一點也不怕你。
+challenger.first.territory,你留下記號的地方，一隻年輕的狼正抬起後腿，把自己的氣味蓋上去。牠回頭看著你，沒有要走的意思。
+challenger.first.carcass,一隻年輕的狼從旁邊走過來，低著頭、壓著耳朵，一步步逼近你的獵物。
+challenger.again.meet,那隻年輕的狼又來了。牠比上次更壯了一些。
+challenger.again.territory,那隻年輕的狼又在你的地盤上留下氣味。牠比上次更壯了一些。
+challenger.again.carcass,那隻年輕的狼又來搶你的獵物了。牠比上次更壯了一些。
+challenger.confront,和牠對峙
+challenger.yield.meet,讓開
+challenger.yield.carcass,把獵物讓給牠
+challenger.yielded,你轉身走開。年輕的狼沒有追上來，只是看著你離開。

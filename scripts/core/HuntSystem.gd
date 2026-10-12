@@ -826,6 +826,9 @@ func _roll_condition(p_injured: bool) -> void:
 	var cfg: Dictionary = _tuning().get("condition", {})
 	condition = "weak" if p_injured else _pick_condition()
 	fight_state["condition_bonus"] = float(cfg.get("fight", {}).get(condition, 0.0))
+	# 老狼看得最準：體況一眼就看出來（1.9b 第 2 步）
+	if wolf.life_stage() == Wolf.LifeStage.ELDER:
+		condition_known = true
 
 # 依季節擲體況；個別生命階段可以覆寫（animals.json condition_season，例如冬末繁殖期後的公鹿）。
 func _pick_condition() -> String:

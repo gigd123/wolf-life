@@ -224,6 +224,12 @@ func _explore_once() -> void:
 			_:
 				GameState.watch_tundra_mob()
 		return
+	if d.get("kind", "") == "challenger":
+		if style == "cautious":
+			GameState.challenger_yield()
+		else:
+			play_combat(GameState.start_challenger_combat("territory" if d.get("territory", false) else "meet"))
+		return
 	if d.get("kind", "") == "tundra_den_bear":
 		if style == "assault" and GameState.tundra_relation_key() in ["familiar", "friendly"]:
 			if GameState.den_bear_threaten()["result"] == "fight":
@@ -298,7 +304,7 @@ func _routine_notable(d: Dictionary) -> bool:
 		GameState.eat_remains()
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear"]:
+	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
@@ -325,6 +331,12 @@ func _feed_loop() -> void:
 			_scavenger(ev)
 
 func _scavenger(ev: String) -> void:
+	if ev == "challenger":
+		if style == "cautious":
+			GameState.challenger_yield()
+		else:
+			play_combat(GameState.start_challenger_combat("carcass"))
+		return
 	if ev == "bear" and not GameState.is_identified("grizzly_bear"):
 		GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
 	elif ev == "bear" and style != "assault":

@@ -132,6 +132,12 @@
           "friendly_lead_chance": 0.5, "howl_come_chance": 0.3 }
       }
     },
+    "challenger": {
+      "_comment": "年輕的挑戰者（Phase 1.9b 第 2 步）：老年後出現的一隻年輕公狼，沿用黑狼的設定（base），一開始比你年輕、能力普通，每次回來都更強。",
+      "base": "stranger_wolf",
+      "start_age": [1.75, 2.25],
+      "start_stats": { "speed": [66, 72], "strength": [56, 62], "skill": [54, 60], "perception": [54, 60], "health_max": [92, 100] }
+    },
     "tundra_wolf_mate": {
       "_comment": "苔原狼的另一隻（母狼）：其餘設定同 tundra_wolf（base）。",
       "base": "tundra_wolf",
@@ -147,6 +153,9 @@
     "_morale_comment": "依實力差距提早示弱（同體型的對手，yields_to_stronger）：放棄門檻 + clamp((你的力量值 ÷ 牠的力量值 − start) × slope, 0, max)；威嚇成功率加上同一個值 × threaten_mult。",
     "morale": { "start": 1.05, "slope": 2.5, "max": 0.5, "threaten_mult": 0.8 },
     "attack": { "base": 0.55, "divisor": 200, "min": 0.05, "max": 0.95, "initiative": 0.1 },
+    "_first_comment": "先後與打斷（Phase 1.9 第 3 步）：每回合比雙方的速度（加上動作本身的快慢 move_speed）決定誰先動：你先動的機率 = base + (你的速度 + 動作快慢 − 對手速度) / divisor（夾在 min～max）。對手先動且打中你時，interrupt 的機率打斷這回合的攻擊（猛撲最容易被打斷、騷擾最不容易）。你先動而咬中時，牠被咬得一頓，反擊打中的機率 × stagger_mult。對峙中的「先出手」一定是你先動。對手的速度：opponents 的 speed，具名的狼用牠自己的速度。",
+    "first": { "base": 0.5, "divisor": 70, "min": 0.15, "max": 0.85, "move_speed": { "bite": 0, "lunge": -12, "harass": 10, "pursue": 0 },
+      "interrupt": { "bite": 0.4, "lunge": 0.6, "harass": 0.25, "pursue": 0.4 }, "stagger_mult": 0.7 },
     "wolf_damage": { "base": 6, "strength_mult": 0.12, "spread": 3 },
     "opponent_hit": { "base": 0.45, "divisor": 200, "min": 0.05, "max": 0.9 },
     "moves": {
@@ -170,11 +179,11 @@
     "_opponents_comment": "對手：power 力量值、hp 耐力、damage 傷害範圍、parts 打中狼的部位比例、give_up_ratio 耐力低於這個比例（÷ stake 倍率）就放棄、threat_resist 抗威嚇。",
     "opponents": {
       "grizzly_bear": {
-        "adult": { "power": 170, "hp": 300, "damage": [36, 56], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.28, "threat_resist": 0.45, "stamina": 280, "swing_cost": 6, "hurt_drain": 0.5, "stamina_give_up": 0.2, "hit_divisor": 300 },
-        "juvenile": { "power": 75, "hp": 45, "damage": [5, 12], "parts": { "shoulder": 0.4, "leg": 0.4, "face": 0.2 }, "give_up_ratio": 0.6, "threat_resist": 0.1 }
+        "adult": { "speed": 52, "power": 170, "hp": 300, "damage": [36, 56], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.28, "threat_resist": 0.45, "stamina": 280, "swing_cost": 6, "hurt_drain": 0.5, "stamina_give_up": 0.2, "hit_divisor": 300 },
+        "juvenile": { "speed": 50, "power": 75, "hp": 45, "damage": [5, 12], "parts": { "shoulder": 0.4, "leg": 0.4, "face": 0.2 }, "give_up_ratio": 0.6, "threat_resist": 0.1 }
       },
       "red_fox": {
-        "adult": { "power": 30, "hp": 18, "damage": [1, 4], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.9, "threat_resist": -0.4 }
+        "adult": { "speed": 72, "power": 30, "hp": 18, "damage": [1, 4], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.9, "threat_resist": -0.4 }
       }
     }
   },
@@ -312,6 +321,15 @@
       }
     }
   },
+  "_elder_comment": "老年（Phase 1.9b 第 2 步，提案之十二 C）。teeth：牙齒磨損，進入老年後每年咬合傷害 − per_year（最低 min），搏鬥時力量值也打 power_share 的折扣（獵倒大型獵物越來越難）。experience：老狼看得最準，大型獵物的體況一眼就看出來；季節卡片提早一季感覺到年況。challenger：年輕的挑戰者，進入老年後 first_days 天內出現，之後每 return_days 天回來一次（打贏後牠走，下次更強 + grow；讓了或輸了，下次來得更快 × yield_return_mult）；你在探索或吃東西時找上門（探索時 explore_chance）。lie_down：很老、很虛弱時（老年 min_elder_years 年以上，或血量上限低於 max_health_below）多一個選項「找一個安靜的地方躺下」。",
+  "elder": {
+    "teeth": { "per_year": 0.07, "min": 0.6, "power_share": 0.5 },
+    "challenger": { "first_days": [5, 15], "return_days": [10, 16], "yield_return_mult": 0.6, "grow": 3, "explore_chance": 0.5 },
+    "lie_down": { "min_elder_years": 3.0, "max_health_below": 70 }
+  },
+  "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
+  "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
+    "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },
   "_year_comment": "年況（1.8 第 11 步，提案之十二 A）：每年春天決定這一年的冬季（暖冬、一般、嚴冬）與夏季（乾、一般、濕），不直接告訴玩家，從季節卡片、雪況、獵物的體況慢慢察覺。severe_max_streak：嚴冬最多連續幾年。snow：冬季（含秋末、春初）的雪況權重倍率；weak_mult：冬季虛弱的比例倍率（大型獵物）；moose_tick_spring：暖冬後春季駝鹿虛弱的倍率（冬蜱）；cold_mult：苔原嚴寒消耗；winter_kill_extra：風雪後凍死的動物多幾具。summer：fire 大火的年機率倍率、berries 漿果倍率、storm 暴雨倍率。",
   "year": {
     "winter": { "mild": 0.25, "normal": 0.5, "severe": 0.25 },

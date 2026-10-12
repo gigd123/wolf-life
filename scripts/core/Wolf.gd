@@ -52,6 +52,14 @@ func _init() -> void:
 	health = health_max
 	start_stats = {"speed": speed, "strength": strength, "skill": skill, "perception": perception, "health_max": health_max}
 
+# 老年的牙齒磨損（Phase 1.9b 第 2 步）：咬合傷害的倍率，進入老年後逐年下降。
+func teeth_mult() -> float:
+	var adult_end: float = float(GameData.balance.get("life_stage_ages", {}).get("adult_end", 6.0))
+	if age_years < adult_end:
+		return 1.0
+	var t: Dictionary = GameData.balance.get("elder", {}).get("teeth", {})
+	return max(float(t.get("min", 0.6)), 1.0 - float(t.get("per_year", 0.07)) * (age_years - adult_end))
+
 func life_stage() -> int:
 	var ages: Dictionary = GameData.balance.get("life_stage_ages", {})
 	var subadult_end: float = float(ages.get("subadult_end", 2.0))
