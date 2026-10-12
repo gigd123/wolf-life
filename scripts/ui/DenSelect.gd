@@ -73,7 +73,9 @@ func _show_map(map_id: String) -> void:
 		if not bool(GameData.regions().get(region_id, {}).get("can_den", false)):
 			continue
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(220, 80)
+		# 固定寬度、文字換行：兩欄要放進 640 寬（2026-10-13 xvfb 量到說明長的地圖寬 736）
+		btn.custom_minimum_size = Vector2(300, 80)
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.text = tr("region." + str(region_id)) + "\n" + tr("den." + str(region_id) + ".desc")
 		var tile: Texture2D = ArtLibrary.icon("region_tile." + str(region_id))
 		btn.icon = tile if tile != null else PixelArt.make_region_tile(str(region_id), "spring", Vector2i(40, 40))

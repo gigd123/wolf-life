@@ -78,6 +78,7 @@ var current_combat: Combat = null
 var combat_notes: Array[String] = []
 var combat_wolf_pose: String = "threaten"
 var combat_anim: CombatAnimator # 1.9 第 2 步：戰鬥回合的補間動畫
+var combat_anim_btn: Button # 動畫速度切換，固定在戰鬥畫面右上角（不占選項列的高度）
 var combat_opp_action: String = "idle"
 
 var rest_overlay: Panel
@@ -506,7 +507,8 @@ func _build_hunt_overlay() -> void:
 	center.anchor_bottom = 1.0
 	hunt_overlay.add_child(center)
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(560, 0)
+	# 固定寬度：選項列的代價、因素文字不能把面板撐出 640（2026-10-13 xvfb 量到戰鬥畫面寬 753）
+	box.custom_minimum_size = Vector2(600, 0)
 	center.add_child(box)
 	var sprite_center := CenterContainer.new()
 	box.add_child(sprite_center)
@@ -535,6 +537,22 @@ func _build_hunt_overlay() -> void:
 	box.add_child(hunt_buttons_box)
 	hunt_strip = _make_session_strip()
 	box.add_child(hunt_strip)
+	# 動畫速度（一般／快／略過），按一下切換；播放中按一下略過
+	combat_anim_btn = Button.new()
+	combat_anim_btn.flat = true
+	combat_anim_btn.visible = false
+	combat_anim_btn.add_theme_font_size_override("font_size", 11)
+	combat_anim_btn.anchor_left = 1.0
+	combat_anim_btn.anchor_right = 1.0
+	combat_anim_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	combat_anim_btn.offset_right = -4
+	combat_anim_btn.offset_top = 2
+	combat_anim_btn.pressed.connect(func():
+		if combat_anim.playing:
+			combat_anim.skip()
+			return
+		combat_anim_btn.text = tr("combat.anim." + CombatAnimator.next_mode()))
+	hunt_overlay.add_child(combat_anim_btn)
 
 func _build_rest_overlay() -> void:
 	rest_overlay = Panel.new()
@@ -1214,13 +1232,33 @@ func _strip_height(strip: RichTextLabel, lines: int) -> float:
 	var line_h: float = strip.get_theme_font("normal_font").get_height(12) + strip.get_theme_constant("line_separation")
 	return line_h * lines + 6
 
-# 選項多（5 個以上）時，狩獵畫面的紀錄縮成 2 行、角色圖縮小，整個畫面才放得進 640×360。
-func _fit_hunt_layout(option_count: int) -> void:
-	var compact: bool = option_count >= 5
-	hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, 2 if compact else STRIP_LINES)
-	var h: float = 32.0 if compact else 40.0
+# 狩獵、戰鬥畫面要放進 640×360：先用一般大小，畫好後量內容高度，超過畫面才依序縮小
+# （紀錄 3 → 2 行、角色圖 40 → 32、紀錄 → 1 行、角色圖 → 24、狩獵時拿掉角色圖）。2026-10-13 xvfb 量到選項 6 個時底部紀錄被擠出畫面。
+func _fit_hunt_layout(_option_count: int) -> void:
+	hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, STRIP_LINES)
+	_set_hunt_sprite_height(40.0)
+	hunt_wolf_sprite.get_parent().get_parent().visible = true
+	_shrink_hunt_layout.call_deferred()
+
+func _set_hunt_sprite_height(h: float) -> void:
 	for sprite in [hunt_wolf_sprite, hunt_sprite]:
 		sprite.custom_minimum_size = Vector2(h * 1.8, h)
+
+func _shrink_hunt_layout() -> void:
+	var box: Control = hunt_message.get_parent()
+	var limit: float = get_viewport_rect().size.y - 6.0
+	var tiers: Array[Callable] = [
+		func(): hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, 2),
+		func(): _set_hunt_sprite_height(32.0),
+		func(): hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, 1),
+		func(): _set_hunt_sprite_height(24.0),
+		# 最後：狩獵（不是戰鬥，沒有動畫）時拿掉角色圖
+		func(): hunt_wolf_sprite.get_parent().get_parent().visible = current_combat != null,
+	]
+	for tier in tiers:
+		if box.get_combined_minimum_size().y <= limit:
+			return
+		tier.call()
 
 # 遭遇畫面上的選擇按鈕都經過這裡：按下時開新的一段紀錄，處理完再檢查遭遇是否結束。
 func _session_choice(label: String, callback: Callable) -> Callable:
@@ -1639,7 +1677,7 @@ func _on_track() -> void:
 	else:
 		_log(tr("log.track.fail"))
 		var reason: String = result.get("reason_key", "")
-		if reason != "":
+		if _has_text(reason):
 			_log(tr(reason).replace("{animal}", animal_name))
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
@@ -2425,6 +2463,7 @@ func _render_hunt_stage() -> void:
 		hunt_overlay.visible = false
 		return
 	hunt_overlay.visible = true
+	combat_anim_btn.visible = false
 	_clear_children(hunt_buttons_box)
 	var animal_name: String = _hunt_prey_name()
 	# 追擊時獵物在跑；狼的姿勢依階段：觀察、潛近伏低，追擊奔跑，撲抓、搏鬥撲擊
@@ -2492,6 +2531,10 @@ func _render_hunt_stage() -> void:
 	)
 	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
+# 失敗原因的鍵由因素組出來（reason.<因素>），沒寫原因文字的因素就不顯示，避免畫面出現原始的鍵名（2026-10-13）。
+func _has_text(key: String) -> bool:
+	return key != "" and tr(key) != key
+
 func _hunt_prey_name() -> String:
 	var name: String = _prey_name(current_hunt.animal_id, current_hunt.life_stage)
 	return (tr("explore.injured") + name) if current_hunt.injured else name
@@ -2536,11 +2579,17 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 	row.add_child(detail)
 	if cost != "":
 		var cost_label := _make_small_rich_label()
+		cost_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		cost_label.text = cost
 		detail.add_child(cost_label)
 	if info.has("factors"):
+		# 因素只占一行（戰鬥選項多，換行會超出畫面高度）；放不下時以「…」截斷，完整內容在滑鼠提示
 		var factor_label := Label.new()
 		factor_label.text = _format_factors(info["factors"])
+		factor_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		factor_label.clip_text = true
+		factor_label.tooltip_text = factor_label.text
+		factor_label.mouse_filter = Control.MOUSE_FILTER_PASS
 		factor_label.add_theme_font_size_override("font_size", 12)
 		factor_label.modulate = Color(0.8, 0.85, 0.8)
 		detail.add_child(factor_label)
@@ -2624,7 +2673,7 @@ func _resolve_stage(stage_result: Dictionary) -> void:
 	if text_key != "":
 		_log(tr(text_key).replace("{animal}", animal_name))
 	var reason_key: String = stage_result.get("reason_key", "")
-	if reason_key != "":
+	if _has_text(reason_key):
 		_log(tr(reason_key).replace("{animal}", animal_name))
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_finish_hunt()
@@ -3422,16 +3471,8 @@ func _render_combat() -> void:
 	for opt in c.options():
 		var id: String = opt["id"]
 		_add_hunt_choice(tr(opt["label_key"]), opt, func(): _on_combat_choice(id))
-	# 動畫速度（一般／快／略過），按一下切換
-	var anim_btn := Button.new()
-	anim_btn.text = tr("combat.anim." + CombatAnimator.mode())
-	anim_btn.flat = true
-	anim_btn.pressed.connect(func():
-		if combat_anim.playing:
-			combat_anim.skip()
-			return
-		anim_btn.text = tr("combat.anim." + CombatAnimator.next_mode()))
-	hunt_buttons_box.add_child(anim_btn)
+	combat_anim_btn.text = tr("combat.anim." + CombatAnimator.mode())
+	combat_anim_btn.visible = true
 	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
 # 試玩指標：有成功率的選擇裡，是不是選了最高的那個。
@@ -3539,7 +3580,7 @@ func _build_card_overlay() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 	center.add_child(panel)
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(420, 0)
+	box.custom_minimum_size = Vector2(520, 0)
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
 	var card_sprite_center := CenterContainer.new()
@@ -3568,7 +3609,11 @@ func _build_card_overlay() -> void:
 func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
 	card_wolf.visible = false
 	card_title.text = title
+	card_body.fit_content = true
+	card_body.scroll_active = false
+	card_body.custom_minimum_size.y = 0
 	card_body.text = body
+	_fit_card.call_deferred()
 	card_bg.texture = bg if bg != null else ArtLibrary.region_background(GameState.current_region, GameTime.current_season())
 	card_bg.modulate = Color(1, 1, 1) if bg != null else ArtLibrary.period_tint(GameTime.current_period())
 	_clear_children(card_buttons_box)
@@ -3583,6 +3628,18 @@ func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
 	card_buttons_box.add_child(btn)
 	card_overlay.visible = true
 	btn.grab_focus.call_deferred()
+
+# 卡片內容太長（例如成年卡）時，內文改成可捲動，「繼續」留在畫面內（2026-10-13 xvfb 量到按鈕被擠出畫面）。
+func _fit_card() -> void:
+	var panel: Control = card_body.get_parent().get_parent()
+	var limit: float = get_viewport_rect().size.y - 8.0
+	var over: float = panel.get_combined_minimum_size().y - limit
+	if over <= 0.0:
+		return
+	var h: float = card_body.get_content_height() - over
+	card_body.fit_content = false
+	card_body.scroll_active = true
+	card_body.custom_minimum_size.y = max(60.0, h)
 
 # 卡片上方放狼的外貌（成年、老年轉變用）。
 func _set_card_wolf(stage: String) -> void:

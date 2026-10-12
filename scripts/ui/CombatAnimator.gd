@@ -211,9 +211,10 @@ func _float_number(icon: Control, dmg: float, color: Color) -> void:
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	label.add_theme_constant_override("outline_size", 4)
-	label.position = Vector2(icon.size.x * 0.5 - 10, -4)
+	# 從圖示中間往上飄、停在圖示範圍內：圖示貼著畫面頂端時不會飄出畫面（2026-10-13）
+	label.position = Vector2(icon.size.x * 0.5 - 10, icon.size.y * 0.5 - 8)
 	icon.add_child(label)
 	var t := _tween()
-	t.tween_property(label, "position", label.position + Vector2(0, -22), 0.5)
+	t.tween_property(label, "position", label.position + Vector2(0, -max(8.0, icon.size.y * 0.5 - 8.0)), 0.5)
 	t.parallel().tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.2)
 	t.tween_callback(label.queue_free)

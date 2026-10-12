@@ -28,6 +28,36 @@ def walk(o, path, f):
 for f in glob.glob('data/*.json'):
     walk(json.load(open(f, encoding='utf-8')), '', f)
 
+# 用資料 ID 組出來的鍵（2026-10-13：新地形的 factor.terrain.* 漏寫，畫面出現原始鍵名）
+regions = json.load(open('data/regions.json', encoding='utf-8'))
+animals = json.load(open('data/animals.json', encoding='utf-8'))
+def need(k, why):
+    if k not in keys:
+        missing.append(f'{why}  {k}')
+for m, v in regions['maps'].items():
+    if isinstance(v, dict):
+        for k in (f'map.{m}', f'den.map.{m}.desc'):
+            need(k, 'data/regions.json maps')
+terrains = set()
+for r, v in regions['regions'].items():
+    need(f'region.{r}', 'data/regions.json')
+    if v.get('can_den'):
+        need(f'den.{r}.desc', 'data/regions.json can_den')
+    if v.get('den_bonus'):
+        need(f'ui.region_info.den_bonus.{r}', 'data/regions.json den_bonus')
+    for a in list(v.get('prey_weights', {})) + list(v.get('competitor_weights', {})):
+        need(f'animal.{a}', f'data/regions.json {r}')
+    terrains.update(v.get('terrains', []))
+for t in sorted(terrains):
+    for k in (f'explore.location.{t}', f'factor.terrain.{t}'):
+        need(k, 'data/regions.json terrains')
+for a, v in animals.items():
+    need(f'animal.{a}', 'data/animals.json')
+    kind = v.get('refuge', {}).get('kind') if isinstance(v.get('refuge'), dict) else None
+    if kind:
+        for k in (f'factor.refuge_near.{kind}', f'factor.refuge_far.{kind}', f'reason.refuge_near_{kind}'):
+            need(k, f'data/animals.json {a} refuge')
+
 for m in missing:
     print('缺少翻譯鍵：' + m)
 print(f'翻譯鍵檢查：{len(keys)} 個鍵，缺 {len(missing)} 個')
