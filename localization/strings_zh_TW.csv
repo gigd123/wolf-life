@@ -323,6 +323,12 @@ factor.cornered,牠會反擊
 factor.long_chase,追太久了
 factor.prey_tiring,牠開始累了
 factor.standing_danger,牠站定迎戰
+factor.too_young,你的身體還沒長成，扳不倒這麼大的獵物
+fuzzy.none,幾乎不可能
+fuzzy.low,機會不大
+fuzzy.some,有機會
+fuzzy.good,很有把握
+fuzzy.sure,十拿九穩
 factor.counter_risk,可能被反擊
 reason.mother_nearby,母鹿擋在前面
 reason.long_chase,追得太久，你的腳步慢了下來。
@@ -1104,3 +1110,8 @@ factor.outlook.stronger,看起來你能在受重傷之前把牠逼退
 factor.outlook.even,勢均力敵：誰先撐不住還很難說
 factor.outlook.weaker,牠很難纏：還沒逼退牠，你可能就先被打到瀕危
 factor.combat.lethal,你已經瀕危：再被打中可能會死
+yearling.title,一歲
+yearling.body,你已經和成年的狼一樣高了，腿也長了。可是看獵物、看對手，你還常常看走眼。接下來的一年，你要學的是怎麼判斷。
+first_big_kill.title,第一次
+first_big_kill.body,你獨自扳倒了一頭{animal}。牠倒下時，你才發現自己的腿在發抖。從今天起，你不再只是撿別人剩下的了。
+summary.first_big_kill,第一次獨自獵倒成年的大型獵物：{age} 歲（{animal}）

@@ -1487,7 +1487,7 @@ func _show_discovery(d: Dictionary) -> void:
 			)
 		elif ExploreSystem.can_track(d):
 			var info := GameState.track_chance()
-			_add_hunt_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+			_add_hunt_button(tr("ui.track") + "　" + tr("chance_label.success") + " " + _chance_text(float(info["chance"]), str(d.get("source", ""))), _on_track)
 			encounter_detail.text = _format_factors(info["factors"])
 	if d.get("kind", "") == "clue" and (d.get("source_kind", "") == "threat" or (d.get("source_kind", "") == "prey" and d.get("fresh_known", true) and not d.get("fresh", false))):
 		# 按鈕寫出記下的效果：不花時間，累積知識（QA-53）
@@ -1527,7 +1527,7 @@ func _add_threat_options(d: Dictionary) -> void:
 		return
 	if ExploreSystem.can_track(d):
 		var info := GameState.track_chance()
-		_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " %d%%" % int(round(float(info["chance"]) * 100.0)), _on_track)
+		_add_encounter_button(tr("ui.track") + "　" + tr("chance_label.success") + " " + _chance_text(float(info["chance"]), str(d.get("source", ""))), _on_track)
 		encounter_detail.text = tr("explore.threat_track_warning")
 	if source == "grizzly_bear":
 		_add_encounter_button(tr("ui.avoid"), _on_avoid)
@@ -1917,6 +1917,13 @@ func _process_events() -> void:
 		"tendency_changed":
 			_show_tendency_changed(event)
 			return
+		"yearling":
+			_show_card(tr("yearling.title"), tr("yearling.body"))
+			_set_card_wolf("")
+			return
+		"first_big_kill":
+			_show_card(tr("first_big_kill.title"), tr("first_big_kill.body").replace("{animal}", TextFormat.prey_name(str(event.get("animal", "")), str(event.get("stage", "adult")))))
+			return
 		"adult_transition":
 			_show_adult_transition()
 			return
@@ -2233,6 +2240,19 @@ func _prey_name(animal_id: String, life_stage: String) -> String:
 	return TextFormat.prey_name(animal_id, life_stage)
 
 # info 是 HuntSystem.options() 的一項：左邊是按鈕（名稱與成功率），右邊兩行是代價列與關鍵因素。
+# 成功率的顯示：次成年期還沒經驗時只寫模糊說法（Phase 1.7b），否則寫百分比。
+func _chance_text(chance: float, animal_id: String = "") -> String:
+	var kind: String = "fight" if current_combat != null else "hunt"
+	var id: String = animal_id
+	if id == "":
+		if current_combat != null:
+			id = current_combat.animal_id
+		elif current_hunt != null:
+			id = current_hunt.animal_id
+	if not GameState.chance_is_precise(kind, id):
+		return tr(GameState.fuzzy_chance_key(chance))
+	return "%d%%" % int(round(chance * 100.0))
+
 func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -2242,7 +2262,7 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 	if info.has("chance"):
 		# 標出成功指的是什麼（狩獵：命中／成功；戰鬥：嚇退／命中／閃開／脫身）
 		var prefix: String = tr(str(info["chance_key"])) + " " if info.has("chance_key") else ""
-		btn.text += "　" + prefix + "%d%%" % int(round(float(info["chance"]) * 100.0))
+		btn.text += "　" + prefix + _chance_text(float(info["chance"]))
 	btn.custom_minimum_size = Vector2(215, 0)
 	btn.pressed.connect(_session_choice(label, callback))
 	row.add_child(btn)

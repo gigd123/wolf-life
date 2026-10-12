@@ -302,7 +302,11 @@ func choose(id: String) -> Dictionary:
 		"retreat": _do_retreat(opt, res)
 		"submit":
 			# 示弱一定能活下來，代價是挨一下（不會致死）
-			_opponent_strikes("bite", false, res, 1.0, float(NpcWolf.cfg(animal_id).get("interaction", {}).get("submit_damage_mult", 0.6)))
+			# 次成年時，同類的狼比較容易放過示弱的年輕狼（Phase 1.7b）
+			var submit_mult: float = float(NpcWolf.cfg(animal_id).get("interaction", {}).get("submit_damage_mult", 0.6))
+			if wolf.life_stage() == Wolf.LifeStage.SUBADULT:
+				submit_mult *= float(GameData.balance.get("youth", {}).get("submit_damage_mult", 1.0))
+			_opponent_strikes("bite", false, res, 1.0, submit_mult)
 			res["notes"].append("combat.submit")
 			res["wolf_pose"] = "submit"
 			_end("submit")

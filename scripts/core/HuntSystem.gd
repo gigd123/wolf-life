@@ -118,6 +118,12 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 	# 1.7 第 3 步：搏鬥用獵物自己的力量值（和戰鬥模式同尺度），已經包含體型，不再另外扣 difficulty
 	if stats.has("fight_power"):
 		fight_state["prey_power"] = float(stats["fight_power"])
+	# Phase 1.7b：次成年期身體還沒長成，搏鬥成年的大型獵物有額外的扣減（第一年比第二年重）
+	var youth: Dictionary = GameData.balance.get("youth", {})
+	if wolf.life_stage() == Wolf.LifeStage.SUBADULT and life_stage != "juvenile" \
+			and float(stats.get("fight_power", 0.0)) >= float(youth.get("big_prey_power", 50)):
+		var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
+		fight_state["youth_penalty"] = float(youth.get("big_prey_penalty_young" if wolf.age_years < yearling else "big_prey_penalty_old", 0.0))
 	chase_style = stats.get("chase_style", {})
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:

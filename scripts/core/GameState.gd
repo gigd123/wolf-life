@@ -405,6 +405,11 @@ func _check_life_stage_transition(prev_stage: int) -> void:
 	if wolf == null:
 		return
 	var stage: int = wolf.life_stage()
+	# 一歲：身體已經和成年的狼一樣高，接下來長的是技巧與判斷（Phase 1.7b）
+	var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
+	if stage == Wolf.LifeStage.SUBADULT and wolf.age_years >= yearling and not life_log.has("yearling_age"):
+		life_log["yearling_age"] = snapped(wolf.age_years, 0.01)
+		_queue_notice({"type": "yearling"})
 	if prev_stage == Wolf.LifeStage.SUBADULT and stage != Wolf.LifeStage.SUBADULT:
 		_settle_adulthood()
 	if prev_stage != Wolf.LifeStage.ELDER and stage == Wolf.LifeStage.ELDER:
@@ -1313,6 +1318,7 @@ func action_sleep() -> Dictionary:
 func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
 		terrain: String = "", injured: bool = false) -> HuntSystem:
 	var depth: String = "simple" if injured else HuntSystem.depth_of(animal_id, life_stage)
+	_stat_inc("hunts_by_animal", animal_id) # 判斷準不準（Phase 1.7b）看同一種獵物狩獵過幾次
 	GameTime.advance_turns(HuntSystem.depth_turns(depth))
 	# 深夜對狼有利：獵物警覺降低。
 	var detection_mod: float = 0.0
@@ -1412,6 +1418,27 @@ func _on_hunt_started(hunt: HuntSystem) -> void:
 		stats["after_deer"] = list
 		life_log["stats"] = stats
 		life_log["after_deer"] = {}
+
+# 判斷準不準（Phase 1.7b，提案之七）：次成年期成功率只顯示模糊說法；同一種獵物狩獵過幾次、
+# 第二年感知夠高、或打過幾次同一種對手後才顯示數字；成年後一律顯示數字。kind："hunt" 或 "fight"。
+func chance_is_precise(kind: String, animal_id: String) -> bool:
+	if wolf == null or wolf.life_stage() != Wolf.LifeStage.SUBADULT:
+		return true
+	var f: Dictionary = GameData.balance.get("youth", {}).get("fuzzy", {})
+	var stats: Dictionary = life_log.get("stats", {})
+	if kind == "fight":
+		return int(stats.get("fights_by_animal", {}).get(animal_id, 0)) > int(f.get("known_fights", 3))
+	var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
+	if wolf.age_years >= yearling and wolf.effective_perception() >= float(f.get("perception", 60)):
+		return true
+	return int(stats.get("hunts_by_animal", {}).get(animal_id, 0)) > int(f.get("known_hunts", 5))
+
+# 模糊說法的翻譯鍵（依成功率分段）。
+func fuzzy_chance_key(chance: float) -> String:
+	for pair in GameData.balance.get("youth", {}).get("fuzzy", {}).get("labels", []):
+		if chance < float(pair[0]):
+			return str(pair[1])
+	return "fuzzy.sure"
 
 # --- 試玩紀錄的指標（SPEC 1.7「收尾」，提案之十二 E）：只記錄，不影響遊戲 ---
 # play_seconds／stage_seconds：實際遊玩時間（畫面層每幀加）；choices／best_choices：有成功率的選擇裡，選了最高的次數；
@@ -1912,6 +1939,12 @@ func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	if new_rank > current_rank:
 		life_log["biggest_prey"] = animal_id
 		life_log["biggest_prey_stage"] = life_stage
+	# 第一次獨自獵倒成年的大型獵物（Phase 1.7b 的里程碑）
+	var stats: Dictionary = GameData.animals.get(animal_id, {}).get(life_stage, {})
+	if not life_log.has("first_big_kill") and life_stage != "juvenile" \
+			and float(stats.get("fight_power", 0.0)) >= float(GameData.balance.get("youth", {}).get("big_prey_power", 50)):
+		life_log["first_big_kill"] = {"age": snapped(wolf.age_years, 0.1), "animal": animal_id, "stage": life_stage}
+		_queue_notice({"type": "first_big_kill", "animal": animal_id, "stage": life_stage})
 	wolf.clamp_stats()
 	_check_death()
 	state_changed.emit()
@@ -1930,6 +1963,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
+	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
 	c.tendency = current_tendency()
 	c.terrain = str(current_feeding.get("terrain", "")) if context == "carcass" else str(encounter.get("location", ""))
@@ -3182,6 +3216,10 @@ func _tundra_relation_add(kind: String) -> void:
 	# 避開只在還不熟的時候加分（一直避開不會變成好朋友）
 	if kind == "avoid" and tundra_relation_key() in ["familiar", "friendly"]:
 		delta = 0
+	# 被狼群接納的方向（Phase 1.7b）：年輕的狼、或這對狼只剩一隻而你們已經熟悉時，關係比較容易變好
+	if delta > 0 and (wolf.life_stage() == Wolf.LifeStage.SUBADULT \
+			or (tundra_pair().size() == 1 and tundra_relation_key() in ["familiar", "friendly"])):
+		delta = int(ceil(delta * float(GameData.balance.get("youth", {}).get("tundra_relation_mult", 1.0))))
 	for npc in tundra_pair():
 		npc.relation += delta
 

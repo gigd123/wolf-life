@@ -14,9 +14,12 @@ const ALL_STATS := ["speed", "strength", "skill", "perception", "health_max"]
 static func cfg() -> Dictionary:
 	return GameData.balance.get("growth", {})
 
+# 次成年期分兩段（Phase 1.7b，提案之七）：一歲前（subadult_young）身體長得快，一歲到成年（subadult）長技巧、感知。
 static func _stage_key(wolf: Wolf) -> String:
 	match wolf.life_stage():
-		Wolf.LifeStage.SUBADULT: return "subadult"
+		Wolf.LifeStage.SUBADULT:
+			var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
+			return "subadult_young" if wolf.age_years < yearling else "subadult"
 		Wolf.LifeStage.ELDER: return "elder"
 	return "adult"
 

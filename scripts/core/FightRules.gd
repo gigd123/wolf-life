@@ -95,6 +95,10 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	var penalty: float = float(state.get("penalty", 0.0))
 	if penalty > 0.0:
 		factors.append({"key": "factor.standing_danger", "good": false, "weight": penalty})
+	var youth_penalty: float = float(state.get("youth_penalty", 0.0))
+	if youth_penalty > 0.0:
+		factors.append({"key": "factor.too_young", "good": false, "weight": youth_penalty})
+		penalty += youth_penalty
 	# 體型巨大的獵物（駝鹿）：搏鬥本身就很難
 	var difficulty: float = float(state.get("difficulty", 0.0))
 	if difficulty > 0.0:

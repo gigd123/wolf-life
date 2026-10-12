@@ -164,7 +164,11 @@
   "poison_duration_min": 2,
   "poison_duration_max": 4,
   "poison_health_value_loss_per_day": 1,
-  "life_stage_ages": { "subadult_end": 1.16, "adult_end": 6.0 },
+  "_youth_comment": "次成年與成年的差異（Phase 1.7b，提案之七）。big_prey_power 以上的成年獵物（白尾鹿成鹿、馴鹿、駝鹿…）搏鬥時，次成年第一年扣 big_prey_penalty_young、第二年扣 big_prey_penalty_old。fuzzy：次成年期成功率只顯示模糊說法；同一種獵物狩獵過 known_hunts 次、或第二年感知 ≥ perception 時，那種獵物顯示數字；對手打過 known_fights 次後顯示數字；labels 是模糊說法的分界。submit_damage_mult：次成年時對黑狼、苔原狼示弱，牠們放你走時咬的那一口再乘這個倍率；tundra_relation_mult：次成年時和苔原狼的關係值增加再乘這個倍率。",
+  "youth": { "big_prey_power": 50, "big_prey_penalty_young": 0.15, "big_prey_penalty_old": 0.07,
+    "fuzzy": { "known_hunts": 5, "known_fights": 3, "perception": 60, "labels": [[0.15, "fuzzy.none"], [0.35, "fuzzy.low"], [0.6, "fuzzy.some"], [0.8, "fuzzy.good"], [1.01, "fuzzy.sure"]] },
+    "submit_damage_mult": 0.5, "tundra_relation_mult": 1.5 },
+  "life_stage_ages": { "subadult_end": 2.0, "yearling": 1.0, "adult_end": 6.0 },
   "elder_death_base_chance": 0.01,
   "elder_death_age_factor": 0.01,
   "elder_death_health_value_factor": 0.0005,
@@ -306,7 +310,8 @@
     "hunger_mult": [[0, 0.0], [30, 0.05], [50, 0.4], [70, 0.8], [100, 1.0], [150, 1.1]],
     "fed_streak": { "threshold": 100, "bonus_per_day": 0.05, "max_bonus": 0.3 },
     "stage_mult": {
-      "subadult": { "body": 2.0, "mind": 1.2 },
+      "subadult_young": { "body": 1.3, "mind": 0.5 },
+      "subadult": { "body": 0.25, "mind": 0.6 },
       "adult": { "body": 0.7, "mind": 0.7 },
       "elder": { "body": 0.0, "skill": 0.3, "perception": 0.0 }
     },
