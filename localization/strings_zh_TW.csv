@@ -1379,3 +1379,21 @@ factor.refuge_near.water,牠就在水邊
 factor.refuge_far.water,牠離水很遠
 explore.sign.gnawed,被啃斷的樹（樹樁上滿是牙印）
 hunt.refuge.water,水面一響，牠已經鑽進水裡，只剩一圈圈的漣漪。
+animal.cougar,美洲獅
+animal.black_bear,黑熊
+cougar.ambush.unknown,一道黃褐色的影子從岩石上撲下來，爪子劃過你的背！你損失了 {n} 點血量。
+cougar.ambush.known,美洲獅從暗處撲了下來，爪子劃過你的背！你損失了 {n} 點血量。
+cougar.cache.unknown,一堆被扒過的草和土下面，露出一條{animal}的腿。有什麼東西把牠藏在這裡，還會回來吃。
+cougar.cache.known,一堆被扒過的草和土下面，藏著一頭{animal}。是美洲獅的獵物，牠還會回來。
+cougar.cache.eat,扒開來偷吃
+combat.stake.carcass.cougar,牠伏低身子，尾巴左右甩動，不打算讓出牠藏的獵物。
+combat.stake.encounter.cougar,牠沒有退，壓低耳朵盯著你，準備再撲一次。
+combat.stake.carcass.black_bear,牠站起來嗅了嗅，又四腳著地，慢慢朝你的獵物走過來。
+scavenger.cougar.arrive,藏獵物的主人回來了：一頭美洲獅從岩石後面盯著你。
+scavenger.cougar.arrive.first,一頭你沒見過的黃褐色大貓從岩石後面盯著你，尾巴一甩一甩。這是牠的獵物。
+scavenger.cougar.returning,你回來時，美洲獅正伏在殘骸上。
+scavenger.cougar.returning.first,你回來時，一頭黃褐色的大貓正伏在殘骸上。
+scavenger.black_bear.arrive,一頭黑熊被氣味引來，朝你的獵物走過來。
+scavenger.black_bear.arrive.first,一頭比灰熊小、毛色烏黑的熊被氣味引來，朝你的獵物走過來。
+scavenger.black_bear.returning,你回來時，一頭黑熊正在吃你的獵物。
+scavenger.black_bear.returning.first,你回來時，一頭毛色烏黑的熊正在吃你的獵物。

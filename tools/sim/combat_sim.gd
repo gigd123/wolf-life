@@ -10,6 +10,7 @@ const WOLVES := [["次成年 40", 40, 40, 40, 80], ["成年 60", 60, 60, 60, 100
 const OPPONENTS := [["灰熊（搶食）", "grizzly_bear", "adult", "carcass", false], ["灰熊（遭遇）", "grizzly_bear", "adult", "encounter", false],
 	["母熊", "grizzly_bear", "adult", "encounter", true], ["幼熊", "grizzly_bear", "juvenile", "encounter", false],
 	["狐狸（偷食）", "red_fox", "adult", "carcass", false],
+	["美洲獅（伏擊）", "cougar", "adult", "encounter", false], ["美洲獅（藏屍）", "cougar", "adult", "carcass", false], ["黑熊（搶食）", "black_bear", "adult", "carcass", false],
 	["陌生灰狼 壯年", "stranger_wolf", "prime", "meet", false], ["陌生灰狼 地盤", "stranger_wolf", "prime", "territory", false],
 	["陌生灰狼 7 歲", "stranger_wolf", "old", "meet", false]]
 const POLICIES := ["fight", "lunge", "harass", "threaten", "to_death"]

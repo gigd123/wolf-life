@@ -51,6 +51,13 @@
       "buck": { "sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "cougar": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/cougar_sheet.png", "rows": { "idle": 0, "move": 1 },
+        "poses": { "attack": "res://assets/art/sprites/animals/cougar_bite.png", "hurt": "res://assets/art/sprites/animals/cougar_hurt.png", "threaten": "res://assets/art/sprites/animals/cougar_threaten.png" } }
+    },
+    "black_bear": {
+      "adult": { "sheet": "res://assets/art/sprites/animals/blackbear_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } }
+    },
     "grizzly_bear": {
       "adult": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },

@@ -670,6 +670,61 @@ func available_actions() -> Array[String]:
 		actions.append("lie_down")
 	return actions
 
+# --- 美洲獅、黑熊（Phase 2 第 3 步）---
+func _cougar_cfg() -> Dictionary:
+	return GameData.balance.get("cougar", {})
+
+func _black_bear_cfg() -> Dictionary:
+	return GameData.balance.get("black_bear", {})
+
+# 黑熊在這一區、這一季出沒的倍率（冬眠時 0）
+func black_bear_mult() -> float:
+	var cfg := _black_bear_cfg()
+	if not cfg.get("seasons", []).has(GameTime.current_season()):
+		return 0.0
+	return float(cfg.get("regions", {}).get(current_region, 0.0))
+
+func _cougar_here() -> float:
+	return float(_cougar_cfg().get("regions", {}).get(current_region, 0.0))
+
+# 探索時：美洲獅的伏擊（清晨、黃昏、深夜；次成年、老年、帶傷的狼更常被盯上），或發現牠藏起來的獵物
+func _maybe_cougar() -> bool:
+	var here: float = _cougar_here()
+	if here <= 0.0 or blizzard_here():
+		return false
+	var cfg := _cougar_cfg()
+	var vulnerable: bool = wolf.life_stage() != Wolf.LifeStage.ADULT or wolf.injury != Wolf.Injury.NONE
+	if cfg.get("ambush_periods", []).has(GameTime.current_period()) \
+			and RNGService.chance(float(cfg.get("ambush_chance", 0.006)) * here * (float(cfg.get("vulnerable_mult", 5.0)) if vulnerable else 1.0)):
+		var d: Array = cfg.get("ambush_damage", [12, 24])
+		var hit := FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(d[0]), int(d[1]))), FightRules.opponent_profile("cougar", "adult").get("parts", {}), "cougar.encounter", false)
+		current_discovery = {"kind": "cougar_ambush", "location": _random_terrain(current_region), "damage": hit["damage"], "known": is_identified("cougar")}
+		identify("cougar", false)
+		life_log["cougar_ambushes"] = int(life_log.get("cougar_ambushes", 0)) + 1
+		return true
+	if RNGService.chance(float(cfg.get("cache_chance", 0.05)) * here):
+		current_discovery = {"kind": "cougar_cache", "location": _random_terrain(current_region), "animal_id": str(RNGService.weighted_pick(cfg.get("cache_animals", {"mule_deer": 1}))),
+			"known": is_identified("cougar")}
+		return true
+	return false
+
+# 偷吃美洲獅藏起來的獵物：牠已經吃掉一段；吃的時候牠可能回來
+func eat_cougar_cache() -> void:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	record_decision("cougar.cache.eat")
+	start_feeding(str(d.get("animal_id", "mule_deer")), "adult", str(d.get("location", "")))
+	current_feeding["segments_left"] = max(1, int(current_feeding.get("segments_left", 1)) - 1)
+	current_feeding["cougar"] = true
+	life_log["cougar_caches"] = int(life_log.get("cougar_caches", 0)) + 1
+	state_changed.emit()
+
+func start_cougar_ambush_combat() -> Combat:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	identify("cougar")
+	return start_combat("cougar", "adult", "encounter", {"direct": true, "damage": float(d.get("damage", 0.0)), "location": str(d.get("location", ""))})
+
 # --- 老年（Phase 1.9b 第 2 步）---
 func _elder_cfg() -> Dictionary:
 	return GameData.balance.get("elder", {})
@@ -1030,6 +1085,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		state_changed.emit()
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
+	# 美洲獅：伏擊、藏起來的獵物（Phase 2 第 3 步）
+	if _maybe_cougar():
+		state_changed.emit()
+		return current_discovery
 	# 年輕的挑戰者（1.9b 第 2 步）
 	if _maybe_challenger_explore():
 		state_changed.emit()
@@ -2456,8 +2515,13 @@ func feed_once() -> Dictionary:
 	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
 	var event: String = ""
 	if int(current_feeding["segments_left"]) > 0:
+		# 美洲獅回來找牠藏的獵物；黑熊被氣味引來（Phase 2 第 3 步）
+		if bool(current_feeding.get("cougar", false)) and RNGService.chance(float(_cougar_cfg().get("return_chance", 0.25))):
+			event = "cougar"
+		elif RNGService.chance(float(_black_bear_cfg().get("feed_chance", 0.06)) * black_bear_mult()):
+			event = "black_bear"
 		# 年輕的挑戰者來搶殘骸（1.9b 第 2 步）
-		if challenger_due() and RNGService.chance(0.5):
+		elif challenger_due() and RNGService.chance(0.5):
 			_ensure_challenger()
 			event = "challenger"
 		elif RNGService.chance(float(chances["bear"]) * threat_mult()):
@@ -2556,6 +2620,8 @@ func action_return_to_carcass() -> Dictionary:
 		event = "wolverine"
 	elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
 		event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
+	elif RNGService.chance(float(_black_bear_cfg().get("return_chance", 0.12)) * black_bear_mult()):
+		event = "black_bear"
 	elif RNGService.chance(fox_chance(float(cfg.get("return_fox_chance", 0.2)))):
 		event = "fox"
 	state_changed.emit()
@@ -2625,6 +2691,8 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	if animal_id == "grizzly_bear":
 		identify(animal_id)
 		_learn_danger(animal_id)
+	if animal_id in ["cougar", "black_bear"]:
+		identify(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
 	# 在自己的地盤和黑狼、苔原狼衝突：你更拚（1.9b 第 1 步）
@@ -2644,7 +2712,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	match context:
 		"carcass":
 			match animal_id:
-				"grizzly_bear": c.yields = ["grab", "abandon"]
+				"grizzly_bear", "cougar", "black_bear": c.yields = ["grab", "abandon"]
 				"wolverine": c.yields = ["share", "abandon"]
 				"tundra_wolf": c.yields = ["let_eat", "guard_together", "abandon"]
 				_: c.yields = ["ignore"]

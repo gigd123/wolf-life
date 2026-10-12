@@ -1504,6 +1504,9 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") == "challenger":
 		_show_challenger(d, false)
 		return
+	if d.get("kind", "") in ["cougar_ambush", "cougar_cache"]:
+		_show_cougar(d)
+		return
 	var text := _discovery_text(d)
 	_log(text)
 	encounter_message.text = text
@@ -1888,6 +1891,13 @@ func _scavenger_text_key(event: String) -> String:
 func _show_scavenger(event: String, returning: bool, intro_logged: bool = false) -> void:
 	if event == "challenger":
 		_show_challenger({"first": int(GameState.life_log.get("challenger_visits", 0)) == 0}, true)
+		return
+	# 美洲獅回來找牠的獵物、黑熊被氣味引來（Phase 2 第 3 步）
+	if event in ["cougar", "black_bear"]:
+		var known: bool = GameState.is_identified(event)
+		if not intro_logged:
+			_log(tr("scavenger.%s.%s%s" % [event, "returning" if returning else "arrive", "" if known else ".first"]))
+		_begin_combat(GameState.start_combat(event, "adult", "carcass"), "move")
 		return
 	if event == "tundra_wait":
 		var text: String = _tt("scavenger.tundra_wait")
@@ -3092,6 +3102,38 @@ func _show_tundra_den(d: Dictionary) -> void:
 		encounter_overlay.visible = false
 		_refresh()
 	)
+	encounter_overlay.visible = true
+
+# 美洲獅（Phase 2 第 3 步）：伏擊（先挨一下，接著戰鬥或撤退）、發現牠藏起來的獵物（偷吃或離開）。
+func _show_cougar(d: Dictionary) -> void:
+	var known: String = "known" if d.get("known", false) else "unknown"
+	var ambush: bool = d.get("kind", "") == "cougar_ambush"
+	var text: String = tr("cougar.%s.%s" % ["ambush" if ambush else "cache", known]).replace("{animal}", _prey_name(str(d.get("animal_id", "mule_deer")), "adult")) \
+		.replace("{n}", str(int(d.get("damage", 0))))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	if ambush:
+		_set_creature(encounter_sprite, "cougar", "adult", "attack")
+		_add_encounter_button(tr("ui.continue"), func():
+			_begin_combat(GameState.start_cougar_ambush_combat(), "attack"))
+	else:
+		var carcass_tex: Texture2D = ArtLibrary.carcass(str(d.get("animal_id", "mule_deer")))
+		if carcass_tex != null:
+			encounter_sprite.show_static(carcass_tex)
+		_add_encounter_button(tr("cougar.cache.eat"), func():
+			GameState.eat_cougar_cache()
+			_show_feeding())
+		_add_encounter_button(tr("ui.leave"), func():
+			GameState.clear_discovery()
+			encounter_overlay.visible = false
+			_refresh())
 	encounter_overlay.visible = true
 
 # 最後一章（1.9b 第 2 步）：讓玩家選擇結束的方式

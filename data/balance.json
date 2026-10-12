@@ -184,6 +184,13 @@
       },
       "red_fox": {
         "adult": { "speed": 72, "power": 30, "hp": 18, "damage": [1, 4], "parts": { "leg": 0.6, "face": 0.4 }, "give_up_ratio": 0.9, "threat_resist": -0.4 }
+      },
+      "_cougar_comment": "Phase 2 第 3 步。美洲獅：伏擊者，速度快、爪牙致命，但不想為了一具殘骸拚命（守殘骸時放棄得早）。黑熊：比灰熊弱很多，單狼有機會嚇走或耗走牠，但牠也可能把你趕走。",
+      "cougar": {
+        "adult": { "speed": 74, "power": 135, "hp": 110, "damage": [13, 25], "parts": { "face": 0.3, "shoulder": 0.4, "leg": 0.3 }, "give_up_ratio": 0.42, "threat_resist": 0.3 }
+      },
+      "black_bear": {
+        "adult": { "speed": 50, "power": 125, "hp": 160, "damage": [10, 22], "parts": { "shoulder": 0.6, "leg": 0.25, "face": 0.15 }, "give_up_ratio": 0.45, "threat_resist": 0.15, "stamina": 150, "swing_cost": 6, "hurt_drain": 0.5, "stamina_give_up": 0.3, "hit_divisor": 300 }
       }
     }
   },
@@ -333,6 +340,13 @@
     "challenger": { "first_days": [5, 15], "return_days": [10, 16], "yield_return_mult": 0.6, "grow": 3, "explore_chance": 0.5 },
     "lie_down": { "min_elder_years": 3.0, "max_health_below": 70 }
   },
+  "_cougar_comment": "美洲獅（Phase 2 第 3 步）：regions 是牠出沒的區域與倍率。探索時 cache_chance 發現牠藏起來的獵物（被草和土蓋住，cache_animals），可以偷吃（牠已經吃掉一段），每吃一段 return_chance 牠回來；ambush：清晨、黃昏、深夜在牠的區域探索時，ambush_chance 的機率被撲擊（次成年、老年、帶傷的狼 × vulnerable_mult），先挨一下（ambush_damage），接著戰鬥或撤退。",
+  "cougar": { "regions": { "mountain_canyon": 1.0, "mountain_foothills": 0.7, "mountain_meadow": 0.4, "mountain_headwaters": 0.5, "forest_west": 0.6 },
+    "cache_chance": 0.05, "cache_animals": { "mule_deer": 3, "elk": 1, "bighorn_sheep": 1, "white_tailed_deer": 2 }, "return_chance": 0.25,
+    "ambush_chance": 0.006, "vulnerable_mult": 5.0, "ambush_periods": ["dawn", "dusk", "night", "predawn"], "ambush_damage": [12, 24] },
+  "_black_bear_comment": "黑熊（Phase 2 第 3 步）：森林與山腳的搶食者，春夏秋（冬眠）。在牠的區域進食時每段 feed_chance、回到殘骸時 return_chance 找上門。",
+  "black_bear": { "regions": { "forest_east": 0.8, "forest_north": 0.6, "forest_west": 1.0, "forest_south": 0.8, "mountain_foothills": 1.0, "mountain_headwaters": 0.7 },
+    "seasons": ["spring", "summer", "autumn"], "feed_chance": 0.06, "return_chance": 0.12 },
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
   "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },

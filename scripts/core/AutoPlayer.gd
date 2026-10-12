@@ -224,6 +224,16 @@ func _explore_once() -> void:
 			_:
 				GameState.watch_tundra_mob()
 		return
+	if d.get("kind", "") == "cougar_ambush":
+		play_combat(GameState.start_cougar_ambush_combat())
+		return
+	if d.get("kind", "") == "cougar_cache":
+		if GameState.wolf.hunger < 70 and style != "cautious":
+			GameState.eat_cougar_cache()
+			_feed_loop()
+		else:
+			GameState.clear_discovery()
+		return
 	if d.get("kind", "") == "challenger":
 		if style == "cautious":
 			GameState.challenger_yield()
@@ -304,7 +314,7 @@ func _routine_notable(d: Dictionary) -> bool:
 		GameState.eat_remains()
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger"]:
+	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
@@ -331,6 +341,9 @@ func _feed_loop() -> void:
 			_scavenger(ev)
 
 func _scavenger(ev: String) -> void:
+	if ev in ["cougar", "black_bear"]:
+		play_combat(GameState.start_combat(ev, "adult", "carcass"))
+		return
 	if ev == "challenger":
 		if style == "cautious":
 			GameState.challenger_yield()

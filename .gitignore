@@ -21,3 +21,4 @@ desktop.ini
 
 # 雲端 headless 測試的暫存腳本
 probe_tmp*
+__pycache__/
