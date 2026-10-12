@@ -1332,3 +1332,6 @@ challenger.confront,和牠對峙
 challenger.yield.meet,讓開
 challenger.yield.carcass,把獵物讓給牠
 challenger.yielded,你轉身走開。年輕的狼沒有追上來，只是看著你離開。
+snow.tip.light,地上一層薄雪：鹿站得穩，追擊稍難。
+snow.tip.deep,深雪：鹿陷進雪裡跑不快，但駝鹿腿長不怕；移動、探索比較累。
+snow.tip.crust,硬雪殼：狼能在雪殼上跑，鹿會踩破陷下去；駝鹿反而有利。

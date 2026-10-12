@@ -20,6 +20,7 @@ var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var explore_hint_label: Label
 var status_icons: Dictionary = {}
+var snow_icon: TextureRect # 雪況圖示（2026-10-13）
 var sleeping_now: bool = false # 睡覺結算期間（QA-70）
 var woken_encounter: Dictionary = {}
 var stamina_icon: TextureRect = null # 有圖示時取代文字
@@ -209,6 +210,14 @@ func _build_ui() -> void:
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
+	# 雪況圖示：淺雪、深雪、硬雪殼；滑鼠移上去寫雪況與對狩獵的影響
+	snow_icon = TextureRect.new()
+	snow_icon.custom_minimum_size = Vector2(20, 20)
+	snow_icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	snow_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	snow_icon.mouse_filter = Control.MOUSE_FILTER_PASS
+	snow_icon.visible = false
+	status_row.add_child(snow_icon)
 	# 有「體力不支」圖示（status.exhausted）就用圖示，沒有就用文字
 	var exhausted_tex: Texture2D = ArtLibrary.icon("status.exhausted")
 	if exhausted_tex != null:
@@ -980,6 +989,12 @@ func _refresh() -> void:
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
 	status_icons["cold"].visible = GameState.is_freezing()
+	var snow_state: String = GameState.snow_state()
+	var snow_tex: Texture2D = ArtLibrary.icon("snow." + snow_state) if snow_state != "none" else null
+	snow_icon.visible = snow_tex != null
+	if snow_tex != null:
+		snow_icon.texture = snow_tex
+		snow_icon.tooltip_text = tr("snow." + snow_state) + "\n" + tr("snow.tip." + snow_state)
 	var low_stamina: bool = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
 	stamina_warning.visible = low_stamina
 	if stamina_icon != null:
@@ -1672,6 +1687,11 @@ func _show_explore_modes() -> void:
 			encounter_overlay.visible = false
 			_show_discovery(GameState.action_explore(m))
 		)
+		# 探索方式的小圖示（2026-10-13）
+		var last: Node = encounter_buttons_box.get_child(encounter_buttons_box.get_child_count() - 1)
+		if last is Button and ArtLibrary.icon("explore." + mode) != null:
+			(last as Button).icon = ArtLibrary.icon("explore." + mode)
+			(last as Button).alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_add_encounter_button(tr("explore.mode.until"), func():
 		encounter_overlay.visible = false
 		var res := GameState.action_explore_until()
