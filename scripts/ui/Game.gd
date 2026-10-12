@@ -2628,7 +2628,9 @@ func _weather_text() -> String:
 		return "　" + tr("weather.blizzard")
 	if GameState.whiteout_here():
 		return "　" + tr("weather.whiteout")
-	return "" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather)
+	# 雪況寫在天氣後面（1.8 第 2 步）
+	var snow_text: String = "" if GameState.snow_state() == "none" else "　" + tr("snow." + GameState.snow_state())
+	return ("" if GameState.weather == "clear" else "　" + tr("weather." + GameState.weather)) + snow_text
 
 # 暴風雪用粒子效果（同暴雨，不需要另外的圖）：斜吹的雪片。
 func _build_snow() -> void:

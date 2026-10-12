@@ -34,7 +34,10 @@ var wolf: Wolf
 var animal_id: String
 var pending_turns: int = 0 # 狩獵中累積的時間，結束時一次結算（1.8 第 1 步）
 var end_stamina: float = 0.0 # 結束時扣掉的體力
-var ambush_bonus: float = 0.0 # 守在水邊時看到的獵物：潛近與撲抓的加成（Phase 1.7b 探索改版）
+var ambush_bonus: float = 0.0
+# 雪況（1.8 第 2 步）：這種獵物在這種雪裡，追擊與搏鬥對狼有利（+）或不利（−），依 animals.json 的 snow
+var snow: String = "none"
+var snow_mod: float = 0.0 # 守在水邊時看到的獵物：潛近與撲抓的加成（Phase 1.7b 探索改版）
 var life_stage: String
 var depth: String
 var terrain: String
@@ -412,6 +415,9 @@ func _chase_option(id: String) -> Dictionary:
 	if herd_weak > 0.0:
 		factors.append({"key": "factor.herd_weak", "good": true, "weight": herd_weak})
 		t += herd_weak
+	if snow_mod != 0.0:
+		factors.append({"key": "factor.snow." + snow + (".good" if snow_mod > 0.0 else ".bad"), "good": snow_mod > 0.0, "weight": abs(snow_mod)})
+		t += snow_mod
 	# 追太久成功率逐回合下降；獵物體力下降則較容易追上。
 	var fatigue: float = max(0, chase_round + 1 - int(cfg.get("free_rounds", 2))) * float(cfg.get("fatigue_per_round", 0.1))
 	if fatigue > 0.0:
@@ -446,9 +452,14 @@ func _chase_option(id: String) -> Dictionary:
 
 # 冬季的保護色（雪兔）：在雪地裡很難發現，發現、追蹤、搜尋都降低。
 static func camouflage(animal: String) -> float:
-	if GameTime.current_season() != "winter":
+	var camo: float = float(GameData.animals.get(animal, {}).get("winter_camouflage", 0.0))
+	if camo <= 0.0:
 		return 0.0
-	return float(GameData.animals.get(animal, {}).get("winter_camouflage", 0.0))
+	# 1.8 第 2 步：毛色依季節，雪況決定合不合。冬季有雪時白兔難找；冬季、初春沒雪時白兔在褐色地面上反而顯眼（負的＝更容易發現）
+	var white: bool = GameTime.current_season() == "winter" or (GameTime.current_season() == "spring" and GameTime.day <= 3)
+	if not white:
+		return 0.0
+	return camo if GameState.snow_state() != "none" else -camo
 
 func _search_option() -> Dictionary:
 	var cfg: Dictionary = _reaction_cfg().get("search", {})
@@ -461,6 +472,9 @@ func _search_option() -> Dictionary:
 	var camo: float = camouflage(animal_id)
 	if camo > 0.0:
 		factors.append({"key": "factor.snow_camouflage", "good": false, "weight": camo})
+		diff -= camo
+	elif camo < 0.0:
+		factors.append({"key": "factor.white_on_bare", "good": true, "weight": -camo})
 		diff -= camo
 	_add_common_factors(factors)
 	return {"id": "search", "label_key": "hunt.option.search", "chance": clamp_chance(float(cfg.get("base", 0.5)) + diff),
@@ -708,6 +722,13 @@ func _do_stalk(opt: Dictionary) -> Dictionary:
 		return {"success": true, "text_key": "hunt.stalk.success", "wind_shifted": shifted}
 	# 選擇繞到下風處時，已經依當下風向重新站位，不算「風向轉了」。
 	return _flee("hunt.stalk.fail", opt["factors"], shifted and not stalk_opt.get("as_headwind", false))
+
+func set_snow(state: String) -> void:
+	snow = state
+	var table: Dictionary = GameData.animals.get(animal_id, {}).get("snow", {})
+	var by_stage: Dictionary = table.get(life_stage, table) if table.get(life_stage, null) is Dictionary else table
+	snow_mod = float(by_stage.get(state, 0.0))
+	fight_state["snow_bonus"] = snow_mod * float(_tuning().get("chase", {}).get("snow_fight_mult", 0.5))
 
 func _do_catch_breath() -> Dictionary:
 	var b: Dictionary = GameData.balance.get("burst", {})

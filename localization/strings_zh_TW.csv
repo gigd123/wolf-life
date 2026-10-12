@@ -1166,3 +1166,15 @@ hunt.option.catch_breath,停下喘口氣
 hunt.catch_breath.ok,你停下來大口喘氣，牠也拉開了一段距離，但還在視線裡。
 hunt.catch_breath.lost,你停下來喘氣，再抬頭時牠已經不見了。
 factor.prey_may_escape,牠可能趁機跑掉
+snow.light,淺雪
+snow.deep,深雪
+snow.crust,硬雪殼
+factor.snow.light.good,淺雪
+factor.snow.light.bad,淺雪裡牠站得穩
+factor.snow.deep.good,牠陷在深雪裡
+factor.snow.deep.bad,深雪拖慢了你，牠的長腿不受影響
+factor.snow.crust.good,硬雪殼撐不住牠
+factor.snow.crust.bad,雪殼割著你的腳，牠卻踩得過去
+factor.snow_fight.good,牠在雪裡站不穩
+factor.snow_fight.bad,雪讓你使不上力
+factor.white_on_bare,白色的毛在褐色的地上很顯眼

@@ -1,5 +1,6 @@
 {
   "white_tailed_deer": {
+    "snow": { "light": -0.03, "deep": 0.15, "crust": 0.12 },
     "type": "prey",
     "size": "medium",
     "name_key": "animal.white_tailed_deer",
@@ -20,6 +21,7 @@
     "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "fight_power": 25, "hunger_value": 12 }
   },
   "red_fox": {
+    "snow": { "light": 0.0, "deep": -0.05, "crust": -0.03 },
     "type": "prey",
     "size": "small",
     "name_key": "animal.red_fox",
@@ -41,6 +43,7 @@
     "adult": { "detection": 50, "stamina": 25, "speed": 80, "counter_attack": 0, "fight_power": 25, "hunger_value": 12 }
   },
   "caribou": {
+    "snow": { "light": 0.0, "deep": 0.06, "crust": 0.02 },
     "type": "prey",
     "size": "medium",
     "name_key": "animal.caribou",
@@ -54,6 +57,7 @@
     "adult": { "detection": 60, "stamina": 70, "speed": 66, "counter_attack": 10, "fight_power": 60, "chase_style": { "type": "endurance_herd", "follow": 0.1, "sprint": -0.05 }, "hunger_value": 80 }
   },
   "moose": {
+    "snow": { "light": 0.0, "deep": -0.08, "crust": -0.1 },
     "type": "prey",
     "size": "large",
     "name_key": "animal.moose",

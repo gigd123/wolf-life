@@ -41,6 +41,8 @@ var pending_events: Array = []
 var events_today: int = 0
 # 陌生灰狼的範圍（開新狼時決定）；在範圍內連續停留的時段數。
 var stranger_territory: String = ""
+# 雪況（1.8 第 2 步）：{地圖: "none"|"light"|"deep"|"crust"}，每天依季節與日子決定。存檔。
+var snow: Dictionary = {}
 # 會延續的個體（Phase 1.7b 探索改版）：[{id, region, animal, stage, trait, until}]，until 是 days_lived 的期限。存檔。
 var notables: Array = []
 var hunting_notable: int = 0 # 正在獵的是哪一頭（獵到就從 notables 移除）
@@ -87,6 +89,7 @@ func new_game(start_den: String) -> void:
 	current_region = start_den
 	found_sleep_spots = {}
 	notables = []
+	snow = {}
 	region_depletion = {}
 	wind_dir = RNGService.randi_range(0, 3)
 	region_knowledge = {start_den: {"visited": true, "features": []}}
@@ -169,6 +172,7 @@ func _on_period_changed(_period_index: int) -> void:
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
 	_count_season_day()
+	_update_snow()
 	# 試玩指標：連續幾天沒有事件（提案之十二 E）
 	var m := metrics()
 	m["events"] = int(m.get("events", 0)) + events_today
@@ -854,6 +858,28 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	state_changed.emit()
 	return current_discovery
 
+# --- 雪況（1.8 第 2 步）---
+# 依 events.json 的 snow：每張地圖、每個季節的「早段／晚段」各有雪況的權重；苔原風大，硬雪殼比較多。
+# 年況（第 11 步）可以再乘倍率（snow_year_mult）。
+func _update_snow() -> void:
+	var cfg: Dictionary = GameData.events.get("snow", {})
+	var season: String = GameTime.current_season()
+	var phase: String = "early" if GameTime.day <= int(cfg.get("early_days", 4)) else "late"
+	for map_id in GameData.maps().keys():
+		var table: Dictionary = cfg.get("maps", {}).get(map_id, cfg.get("maps", {}).get("forest", {}))
+		var w: Dictionary = table.get(season + "_" + phase, table.get(season, {"none": 1}))
+		snow[map_id] = str(RNGService.weighted_pick(_snow_year_weights(w, season)))
+
+func _snow_year_weights(w: Dictionary, _season: String) -> Dictionary:
+	return w
+
+func snow_state(region_id: String = "") -> String:
+	if region_id == "":
+		region_id = current_region
+	if snow.is_empty():
+		_update_snow()
+	return str(snow.get(GameData.map_of(region_id), "none"))
+
 # 附近其他狼的氣味：黑狼的範圍在這一區或相鄰；苔原狼這陣子在這一區或相鄰。
 func _nearby_marks() -> Array:
 	var list: Array = []
@@ -1462,6 +1488,7 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
+	hunt.set_snow(snow_state())
 	_on_hunt_started(hunt)
 	hunt.tendency = current_tendency()
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
@@ -1532,6 +1559,13 @@ func _stat_inc(group: String, key: String, amount: int = 1) -> void:
 # 1.7 行動的體力消耗（balance.action_stamina_costs）：有傷時乘傷勢的體力倍率，最低停在 0。
 func _spend_action_stamina(action: String) -> void:
 	var cost: float = float(GameData.balance.get("action_stamina_costs", {}).get(action, 0))
+	# 深雪裡移動、探索比較累（1.8 第 2 步）
+	if wolf != null and snow_state() == "deep":
+		var sc: Dictionary = GameData.events.get("snow", {})
+		if action == "move_region":
+			cost += float(sc.get("deep_move_stamina", 2))
+		elif action == "explore":
+			cost += float(sc.get("deep_explore_stamina", 1))
 	if cost > 0.0 and wolf != null:
 		wolf.stamina = max(0.0, wolf.stamina - cost * wolf.injury_stamina_mult())
 
@@ -2358,7 +2392,7 @@ func prey_mults(region_id: String) -> Dictionary:
 	# 冬季的保護色：雪兔在雪地裡比較難被發現
 	for animal_id in GameData.animals.keys():
 		var camo: float = HuntSystem.camouflage(animal_id)
-		if camo > 0.0:
+		if camo != 0.0:
 			result[animal_id] = float(result.get(animal_id, 1.0)) * (1.0 - camo)
 	var after: Dictionary = _fire_cfg().get("after", {})
 	match burn_state(region_id):
@@ -3798,6 +3832,7 @@ func to_dict() -> Dictionary:
 		"current_region": current_region,
 		"found_sleep_spots": found_sleep_spots,
 		"notables": notables,
+		"snow": snow,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
 		"wind_dir": wind_dir,
@@ -3835,6 +3870,7 @@ func load_from_dict(data: Dictionary) -> void:
 	current_region = data.get("current_region", den_region)
 	found_sleep_spots = data.get("found_sleep_spots", {})
 	notables = data.get("notables", [])
+	snow = data.get("snow", {})
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)
 	life_log = data.get("life_log", {})
