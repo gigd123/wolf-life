@@ -1340,6 +1340,9 @@ func _on_region_button(region_id: String, via_ice: bool = false, river_confirmed
 	if crossing == "thaw" and not river_confirmed:
 		_show_river_prompt(region_id)
 		return
+	if crossing == "flood" and not river_confirmed:
+		_show_flood_prompt(region_id)
+		return
 	_new_main_entry()
 	for entry in GameState.known_dangers(region_id, GameTime.current_season()):
 		_log(tr("log.danger_warning") + _knowledge_text(entry))
@@ -1357,6 +1360,22 @@ func _show_river_prompt(region_id: String) -> void:
 	encounter_detail.text = tr("river.thaw.detail")
 	_set_wolf_pose(encounter_sprite, "idle")
 	encounter_bg.texture = ArtLibrary.terrain_background("ice", GameTime.current_season()) # 春季是冰薄版
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("river.thaw.go").replace("{region}", tr("region." + region_id)), func():
+		encounter_overlay.visible = false
+		_on_region_button(region_id, false, true)
+	)
+	_add_encounter_button(tr("river.thaw.back"), func():
+		encounter_overlay.visible = false
+	)
+	encounter_overlay.visible = true
+
+# 春季進出草原的大河：融雪水急，可能被沖走一段（Phase 2 第 4 步）。
+func _show_flood_prompt(region_id: String) -> void:
+	encounter_message.text = tr("river.flood.prompt")
+	encounter_detail.text = tr("river.flood.detail")
+	_set_wolf_pose(encounter_sprite, "idle")
+	encounter_bg.texture = ArtLibrary.terrain_background("river", GameTime.current_season())
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("river.thaw.go").replace("{region}", tr("region." + region_id)), func():
 		encounter_overlay.visible = false

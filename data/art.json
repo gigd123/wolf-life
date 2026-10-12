@@ -163,6 +163,14 @@
     }
   },
   "region_backgrounds": {
+    "grassland_hills": "res://assets/art/backgrounds/regions/grassland_hills.png",
+    "grassland_hills@winter": "res://assets/art/backgrounds/regions/grassland_hills_winter.png",
+    "grassland_plains": "res://assets/art/backgrounds/regions/grassland_plains.png",
+    "grassland_plains@winter": "res://assets/art/backgrounds/regions/grassland_plains_winter.png",
+    "grassland_riverwoods": "res://assets/art/backgrounds/regions/grassland_riverwoods.png",
+    "grassland_riverwoods@winter": "res://assets/art/backgrounds/regions/grassland_riverwoods_winter.png",
+    "grassland_river": "res://assets/art/backgrounds/regions/grassland_river.png",
+    "grassland_river@winter": "res://assets/art/backgrounds/regions/grassland_river_winter.png",
     "mountain_foothills": "res://assets/art/backgrounds/regions/mountain_foothills.png",
     "mountain_foothills@winter": "res://assets/art/backgrounds/regions/mountain_foothills_winter.png",
     "mountain_meadow": "res://assets/art/backgrounds/regions/mountain_meadow.png",
@@ -200,6 +208,12 @@
     "tundra_joint_hunt": "res://assets/art/events/tundra_joint_hunt.png"
   },
   "terrain_backgrounds": {
+    "prairie": "res://assets/art/backgrounds/terrain/prairie.png",
+    "prairie@winter": "res://assets/art/backgrounds/terrain/prairie_winter.png",
+    "rolling_hills": "res://assets/art/backgrounds/terrain/rolling_hills.png",
+    "rolling_hills@winter": "res://assets/art/backgrounds/terrain/rolling_hills_winter.png",
+    "river": "res://assets/art/backgrounds/terrain/river.png",
+    "river@winter": "res://assets/art/backgrounds/terrain/river_winter.png",
     "alpine_meadow": "res://assets/art/backgrounds/terrain/alpine_meadow.png",
     "alpine_meadow@winter": "res://assets/art/backgrounds/terrain/alpine_meadow_winter.png",
     "scree": "res://assets/art/backgrounds/terrain/scree.png",
@@ -278,6 +292,10 @@
     "region_tile.tundra_central": "res://assets/art/icons/region_tile_tundra_central.png",
     "region_tile.tundra_east": "res://assets/art/icons/region_tile_tundra_east.png",
     "region_tile.tundra_north": "res://assets/art/icons/region_tile_tundra_north.png",
+    "region_tile.grassland_hills": "res://assets/art/icons/region_tile_grassland_hills.png",
+    "region_tile.grassland_plains": "res://assets/art/icons/region_tile_grassland_plains.png",
+    "region_tile.grassland_riverwoods": "res://assets/art/icons/region_tile_grassland_riverwoods.png",
+    "region_tile.grassland_river": "res://assets/art/icons/region_tile_grassland_river.png",
     "region_tile.mountain_foothills": "res://assets/art/icons/region_tile_mountain_foothills.png",
     "region_tile.mountain_meadow": "res://assets/art/icons/region_tile_mountain_meadow.png",
     "region_tile.mountain_canyon": "res://assets/art/icons/region_tile_mountain_canyon.png",

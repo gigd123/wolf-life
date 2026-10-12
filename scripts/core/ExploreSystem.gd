@@ -160,6 +160,10 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var bugling: bool = not bugle.is_empty() and str(bugle.get("season", "")) == str(ctx["season"])
 	if bugling and clue_weights.has("sound"):
 		clue_weights["sound"] = float(clue_weights["sound"]) * float(bugle.get("sound_mult", 3.0))
+	# 草原視野好：比較容易直接看到獵物（Phase 2 第 4 步）
+	var sight_mult: float = float(GameData.maps().get(GameData.map_of(region_id), {}).get("sight_mult", 1.0))
+	if sight_mult != 1.0 and clue_weights.has("sight"):
+		clue_weights["sight"] = float(clue_weights["sight"]) * sight_mult
 	var clue: String = RNGService.weighted_pick(clue_weights)
 
 	var fresh: bool = true

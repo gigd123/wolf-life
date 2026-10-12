@@ -42,6 +42,7 @@
     "maps": {
       "forest": { "autumn_early": { "none": 1 }, "autumn_late": { "none": 8, "light": 2 }, "winter_early": { "light": 6, "deep": 3, "none": 1 }, "winter_late": { "deep": 6, "crust": 3, "light": 1 }, "spring_early": { "crust": 3, "light": 3, "none": 4 }, "spring_late": { "none": 1 }, "summer": { "none": 1 } },
       "tundra": { "autumn_early": { "none": 8, "light": 2 }, "autumn_late": { "light": 6, "none": 2, "crust": 2 }, "winter_early": { "light": 3, "deep": 3, "crust": 4 }, "winter_late": { "crust": 5, "deep": 4, "light": 1 }, "spring_early": { "crust": 5, "deep": 2, "light": 3 }, "spring_late": { "light": 3, "none": 7 }, "summer": { "none": 1 } },
+      "grassland": { "autumn_early": { "none": 1 }, "autumn_late": { "none": 7, "light": 3 }, "winter_early": { "light": 6, "crust": 2, "none": 2 }, "winter_late": { "light": 4, "crust": 4, "deep": 2 }, "spring_early": { "light": 3, "crust": 2, "none": 5 }, "spring_late": { "none": 1 }, "summer": { "none": 1 } },
       "mountain": { "autumn_early": { "none": 6, "light": 4 }, "autumn_late": { "light": 5, "deep": 3, "none": 2 }, "winter_early": { "deep": 6, "light": 3, "crust": 1 }, "winter_late": { "deep": 6, "crust": 3, "light": 1 }, "spring_early": { "deep": 3, "crust": 4, "light": 3 }, "spring_late": { "light": 4, "none": 6 }, "summer": { "none": 1 } }
     }
   },
@@ -61,6 +62,8 @@
     "winter_kill": { "count_min": 1, "count_max": 3, "animals": { "caribou": 2, "moose": 1 }, "extra_days": 2, "loss_mult": 0.3, "explore_find_chance": 0.5 }
   },
   "whiteout": { "regions": ["tundra_central", "tundra_north"], "period_chance": 0.04, "periods_min": 1, "periods_max": 2, "perception_mult": 0.8, "lost_chance": 0.3 },
+  "_big_river_comment": "草原的大河（Phase 2 第 4 步）：進出大河這一區要渡河（走跨地圖連接除外）。春季融雪水急：先跳字卡，flood_chance 被沖走一段，游過去的成功率 = swim_base + ((速度 + 力量)/2 − 50) / swim_divisor，失敗時體力、飽食度大減、輕傷（不致死）；夏季水深：多花 deep_stamina 體力；秋季水淺好涉；冬季結冰走過去。",
+  "big_river": { "region": "grassland_river", "flood_season": "spring", "flood_chance": 0.35, "swim_base": 0.55, "swim_divisor": 150, "fail_stamina": 35, "fail_hunger": 8, "fail_damage": [6, 14], "ok_stamina": 10, "deep_season": "summer", "deep_stamina": 6 },
   "ice_break": { "region": "tundra_east", "season": "spring", "move_chance": 0.2, "jump_base": 0.6, "speed_divisor": 150, "crawl_chance": 0.8, "crawl_turns": 2, "fail_stamina": 100, "fail_hunger": 10, "fail_damage": 8 },
   "ravens": { "map": "tundra", "periods": ["dawn", "day", "dusk"], "period_chance": 0.03, "found_chance": 0.6, "carcass_chance_mult": 3.0, "follow_cooldown_days": 2, "leftover": { "animals": { "caribou": 2, "moose": 1 }, "segments_min": 1, "segments_max": 2 }, "feeding_bonus_per_turn": 0.04 },
   "bear_passing": {

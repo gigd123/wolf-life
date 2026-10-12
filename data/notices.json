@@ -3,6 +3,12 @@
   "_season_cards_comment": "季節卡片：full／short 是第一次與之後的描述；if 的條件：identified:<動物> 已辨識、sensed:<動物> 還沒辨識但察覺過危險（{region} 換成察覺最多次的區域）。",
   "_season_cards_by_map_comment": "苔原的季節卡片（使用者決定要補）：換季時人在苔原，或第一次在某個季節來到苔原時顯示；格式同 season_cards，另外有 seen:<life_log 的鍵>（那件事發生過）的條件。第一次與之後的精簡版分開記（life_log.seasons_seen 的 tundra:<季節>）。",
   "season_cards_by_map": {
+    "grassland": {
+      "spring": [{ "full": "season_card.grassland.spring.full", "short": "season_card.grassland.spring.short" }],
+      "summer": [{ "full": "season_card.grassland.summer.full", "short": "season_card.grassland.summer.short" }],
+      "autumn": [{ "full": "season_card.grassland.autumn.full", "short": "season_card.grassland.autumn.short" }],
+      "winter": [{ "full": "season_card.grassland.winter.full", "short": "season_card.grassland.winter.short" }]
+    },
     "mountain": {
       "spring": [{ "full": "season_card.mountain.spring.full", "short": "season_card.mountain.spring.short" }],
       "summer": [{ "full": "season_card.mountain.summer.full", "short": "season_card.mountain.summer.short" }, { "if": "identified:grizzly_bear", "text": "season_card.mountain.summer.bear_known" }],

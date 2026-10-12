@@ -994,6 +994,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 			lost_from = target_region
 			target_region = others[RNGService.randi_range(0, others.size() - 1)]
 	var ice_check: bool = link.is_empty() and ice.is_empty() and (current_region == _ice_cfg().get("region", "") or target_region == _ice_cfg().get("region", ""))
+	var big_river: String = big_river_crossing(target_region)
 	# 大火：離開躲著的溪邊或巢穴就不算躲著；走回還在燒的區域要再提示一次（QA-28）
 	if not fire.is_empty():
 		if str(fire.get("sheltered", "")) == current_region and target_region != current_region:
@@ -1045,6 +1046,8 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		_check_blizzard_here()
 		_maybe_map_season_card()
 		_maybe_blizzard_aftermath()
+		if big_river != "":
+			_after_big_river(big_river)
 		if ice_check:
 			_maybe_ice_break()
 		elif not ice.is_empty() and RNGService.chance(float(ice["break"])):
@@ -3799,6 +3802,9 @@ func _apply_env_perception() -> void:
 
 # 進出河谷（一般移動，不是地圖連結或冰面捷徑）要過河："frozen" 冬季走冰、"thaw" 春季冰薄、"wade" 夏秋涉水；不用過河回傳 ""。
 func river_crossing(target_region: String) -> String:
+	var big := big_river_crossing(target_region)
+	if big != "":
+		return big
 	var river: String = str(_ice_cfg().get("region", ""))
 	if river == "" or (current_region != river and target_region != river):
 		return ""
@@ -3810,6 +3816,42 @@ func river_crossing(target_region: String) -> String:
 	if season == str(_ice_cfg().get("season", "spring")):
 		return "thaw"
 	return "wade"
+
+# 草原的大河（Phase 2 第 4 步）：春季 flood（水急，先跳字卡）、夏季 deep、秋季 wade、冬季 frozen；不經過大河就是空字串。
+func _big_river_cfg() -> Dictionary:
+	return GameData.events.get("big_river", {})
+
+func big_river_crossing(target_region: String) -> String:
+	var river: String = str(_big_river_cfg().get("region", ""))
+	if river == "" or (current_region != river and target_region != river) or not _link_to(target_region).is_empty():
+		return ""
+	match GameTime.current_season():
+		"spring": return "flood"
+		"summer": return "deep"
+		"winter": return "frozen"
+	return "wade"
+
+# 渡過大河之後：春季可能被沖走一段，夏季水深比較累。回傳結果文字的鍵（沒事是空字串）。
+func _after_big_river(kind: String) -> void:
+	var cfg := _big_river_cfg()
+	match kind:
+		"deep":
+			wolf.stamina -= float(cfg.get("deep_stamina", 6))
+		"flood":
+			if not RNGService.chance(float(cfg.get("flood_chance", 0.35))):
+				return
+			var swim: float = HuntSystem.clamp_chance(float(cfg.get("swim_base", 0.55)) + ((wolf.effective_speed() + wolf.effective_strength()) * 0.5 - 50.0) / float(cfg.get("swim_divisor", 150)))
+			if RNGService.chance(swim):
+				wolf.stamina -= float(cfg.get("ok_stamina", 10))
+				log_message.emit(tr("river.flood.swept_ok"))
+			else:
+				var d: Array = cfg.get("fail_damage", [6, 14])
+				wolf.stamina -= float(cfg.get("fail_stamina", 35))
+				wolf.hunger -= float(cfg.get("fail_hunger", 8))
+				FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(d[0]), int(d[1]))), {"leg": 0.6, "shoulder": 0.4}, "river.flood", false)
+				log_message.emit(tr("river.flood.swept_bad"))
+			life_log["river_swept"] = int(life_log.get("river_swept", 0)) + 1
+	wolf.clamp_stats()
 
 # 春融：春季進出河谷要過河，河冰可能在腳下裂開。
 func _maybe_ice_break() -> void:

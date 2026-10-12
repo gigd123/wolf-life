@@ -11,6 +11,11 @@
         "paths": [ { "from": "tundra_south", "to": "tundra_north", "turns": 1 } ] }
     },
     "_mountain_comment": "山地（Phase 2 第 1 步）：中央的山地，地形崎嶇、移動與探索比較累；冬季高處很冷。layout：高山草甸（左上）、岩壁峽谷（右上）、山腳林地（左下）、溪流源頭（右下）。",
+    "_grassland_comment": "草原（Phase 2 第 4 步）：南方開闊的草原，視野好、沒有掩護；探索時比較容易直接看到獵物（sight_mult：目擊線索的權重倍率）。冬季風大。layout：丘陵草地（左上）、開闊草原（右上）、河岸林帶（左下）、大河（右下）。",
+    "grassland": {
+      "name_key": "map.grassland", "layout": ["grassland_hills", "grassland_plains", "grassland_riverwoods", "grassland_river"], "fire": false, "sight_mult": 2.0,
+      "cold": { "winter": { "hunger": 2, "stamina": 2 }, "spring": { "hunger": 0, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
+    },
     "mountain": {
       "name_key": "map.mountain", "layout": ["mountain_meadow", "mountain_canyon", "mountain_foothills", "mountain_headwaters"], "fire": false,
       "cold": { "winter": { "hunger": 2, "stamina": 2 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
@@ -19,7 +24,9 @@
   "links": [
     { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 10 },
     { "from": "forest_east", "to": "mountain_foothills", "turns": 2, "stamina": 6 },
-    { "from": "mountain_meadow", "to": "tundra_south", "turns": 2, "stamina": 8 }
+    { "from": "mountain_meadow", "to": "tundra_south", "turns": 2, "stamina": 8 },
+    { "from": "mountain_headwaters", "to": "grassland_riverwoods", "turns": 2, "stamina": 6 },
+    { "from": "forest_south", "to": "grassland_hills", "turns": 3, "stamina": 8 }
   ],
   "features": {
     "good_sleep_spot": { "sleep_spot": true },
@@ -30,6 +37,93 @@
     "lookout": {}
   },
   "regions": {
+    "grassland_hills": {
+      "name_key": "region.grassland_hills",
+      "map": "grassland",
+      "terrains": ["rolling_hills", "prairie"],
+      "main_feature": "rolling_hills",
+      "secondary_features": ["lookout", "good_sleep_spot"],
+      "adjacent": ["grassland_plains", "grassland_riverwoods"],
+      "can_den": true,
+      "terrain_stamina_modifier": 2,
+      "sleep_find_chance": 0.45,
+      "cold_mult": 1.0,
+      "prey_weights": {
+        "mule_deer": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 },
+        "hare": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 1, "autumn": 1 }
+      }
+    },
+    "grassland_plains": {
+      "name_key": "region.grassland_plains",
+      "map": "grassland",
+      "terrains": ["prairie"],
+      "main_feature": "open_prairie",
+      "secondary_features": ["lookout"],
+      "adjacent": ["grassland_hills", "grassland_river"],
+      "can_den": false,
+      "terrain_stamina_modifier": 2,
+      "sleep_find_chance": 0.2,
+      "cold_mult": 1.3,
+      "prey_weights": {
+        "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "mule_deer": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 2, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {}
+    },
+    "grassland_riverwoods": {
+      "name_key": "region.grassland_riverwoods",
+      "map": "grassland",
+      "terrains": ["forest_edge", "river_willow"],
+      "main_feature": "riverwoods",
+      "secondary_features": ["game_trail", "good_sleep_spot", "hidden_pool"],
+      "adjacent": ["grassland_hills", "grassland_river"],
+      "can_den": true,
+      "terrain_stamina_modifier": 1,
+      "sleep_find_chance": 0.6,
+      "cold_mult": 0.8,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 4, "summer": 4, "autumn": 4, "winter": 5 },
+        "elk": { "spring": 1, "summer": 1, "autumn": 2, "winter": 2 },
+        "beaver": { "spring": 2, "summer": 2, "autumn": 3, "winter": 0 },
+        "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 2, "autumn": 2 }
+      }
+    },
+    "grassland_river": {
+      "name_key": "region.grassland_river",
+      "map": "grassland",
+      "terrains": ["river", "river_willow"],
+      "main_feature": "big_river",
+      "secondary_features": ["hidden_pool"],
+      "adjacent": ["grassland_plains", "grassland_riverwoods"],
+      "can_den": false,
+      "terrain_stamina_modifier": 3,
+      "sleep_find_chance": 0.3,
+      "cold_mult": 1.0,
+      "prey_weights": {
+        "white_tailed_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "beaver": { "spring": 3, "summer": 3, "autumn": 3, "winter": 0 },
+        "mule_deer": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {}
+    },
     "mountain_foothills": {
       "name_key": "region.mountain_foothills",
       "map": "mountain",
