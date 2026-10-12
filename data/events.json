@@ -10,8 +10,8 @@
   },
   "prey_nearby": {
     "rest_chance": 0.15,
-    "animals": { "snowshoe_hare": 3, "white_tailed_deer": 1, "caribou": 1 },
-    "life_stage": { "snowshoe_hare": "adult", "white_tailed_deer": "juvenile", "caribou": "juvenile" }
+    "animals": { "snowshoe_hare": 3, "white_tailed_deer": 1, "caribou": 1, "mule_deer": 1 },
+    "life_stage": { "snowshoe_hare": "adult", "white_tailed_deer": "juvenile", "caribou": "juvenile", "mule_deer": "juvenile" }
   },
   "_rest_comment": "快轉（休息到某時段）途中的事件（SPEC 1.6「快轉被事件打斷」）：每經過一個時段判定一次；危險事件的機率依休息地點（同睡處分級）。interrupt：會打斷快轉的事件，每次快轉最多打斷一次。",
   "rest": {
@@ -41,7 +41,8 @@
   "snow": { "early_days": 4, "deep_move_stamina": 2, "deep_explore_stamina": 1,
     "maps": {
       "forest": { "autumn_early": { "none": 1 }, "autumn_late": { "none": 8, "light": 2 }, "winter_early": { "light": 6, "deep": 3, "none": 1 }, "winter_late": { "deep": 6, "crust": 3, "light": 1 }, "spring_early": { "crust": 3, "light": 3, "none": 4 }, "spring_late": { "none": 1 }, "summer": { "none": 1 } },
-      "tundra": { "autumn_early": { "none": 8, "light": 2 }, "autumn_late": { "light": 6, "none": 2, "crust": 2 }, "winter_early": { "light": 3, "deep": 3, "crust": 4 }, "winter_late": { "crust": 5, "deep": 4, "light": 1 }, "spring_early": { "crust": 5, "deep": 2, "light": 3 }, "spring_late": { "light": 3, "none": 7 }, "summer": { "none": 1 } }
+      "tundra": { "autumn_early": { "none": 8, "light": 2 }, "autumn_late": { "light": 6, "none": 2, "crust": 2 }, "winter_early": { "light": 3, "deep": 3, "crust": 4 }, "winter_late": { "crust": 5, "deep": 4, "light": 1 }, "spring_early": { "crust": 5, "deep": 2, "light": 3 }, "spring_late": { "light": 3, "none": 7 }, "summer": { "none": 1 } },
+      "mountain": { "autumn_early": { "none": 6, "light": 4 }, "autumn_late": { "light": 5, "deep": 3, "none": 2 }, "winter_early": { "deep": 6, "light": 3, "crust": 1 }, "winter_late": { "deep": 6, "crust": 3, "light": 1 }, "spring_early": { "deep": 3, "crust": 4, "light": 3 }, "spring_late": { "light": 4, "none": 6 }, "summer": { "none": 1 } }
     }
   },
   "_tundra_comment": "苔原的事件（1.6 第 6d 步，見 docs/tundra-detail.md）。blizzard：冬季開始時擲 winter_chance，排定在冬季中；只影響苔原。notice：徵兆時段察覺的機率（同大火）。escape 的 low_hunger：躲著不動時飽食度低於 40 的危險度加成；retreat_stamina：頂風撤退額外消耗的體力。shelter 的 cold_mult 是風雪中嚴寒消耗的倍率（none = 沒有躲）。escape／outcome：同大火的平安率（沒有死亡，只有凍傷）。winter_kill：風雪後出現的凍死屍體。whiteout：開闊苔原、遠北偶爾起霧或刮白毛風。ice_break：春季進出河谷時要過河，move_chance 的機率河冰在腳下裂開：跳回岸上（成功率看速度）或趴低慢慢爬回（較穩、多花回合），失敗就落水（體力大減、受凍、輕傷不致死）。ravens：白天在苔原看到渡鴉盤旋（地圖上有屍體時機率較高）；跟過去 found_chance 的機率找到殘骸；feeding_bonus_per_turn：在苔原進食時，每多待一回合，搶食者找上門的機率再增加。",

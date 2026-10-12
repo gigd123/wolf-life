@@ -9,10 +9,17 @@
       "_ice_comment": "冰面捷徑（冬春）：和這張地圖接壤的跨地圖連接都少 turns_saved 回合；paths 是地圖內沿著結冰河面的直通路線（林線 ↔ 遠北 1 回合，平常要經過兩區）。break_chance：各季走到一半河冰裂開（跳出河冰事件）的機率，沒有列出的季節不能走；冬季冰厚、春季冰薄。",
       "ice": { "turns_saved": 1, "break_chance": { "winter": 0.0, "spring": 0.35 },
         "paths": [ { "from": "tundra_south", "to": "tundra_north", "turns": 1 } ] }
+    },
+    "_mountain_comment": "山地（Phase 2 第 1 步）：中央的山地，地形崎嶇、移動與探索比較累；冬季高處很冷。layout：高山草甸（左上）、岩壁峽谷（右上）、山腳林地（左下）、溪流源頭（右下）。",
+    "mountain": {
+      "name_key": "map.mountain", "layout": ["mountain_meadow", "mountain_canyon", "mountain_foothills", "mountain_headwaters"], "fire": false,
+      "cold": { "winter": { "hunger": 2, "stamina": 2 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
     }
   },
   "links": [
-    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 10 }
+    { "from": "forest_north", "to": "tundra_south", "turns": 3, "stamina": 10 },
+    { "from": "forest_east", "to": "mountain_foothills", "turns": 2, "stamina": 6 },
+    { "from": "mountain_meadow", "to": "tundra_south", "turns": 2, "stamina": 8 }
   ],
   "features": {
     "good_sleep_spot": { "sleep_spot": true },
@@ -23,6 +30,98 @@
     "lookout": {}
   },
   "regions": {
+    "mountain_foothills": {
+      "name_key": "region.mountain_foothills",
+      "map": "mountain",
+      "terrains": ["forest_edge", "stream"],
+      "main_feature": "foothills",
+      "secondary_features": ["game_trail", "good_sleep_spot", "lookout"],
+      "adjacent": ["mountain_meadow", "mountain_headwaters"],
+      "can_den": true,
+      "terrain_stamina_modifier": 2,
+      "sleep_find_chance": 0.55,
+      "cold_mult": 0.7,
+      "prey_weights": {
+        "mule_deer": { "spring": 3, "summer": 2, "autumn": 4, "winter": 6 },
+        "elk": { "spring": 2, "summer": 1, "autumn": 3, "winter": 5 },
+        "white_tailed_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "snowshoe_hare": { "spring": 3, "summer": 3, "autumn": 3, "winter": 3 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 2, "autumn": 2, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 2, "autumn": 2 }
+      }
+    },
+    "mountain_meadow": {
+      "name_key": "region.mountain_meadow",
+      "map": "mountain",
+      "terrains": ["alpine_meadow", "scree"],
+      "main_feature": "alpine_meadow",
+      "secondary_features": ["lookout", "good_sleep_spot"],
+      "adjacent": ["mountain_foothills", "mountain_canyon"],
+      "can_den": false,
+      "terrain_stamina_modifier": 4,
+      "sleep_find_chance": 0.3,
+      "cold_mult": 1.5,
+      "prey_weights": {
+        "mule_deer": { "spring": 3, "summer": 6, "autumn": 3, "winter": 0 },
+        "elk": { "spring": 3, "summer": 6, "autumn": 2, "winter": 0 },
+        "snowshoe_hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 2, "summer": 4, "autumn": 3, "winter": 0 }
+      },
+      "gather_weights": {
+        "blueberries": { "summer": 3, "autumn": 3 }
+      }
+    },
+    "mountain_canyon": {
+      "name_key": "region.mountain_canyon",
+      "map": "mountain",
+      "terrains": ["cliff", "scree"],
+      "main_feature": "canyon",
+      "secondary_features": ["good_sleep_spot", "hidden_pool"],
+      "adjacent": ["mountain_meadow", "mountain_headwaters"],
+      "can_den": true,
+      "_den_comment": "岩壁裡的巢穴最隱蔽（SPEC Phase 2）：找睡處容易；巢穴本來就不會被找上，隱蔽的好處在之後的美洲獅、人類（Phase 4）接上。",
+      "terrain_stamina_modifier": 5,
+      "sleep_find_chance": 0.7,
+      "cold_mult": 1.0,
+      "prey_weights": {
+        "mule_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
+        "snowshoe_hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
+      },
+      "gather_weights": {}
+    },
+    "mountain_headwaters": {
+      "name_key": "region.mountain_headwaters",
+      "map": "mountain",
+      "terrains": ["stream", "river_willow"],
+      "main_feature": "headwaters",
+      "secondary_features": ["hidden_pool", "game_trail"],
+      "adjacent": ["mountain_canyon", "mountain_foothills"],
+      "can_den": true,
+      "terrain_stamina_modifier": 3,
+      "sleep_find_chance": 0.45,
+      "cold_mult": 1.1,
+      "prey_weights": {
+        "mule_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 1 },
+        "elk": { "spring": 2, "summer": 2, "autumn": 2, "winter": 1 },
+        "moose": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 },
+        "snowshoe_hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }
+      },
+      "competitor_weights": {
+        "grizzly_bear": { "spring": 3, "summer": 3, "autumn": 3, "winter": 0 }
+      },
+      "gather_weights": {
+        "berries": { "summer": 1, "autumn": 1 }
+      }
+    },
     "forest_east": {
       "name_key": "region.forest_east",
       "map": "forest",

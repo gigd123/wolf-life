@@ -104,6 +104,24 @@
       "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 }, "autumn": { "healthy": 4, "average": 4, "weak": 2 } },
       "fight": { "wounds_to_kill": 3, "counter_damage_mult": 1.6, "parts": { "leg": 0.4, "shoulder": 0.35, "face": 0.25 } } }
   },
+  "mule_deer": {
+    "snow": { "light": 0.0, "deep": 0.12, "crust": 0.1 },
+    "type": "prey",
+    "size": "medium",
+    "name_key": "animal.mule_deer",
+    "_comment": "騾鹿（Phase 2 第 1 步）：比白尾鹿重、平地跑不快，被追時四腳同時離地彈跳，往上坡、岩坡跑；在崎嶇地形狼不利、平地有利（terrain_chase，和白尾鹿相反）。有狼的地方多待在高、陡、多岩石的地方。冬季成群。",
+    "herd_by_season": { "spring": 0.3, "summer": 0.2, "autumn": 0.4, "winter": 0.6 },
+    "herd_stage_mult": { "buck": 0.4 },
+    "period_activity": { "dawn": 2.0, "day": 0.5, "dusk": 2.0 },
+    "depth": { "juvenile": "simple", "adult": "standard", "buck": "full" },
+    "reactions": { "buck": { "stand": 0.3 }, "juvenile": { "hide": 0.4, "protect": 0.5 } },
+    "terrain_chase": { "scree": -0.15, "cliff": -0.15, "rocky": -0.1, "alpine_meadow": 0.05, "clearing": 0.1, "open_tundra": 0.1 },
+    "juvenile": { "detection": 30, "stamina": 35, "speed": 45, "counter_attack": 0, "fight_power": 35, "hunger_value": 40 },
+    "adult": { "detection": 55, "stamina": 55, "speed": 58, "counter_attack": 5, "fight_power": 55, "chase_style": { "type": "stott", "follow": 0.0, "sprint": 0.05 }, "hunger_value": 75 },
+    "buck": { "detection": 58, "stamina": 60, "speed": 60, "counter_attack": 25, "fight_power": 80, "chase_style": { "type": "burst_stand", "follow": -0.03, "sprint": 0.05 }, "hunger_value": 80,
+      "season_detection": { "autumn": -8 },
+      "condition_season": { "winter": { "healthy": 2, "average": 3, "weak": 5 } } }
+  },
   "grizzly_bear": {
     "type": "competitor",
     "size": "large",

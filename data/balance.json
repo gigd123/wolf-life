@@ -294,8 +294,14 @@
       "open_tundra": { "stalk": -0.15, "chase": 0.05 },
       "river_willow": { "stalk": 0.06 },
       "rocky": { "stalk": -0.05, "sprint": -0.1 },
-      "esker": { "observe": 0.1, "stalk": -0.05 }
+      "esker": { "observe": 0.1, "stalk": -0.05 },
+      "_mountain_comment": "山地的地形（Phase 2 第 1 步）：高山草甸開闊（潛近難）；碎石坡、岩壁滑腳（衝刺不利），追擊時可能摔傷（terrain_fall）；岩壁有遮蔽好潛近。",
+      "alpine_meadow": { "stalk": -0.1, "chase": 0.03 },
+      "scree": { "stalk": -0.03, "sprint": -0.1 },
+      "cliff": { "stalk": 0.05, "sprint": -0.15 }
     },
+    "_fall_comment": "地形傷害（Phase 2 第 1 步）：在碎石坡、岩壁追擊，每一回合有 chance 的機率失足摔傷（damage，多半傷腿；不會致命）。",
+    "terrain_fall": { "chance": { "scree": 0.1, "cliff": 0.12 }, "damage": [6, 14], "parts": { "leg": 0.8, "shoulder": 0.2 } },
     "_condition_comment": "大型獵物的體況（1.8 第 3 步）：season 是各季健康／普通／虛弱的比例（冬末最多虛弱）；stalk、chase、fight 是對潛近、追擊與搏鬥成功率的加減，escape 是沒追上時就此跑掉的機率加減；看得出來（觀察成功且感知 ≥ see_perception、試探、白尾鹿翹尾旗）才在因素欄寫出原因。probe：試探花的喘、讓獵物耗掉的耐力、就此跑掉的機率。",
     "condition": {
       "season": { "spring": { "healthy": 4, "average": 3, "weak": 3 }, "summer": { "healthy": 6, "average": 3, "weak": 1 }, "autumn": { "healthy": 6, "average": 3, "weak": 1 }, "winter": { "healthy": 3, "average": 3, "weak": 4 } },
@@ -351,7 +357,8 @@
       "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
       "caribou": { "adult": 3, "juvenile": 2 },
       "moose": { "adult": 5, "juvenile": 2 },
-      "elk": { "adult": 4, "buck": 4, "juvenile": 2 }
+      "elk": { "adult": 4, "buck": 4, "juvenile": 2 },
+      "mule_deer": { "adult": 3, "buck": 3, "juvenile": 2 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

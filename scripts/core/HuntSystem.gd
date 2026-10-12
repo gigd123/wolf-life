@@ -905,6 +905,22 @@ func _do_catch_breath() -> Dictionary:
 func _do_chase(opt: Dictionary) -> Dictionary:
 	var cfg: Dictionary = _tuning().get("chase", {})
 	chase_round += 1
+	# 碎石坡、岩壁上追擊可能失足摔傷（Phase 2 第 1 步）；不影響這一回合追不追得上
+	var fall_notes: Array = []
+	var fall: Dictionary = _tuning().get("terrain_fall", {})
+	var fall_damage: float = 0.0
+	if RNGService.chance(float(fall.get("chance", {}).get(terrain, 0.0))):
+		var fd: Array = fall.get("damage", [6, 14])
+		fall_damage = float(FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(fd[0]), int(fd[1]))), fall.get("parts", {"leg": 1.0}), "terrain.fall", false)["damage"])
+		fall_notes.append("hunt.fall")
+	var res := _do_chase_roll(opt, cfg)
+	if not fall_notes.is_empty():
+		var notes: Array = res.get("notes", [])
+		res["notes"] = fall_notes + notes
+		res["damage"] = float(res.get("damage", 0.0)) + fall_damage
+	return res
+
+func _do_chase_roll(opt: Dictionary, cfg: Dictionary) -> Dictionary:
 	prey_stamina_cur = max(0.0, prey_stamina_cur - float(opt.get("prey_drain", 15)))
 	if _roll(float(opt["chance"])):
 		successful_options.append(str(opt["id"]))
@@ -920,6 +936,8 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	# 用錯方式更容易跟丟、用對方式比較咬得住（1.7 第 4 步）
 	# 駝鹿逃進水裡就是避難處（1.8 第 4 步）
 	escape += float(GameData.animals.get(animal_id, {}).get("water_refuge", {}).get(terrain, 0.0))
+	# 對獵物有利的地形（騾鹿的岩坡、駝鹿的密林），沒追上時也更容易就此甩掉你（Phase 2 第 1 步）
+	escape -= float(GameData.animals.get(animal_id, {}).get("terrain_chase", {}).get(terrain, 0.0))
 	# 逃跑中的駝鹿可能突然回頭衝撞（1.8 第 4 步）
 	var turn_charge: float = float(GameData.animals.get(animal_id, {}).get("turn_charge", 0.0))
 	if turn_charge > 0.0 and life_stage == "adult" and RNGService.chance(turn_charge):
