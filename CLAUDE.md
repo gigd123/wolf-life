@@ -50,7 +50,7 @@
 ## Godot 檢查
 
 - 修改 `.gd` / `.tscn` / `project.godot` 後，執行 `bash tools/godot_check.sh` 確認匯入、編譯、主場景啟動都沒有錯誤，再 commit。
-- 新增或修改文案後，執行 `python3 tools/check_keys.py` 確認翻譯鍵沒有漏（QA-66）。其他檢查項目見 `docs/testing-guide.md`。
+- 新增或修改文案後，執行 `python3 tools/check_keys.py` 確認翻譯鍵沒有漏（QA-66），再執行 `python3 tools/check_text.py` 檢查佔位、標點與用語（加 `--notes` 看要人判斷的提醒：單數版本、森林字眼）。其他檢查項目見 `docs/testing-guide.md`。
 - 雲端 session 會由 SessionStart hook（`tools/install_godot.sh`）自動安裝 Godot headless；本機請設定 `GODOT=<Godot console 執行檔路徑>`。
 - 雲端沒有畫面，UI 排版與視覺效果需由使用者在本機 Godot 編輯器確認。完成需要目視確認的步驟時，在 `progress.md` 列出要使用者檢查的項目。
 

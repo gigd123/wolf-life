@@ -1890,7 +1890,7 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 		_show_challenger({"first": int(GameState.life_log.get("challenger_visits", 0)) == 0}, true)
 		return
 	if event == "tundra_wait":
-		var text: String = tr("scavenger.tundra_wait")
+		var text: String = _tt("scavenger.tundra_wait")
 		_log(text)
 		encounter_message.text = text
 		encounter_detail.text = ""
@@ -2918,7 +2918,7 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	# 牠們的孩子（1.8 第 10 步）：秋冬幼狼跟著行動，年輕的成狼一直都在
 	var extra_n: int = GameState.tundra_pack_size() - GameState.tundra_pair().size()
 	if extra_n > 0:
-		lines.append(tr("tundra.pack.extra").replace("{n}", str(extra_n)))
+		lines.append(_tt("tundra.pack.extra").replace("{n}", str(extra_n)))
 	lines.append(_tt("tundra.attitude." + GameState.tundra_relation_key()))
 	if extra != "":
 		lines.append(extra)

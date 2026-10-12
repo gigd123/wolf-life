@@ -1180,7 +1180,7 @@ factor.snow_fight.bad,雪讓你使不上力
 factor.white_on_bare,白色的毛在褐色的地上很顯眼
 hunt.option.probe,試探（追一小段，看牠的狀況）
 hunt.probe.done,你追了一小段又停下來，看牠怎麼跑。
-hunt.probe.lost,你追了一小段，牠一下子就鑽進林子裡不見了。
+hunt.probe.lost,你追了一小段，牠一下子就跑遠，不見了蹤影。
 hunt.flag,牠豎起白色的尾巴，一蹦一跳地跑開。這頭鹿很健康，追了多半是白追。
 hunt.condition.healthy,牠跑得又快又穩，看不出一點破綻。
 hunt.condition.average,牠跑得還算穩，但也不是那麼輕鬆。
@@ -1335,3 +1335,5 @@ challenger.yielded,你轉身走開。年輕的狼沒有追上來，只是看著�
 snow.tip.light,地上一層薄雪：鹿站得穩，追擊稍難。
 snow.tip.deep,深雪：鹿陷進雪裡跑不快，但駝鹿腿長不怕；移動、探索比較累。
 snow.tip.crust,硬雪殼：狼能在雪殼上跑，鹿會踩破陷下去；駝鹿反而有利。
+scavenger.tundra_wait.single,那隻苔原狼在不遠處趴了下來，看著你吃，沒有靠近。
+tundra.pack.extra.single,牠身後還跟著 {n} 隻年輕的狼。
