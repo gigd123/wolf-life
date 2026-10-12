@@ -18,7 +18,7 @@
     "border": { "turns": 0, "stamina": 3, "nothing_mult": 1.0, "feature_mult": 1.0, "threat_mult": 3.0, "remains": 0.05, "mark": 0.35 }
   },
   "_notable_comment": "會延續的個體（提案之十 D）：探索看到受傷、跛腳、年老的成體時記下牠，days 天內在同一區探索、同種獵物出現時有 again_chance 的機率又是牠。",
-  "notable": { "days": 5, "again_chance": 0.35, "traits": { "lame": 2, "old": 1 } },
+  "notable": { "days": 5, "wounded_days": 4, "again_chance": 0.35, "traits": { "lame": 2, "old": 1 } },
   "remains_hunger": 6,
   "_until_comment": "探索到有值得注意的發現為止：最多 max_tries 次探索（每次照常花時間與體力），平淡的結果（陳舊的線索、什麼都沒有、採集物）一次帶過。",
   "until": { "max_tries": 4 },

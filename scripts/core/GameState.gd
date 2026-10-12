@@ -1535,6 +1535,13 @@ func finish_hunt(hunt: HuntSystem) -> void:
 			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)
 		resolve_hunt_success(hunt.animal_id, hunt.life_stage)
 	else:
+		# 分次狩獵（1.8 第 4 步）：咬傷但沒制伏的大型獵物帶傷留在這一帶幾天，之後再遇到時更好抓
+		if int(hunt.fight_state.get("wounds", 0)) > 0 and wolf.alive \
+				and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) == "large" and hunt.life_stage != "juvenile":
+			var id: int = int(life_log.get("next_notable_id", 1))
+			life_log["next_notable_id"] = id + 1
+			notables.append({"id": id, "region": current_region, "animal": hunt.animal_id, "stage": hunt.life_stage, "trait": "wounded",
+				"until": int(life_log.get("days_lived", 1)) + int(GameData.discovery.get("notable", {}).get("wounded_days", 4))})
 		if hunt.fled and wolf.alive:
 			var prey_dir: int = RNGService.randi_range(0, 3)
 			current_discovery = {"kind": "clue", "source_kind": "prey", "source": hunt.animal_id,

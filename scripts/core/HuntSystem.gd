@@ -115,6 +115,7 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 	if injured:
 		depth = "simple"
 		prey_speed *= float(_reaction_cfg().get("injured_speed_mult", 0.8))
+	_roll_condition(p_injured)
 	_roll_reaction()
 	match depth:
 		"simple": stage = Stage.POUNCE
@@ -136,7 +137,6 @@ func _init(p_wolf: Wolf, p_animal_id: String, p_life_stage: String, detection_mo
 		var yearling: float = float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0))
 		fight_state["youth_penalty"] = float(youth.get("big_prey_penalty_young" if wolf.age_years < yearling else "big_prey_penalty_old", 0.0))
 	chase_style = stats.get("chase_style", {})
-	_roll_condition(p_injured)
 
 static func depth_of(p_animal_id: String, p_life_stage: String) -> String:
 	return str(GameData.animals.get(p_animal_id, {}).get("depth", {}).get(p_life_stage, "standard"))
@@ -172,7 +172,12 @@ func _roll_reaction() -> void:
 		return
 	if table.has("stand"):
 		var mult: float = float(cfg.get("stand_terrain_mult", {}).get(terrain, 1.0))
-		if RNGService.chance(float(table["stand"]) * mult):
+		var stand: float = float(table["stand"])
+		# 駝鹿（1.8 第 4 步）：壯年健康的多半站定反擊，老弱的多半逃
+		var by_cond: Dictionary = table.get("stand_by_condition", {})
+		if condition != "" and by_cond.has(condition):
+			stand = float(by_cond[condition])
+		if RNGService.chance(stand * mult):
 			reaction = "stand"
 	if table.has("protect") and RNGService.chance(float(table["protect"])):
 		mother_nearby = true
@@ -436,6 +441,11 @@ func _chase_option(id: String) -> Dictionary:
 	if snow_mod != 0.0:
 		factors.append({"key": "factor.snow." + snow + (".good" if snow_mod > 0.0 else ".bad"), "good": snow_mod > 0.0, "weight": abs(snow_mod)})
 		t += snow_mod
+	# 個別獵物的地形（1.8 第 4 步：密林、倒木裡追駝鹿不利）
+	var at: float = float(GameData.animals.get(animal_id, {}).get("terrain_chase", {}).get(terrain, 0.0))
+	if at != 0.0:
+		factors.append({"key": "factor.prey_terrain." + ("good" if at > 0.0 else "bad"), "good": at > 0.0, "weight": abs(at)})
+		t += at
 	# 體況：看得出來才顯示原因，看不出來也照樣影響
 	var cm: float = condition_mod()
 	if cm != 0.0:
@@ -810,6 +820,13 @@ func _do_chase(opt: Dictionary) -> Dictionary:
 	var escape: float = float(cfg.get("escape_base", 0.3)) + over * float(cfg.get("escape_per_round", 0.1)) \
 		- (1.0 - prey_stamina_cur / prey_stamina_max) * 0.2
 	# 用錯方式更容易跟丟、用對方式比較咬得住（1.7 第 4 步）
+	# 駝鹿逃進水裡就是避難處（1.8 第 4 步）
+	escape += float(GameData.animals.get(animal_id, {}).get("water_refuge", {}).get(terrain, 0.0))
+	# 逃跑中的駝鹿可能突然回頭衝撞（1.8 第 4 步）
+	var turn_charge: float = float(GameData.animals.get(animal_id, {}).get("turn_charge", 0.0))
+	if turn_charge > 0.0 and life_stage == "adult" and RNGService.chance(turn_charge):
+		var dmg: float = _hurt_wolf(int(_tuning().get("fight", {}).get("counter_damage_min", 5)), int(_tuning().get("fight", {}).get("counter_damage_max", 15)))
+		return {"success": false, "text_key": "hunt.turn_charge", "damage": dmg, "turns": 1}
 	# 體況：健康的獵物沒被追上就多半甩掉你；虛弱的跑不遠（1.8 第 3 步）
 	if condition != "":
 		escape += float(_tuning().get("condition", {}).get("escape", {}).get(condition, 0.0))

@@ -1193,3 +1193,7 @@ factor.condition.average,牠狀況普通
 factor.condition.weak,牠很虛弱
 factor.probe_info,不太花力氣；看出牠的狀況後再決定要不要追
 factor.prey_exhausted,牠已經跑不動了
+hunt.turn_charge,牠跑著跑著突然回過頭，朝你衝過來！你閃得不夠快。
+factor.prey_terrain.good,這裡的地形對牠不利
+factor.prey_terrain.bad,這裡的地形對牠有利
+explore.trait.wounded,被你咬傷的
