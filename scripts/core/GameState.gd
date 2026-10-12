@@ -164,6 +164,11 @@ func _on_period_changed(_period_index: int) -> void:
 func _on_day_changed(_day: int) -> void:
 	life_log["days_lived"] = int(life_log.get("days_lived", 0)) + 1
 	_count_season_day()
+	# 試玩指標：連續幾天沒有事件（提案之十二 E）
+	var m := metrics()
+	m["events"] = int(m.get("events", 0)) + events_today
+	m["quiet_streak"] = 0 if events_today > 0 else int(m.get("quiet_streak", 0)) + 1
+	m["longest_quiet"] = max(int(m.get("longest_quiet", 0)), int(m["quiet_streak"]))
 	events_today = 0
 	var before_injury: int = wolf.injury if wolf != null else Wolf.Injury.NONE
 	var before_injury_stat: String = wolf.injury_stat if wolf != null else ""
@@ -1408,6 +1413,58 @@ func _on_hunt_started(hunt: HuntSystem) -> void:
 		life_log["stats"] = stats
 		life_log["after_deer"] = {}
 
+# --- 試玩紀錄的指標（SPEC 1.7「收尾」，提案之十二 E）：只記錄，不影響遊戲 ---
+# play_seconds／stage_seconds：實際遊玩時間（畫面層每幀加）；choices／best_choices：有成功率的選擇裡，選了最高的次數；
+# cards／quick_cards：卡片數、出現 1 秒內就按「繼續」的次數；events、quiet_streak、longest_quiet：每天的事件數與最長平淡天數。
+func metrics() -> Dictionary:
+	if not life_log.has("metrics"):
+		life_log["metrics"] = {}
+	return life_log["metrics"]
+
+func metric_play_time(delta: float) -> void:
+	if wolf == null or not wolf.alive or auto_playing:
+		return
+	var m := metrics()
+	m["play_seconds"] = float(m.get("play_seconds", 0.0)) + delta
+	var stage: String = ["subadult", "adult", "elder"][wolf.life_stage()]
+	var st: Dictionary = m.get("stage_seconds", {})
+	st[stage] = float(st.get(stage, 0.0)) + delta
+	m["stage_seconds"] = st
+
+func metric_choice(chosen: float, best: float) -> void:
+	if auto_playing:
+		return
+	var m := metrics()
+	m["choices"] = int(m.get("choices", 0)) + 1
+	if chosen >= best - 0.001:
+		m["best_choices"] = int(m.get("best_choices", 0)) + 1
+
+func metric_card(seconds: float) -> void:
+	if auto_playing:
+		return
+	var m := metrics()
+	m["cards"] = int(m.get("cards", 0)) + 1
+	if seconds < 1.0:
+		m["quick_cards"] = int(m.get("quick_cards", 0)) + 1
+
+# 給除錯選單與試玩紀錄看的摘要。
+func metrics_summary() -> Dictionary:
+	var m := metrics()
+	var days: int = max(1, int(life_log.get("days_lived", 1)))
+	return {"play_minutes": snapped(float(m.get("play_seconds", 0.0)) / 60.0, 0.1),
+		"decisions_per_day": snapped(float(_stat_total("option_counts")) / days, 0.1),
+		"events_per_day": snapped(float(m.get("events", 0)) / days, 0.01),
+		"longest_quiet_days": int(m.get("longest_quiet", 0)),
+		"best_choice_ratio": snapped(float(m.get("best_choices", 0)) / max(1, int(m.get("choices", 0))), 0.01),
+		"quick_card_ratio": snapped(float(m.get("quick_cards", 0)) / max(1, int(m.get("cards", 0))), 0.01),
+		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0])}
+
+func _stat_total(stat_key: String) -> int:
+	var total := 0
+	for v in life_log.get("stats", {}).get(stat_key, {}).values():
+		total += int(v)
+	return total
+
 # 死亡時把試玩紀錄寫成 JSON（user://playtest_logs/），方便比較兩隻狼。
 # 試玩紀錄：寫到 user://playtest_logs/。在 Godot 編輯器裡、有視窗地遊玩時（不是 headless、不是自動遊玩或模擬），
 # 另外存一份到專案的 playtest_logs/（資料夾有 .gdignore，Godot 不會匯入），commit 後 Claude Code 就讀得到。
@@ -1419,7 +1476,7 @@ func _write_playtest_log() -> String:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return ""
-	var text := JSON.stringify({"life_log": life_log, "knowledge": knowledge.values(), "age_years": wolf.age_years,
+	var text := JSON.stringify({"metrics": metrics_summary(), "life_log": life_log, "knowledge": knowledge.values(), "age_years": wolf.age_years,
 		"tendency": current_tendency(), "wolf": wolf.to_dict(), "region": current_region, "den": den_region,
 		"time": {"season": GameTime.current_season(), "day": GameTime.day, "period": GameTime.current_period()}}, "  ")
 	file.store_string(text)

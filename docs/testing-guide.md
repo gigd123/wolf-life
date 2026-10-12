@@ -190,6 +190,7 @@ rm -f probe_tmp.gd probe_tmp.gd.uid
 
 - `life_log.potential`：成年時的巔峰上限；全是 55／90 代表次成年期被除錯跳過，不能拿來驗收成長。
 - `life_log.adult_stats`、`adult_body`、`adult_bonus`：成年時的能力、體型描述、成年那一刻的成長。
+- `metrics`（最上面）：遊玩分鐘、每天決策與事件數、最長平淡天數、選最高成功率的比例、1 秒內略過卡片的比例、各生命階段的分鐘數。比較兩份紀錄時先看這裡：選最高的比例接近 100% 代表選擇沒意義；略過比例高代表沒在讀；平淡天數長代表那一段無聊。
 - `life_log.recent_combats`：最近 5 場戰鬥的逐回合紀錄（看戰鬥哪裡出問題）。
 - `life_log.recent_messages`：主畫面最後約 40 段訊息（看文案與經過）。
 - `life_log.tendency_history`、`decisions`：狩獵傾向的變化。

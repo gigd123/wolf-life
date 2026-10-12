@@ -2002,6 +2002,10 @@ func _show_playtest_stats() -> void:
 	var counts: Dictionary = stats.get("option_counts", {})
 	var counters: Dictionary = stats.get("counters", {})
 	var lines: Array[String] = [tr("stats.title")]
+	var ms := GameState.metrics_summary()
+	lines.append(tr("stats.metrics").replace("{minutes}", str(ms["play_minutes"])).replace("{decisions}", str(ms["decisions_per_day"])) \
+		.replace("{events}", str(ms["events_per_day"])).replace("{quiet}", str(ms["longest_quiet_days"])) \
+		.replace("{best}", str(int(round(float(ms["best_choice_ratio"]) * 100.0)))).replace("{quick}", str(int(round(float(ms["quick_card_ratio"]) * 100.0)))))
 	# 每個階段內各選項的選擇率；超過 80% 代表可能是最佳解
 	var by_stage: Dictionary = {}
 	for key in counts.keys():
@@ -2210,6 +2214,7 @@ func _render_hunt_stage() -> void:
 	for opt in current_hunt.options():
 		var id: String = opt["id"]
 		_add_hunt_choice(tr(opt["label_key"]), opt, func():
+			_metric_choice(opt, current_hunt.options())
 			if current_hunt.stage == HuntSystem.Stage.FIGHT:
 				Audio.play_bite()
 			_resolve_stage(current_hunt.choose(id))
@@ -2889,8 +2894,21 @@ func _render_combat() -> void:
 		_add_hunt_choice(tr(opt["label_key"]), opt, func(): _on_combat_choice(id))
 	_fit_hunt_layout(hunt_buttons_box.get_children().filter(func(n): return not n.is_queued_for_deletion()).size())
 
+# 試玩指標：有成功率的選擇裡，是不是選了最高的那個。
+func _metric_choice(opt: Dictionary, all: Array) -> void:
+	if not opt.has("chance"):
+		return
+	var best: float = 0.0
+	for o in all:
+		if o.has("chance"):
+			best = max(best, float(o["chance"]))
+	GameState.metric_choice(float(opt["chance"]), best)
+
 func _on_combat_choice(id: String) -> void:
 	var c := current_combat
+	for o in c.options():
+		if str(o.get("id", "")) == id:
+			_metric_choice(o, c.options())
 	var res := c.choose(id)
 	if id in ["bite", "lunge", "attack", "harass"]:
 		Audio.play_bite()
@@ -3002,7 +3020,9 @@ func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
 	_clear_children(card_buttons_box)
 	var btn := Button.new()
 	btn.text = tr("ui.continue")
+	var shown_ms: int = Time.get_ticks_msec()
 	btn.pressed.connect(func():
+		GameState.metric_card((Time.get_ticks_msec() - shown_ms) / 1000.0) # 試玩指標：1 秒內就按「繼續」＝沒在讀
 		card_overlay.visible = false
 		_refresh()
 	)
@@ -3294,8 +3314,9 @@ func _start_auto_to_adult(prey: String, style: String) -> void:
 	auto_player.stop_before_adult = true
 	auto_player.start_from_current()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if auto_player == null:
+		GameState.metric_play_time(delta)
 		return
 	auto_player.step(AUTO_DAYS_PER_FRAME)
 	if GameState.wolf != null:

@@ -181,6 +181,7 @@ debug.event.bear_passing,灰熊路過
 debug.event.bear_scavenge,灰熊搶食
 debug.playtest_stats,試玩紀錄
 stats.title,試玩紀錄（這隻狼）
+stats.metrics,遊玩 {minutes} 分鐘；每天決策 {decisions} 次、事件 {events} 件；最長連續 {quiet} 天沒事；選成功率最高的 {best}%；卡片 1 秒內就按繼續 {quick}%
 stats.dominant,⚠ 選擇率超過 80%
 stats.observe,觀察：{n} 次／可觀察 {total} 次
 stats.give_ups,中途放棄追擊：{n} 次
