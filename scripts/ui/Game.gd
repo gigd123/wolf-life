@@ -208,6 +208,12 @@ func _build_ui() -> void:
 		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		icon_rect.visible = false
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
+		# 點傷勢圖示：彈出傷勢資訊（QA-44，Phase 2 第 7 步）
+		if kind in ["injury", "burn", "frostbite"]:
+			icon_rect.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			icon_rect.gui_input.connect(func(ev: InputEvent):
+				if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+					_show_injury_info())
 		status_row.add_child(icon_rect)
 		status_icons[kind] = icon_rect
 	# 雪況圖示：淺雪、深雪、硬雪殼；滑鼠移上去寫雪況與對狩獵的影響
@@ -3677,6 +3683,34 @@ func _show_injury_notice(event: Dictionary) -> void:
 		_show_toast(text, 2.4)
 
 # 「速度 −20%，約 4 天痊癒」；輕傷沒有能力影響。
+# 傷勢資訊（QA-44，Phase 2 第 7 步）：部位、程度、影響、恢復方式、大約天數、舊傷。
+func _show_injury_info() -> void:
+	var w: Wolf = GameState.wolf
+	if w == null:
+		return
+	region_info_text.bbcode_enabled = false
+	var lines: Array[String] = [tr("injury.info.title"), ""]
+	if w.injury == Wolf.Injury.NONE:
+		lines.append(tr("injury.info.none"))
+	else:
+		var heavy: bool = w.injury == Wolf.Injury.HEAVY
+		lines.append(tr("injury.info.severity." + ("heavy" if heavy else "light")))
+		if w.injury_part != "":
+			lines.append(tr("injury.info.part").replace("{part}", tr("injury.info.part_name." + w.injury_part.split(".")[0])))
+		if w.injury_source != "":
+			lines.append(tr("injury.info.source").replace("{source}", TextFormat.injury_source(w.injury_source)))
+		lines.append(tr("injury.info.effect").replace("{text}", _injury_effect_text(w)))
+		lines.append(tr("injury.info.days").replace("{days}", str(w.injury_days_remaining)))
+		lines.append("")
+		lines.append(tr("injury.info.recovery." + ("heavy" if heavy else "light")))
+	if not w.old_injuries.is_empty():
+		lines.append("")
+		lines.append(tr("injury.info.old_title"))
+		for record in w.old_injuries:
+			lines.append("　" + tr(str(record.get("part_key", ""))) + "（" + TextFormat.injury_source(str(record.get("source", ""))) + "）")
+	region_info_text.text = "\n".join(lines)
+	region_info_overlay.visible = true
+
 func _injury_effect_text(w: Wolf) -> String:
 	if w.injury == Wolf.Injury.HEAVY and w.injury_stat != "":
 		var pct: int = int(round((1.0 - float(GameData.balance.get("heavy_injury_stat_mult", 0.8))) * 100.0))

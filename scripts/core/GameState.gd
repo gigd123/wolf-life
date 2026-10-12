@@ -130,6 +130,7 @@ func new_game(start_den: String) -> void:
 	life_log["hare_year"] = RNGService.randi_range(0, GameData.balance.get("hare_cycle", {}).get("mult", [1.0]).size() - 1)
 	_roll_year()
 	_start_year_stats()
+	_apply_start_map_bonus(start_den)
 	# 第一次可以和陌生灰狼直接互動的時機：50% 在次成年期、50% 在成年後（都要先遠距觀察過）
 	life_log["stranger_unlock"] = "subadult" if RNGService.chance(float(_stranger_cfg().get("unlock_subadult_chance", 0.5))) else "adult"
 	var start_season: String = GameData.balance.get("start_season", "winter")
@@ -199,6 +200,7 @@ func _on_day_changed(_day: int) -> void:
 	_recover_region_depletion()
 	_update_marks()
 	_move_bison()
+	_update_sleep_spots()
 	_heal_npcs()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
@@ -805,6 +807,51 @@ func start_cougar_ambush_combat() -> Combat:
 	identify("cougar")
 	return start_combat("cougar", "adult", "encounter", {"direct": true, "damage": float(d.get("damage", 0.0)), "location": str(d.get("location", ""))})
 
+# --- 開局選地圖、睡處變差（Phase 2 第 7 步）---
+func _apply_start_map_bonus(start_den: String) -> void:
+	var map_id: String = GameData.map_of(start_den)
+	var stats: Dictionary = GameData.balance.get("start_map", {}).get(map_id, {}).get("stats", {})
+	for stat in stats.keys():
+		wolf.set(stat, float(wolf.get(stat)) + float(stats[stat]))
+	if stats.has("health_max"):
+		wolf.health = wolf.health_max
+	life_log["start_map"] = map_id
+
+# 每天：記得的好睡處可能因暴風雪、春洪、其他動物而失去
+func _update_sleep_spots() -> void:
+	var cfg: Dictionary = GameData.balance.get("sleep_spot_loss", {})
+	var season: String = GameTime.current_season()
+	for region_id in region_knowledge.keys():
+		if region_id == den_region or not region_knowledge[region_id].get("features", []).has("good_sleep_spot"):
+			continue
+		var causes: Dictionary = {"wear": float(cfg.get("base", 0.004))}
+		if blizzard_active() and GameData.map_of(region_id) == _blizzard_map():
+			causes["blizzard"] = float(cfg.get("blizzard", 0.08))
+		var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+		if season == "spring" and terrains.any(func(t): return cfg.get("flood_terrains", []).has(t)):
+			causes["flood"] = float(cfg.get("flood", 0.02))
+		var bear: float = float(EncounterSystem.region_data(region_id).get("competitor_weights", {}).get("grizzly_bear", {}).get(season, 0))
+		if bear > 0.0:
+			causes["animal"] = bear * float(cfg.get("animal_per_weight", 0.004))
+		var total: float = 0.0
+		for k in causes.keys():
+			total += float(causes[k])
+		if RNGService.chance(total):
+			var features: Array = region_knowledge[region_id]["features"]
+			features.erase("good_sleep_spot")
+			found_sleep_spots.erase(region_id)
+			var lost: Dictionary = life_log.get("lost_sleep_spots", {})
+			lost[region_id] = str(RNGService.weighted_pick(causes))
+			life_log["lost_sleep_spots"] = lost
+
+# 來到這一區時告訴你好睡處沒了（只說一次）
+func _notice_lost_sleep_spot() -> void:
+	var lost: Dictionary = life_log.get("lost_sleep_spots", {})
+	if lost.has(current_region):
+		log_message.emit(tr("sleep_spot.lost." + str(lost[current_region])).replace("{region}", tr("region." + current_region)))
+		lost.erase(current_region)
+		life_log["lost_sleep_spots"] = lost
+
 # --- 老年（Phase 1.9b 第 2 步）---
 func _elder_cfg() -> Dictionary:
 	return GameData.balance.get("elder", {})
@@ -1120,6 +1167,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		if encounter.get("encountered", false) and RNGService.chance(threat_mult()):
 			encounter_triggered.emit(prepare_bear_encounter(encounter))
 	_check_fire_here(true)
+	_notice_lost_sleep_spot()
 	_note_den_smell()
 	if wolf.alive:
 		_apply_env_perception()
