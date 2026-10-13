@@ -206,5 +206,43 @@
     }
    }
   }
+ },
+ "scene": {
+  "wolf_gray": {
+   "frame": [
+    53,
+    39
+   ],
+   "foot": 35,
+   "center_x": 26.0,
+   "body_h": 29,
+   "rel_height": 1.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/wolf_gray_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/scene/wolf_gray_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/scene/wolf_gray_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/wolf_gray_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  }
  }
 }

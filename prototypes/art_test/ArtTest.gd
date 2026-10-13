@@ -19,7 +19,12 @@ const BACKGROUNDS := {
 		"forest": {"path": "res://assets/art/art_test/illus/bg_forest.jpg", "shift": 122}},
 	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
 		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
+	# 主視覺（黃昏斜角像素場景，arts/art_scene_test_2026-10-13/）：目前只有林內一張，林緣草地先共用
+	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56},
+		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56}},
 }
+const STYLES := ["illus", "pixel", "scene"]
+const STYLE_NAMES := {"illus": "插畫", "pixel": "像素", "scene": "場景"}
 
 var manifest: Dictionary = {}
 var style: String = "illus"
@@ -130,17 +135,18 @@ func _entry(id: String) -> Dictionary:
 func _setup_sprite(s: Node2D, id: String) -> void:
 	var rel: float = float(manifest.get("illus", {}).get(id, {}).get("rel_height", 1.0))
 	var e := _entry(id)
-	s.setup(e, style == "pixel", WOLF_H * rel, FALLBACK.get(id, ""), id == "wolf_gray")
+	s.fallback_base_zoom = maxf(1.0, round(WOLF_H / 30.0))
+	s.setup(e, style != "illus", WOLF_H * rel, FALLBACK.get(id, ""), id == "wolf_gray")
 
 
 func _apply_style() -> void:
-	style_btn.text = "風格：" + ("插畫" if style == "illus" else "像素")
+	style_btn.text = "風格：" + STYLE_NAMES[style]
 	bg_btn.text = "背景：" + ("林緣草地" if bg_key == "meadow" else "林內")
 	var bg_info: Dictionary = BACKGROUNDS[style][bg_key]
 	bg.texture = load(bg_info["path"])
 	bg.offset_top = -float(bg_info["shift"])
 	bg.offset_bottom = -float(bg_info["shift"])
-	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if style == "pixel" else CanvasItem.TEXTURE_FILTER_LINEAR
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if style == "illus" else CanvasItem.TEXTURE_FILTER_NEAREST
 	_setup_sprite(wolf, "wolf_gray")
 	if other_id != "":
 		_setup_sprite(other, other_id)
@@ -151,13 +157,15 @@ func _apply_style() -> void:
 	var lines: Array = []
 	if style == "pixel":
 		lines.append("像素版：背景暫用遊戲現有的地形圖")
+	elif style == "scene":
+		lines.append("場景版（主視覺）：目前只有林內一張場景；灰狼由像素版縮小")
 		if not missing.is_empty():
 			lines.append("、".join(missing) + "還沒有新圖，暫用遊戲現有的像素圖")
 	note.text = "\n".join(lines)
 
 
 func _toggle_style() -> void:
-	style = "pixel" if style == "illus" else "illus"
+	style = STYLES[(STYLES.find(style) + 1) % STYLES.size()]
 	_apply_style()
 	_restart()
 

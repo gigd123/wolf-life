@@ -135,6 +135,35 @@ brown coat with white feet and belly, long upright ears, large hind feet, sittin
 
 ---
 
+## 免費版 Gemini 用的精簡版
+
+免費版不太聽長段落的細節。角色改用這種短句，一次只講最重要的三件事（風格、朝右側面、白底）；
+附圖除了黃昏參考圖，也可以附上**林內那張已經成功的場景**，讓它知道要畫進同一個世界。
+
+```
+Pixel art sprite of a gray wolf in the same style as the attached image. Side view, facing right, standing.
+Only the wolf, on a plain white background. No ground, no scenery, no text.
+```
+
+把 `a gray wolf` 換成：
+- `a black wolf`
+- `a grizzly bear, much bigger than a wolf`
+- `a female elk (no antlers)`
+- `a brown snowshoe hare`
+
+不合格時的追問（同一個對話裡接著說）：
+- 背景不乾淨：`Make the background plain white, remove everything except the animal.`
+- 不是側面：`Turn it to an exact side view facing right.`
+- 太模糊、不像像素：`Make it crisp pixel art with hard square pixels, no blur.`
+- 有很多隻：`Only one animal.`
+
+場景（林緣草地、冬季）同理，用短句：
+
+```
+Pixel art scene in the same style as the attached images: a forest edge meadow at dusk, snowy mountains,
+dark spruce trees, mossy rocks, an empty grassy clearing in the lower middle. Fill the whole image, no animals, no text.
+```
+
 ## 之後（這一批確認後再產）
 
 - 公馬鹿、雪兔冬毛、其他季節的場景（秋季、燒過）。

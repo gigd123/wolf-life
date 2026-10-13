@@ -3,9 +3,10 @@
 輸出到 assets/art/art_test/：
   illus/<動物>_<動作>.png   插畫版（平滑縮放）
   pixel/<動物>_<動作>.png   像素版（原生解析度，最近鄰放大）
+  scene/<動物>_<動作>.png   主視覺場景版（小像素，放在 320×180 的場景裡，畫面上 2 倍）
   manifest.json             {風格: {動物: {frame, foot, body_h, rel_height, actions: {動作: {sheet, frames, fps, loop}}}}}
 同一隻動物的所有動作裁成同一個範圍，切換動作時位置不會跳。foot＝腳底在格子裡的 y，body_h＝靜止姿勢的高度。
-用法：python3 export_game.py [illus|pixel]（不給就兩種都做）
+用法：python3 export_game.py [illus|pixel|scene]（不給就全部做）
 """
 import json
 import os
@@ -90,14 +91,15 @@ def export_illus():
     return out
 
 
-def export_pixel():
+def export_pixel(style="pixel", body_px=64):
+    """像素版灰狼：本體縮到 body_px 像素高（pixel：64，劇情等大圖用；scene：30，放在主視覺場景裡）。"""
     import pixel_rig
     rig.SCALE = 0.5
     out = {}
     acts_hi = rig.render_actions("wolf_gray", pixel_rig.WOLF_PIXEL, pixel_rig.HERE)
     rest_hi = Image.open(os.path.join(pixel_rig.HERE, "anim", "wolf_gray_rest.png"))
     bb = rest_hi.getbbox()
-    k = pixel_rig.SIZES["wolf_px64"] / (bb[3] - bb[1])
+    k = body_px / (bb[3] - bb[1])
     bones = [rig.Bone(*b) for b in pixel_rig.WOLF_PIXEL["bones"]]
     rest_px, pal = pixel_rig.pixelize(rest_hi, k)
     pixel_rig.put_eye(rest_px, pixel_rig.eye_point(bones, {}, k))
@@ -107,19 +109,21 @@ def export_pixel():
         acts[act] = [pixel_rig.put_eye(pixel_rig.pixelize(f, k, pal)[0], pixel_rig.eye_point(bones, fn(i / n), k))
                      for i, f in enumerate(frames)]
     acts = bite_trails(acts)
-    out["wolf_gray"] = write_animal("pixel", "wolf_gray", acts, rest_px)
-    print("pixel wolf_gray", out["wolf_gray"]["frame"])
+    out["wolf_gray"] = write_animal(style, "wolf_gray", acts, rest_px)
+    print(style, "wolf_gray", out["wolf_gray"]["frame"])
     return out
 
 
 def main():
-    which = sys.argv[1:] or ["illus", "pixel"]
+    which = sys.argv[1:] or ["illus", "pixel", "scene"]
     path = os.path.join(OUT, "manifest.json")
     manifest = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
     if "illus" in which:
         manifest["illus"] = export_illus()
     if "pixel" in which:
         manifest["pixel"] = export_pixel()
+    if "scene" in which:
+        manifest["scene"] = export_pixel("scene", 30)
     os.makedirs(OUT, exist_ok=True)
     json.dump(manifest, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 

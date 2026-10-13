@@ -18,6 +18,8 @@ var flip: bool = false:
 			_fallback.flip_h = v
 var action: String = ""
 var speed: float = 1.0
+# 頂替用舊圖時狼的像素倍率（ArtTest 依畫面上狼的高度設定）
+var fallback_base_zoom: float = 2.0
 
 var _sheets: Dictionary = {}
 var _frame: int = 0
@@ -77,8 +79,8 @@ func _setup_fallback(a: String) -> void:
 			ArtLibrary.setup_wolf(_fallback, "walk" if game_action == "move" else "idle", 8.0)
 	else:
 		ArtLibrary.setup_animal(_fallback, _fallback_id, "adult", game_action)
-	# 舊圖的成年灰狼約 30 像素高；照比例放大到目標高度（取 0.5 的倍數，避免像素忽大忽小）
-	var zoom: float = maxf(0.5, round(target_h / 30.0 * 2.0) / 2.0)
+	# 照遊戲的規則：狼的倍率（舊圖成年灰狼約 30 像素高 → 整數倍）× 各動物的 display_scale
+	var zoom: float = fallback_base_zoom * (1.0 if _fallback_wolf else ArtLibrary.display_scale(_fallback_id, "adult"))
 	_fallback.zoom = zoom
 	var fs: Vector2 = Vector2(_fallback.frame_size) if _fallback.frame_size != Vector2i.ZERO else Vector2(48, 32)
 	_fallback.size = fs * zoom
