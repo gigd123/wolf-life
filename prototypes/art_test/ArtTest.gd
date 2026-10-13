@@ -13,9 +13,12 @@ const WOLF_H := 64.0          # 灰狼在畫面上的高度（邏輯像素，640
 const NAMES := {"hare": "雪兔", "elk_cow": "母馬鹿", "grizzly": "灰熊", "wolf_black": "黑狼", "wolf_gray": "灰狼"}
 # 像素版沒有素材時，用遊戲裡的哪一隻頂替
 const FALLBACK := {"wolf_gray": "", "wolf_black": "stranger_wolf", "grizzly": "grizzly_bear", "elk_cow": "elk", "hare": "snowshoe_hare"}
+# shift：背景往上移多少（邏輯像素），讓圖裡的地面落在文字面板上方、動物腳下（下方面板蓋住的是圖的最底部）
 const BACKGROUNDS := {
-	"illus": {"meadow": "res://assets/art/art_test/illus/bg_meadow.jpg", "forest": "res://assets/art/art_test/illus/bg_forest.jpg"},
-	"pixel": {"meadow": "res://assets/art/backgrounds/terrain/forest_edge.png", "forest": "res://assets/art/backgrounds/terrain/dense_forest.png"},
+	"illus": {"meadow": {"path": "res://assets/art/art_test/illus/bg_meadow.jpg", "shift": 126},
+		"forest": {"path": "res://assets/art/art_test/illus/bg_forest.jpg", "shift": 122}},
+	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
+		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
 }
 
 var manifest: Dictionary = {}
@@ -133,7 +136,10 @@ func _setup_sprite(s: Node2D, id: String) -> void:
 func _apply_style() -> void:
 	style_btn.text = "風格：" + ("插畫" if style == "illus" else "像素")
 	bg_btn.text = "背景：" + ("林緣草地" if bg_key == "meadow" else "林內")
-	bg.texture = load(BACKGROUNDS[style][bg_key])
+	var bg_info: Dictionary = BACKGROUNDS[style][bg_key]
+	bg.texture = load(bg_info["path"])
+	bg.offset_top = -float(bg_info["shift"])
+	bg.offset_bottom = -float(bg_info["shift"])
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if style == "pixel" else CanvasItem.TEXTURE_FILTER_LINEAR
 	_setup_sprite(wolf, "wolf_gray")
 	if other_id != "":
