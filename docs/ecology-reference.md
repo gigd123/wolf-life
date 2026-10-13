@@ -711,6 +711,31 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 | --- | --- | --- |
 | 美國的野化豬都是人帶來的家豬：1500 年代西班牙人帶到東南部，之後英法移民的豬放養後野化；純種歐亞野豬到 1890 年才第一次被引進（新罕布夏的私人獵場） | 記述（多個州的野生動物機構、extension.org） | 拓荒時代西部的北方森林、草原沒有野生野豬，從動物表拿掉 |
 
+## Phase 3：配對、領域、育幼與狼群（2026-10-13 Claude Code 查，待使用者對比）
+
+| 生態事實 | 可信度 | 可以轉成的規則 |
+| --- | --- | --- |
+| 擴散的狼主要靠嚎叫（野外約 10 公里內聽得到）與氣味標記找伴侶；尿或糞的氣味就能知道對方的性別、食物、地位與是否在繁殖狀態 | 記述（USFWS、wolf.org、Voyageurs） | 嚎叫、在邊界標記、讀別的狼的標記，是遇到離群母狼的主要途徑 |
+| 擴散多在秋冬，趕在冬末交配之前；找到伴侶要多久差很多，也可能找不到；新的一對可能要好幾年才成功繁殖 | 記述（USFWS、wolf.org） | 秋冬遇到離群母狼的機會最高；配對後第一年不一定生得出來或養得活 |
+| 斯堪地那維亞 40 年的研究：公狼第一次繁殖的中位數 2 歲、母狼 3 歲 | 研究 | 你 2 歲成年就可以配對；伴侶年紀小時，第一年不生的機率較高 |
+| 黃石 1995～2015 年有項圈的狼：自然死亡中約三分之二是被其他狼殺死（其他動物 13%、營養不良 8%、疾病 5%）；族群密度高時成狼和幼狼的存活都大幅下降 | 研究（Yellowstone Science 2016；Cassidy 等，Journal of Animal Ecology） | 鄰群是狼群生活最大的威脅；地圖上的狼群越多越危險 |
+| 狼群之間的衝突：數量越多越容易贏，多一隻狼贏的機率約高 140%；6 歲以上的狼比例高、成年公狼多的狼群，即使數量較少也比較常贏；在誰的領域裡打不影響結果 | 研究（Cassidy 等 2015，Behavioral Ecology；121 次衝突） | 狼群對峙的勝負主要看數量，其次看老狼與成年公狼；**老狼在狼群衝突裡是優勢**（給老年一個角色） |
+| 狼用氣味標記與嚎叫減少正面衝突；標記集中在領域邊界，會蓋過鄰群的標記；抬腿排尿是最重要的標記，只有繁殖的狼（主要是公狼）在標記 | 研究（Canadian Field-Naturalist；Yellowstone 1997～1999 的觀察） | 標記與嚎叫是你（繁殖的公狼）的工作；邊界的標記可以減少鄰群試探 |
+| 族群飽和後，標記的頻率提高（每公里 1.9 → 3.0 次）；狼群越多隻，平均每隻標記得越少 | 研究（Wisconsin） | 鄰群多時要更勤快地巡視、標記 |
+| 標記的氣味約維持 2～3 週 | 弱（教育網站，未證實） | 照 1.9b 現行的「約 5 天沒補就淡掉」（遊戲時間尺度），不改 |
+| 領域大小主要看獵物密度：北洛磯山約 518～1,295 平方公里；黃石平均約 427 平方公里，北部（馬鹿集中）只有內部的三分之一；明尼蘇達約 100 平方公里 | 研究／記述（Idaho F&G、NPS、Voyageurs） | 獵物多的地圖，領域小一點（2 區）也夠；獵物少的地方要 3 區 |
+| 繁殖的狼通常帶頭移動 | 研究（Yellowstone 1997～1999） | 你是領頭的那隻；成員跟著你，或照你的指派行動 |
+| 食物用嘴叼或吞進胃裡帶回巢穴、集合點給幼狼（反芻） | 研究（Homkes 等 2020 等） | 「帶回巢穴」：狩獵後的殘骸叼一段回去，或吃飽回去反芻 |
+| 斷奶前（約前 6～8 週）幼狼在巢穴，繁殖的母狼留守最多；斷奶後搬到集合點，母狼回去參加狩獵 | 研究（Ruprecht 等 2012） | 育幼前段伴侶留在巢穴，你負責帶食物；夏季搬到集合點後伴侶一起狩獵 |
+| 每多一隻幫手，每隻狼留守的時間少約 7.5%；食物少、密度高時，幫手不一定有幫助 | 研究（Ruprecht 等 2012；紅狼合作繁殖） | 狼群大時分工比較輕鬆；食物少時，大狼群反而養不活幼狼 |
+| 明尼蘇達（2019～2025）幼狼第一年存活平均 0.29；年份、狼群之間差很多，主要看食物；一窩越大，每隻的存活越低 | 研究（Voyageurs Wolf Project） | 幼狼存活看食物；胎數多不等於養得多 |
+| 獵物少時，只有一對狼比有幫手的大狼群養活更多幼狼；獵物多時，狼群越大一窩越大 | 研究（1983 明尼蘇達） | 狼群大小的好處依年況不同 |
+| 獵馬鹿：成功率在 2～6 隻（約 4 隻）後就不再明顯增加；原因是大狼群裡有的狼不出力（怕被踢傷、被角刺）；獵野牛：9～13 隻後才趨緩，可能還在增加 | 研究（MacNulty 等 2012、2014） | 群獵的數量效果依獵物不同：馬鹿、鹿約 4 隻封頂；野牛要大狼群；成員可能「不出力」 |
+| 繁殖的位置多半是原本的繁殖者死後才空出來；補上的多是沒有血緣的外來狼或前任的親戚 | 研究（PLoS ONE 2022） | 加入既有狼群主要靠「補空缺」 |
+| 2016 年黃石：鄰群三隻公狼趕走一個狼群的繁殖公狼，取而代之，之後每年養大幼狼；成年公狼會接納別的狼生的幼狼 | 研究（PMC9710779） | 「取而代之」真的發生過，但很少；接手後照顧前任的幼狼 |
+| 繁殖者被人或車殺死時，狼群比較容易解散；自然死亡時比較不會 | 研究（Cassidy 等 2023） | 伴侶死去時狼群可能動搖（Phase 4 人類的獵殺更嚴重） |
+| 黃石的狼只有約五分之一活到 5 歲；一個狼群有 4 隻 5 歲以上的狼「極為罕見」 | 記述（黃石年報，經 The Aggie 引用） | 活到老年本身就很難得；老狼在狼群裡很少 |
+
 ## 資料來源
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
@@ -719,3 +744,4 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 - 馬鹿、狼的耐力與繁殖（2026-10-12）：MacNulty 等 2011〈Nonlinear effects of group size on the success of wolves hunting elk〉（Behavioral Ecology；USGS、USU）；MacNulty 等 2014（獵野牛）；Smith 等 2004〈Winter prey selection and estimation of wolf kill rates in Yellowstone〉（JWM，Michigan Tech）；Stahler 2006〈Foraging and Feeding Ecology of the Gray Wolf〉；Yellowstone Wolf Cougar Elk Project 2025 年報（NPS）；Winnie（Montana State）〈Behavioral responses of elk to the threat of wolf predation〉；Childress & Lung（ScienceBase）；Barber-Meyer 等 2008〈Elk calf survival and mortality following wolf restoration〉（Wildlife Monographs／USGS）；French & French〈Grizzly bear predation on elk calves〉（Pelican Valley）；NPS〈Elk〉；Lewis & Clark〈The American Elk〉；SLU〈Wolf predation on moose and roe deer: chase distances and outcome〉；Canadian Field-Naturalist〈Long daily movements of wolves during pup rearing〉；wolf.org〈Wolf dens 101〉；Heard 1992、Parker 1973、Klaczek 2016（wrrb.ca）；Arctic〈Bathurst Island wolves〉（ucalgary）；Wisconsin DNR；Living with Wolves；Jackson Hole News & Guide〈Bears butting in on Yellowstone wolf kills〉（Metz 的研究）。
 - 次成年期與擴散（2026-10-12）：Mech & Gese〈Dispersal of wolves in northeastern Minnesota, 1969–1989〉（USGS）；Treves 等 2009〈Wolf dispersal〉；The Wildlife Society〈Young wolves disperse more when well fed〉；wolf.org〈What’s a lone wolf?〉；NPS〈Understanding the limits to wolf hunting ability〉（Yellowstone Science 24-1）；Living with Wolves；Alaska Science Forum〈Lone wolf’s days wandering are over〉；Mech 1977〈Wolf-pack buffer zones as prey reservoirs〉。
 - Phase 2 的新地圖與動物（2026-10-13）：Dellinger 等 2019〈Contrasting antipredator responses of mule deer and white-tailed deer to wolves〉（Oecologia；University of Washington 新聞稿）；Canadian Field-Naturalist 的大角羊逃生地形研究；Springer〈Wolf predation on sheep〉（Jasper）；育空政府〈Effects of wolf predation in Dall sheep population〉；Sul Ross Borderlands Research Institute（沙漠大角羊）；MacNulty 等 2014〈Influence of group size on the success of wolves hunting bison〉（PLoS ONE）；Carbyn & Trottier 1988〈Descriptions of wolf attacks on bison calves in Wood Buffalo National Park〉（Arctic）；University of Alberta 2023 碩論（林地野牛與狼）；NPS〈Pronghorn〉、〈Coyote〉、〈Elk〉；National Geographic〈Of pronghorn and predators〉；WyoFile〈Yellowstone pronghorn find sanctuary in the shadow of the wolf〉；Voyageurs Wolf Project（National Geographic、Quetico Superior、Gable & Windels 2018 JWM）；PNAS 2026〈Diets, dominance hierarchies, and kleptoparasitism drive asymmetrical interactions between wolves and cougars〉（PMC12890783）；KUOW〈Washington cougars are killing wolves at a surprising rate〉；Canadian Field-Naturalist（黑熊與狼）；Ordiz 等 2020（Diversity）；NPS〈Wolves of Mount McKinley〉第 8 章；Berger 等 2007、High Country News〈Top dog loses〉；Ripple 等 2011、Squires 等 2012（Wildlife Society Bulletin）；USGS〈Migration of northern Yellowstone elk〉；Grand Teton〈Mule deer migration study〉、USGS 懷俄明騾鹿遷徙資料；Teton Land Trust〈Seasonal movement of elk and moose〉；extension.org〈Feral hog history〉、Mississippi State〈Wild pig history〉。
+- Phase 3（2026-10-13）：MacNulty 等 2012、2014（獵馬鹿、野牛的群體大小；NPS〈Understanding the limits to wolf hunting ability〉）；Cassidy 等 2015〈Group composition effects on aggressive interpack interactions of gray wolves in Yellowstone National Park〉（Behavioral Ecology；USGS、NPS Yellowstone Science 24-1）；Yellowstone Science 2016（死因）；Cassidy 等 2023（繁殖者死亡與狼群解散）；USFWS〈What does it mean to be a lone wolf?〉；wolf.org〈What’s a lone wolf?〉；Voyageurs National Park〈The myth of the lone wolf〉；Canadian Field-Naturalist（Wisconsin 的領域標記）；Peterson 等（Yellowstone 的領導行為，wolf.org）；Idaho Fish & Game；Voyageurs Wolf Project（領域大小、幼狼存活 2019～2025）；Ruprecht 等 2012（Journal of Mammalogy，巢穴與集合點的留守）；Homkes 等 2020（Wildlife Society Bulletin，帶食物回巢）；PLoS ONE 2022〈Breeding displacement in gray wolves〉（PMC9710779）；1983 明尼蘇達的狼群大小與幼狼研究（USGS）；斯堪地那維亞 40 年的繁殖年齡研究。
