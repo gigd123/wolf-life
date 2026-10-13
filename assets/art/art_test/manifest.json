@@ -210,11 +210,11 @@
  "scene": {
   "wolf_gray": {
    "frame": [
-    62,
+    49,
     40
    ],
-   "foot": 36,
-   "center_x": 31.0,
+   "foot": 35,
+   "center_x": 24.0,
    "body_h": 30,
    "rel_height": 1.0,
    "actions": {
@@ -282,11 +282,11 @@
   },
   "grizzly": {
    "frame": [
-    83,
+    68,
     57
    ],
-   "foot": 51,
-   "center_x": 41.5,
+   "foot": 52,
+   "center_x": 33.5,
    "body_h": 45,
    "rel_height": 1.5,
    "actions": {
@@ -310,6 +310,96 @@
     },
     "hurt": {
      "sheet": "res://assets/art/art_test/scene/grizzly_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "elk_cow": {
+   "frame": [
+    70,
+    65
+   ],
+   "foot": 63,
+   "center_x": 38.0,
+   "body_h": 60,
+   "rel_height": 2.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/elk_cow_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/scene/elk_cow_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/elk_cow_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "elk_bull": {
+   "frame": [
+    81,
+    84
+   ],
+   "foot": 80,
+   "center_x": 44.0,
+   "body_h": 77,
+   "rel_height": 2.6,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/elk_bull_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/scene/elk_bull_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/elk_bull_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "hare": {
+   "frame": [
+    22,
+    20
+   ],
+   "foot": 17,
+   "center_x": 11.0,
+   "body_h": 14,
+   "rel_height": 0.5,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/hare_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "hop": {
+     "sheet": "res://assets/art/art_test/scene/hare_hop.png",
+     "frames": 12,
+     "fps": 14,
+     "loop": true
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/hare_hurt.png",
      "frames": 8,
      "fps": 12,
      "loop": false

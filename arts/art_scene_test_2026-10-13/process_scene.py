@@ -9,7 +9,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "assets", "art", "art_test", "scene")
 SIZE = (320, 180)
 COLORS = 128
-SCENES = {"forest": "bg_forest.jpg", "meadow": "bg_meadow.png", "winter": "bg_winter.png"}
+SCENES = {"forest": "bg_forest.jpg", "meadow": "bg_meadow.png", "winter": "bg_winter.png",
+          "forest_summer": "bg_forest_summer.jpg", "forest_snowy": "bg_forest_snowy.jpg", "forest_winter": "bg_forest_winter.jpg"}
 
 
 def main():

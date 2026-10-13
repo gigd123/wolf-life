@@ -10,21 +10,22 @@ const ArtSprite := preload("res://prototypes/art_test/ArtSprite.gd")
 const MANIFEST := "res://assets/art/art_test/manifest.json"
 const GROUND_Y := 226.0
 const WOLF_H := 64.0          # 灰狼在畫面上的高度（邏輯像素，640×360）；像素版的灰狼本體正好 64，整數倍率 1
-const NAMES := {"hare": "雪兔", "elk_cow": "母馬鹿", "grizzly": "灰熊", "wolf_black": "黑狼", "wolf_gray": "灰狼"}
+const NAMES := {"hare": "雪兔", "elk_cow": "母馬鹿", "elk_bull": "公馬鹿", "grizzly": "灰熊", "wolf_black": "黑狼", "wolf_gray": "灰狼"}
 # 像素版沒有素材時，用遊戲裡的哪一隻頂替
-const FALLBACK := {"wolf_gray": "", "wolf_black": "stranger_wolf", "grizzly": "grizzly_bear", "elk_cow": "elk", "hare": "snowshoe_hare"}
+const FALLBACK := {"wolf_gray": "", "wolf_black": "stranger_wolf", "grizzly": "grizzly_bear", "elk_cow": "elk", "elk_bull": "elk", "hare": "snowshoe_hare"}
 # shift：背景往上移多少（邏輯像素），讓圖裡的地面落在文字面板上方、動物腳下（下方面板蓋住的是圖的最底部）
 const BACKGROUNDS := {
 	"illus": {"meadow": {"path": "res://assets/art/art_test/illus/bg_meadow.jpg", "shift": 126},
 		"forest": {"path": "res://assets/art/art_test/illus/bg_forest.jpg", "shift": 122}},
 	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
 		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
-	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：林內（Gemini）、林緣草地與冬季（DeeVid 免費版，右上角有浮水印）
+	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：同一片林內的三個季節（Gemini，黃昏）＋林緣草地（DeeVid 免費版，白天、有浮水印）
 	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_meadow.png", "shift": 22, "tint": Color(1.0, 0.98, 0.94)},
-		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56, "tint": Color(0.74, 0.64, 0.56)},
-		"winter": {"path": "res://assets/art/art_test/scene/bg_winter.png", "shift": 24, "tint": Color(0.94, 0.97, 1.04)}},
+		"forest": {"path": "res://assets/art/art_test/scene/bg_forest_summer.png", "shift": 56, "tint": Color(0.86, 0.78, 0.7)},
+		"forest_snowy": {"path": "res://assets/art/art_test/scene/bg_forest_snowy.png", "shift": 56, "tint": Color(0.9, 0.85, 0.84)},
+		"forest_winter": {"path": "res://assets/art/art_test/scene/bg_forest_winter.png", "shift": 56, "tint": Color(0.92, 0.9, 0.95)}},
 }
-const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "winter": "冬季"}
+const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "forest_snowy": "林內・初雪", "forest_winter": "林內・深冬"}
 const STYLES := ["illus", "pixel", "scene"]
 const STYLE_NAMES := {"illus": "插畫", "pixel": "像素", "scene": "場景"}
 
@@ -135,7 +136,7 @@ func _entry(id: String) -> Dictionary:
 
 
 func _setup_sprite(s: Node2D, id: String) -> void:
-	var rel: float = float(manifest.get("illus", {}).get(id, {}).get("rel_height", 1.0))
+	var rel: float = float(_entry(id).get("rel_height", manifest.get("illus", {}).get(id, {}).get("rel_height", 1.0)))
 	var e := _entry(id)
 	s.fallback_base_zoom = maxf(1.0, round(WOLF_H / 30.0))
 	s.setup(e, style != "illus", WOLF_H * rel, FALLBACK.get(id, ""), id == "wolf_gray")
@@ -167,7 +168,7 @@ func _apply_style() -> void:
 	if style == "pixel":
 		lines.append("像素版：背景暫用遊戲現有的地形圖")
 	elif style == "scene":
-		lines.append("場景版（主視覺）：林緣草地與冬季是 DeeVid 免費版（有浮水印）")
+		lines.append("林緣草地：DeeVid（白天、浮水印）\n黑狼：第一批的圖")
 		if not missing.is_empty():
 			lines.append("、".join(missing) + "還沒有新圖，暫用遊戲現有的像素圖")
 	note.text = "\n".join(lines)
@@ -259,6 +260,7 @@ func _menu() -> void:
 	_say("美術測試：選一個情境。右上角可以切換風格與背景，切換後情境會重新開始。", [
 		["狩獵雪兔", func(): _hunt("hare")],
 		["狩獵母馬鹿", func(): _hunt("elk_cow")],
+		["狩獵公馬鹿", func(): _hunt("elk_bull")],
 		["遇到灰熊", func(): _encounter("grizzly")],
 		["遇到黑狼", func(): _encounter("wolf_black")],
 		["自由走動", _free_walk],

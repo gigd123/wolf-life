@@ -11,7 +11,7 @@ import math
 import os
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCALE = 0.5
@@ -271,6 +271,12 @@ def wolf_rig(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE):
     tx = cfg["tail_x"]
     head_only = lambda p: np.clip((p[:, 0] - h0) / 40, 0, 1)
     not_head = lambda p: np.clip((h1 - p[:, 0]) / 60, 0.02, 1)
+    if "head_poly" in cfg:
+        # 頭的範圍用多邊形指定（例如公鹿往後展開的角，x 比頸部還小）
+        hm = np.asarray(mask_of(cfg["head_poly"]).filter(ImageFilter.GaussianBlur(12))).astype(float) / 255
+        sample = lambda p: hm[np.clip(p[:, 1].astype(int), 0, H0 - 1), np.clip(p[:, 0].astype(int), 0, W0 - 1)]
+        head_only = sample
+        not_head = lambda p: np.clip(1 - sample(p), 0.02, 1)
     tail_only = lambda p: np.clip((tx - p[:, 0]) / 30, 0, 1)
 
     layers = [

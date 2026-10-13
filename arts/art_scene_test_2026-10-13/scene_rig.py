@@ -161,10 +161,194 @@ GRIZZLY = _shift(dict(
     eye=(1660, 730),
 ), GRIZZLY_CROP[0], GRIZZLY_CROP[1])
 
-WOLVES = {"wolf_gray": WOLF_GRAY, "wolf_black": WOLF_BLACK, "grizzly": GRIZZLY}
+# ---- 第二批（略帶俯視、站姿；符合 HD-2D 目標條件），cutout_scene.py 去背（含自帶影子） ----
+WOLF_GRAY2 = dict(
+    bones=[
+        ("hips", None, (190, 280), (460, 270)),
+        ("chest", "hips", (460, 270), (660, 230)),
+        ("head", "chest", (680, 200), (890, 235)),
+        ("jaw", "head", (810, 262), (880, 262)),
+        ("tail1", "hips", (160, 230), (80, 380)),
+        ("tail2", "tail1", (80, 380), (30, 520)),
+        ("nh_thigh", "hips", (220, 330), (180, 450)),
+        ("nh_shin", "nh_thigh", (180, 450), (140, 560)),
+        ("nh_foot", "nh_shin", (140, 560), (150, 680)),
+        ("fh_thigh", "hips", (320, 380), (300, 480)),
+        ("fh_shin", "fh_thigh", (300, 480), (290, 570)),
+        ("fh_foot", "fh_shin", (290, 570), (320, 630)),
+        ("nf_upper", "chest", (560, 400), (560, 500)),
+        ("nf_lower", "nf_upper", (560, 500), (575, 640)),
+        ("nf_paw", "nf_lower", (575, 640), (610, 690)),
+        ("ff_upper", "chest", (650, 420), (640, 520)),
+        ("ff_lower", "ff_upper", (640, 520), (650, 630)),
+        ("ff_paw", "ff_lower", (650, 630), (690, 655)),
+    ],
+    jaw=[(800, 255), (840, 258), (880, 250), (892, 245), (876, 270), (840, 282), (805, 275)],
+    mouth=[(804, 257), (840, 260), (878, 252), (887, 249), (873, 268), (840, 279), (808, 273)],
+    teeth=[],
+    limits={
+        "nh": [(95, 470), (200, 330), (250, 360), (240, 480), (205, 560), (205, 712), (95, 712)],
+        "fh": [(230, 400), (380, 400), (370, 520), (365, 712), (230, 712), (225, 520)],
+        "nf": [(505, 430), (600, 430), (598, 620), (650, 650), (660, 712), (505, 712)],
+        "ff": [(602, 430), (735, 430), (735, 700), (668, 700), (655, 640), (604, 615)],
+    },
+    seeds={"nh": [(150, 560), (150, 670)], "fh": [(300, 500), (320, 620)], "nf": [(560, 550), (600, 680)], "ff": [(630, 520), (690, 650)]},
+    lum_t=0.2, hole_y=430, claw_y=650, head_x=(640, 700), tail_x=150,
+    stretch_center=(450, 700), eye=(783, 162),
+)
+
+GRIZZLY2 = dict(
+    bones=[
+        ("hips", None, (100, 250), (450, 250)),
+        ("chest", "hips", (450, 250), (620, 300)),
+        ("head", "chest", (600, 250), (800, 420)),
+        ("jaw", "head", (745, 435), (800, 445)),
+        ("tail1", "hips", (60, 220), (40, 260)),
+        ("tail2", "tail1", (40, 260), (30, 280)),
+        ("nh_thigh", "hips", (120, 380), (70, 520)),
+        ("nh_shin", "nh_thigh", (70, 520), (90, 590)),
+        ("nh_foot", "nh_shin", (90, 590), (150, 630)),
+        ("fh_thigh", "hips", (330, 420), (320, 500)),
+        ("fh_shin", "fh_thigh", (320, 500), (360, 540)),
+        ("fh_foot", "fh_shin", (360, 540), (420, 570)),
+        ("nf_upper", "chest", (500, 450), (540, 560)),
+        ("nf_lower", "nf_upper", (540, 560), (600, 650)),
+        ("nf_paw", "nf_lower", (600, 650), (680, 700)),
+        ("ff_upper", "chest", (680, 470), (730, 540)),
+        ("ff_lower", "ff_upper", (730, 540), (730, 600)),
+        ("ff_paw", "ff_lower", (730, 600), (760, 630)),
+    ],
+    jaw=[(745, 428), (790, 432), (808, 428), (800, 450), (770, 458), (748, 448)],
+    mouth=[(749, 430), (790, 434), (804, 431), (797, 447), (770, 455), (751, 446)],
+    teeth=[],
+    limits={
+        "nh": [(5, 400), (240, 420), (240, 530), (180, 660), (5, 660)],
+        "fh": [(250, 440), (450, 440), (450, 600), (270, 600)],
+        "nf": [(455, 470), (660, 470), (660, 580), (700, 620), (700, 734), (470, 734), (455, 600)],
+        "ff": [(665, 460), (820, 460), (820, 650), (705, 650), (700, 600), (665, 570)],
+    },
+    seeds={"nh": [(60, 560), (130, 620)], "fh": [(330, 520), (400, 570)], "nf": [(540, 560), (640, 690)], "ff": [(720, 540), (740, 620)]},
+    lum_t=0.1, hole_y=470, claw_y=600, head_x=(560, 620), tail_x=70,
+    stretch_center=(420, 700), eye=(720, 330),
+)
+
+ELK_COW = dict(
+    bones=[
+        ("hips", None, (60, 220), (300, 240)),
+        ("chest", "hips", (300, 240), (450, 230)),
+        ("head", "chest", (440, 170), (625, 145)),
+        ("jaw", "head", (570, 165), (615, 170)),
+        ("tail1", "hips", (25, 190), (15, 230)),
+        ("tail2", "tail1", (15, 230), (12, 250)),
+        ("nh_thigh", "hips", (60, 300), (40, 400)),
+        ("nh_shin", "nh_thigh", (40, 400), (30, 470)),
+        ("nh_foot", "nh_shin", (30, 470), (40, 545)),
+        ("fh_thigh", "hips", (130, 320), (130, 400)),
+        ("fh_shin", "fh_thigh", (130, 400), (150, 470)),
+        ("fh_foot", "fh_shin", (150, 470), (165, 515)),
+        ("nf_upper", "chest", (320, 340), (325, 450)),
+        ("nf_lower", "nf_upper", (325, 450), (330, 560)),
+        ("nf_paw", "nf_lower", (330, 560), (345, 615)),
+        ("ff_upper", "chest", (385, 330), (380, 440)),
+        ("ff_lower", "ff_upper", (380, 440), (385, 540)),
+        ("ff_paw", "ff_lower", (385, 540), (400, 578)),
+    ],
+    jaw=[(570, 160), (600, 165), (622, 160), (620, 175), (600, 182), (575, 175)],
+    mouth=[(573, 162), (600, 167), (618, 163), (617, 173), (600, 179), (577, 173)],
+    teeth=[],
+    limits={
+        "nh": [(5, 330), (95, 330), (95, 420), (80, 560), (5, 560)],
+        "fh": [(96, 300), (200, 300), (200, 530), (96, 530)],
+        "nf": [(295, 340), (352, 340), (352, 560), (372, 640), (295, 640)],
+        "ff": [(354, 330), (440, 330), (430, 600), (374, 600), (354, 560)],
+    },
+    seeds={"nh": [(35, 450), (40, 540)], "fh": [(140, 420), (160, 510)], "nf": [(325, 450), (345, 610)], "ff": [(380, 440), (395, 570)]},
+    lum_t=0.1, hole_y=340, claw_y=600, head_x=(430, 480), tail_x=40,
+    stretch_center=(230, 620), eye=(515, 100),
+)
+
+ELK_BULL = dict(
+    bones=[
+        ("hips", None, (40, 280), (290, 320)),
+        ("chest", "hips", (290, 320), (440, 330)),
+        ("head", "chest", (440, 310), (590, 440)),
+        ("jaw", "head", (550, 445), (590, 455)),
+        ("tail1", "hips", (20, 240), (10, 280)),
+        ("tail2", "tail1", (10, 280), (8, 300)),
+        ("nh_thigh", "hips", (50, 350), (40, 450)),
+        ("nh_shin", "nh_thigh", (40, 450), (30, 520)),
+        ("nh_foot", "nh_shin", (30, 520), (45, 590)),
+        ("fh_thigh", "hips", (130, 400), (140, 470)),
+        ("fh_shin", "fh_thigh", (140, 470), (150, 530)),
+        ("fh_foot", "fh_shin", (150, 530), (170, 570)),
+        ("nf_upper", "chest", (300, 470), (300, 580)),
+        ("nf_lower", "nf_upper", (300, 580), (305, 680)),
+        ("nf_paw", "nf_lower", (305, 680), (320, 720)),
+        ("ff_upper", "chest", (390, 470), (385, 560)),
+        ("ff_lower", "ff_upper", (385, 560), (390, 630)),
+        ("ff_paw", "ff_lower", (390, 630), (405, 665)),
+    ],
+    jaw=[(545, 445), (575, 448), (592, 445), (588, 462), (565, 470), (548, 460)],
+    mouth=[(549, 447), (575, 450), (588, 448), (585, 459), (565, 467), (551, 458)],
+    teeth=[],
+    limits={
+        "nh": [(5, 380), (95, 380), (95, 600), (5, 600)],
+        "fh": [(96, 390), (210, 390), (210, 590), (96, 590)],
+        "nf": [(260, 480), (345, 480), (345, 740), (260, 740)],
+        "ff": [(346, 470), (440, 470), (440, 690), (346, 690)],
+    },
+    seeds={"nh": [(40, 480), (45, 580)], "fh": [(140, 460), (170, 565)], "nf": [(300, 600), (315, 715)], "ff": [(390, 560), (400, 660)]},
+    lum_t=0.1, hole_y=470, claw_y=650, head_x=(430, 500), tail_x=30,
+    head_poly=[(200, 20), (680, 0), (680, 480), (540, 480), (440, 360), (340, 275), (270, 250), (200, 200)],
+    stretch_center=(230, 720), eye=(488, 378),
+)
+
+HARE_W = dict(
+    bones=[
+        ("hips", None, (80, 300), (420, 330)),
+        ("chest", "hips", (420, 330), (560, 300)),
+        ("head", "chest", (580, 250), (780, 300)),
+        ("jaw", "head", (720, 320), (770, 330)),
+        ("tail1", "hips", (60, 320), (20, 330)),
+        ("tail2", "tail1", (20, 330), (5, 335)),
+        ("nh_thigh", "hips", (140, 420), (100, 520)),
+        ("nh_shin", "nh_thigh", (100, 520), (90, 600)),
+        ("nh_foot", "nh_shin", (90, 600), (150, 680)),
+        ("fh_thigh", "hips", (250, 420), (230, 520)),
+        ("fh_shin", "fh_thigh", (230, 520), (270, 600)),
+        ("fh_foot", "fh_shin", (270, 600), (330, 630)),
+        ("nf_upper", "chest", (500, 450), (510, 550)),
+        ("nf_lower", "nf_upper", (510, 550), (530, 640)),
+        ("nf_paw", "nf_lower", (530, 640), (570, 690)),
+        ("ff_upper", "chest", (590, 440), (590, 540)),
+        ("ff_lower", "ff_upper", (590, 540), (610, 620)),
+        ("ff_paw", "ff_lower", (610, 620), (645, 660)),
+    ],
+    jaw=[(715, 318), (745, 322), (772, 318), (768, 335), (745, 342), (720, 335)],
+    mouth=[(718, 320), (745, 324), (768, 320), (765, 333), (745, 339), (722, 333)],
+    teeth=[],
+    limits={
+        "nh": [(30, 470), (170, 440), (200, 500), (205, 717), (30, 717)],
+        "fh": [(170, 430), (360, 420), (360, 660), (215, 660), (205, 500)],
+        "nf": [(450, 470), (545, 480), (548, 600), (590, 640), (600, 717), (460, 717)],
+        "ff": [(548, 460), (670, 460), (670, 680), (600, 680), (595, 630), (550, 600)],
+    },
+    seeds={"nh": [(80, 560), (120, 670)], "fh": [(240, 520), (300, 625)], "nf": [(500, 560), (550, 690)], "ff": [(600, 540), (630, 660)]},
+    lum_t=0.3, hole_y=450, claw_y=670, head_x=(560, 620), tail_x=70,
+    stretch_center=(350, 700), eye=(683, 236),
+)
+
+WOLVES = {"wolf_gray": WOLF_GRAY, "wolf_black": WOLF_BLACK, "grizzly": GRIZZLY,
+          "wolf_gray2": WOLF_GRAY2, "grizzly2": GRIZZLY2, "elk_cow": ELK_COW, "elk_bull": ELK_BULL, "hare_winter": HARE_W}
 # 本體高度：狼 30 像素，其他照相對灰狼的比例（灰熊 1.5）
-BODY = {"wolf_gray": 30, "wolf_black": 30, "grizzly": 45}
-EYES = {"wolf_gray": (222, 160, 70), "wolf_black": (226, 196, 80), "grizzly": (40, 30, 26)}
+BODY = {"wolf_gray": 30, "wolf_black": 30, "grizzly": 45,
+        "wolf_gray2": 30, "grizzly2": 45, "elk_cow": 60, "elk_bull": 78, "hare_winter": 15}
+EYES = {"wolf_gray": (222, 160, 70), "wolf_black": (226, 196, 80), "grizzly": (40, 30, 26),
+        "wolf_gray2": (222, 160, 70), "grizzly2": (150, 92, 48), "elk_cow": (40, 30, 26), "elk_bull": (40, 30, 26),
+        "hare_winter": (30, 24, 24)}
+# 遊戲裡用的 ID（第二批取代第一批的灰狼、灰熊），以及獵物只做待機、走路、受傷
+GAME_ID = {"wolf_gray2": "wolf_gray", "grizzly2": "grizzly", "hare_winter": "hare"}
+PREY = {"elk_cow", "elk_bull", "hare_winter"}
 
 
 def crop_grizzly():
@@ -182,8 +366,11 @@ def eye_point(cfg, bones, pose, k):
 
 
 def export(aid, cfg, eye_rgb, body_px=BODY_PX):
+    import animals
     rig.SCALE = 0.5
-    acts_hi = rig.render_actions(aid, cfg, HERE)
+    # 雪兔的後腿沒有內部外框，切線是直的，所以不擺腿，整隻跳（HARE_ACTIONS）
+    actions = animals.HARE_ACTIONS if aid == "hare_winter" else (animals.PREY_ACTIONS if aid in PREY else rig.ACTIONS)
+    acts_hi = rig.render_actions(aid, cfg, HERE, actions)
     rest_hi = Image.open(os.path.join(HERE, "anim", f"{aid}_rest.png"))
     bb = rest_hi.getbbox()
     k = body_px / (bb[3] - bb[1])
@@ -193,11 +380,13 @@ def export(aid, cfg, eye_rgb, body_px=BODY_PX):
     pixel_rig.put_eye(rest_px, eye_point(cfg, bones, {}, k))
     acts = {}
     for act, frames in acts_hi.items():
-        fn, n = rig.ACTIONS[act]
+        fn, n = actions[act]
         acts[act] = [pixel_rig.put_eye(pixel_rig.pixelize(f, k, pal, "shade")[0], eye_point(cfg, bones, fn(i / n), k))
                      for i, f in enumerate(frames)]
     acts = export_game.bite_trails(acts)
-    return export_game.write_animal("scene", aid, acts, rest_px)
+    gid = GAME_ID.get(aid, aid)
+    export_game.REL.setdefault(gid, body_px / 30.0)
+    return export_game.write_animal("scene", gid, acts, rest_px)
 
 
 def main():
@@ -212,8 +401,9 @@ def main():
     manifest = json.load(open(path, encoding="utf-8"))
     manifest.setdefault("scene", {})
     for aid in names:
-        manifest["scene"][aid] = export(aid, WOLVES[aid], EYES[aid], BODY[aid])
-        print(aid, manifest["scene"][aid]["frame"])
+        gid = GAME_ID.get(aid, aid)
+        manifest["scene"][gid] = export(aid, WOLVES[aid], EYES[aid], BODY[aid])
+        print(aid, "->", gid, manifest["scene"][gid]["frame"])
     json.dump(manifest, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
