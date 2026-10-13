@@ -1,6 +1,6 @@
 """主視覺場景版的角色：Gemini 的像素狼（cut/）→ 骨架動畫（共用 art_illustrated_test 的 rig.py）
 → 縮到場景比例（本體 30 像素）、套調色盤、補外框、眼睛跟著頭骨 → assets/art/art_test/scene/ 與 manifest["scene"]。
-用法：python3 scene_rig.py [check]   （check：只輸出切腿的遮罩圖）
+用法：python3 scene_rig.py [check] [動物…]   （check：只輸出切腿的遮罩圖；不給動物就全部）
 """
 import json
 import os
@@ -99,7 +99,80 @@ WOLF_BLACK = dict(
     eye=(970, 185),
 )
 
-WOLVES = {"wolf_gray": WOLF_GRAY, "wolf_black": WOLF_BLACK}
+# 灰熊（DeeVid）：腿沒有外框，但腿與腿之間是背景，切腿時不看亮度（lum_t=0），只靠範圍。
+# 座標是去背圖 cut/grizzly.png 的原始座標，下面統一減掉裁切的位移（裁掉右上角浮水印那一段空白）。
+GRIZZLY_CROP = (180, 440, 1850, 1497)
+
+
+def _shift(cfg, dx, dy):
+    mv = lambda p: (p[0] - dx, p[1] - dy)
+    out = dict(cfg)
+    out["bones"] = [(n, par, mv(a), mv(b)) for n, par, a, b in cfg["bones"]]
+    for k in ("jaw", "mouth"):
+        out[k] = [mv(p) for p in cfg[k]]
+    out["limits"] = {k: [mv(p) for p in v] for k, v in cfg["limits"].items()}
+    out["seeds"] = {k: [mv(p) for p in v] for k, v in cfg["seeds"].items()}
+    for k in ("hole_y", "claw_y"):
+        out[k] = cfg[k] - dy
+    out["head_x"] = (cfg["head_x"][0] - dx, cfg["head_x"][1] - dx)
+    out["tail_x"] = cfg["tail_x"] - dx
+    out["stretch_center"] = mv(cfg["stretch_center"])
+    out["eye"] = mv(cfg["eye"])
+    return out
+
+
+GRIZZLY = _shift(dict(
+    bones=[
+        ("hips", None, (400, 800), (1000, 750)),
+        ("chest", "hips", (1000, 750), (1350, 700)),
+        ("head", "chest", (1400, 650), (1830, 830)),
+        ("jaw", "head", (1600, 870), (1780, 880)),
+        ("tail1", "hips", (230, 700), (210, 780)),
+        ("tail2", "tail1", (210, 780), (205, 820)),
+        ("nh_thigh", "hips", (350, 1000), (330, 1250)),
+        ("nh_shin", "nh_thigh", (330, 1250), (330, 1400)),
+        ("nh_foot", "nh_shin", (330, 1400), (450, 1460)),
+        ("fh_thigh", "hips", (650, 1050), (640, 1250)),
+        ("fh_shin", "fh_thigh", (640, 1250), (660, 1400)),
+        ("fh_foot", "fh_shin", (660, 1400), (790, 1440)),
+        ("nf_upper", "chest", (1000, 1050), (1000, 1250)),
+        ("nf_lower", "nf_upper", (1000, 1250), (1050, 1420)),
+        ("nf_paw", "nf_lower", (1050, 1420), (1180, 1470)),
+        ("ff_upper", "chest", (1300, 1000), (1290, 1250)),
+        ("ff_lower", "ff_upper", (1290, 1250), (1330, 1400)),
+        ("ff_paw", "ff_lower", (1330, 1400), (1470, 1450)),
+    ],
+    jaw=[(1600, 860), (1700, 870), (1790, 860), (1810, 850), (1780, 890), (1700, 900), (1630, 895)],
+    mouth=[(1604, 862), (1700, 872), (1786, 862), (1804, 854), (1776, 886), (1700, 896), (1634, 891)],
+    teeth=[],
+    limits={
+        "nh": [(195, 1130), (500, 1130), (500, 1300), (525, 1500), (195, 1500)],
+        "fh": [(500, 1150), (870, 1150), (870, 1500), (525, 1500), (500, 1300)],
+        "nf": [(870, 1100), (1150, 1100), (1150, 1350), (1215, 1500), (870, 1500)],
+        "ff": [(1150, 1100), (1440, 1000), (1500, 1500), (1215, 1500), (1150, 1350)],
+    },
+    seeds={"nh": [(330, 1300)], "fh": [(650, 1350)], "nf": [(1000, 1350)], "ff": [(1300, 1350)]},
+    lum_t=0.0,
+    hole_y=1150,
+    claw_y=1420,
+    head_x=(1300, 1380),
+    tail_x=260,
+    stretch_center=(850, 1480),
+    eye=(1660, 730),
+), GRIZZLY_CROP[0], GRIZZLY_CROP[1])
+
+WOLVES = {"wolf_gray": WOLF_GRAY, "wolf_black": WOLF_BLACK, "grizzly": GRIZZLY}
+# 本體高度：狼 30 像素，其他照相對灰狼的比例（灰熊 1.5）
+BODY = {"wolf_gray": 30, "wolf_black": 30, "grizzly": 45}
+EYES = {"wolf_gray": (222, 160, 70), "wolf_black": (226, 196, 80), "grizzly": (40, 30, 26)}
+
+
+def crop_grizzly():
+    """去背圖右上角帶到浮水印，只保留熊的範圍。"""
+    p = os.path.join(HERE, "cut", "grizzly.png")
+    im = Image.open(p)
+    if im.size != (GRIZZLY_CROP[2] - GRIZZLY_CROP[0], GRIZZLY_CROP[3] - GRIZZLY_CROP[1]):
+        im.crop(GRIZZLY_CROP).save(p)
 
 
 def eye_point(cfg, bones, pose, k):
@@ -108,12 +181,12 @@ def eye_point(cfg, bones, pose, k):
     return int((p[0] + rig.PAD) * rig.SCALE * k), int((p[1] + rig.PAD) * rig.SCALE * k)
 
 
-def export(aid, cfg, eye_rgb):
+def export(aid, cfg, eye_rgb, body_px=BODY_PX):
     rig.SCALE = 0.5
     acts_hi = rig.render_actions(aid, cfg, HERE)
     rest_hi = Image.open(os.path.join(HERE, "anim", f"{aid}_rest.png"))
     bb = rest_hi.getbbox()
-    k = BODY_PX / (bb[3] - bb[1])
+    k = body_px / (bb[3] - bb[1])
     bones = [rig.Bone(*b) for b in cfg["bones"]]
     pixel_rig.EYE_RGB = eye_rgb
     rest_px, pal = pixel_rig.pixelize(rest_hi, k)
@@ -128,15 +201,18 @@ def export(aid, cfg, eye_rgb):
 
 
 def main():
-    if sys.argv[1:] == ["check"]:
-        for aid, cfg in WOLVES.items():
-            rig.wolf_rig(aid, cfg, HERE)
+    crop_grizzly()
+    only = [a for a in sys.argv[1:] if a != "check"]
+    names = only or list(WOLVES)
+    if "check" in sys.argv[1:]:
+        for aid in names:
+            rig.wolf_rig(aid, WOLVES[aid], HERE)
         return
     path = os.path.join(export_game.OUT, "manifest.json")
     manifest = json.load(open(path, encoding="utf-8"))
-    manifest["scene"] = {}
-    for aid, cfg, eye in (("wolf_gray", WOLF_GRAY, (222, 160, 70)), ("wolf_black", WOLF_BLACK, (226, 196, 80))):
-        manifest["scene"][aid] = export(aid, cfg, eye)
+    manifest.setdefault("scene", {})
+    for aid in names:
+        manifest["scene"][aid] = export(aid, WOLVES[aid], EYES[aid], BODY[aid])
         print(aid, manifest["scene"][aid]["frame"])
     json.dump(manifest, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 

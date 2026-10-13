@@ -19,10 +19,12 @@ const BACKGROUNDS := {
 		"forest": {"path": "res://assets/art/art_test/illus/bg_forest.jpg", "shift": 122}},
 	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
 		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
-	# 主視覺（黃昏斜角像素場景，arts/art_scene_test_2026-10-13/）：目前只有林內一張，林緣草地先共用
-	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56},
-		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56}},
+	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：林內（Gemini）、林緣草地與冬季（DeeVid 免費版，右上角有浮水印）
+	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_meadow.png", "shift": 22},
+		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56},
+		"winter": {"path": "res://assets/art/art_test/scene/bg_winter.png", "shift": 24}},
 }
+const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "winter": "冬季"}
 const STYLES := ["illus", "pixel", "scene"]
 const STYLE_NAMES := {"illus": "插畫", "pixel": "像素", "scene": "場景"}
 
@@ -141,8 +143,10 @@ func _setup_sprite(s: Node2D, id: String) -> void:
 
 func _apply_style() -> void:
 	style_btn.text = "風格：" + STYLE_NAMES[style]
-	bg_btn.text = "背景：" + ("林緣草地" if bg_key == "meadow" else "林內")
-	var bg_info: Dictionary = BACKGROUNDS[style][bg_key]
+	# 冬季只有場景版有；其他風格沒有這張時用林緣草地
+	var key: String = bg_key if BACKGROUNDS[style].has(bg_key) else "meadow"
+	bg_btn.text = "背景：" + BG_NAMES[key]
+	var bg_info: Dictionary = BACKGROUNDS[style][key]
 	bg.texture = load(bg_info["path"])
 	bg.offset_top = -float(bg_info["shift"])
 	bg.offset_bottom = -float(bg_info["shift"])
@@ -158,7 +162,7 @@ func _apply_style() -> void:
 	if style == "pixel":
 		lines.append("像素版：背景暫用遊戲現有的地形圖")
 	elif style == "scene":
-		lines.append("場景版（主視覺）：目前只有林內一張場景")
+		lines.append("場景版（主視覺）：林緣草地與冬季是 DeeVid 免費版（有浮水印）")
 		if not missing.is_empty():
 			lines.append("、".join(missing) + "還沒有新圖，暫用遊戲現有的像素圖")
 	note.text = "\n".join(lines)
@@ -171,7 +175,9 @@ func _toggle_style() -> void:
 
 
 func _toggle_bg() -> void:
-	bg_key = "forest" if bg_key == "meadow" else "meadow"
+	var keys: Array = BACKGROUNDS[style].keys()
+	var i: int = keys.find(bg_key)
+	bg_key = keys[(i + 1) % keys.size()]
 	_apply_style()
 
 

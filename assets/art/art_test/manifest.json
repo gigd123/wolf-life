@@ -279,6 +279,42 @@
      "loop": false
     }
    }
+  },
+  "grizzly": {
+   "frame": [
+    83,
+    57
+   ],
+   "foot": 51,
+   "center_x": 41.5,
+   "body_h": 45,
+   "rel_height": 1.5,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/grizzly_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/scene/grizzly_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/scene/grizzly_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/grizzly_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
   }
  }
 }
