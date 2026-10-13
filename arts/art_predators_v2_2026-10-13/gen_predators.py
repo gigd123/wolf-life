@@ -73,13 +73,14 @@ SPECIES = {
         sheen=(92, 96, 114)),
     'grizzly_bear': dict(
         frame=(80, 52), ground=50, split=42, file='bear_adult',
-        body=[(10, 37), (10, 28), (14, 22), (21, 19), (32, 19), (42, 17), (48, 14), (53, 14), (58, 17), (61, 22), (62, 29), (59, 37),
-              (51, 40), (30, 40), (17, 40), (11, 39)],
+        # 下半身（臀部、後腿）比肩峰更大：臀部頂端比肩峰高、往後更寬，肩峰降低
+        body=[(7, 38), (6, 28), (9, 20), (15, 14), (24, 13), (32, 16), (39, 18), (44, 16), (48, 14), (53, 15), (58, 18), (61, 23), (62, 29), (59, 37),
+              (51, 40), (30, 41), (15, 41), (9, 40)],
         head=[(57, 19), (62, 17), (66, 19), (68, 22), (70, 24), (75, 25), (76, 28), (72, 31), (65, 32), (60, 30), (57, 26)],
         jaw=[(69, 29), (75, 29), (73, 31), (69, 31)],
         ears=[[(60, 18), (61, 15), (64, 15), (64, 18)]],
         eye=(66, 23), nose=(76, 25), muzzle_x=70,
-        legs=[('far', (52, 36), 8, 7, 0), ('far', (23, 36), 10, 8, 0), ('near', (56, 36), 9, 8, 0), ('near', (19, 36), 12, 8, 0)],
+        legs=[('far', (52, 36), 8, 7, 0), ('far', (22, 36), 12, 9, 0), ('near', (56, 36), 9, 8, 0), ('near', (17, 36), 14, 9, 0)],
         paw=3, tail=None, claws=True,
         colors={BODY: (128, 96, 66), HEAD: (140, 104, 72), EAR: (104, 76, 54), LEG: (94, 68, 48),
                 FARLEG: (74, 54, 38), PAW: (80, 58, 42), MUZZLE: (160, 124, 88)},
@@ -106,7 +107,8 @@ def pose_params(pose, phase, bear):
         lift = [1 if phase == 3 else 0, 1 if phase == 1 else 0, 1 if phase == 1 else 0, 1 if phase == 3 else 0]
         bob = 1 if phase in (1, 3) else 0
     elif pose == 'attack':
-        fdx, fdy, hdx, hdy = 3, -4, 1, -1
+        # 頭保持水平往前（前半身抬起時頭不再跟著仰）
+        fdx, fdy, hdx, hdy = 3, -4, 2, 2
         swing = [4, -4, 7, -5]; lift = [3, 0, 5, 0]
         mouth = True
     elif pose == 'hurt':
@@ -178,7 +180,7 @@ def draw_frame(sp, pose='idle', phase=0):
         d.polygon([tf(nk[0]), tf(nk[1], True), tf(nk[2], True), tf(nk[3])], fill=HEAD)
     d.polygon([tf(p, True) for p in sp['head']], fill=HEAD)
     if mouth:
-        jaw = [tf((x, y + 2), True) for x, y in sp['jaw']]
+        jaw = [tf((x, y + 1), True) for x, y in sp['jaw']]
         d.polygon(jaw, fill=HEAD)
     if sp.get('ruff'):
         d.polygon([tf(p, True) for p in sp['ruff']], fill=MUZZLE)
@@ -323,8 +325,32 @@ def preview(path):
     out.resize((W * 5, H * 5), Image.NEAREST).save(path)
 
 
+def preview_actions(path, keys):
+    rows = []
+    for k in keys:
+        sp = SPECIES[k]
+        if sp.get('tail') is None:
+            fr = [draw_frame(sp, f'swipe{i}') for i in range(4)] + [draw_frame(sp, 'hurt')]
+        else:
+            fr = [draw_frame(sp, 'attack'), draw_frame(sp, 'hurt')] + ([draw_frame(sp, 'threaten')] if k == 'cougar' else [])
+        rows.append(fr)
+    W = max(sum(f.width + 6 for f in r) for r in rows) + 6
+    H = sum(max(f.height for f in r) + 6 for r in rows) + 6
+    out = Image.new('RGBA', (W, H), (96, 116, 96, 255))
+    y = 6
+    for r in rows:
+        h = max(f.height for f in r); x = 6
+        for f in r:
+            out.alpha_composite(f, (x, y + h - f.height)); x += f.width + 6
+        y += h + 6
+    out.resize((W * 5, H * 5), Image.NEAREST).save(path)
+
+
 if __name__ == '__main__':
     import sys
+    if '--preview-actions' in sys.argv:
+        preview_actions(ARCH + 'preview_v3_actions.png', ['coyote', 'lynx', 'cougar', 'black_bear'])
+        sys.exit(0)
     if '--preview' in sys.argv:
         preview(ARCH + 'preview_v3_basic.png')
         sys.exit(0)
