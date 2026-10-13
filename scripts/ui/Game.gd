@@ -430,11 +430,15 @@ func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, ac
 		var fallback_id: String = "gray_wolf" if animal_id == "stranger_wolf" else animal_id # 狼獾、渡鴉的美術之後補上，先用程式佔位
 		icon.show_static(PixelArt.make_animal_sprite(fallback_id, Vector2i(72, 48), _animal_scale(life_stage)))
 
-func _set_wolf_pose(icon: AnimatedIcon, pose: String) -> void:
+# animate = false：回合之間的靜止畫面，不播多格動畫（戰鬥動畫播完後重繪時不要再播一次）
+func _set_wolf_pose(icon: AnimatedIcon, pose: String, animate: bool = true) -> void:
 	var stage: String = _wolf_stage_key()
 	# 有正式的多格動畫就用（1.9 第 4 步）
-	if ArtLibrary.setup_wolf_strip(icon, pose, stage):
+	if animate and ArtLibrary.setup_wolf_strip(icon, pose, stage):
 		return
+	# 繞圈小跑只有多格動畫，沒有素材時用閃避的單張
+	if pose == "circle":
+		pose = "dodge"
 	# 走路、嚎叫在 spritesheet 裡（wolf_sheet 的列），其他姿勢是單張
 	if pose in ["walk", "howl"]:
 		if ArtLibrary.setup_wolf(icon, pose, 8.0 if pose == "walk" else 4.0, stage):
@@ -3445,7 +3449,7 @@ func _render_combat() -> void:
 	_clear_children(hunt_buttons_box)
 	var name: String = _combat_name(c)
 	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action)
-	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose)
+	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose, false)
 	_set_terrain_bg(hunt_bg, c.terrain)
 	var lines: Array[String] = []
 	if c.phase == Combat.Phase.STANDOFF:

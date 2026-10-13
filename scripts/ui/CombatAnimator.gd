@@ -90,7 +90,7 @@ func _play_event(e: Dictionary, wolf_home: Vector2, opp_home: Vector2) -> void:
 						await _sidestep(opp_icon, opp_home, 1.0)
 					await _return(wolf_icon, wolf_home)
 				"harass":
-					_pose(true, "dodge")
+					_pose(true, "circle")
 					await _circle(wolf_icon, wolf_home)
 					_pose(true, "bite")
 					await _dash(wolf_icon, wolf_home, 1.0, 28.0, 0.1)

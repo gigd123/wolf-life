@@ -135,6 +135,13 @@
   "wolf": {
     "sheet": "res://assets/art/sprites/wolf/wolf_sheet.png",
     "rows": { "idle": 0, "walk": 1, "howl": 2, "down": 3 },
+    "_strips_comment": "戰鬥動畫（1.9 第 4 步，第 1 批試做，arts/art_combat_wolf_2026-10-13/ 的產生器拆現有姿勢組成）：撲咬、被打飛、閃避跳開只播一次（loop false），繞圈小跑循環。",
+    "strips": {
+      "bite": { "sheet": "res://assets/art/sprites/wolf/wolf_bite_strip.png", "frame": [64, 40], "frames": 6, "fps": 20, "loop": false },
+      "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_hurt_strip.png", "frame": [64, 40], "frames": 5, "fps": 14, "loop": false },
+      "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_dodge_strip.png", "frame": [64, 40], "frames": 5, "fps": 16, "loop": false },
+      "circle": { "sheet": "res://assets/art/sprites/wolf/wolf_circle_strip.png", "frame": [64, 40], "frames": 8, "fps": 12, "loop": true }
+    },
     "poses": {
       "stalk": "res://assets/art/sprites/wolf/wolf_stalk.png",
       "pounce": "res://assets/art/sprites/wolf/wolf_pounce.png",
@@ -150,6 +157,12 @@
     "stages": {
       "adult": {
         "sheet": "res://assets/art/sprites/wolf/wolf_adult_sheet.png",
+        "strips": {
+          "bite": { "sheet": "res://assets/art/sprites/wolf/wolf_adult_bite_strip.png", "frame": [64, 40], "frames": 6, "fps": 20, "loop": false },
+          "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_adult_hurt_strip.png", "frame": [64, 40], "frames": 5, "fps": 14, "loop": false },
+          "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_adult_dodge_strip.png", "frame": [64, 40], "frames": 5, "fps": 16, "loop": false },
+          "circle": { "sheet": "res://assets/art/sprites/wolf/wolf_adult_circle_strip.png", "frame": [64, 40], "frames": 8, "fps": 12, "loop": true }
+        },
         "poses": {
           "stalk": "res://assets/art/sprites/wolf/wolf_adult_stalk.png",
           "pounce": "res://assets/art/sprites/wolf/wolf_adult_pounce.png",
@@ -164,6 +177,12 @@
       },
       "elder": {
         "sheet": "res://assets/art/sprites/wolf/wolf_elder_sheet.png",
+        "strips": {
+          "bite": { "sheet": "res://assets/art/sprites/wolf/wolf_elder_bite_strip.png", "frame": [64, 40], "frames": 6, "fps": 20, "loop": false },
+          "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_elder_hurt_strip.png", "frame": [64, 40], "frames": 5, "fps": 14, "loop": false },
+          "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_elder_dodge_strip.png", "frame": [64, 40], "frames": 5, "fps": 16, "loop": false },
+          "circle": { "sheet": "res://assets/art/sprites/wolf/wolf_elder_circle_strip.png", "frame": [64, 40], "frames": 8, "fps": 12, "loop": true }
+        },
         "poses": {
           "stalk": "res://assets/art/sprites/wolf/wolf_elder_stalk.png",
           "pounce": "res://assets/art/sprites/wolf/wolf_elder_pounce.png",

@@ -71,7 +71,7 @@ static func _setup_strip(icon: AnimatedIcon, strip: Dictionary) -> bool:
 	var tex := texture(str(strip.get("sheet", "")))
 	if tex == null:
 		return false
-	icon.setup(tex, _entry_frame(strip), 0, int(strip.get("frames", 4)), float(strip.get("fps", 5.0)))
+	icon.setup(tex, _entry_frame(strip), 0, int(strip.get("frames", 4)), float(strip.get("fps", 5.0)), bool(strip.get("loop", true)))
 	return true
 
 # 事件圖（art.json 的 events）；沒有對應的圖回傳 null。

@@ -11,11 +11,13 @@ var frame_size: Vector2i
 var row: int = 0
 var frame_count: int = 4
 var fps: float = 6.0
+var loop: bool = true # false：播一次停在最後一格（戰鬥的撲咬、被打飛等動作）
 
 var _frame: int = 0
 var _timer: float = 0.0
 
-func setup(p_sheet: Texture2D, p_frame_size: Vector2i, p_row: int, p_frame_count: int, p_fps: float = 6.0) -> void:
+func setup(p_sheet: Texture2D, p_frame_size: Vector2i, p_row: int, p_frame_count: int, p_fps: float = 6.0, p_loop: bool = true) -> void:
+	loop = p_loop
 	sheet = p_sheet
 	frame_size = p_frame_size
 	row = p_row
@@ -40,6 +42,9 @@ func _process(delta: float) -> void:
 	var frame_time: float = 1.0 / max(0.001, fps)
 	if _timer >= frame_time:
 		_timer -= frame_time
+		if not loop and _frame >= frame_count - 1:
+			set_process(false)
+			return
 		_frame = (_frame + 1) % frame_count
 		_update_frame()
 

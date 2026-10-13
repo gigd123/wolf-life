@@ -31,6 +31,7 @@ func _wait(n: int) -> void:
 
 func _run() -> void:
 	var gs = root.get_node("GameState")
+	var anim_mode: String = CombatAnimator.mode()
 	gs.log_message.connect(func(m): _check_text(str(m), "log"))
 	change_scene_to_file("res://scenes/MainMenu.tscn")
 	await _wait(5)
@@ -52,6 +53,7 @@ func _run() -> void:
 		await _wait(6)
 		_shot(den + "_start")
 		await _play(den)
+	CombatAnimator.set_mode(anim_mode)
 	print("UI 檢查：問題 ", issues.size(), " 個，截圖 ", shots, " 張（", OUT, "）")
 	for k in issues.keys():
 		print("ISSUE ", k, "   @ ", issues[k])
@@ -110,6 +112,9 @@ func _skip_button(b: Button, game) -> bool:
 	if game.get("debug_overlay") != null and game.debug_overlay.is_ancestor_of(b):
 		return true
 	if t.begins_with(TranslationServer.translate("action.lie_down")):
+		return true
+	# 動畫切換會改到 user:// 的設定，不點
+	if b == game.get("combat_anim_btn"):
 		return true
 	return false
 
