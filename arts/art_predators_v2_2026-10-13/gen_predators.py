@@ -13,6 +13,8 @@ OUT = 'assets/art/sprites/animals/'
 ARCH = 'arts/art_predators_v2_2026-10-13/'
 
 FARLEG, TAIL, BODY, HEAD, EAR, LEG, TUFT, TAILTIP, PAW, MUZZLE = range(1, 11)
+ANTLER, ANTLER_TIP, HORN = 11, 12, 13
+PATCH = 20  # 色塊（臀斑、披毛、鬃毛）：PATCH + i，顏色寫在 patches 裡
 
 # 座標都是 idle 時的位置（y 往下），ground 是腳底。split：x 大於這個值的屬於前半身（動作時一起移動）。
 SPECIES = {
@@ -175,10 +177,24 @@ def draw_frame(sp, pose='idle', phase=0):
         tip = pts[-2:] if len(pts) > 2 else pts
         d.line(tip, fill=TAILTIP, width=sp['tail_tip'])
     d.polygon([tf(p) for p in sp['body']], fill=BODY)
+    # 色塊（身體上的，畫在頭之前）：(顏色, 多邊形, 跟著頭動)
+    for i, (col, pts, with_head) in enumerate(sp.get('patches', [])):
+        if not with_head:
+            d.polygon([tf(p) for p in pts], fill=PATCH + i)
     if sp.get('neck'):
         nk = sp['neck']
         d.polygon([tf(nk[0]), tf(nk[1], True), tf(nk[2], True), tf(nk[3])], fill=HEAD)
     d.polygon([tf(p, True) for p in sp['head']], fill=HEAD)
+    for i, (col, pts, with_head) in enumerate(sp.get('patches', [])):
+        if with_head:
+            d.polygon([tf(p, True) for p in pts], fill=PATCH + i)
+    # 鹿角（主枝與分叉，尖端淡色）、牛角
+    for line in sp.get('antlers', []):
+        pts = [tf(p, True) for p in line]
+        d.line(pts, fill=ANTLER, width=sp.get('antler_w', 1))
+        d.point(pts[-1], fill=ANTLER_TIP)
+    for line in sp.get('horns', []):
+        d.line([tf(p, True) for p in line], fill=HORN, width=2)
     if mouth:
         jaw = [tf((x, y + 1), True) for x, y in sp['jaw']]
         d.polygon(jaw, fill=HEAD)
@@ -218,8 +234,9 @@ def draw_frame(sp, pose='idle', phase=0):
     if sp.get('many_spots'):
         import random as _r
         r2 = _r.Random('spots')
-        for _ in range(16):
-            spot_set.add(tf((r2.randint(15, 31), r2.randint(15, 21))))
+        x0, x1, y0, y1 = sp.get('spot_area', (15, 31, 15, 21))
+        for _ in range(sp.get('spot_count', 16)):
+            spot_set.add(tf((r2.randint(x0, x1), r2.randint(y0, y1))))
     if sp.get('spots'):
         for x, y in [(17, 16), (20, 18), (23, 15), (25, 19), (28, 16), (30, 18), (19, 14), (26, 21), (22, 20), (15, 18),
                      (31, 24), (17, 25), (30, 27), (16, 27), (29, 22), (21, 22)]:
@@ -236,7 +253,7 @@ def draw_frame(sp, pose='idle', phase=0):
             if v == BODY and x in span:
                 top, bot = span[x]
                 depth, height = y - top, max(1, bot - top)
-                if 'belly' in sp and depth > height * 0.62:
+                if 'belly' in sp and depth > height * sp.get('belly_frac', 0.62):
                     c = sp['belly']
                 elif 'back' in sp and depth <= max(1, height * 0.3):
                     c = sp['back']
@@ -262,6 +279,12 @@ def draw_frame(sp, pose='idle', phase=0):
                     c = sp['sheen'] if 'sheen' in sp else mul(c, 1.12)
                 if 'mask' in sp and x in (nose[0] - 3, nose[0] - 2) and y == nose[1] + 1:
                     c = sp['mask']
+            elif v >= PATCH:
+                c = sp['patches'][v - PATCH][0]
+                if sp.get('grizzle') and h < 14:
+                    c = mul(c, 1.18)
+                elif h < 9:
+                    c = mul(c, 0.86)
             elif v in (LEG, FARLEG) and sp.get('spots') and (x * 13 + y * 5) % 9 == 0 and y < sp['ground'] - 3:
                 c = mul(c, 0.78)
             elif v == TAILTIP and 'tail_under' in sp and mp[x, y + 1 if y + 1 < fh else y] == 0:
@@ -349,7 +372,7 @@ def preview_actions(path, keys):
 if __name__ == '__main__':
     import sys
     if '--preview-actions' in sys.argv:
-        preview_actions(ARCH + 'preview_v3_actions.png', ['coyote', 'lynx', 'cougar', 'black_bear'])
+        preview_actions(ARCH + 'preview_v3_actions.png', ['coyote', 'lynx', 'cougar', 'black_bear', 'grizzly_bear'])
         sys.exit(0)
     if '--preview' in sys.argv:
         preview(ARCH + 'preview_v3_basic.png')
