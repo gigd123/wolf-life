@@ -119,7 +119,7 @@
           "stalk": "res://assets/art/sprites/wolf/wolf_stranger_stalk.png"
         }
       },
-      "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_distant_walk_strip.png", "frame": [50, 28], "frames": 4 } } }
+      "distant": { "single": "res://assets/art/sprites/wolf/wolf_stranger.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_distant_walk_strip.png", "frame": [50, 32], "frames": 4 } } }
     }
   },
   "wolf": {

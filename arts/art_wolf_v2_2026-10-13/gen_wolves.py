@@ -123,6 +123,27 @@ def pair(sp):
     return out
 
 
+def haze(im, col=(122, 112, 102), k=0.35):
+    """遠景：顏色往霧色混一些（遠遠看到的身影）。"""
+    im = im.copy(); px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a:
+                px[x, y] = (int(r + (col[0] - r) * k), int(g + (col[1] - g) * k), int(b + (col[2] - b) * k), a)
+    return im
+
+
+def distant(sp):
+    """黑狼的遠景：走路 4 格（每格 50×32，底部對齊）與單張，都加上霧化色調。"""
+    strip = Image.new('RGBA', (50 * 4, 32), (0, 0, 0, 0))
+    for i in range(4):
+        f = haze(trim(gp.draw_frame(sp, 'move', i)))
+        strip.alpha_composite(f, (i * 50 + (50 - f.width) // 2, 32 - f.height))
+    single = haze(trim(gp.draw_frame(sp, 'idle', 0)))
+    return strip, single
+
+
 def save(im, name):
     im.save(OUT + name + '.png')
     im.save(ARCH + name + '_1x.png')
@@ -157,4 +178,7 @@ if __name__ == '__main__':
         for n, im in poses(sp, PLAYER_POSES if player else NPC_POSES).items():
             save(im, prefix + n)
     save(pair(TUNDRA), 'wolf_tundra_pair')
+    strip, single = distant(BLACK)
+    save(strip, 'wolf_stranger_distant_walk_strip')
+    save(single, 'wolf_stranger')
     print('done')
