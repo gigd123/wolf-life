@@ -9,8 +9,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "assets", "art", "art_test", "scene")
 SIZE = (320, 180)
 COLORS = 128
-SCENES = {"forest": "bg_forest.jpg", "meadow": "bg_meadow.png", "winter": "bg_winter.png",
-          "forest_summer": "bg_forest_summer.jpg", "forest_snowy": "bg_forest_snowy.jpg", "forest_winter": "bg_forest_winter.jpg"}
+# 只用 Gemini 的圖（DeeVid 免費版有浮水印，原圖留在 source/ 但不輸出）
+SCENES = {"forest_summer": "bg_forest_summer.jpg", "forest_snowy": "bg_forest_snowy.jpg", "forest_winter": "bg_forest_winter.jpg"}
 
 
 def main():

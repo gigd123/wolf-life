@@ -137,6 +137,15 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
+# 身體在畫面上的半寬（站位不讓身體超出可站範圍用）
+func half_width() -> float:
+	if not entry.is_empty():
+		return float(entry["frame"][0]) * scale_factor() * 0.42
+	if _fallback != null:
+		return _fallback.size.x * 0.42
+	return 24.0
+
+
 func scale_factor() -> float:
 	var body_h: float = float(entry.get("body_h", 1))
 	var s: float = target_h / body_h

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v4quur1rqfcj"
-path="res://.godot/imported/bg_winter.png-529fb7e486f15274810783f6f291c5d6.ctex"
+uid="uid://bhsm65h4jibx5"
+path="res://.godot/imported/preview_batch2.png-7a1bdd5906ba87e725639d433802cb36.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/art_test/scene/bg_winter.png"
-dest_files=["res://.godot/imported/bg_winter.png-529fb7e486f15274810783f6f291c5d6.ctex"]
+source_file="res://arts/art_scene_test_2026-10-13/preview_batch2.png"
+dest_files=["res://.godot/imported/preview_batch2.png-7a1bdd5906ba87e725639d433802cb36.ctex"]
 
 [params]
 

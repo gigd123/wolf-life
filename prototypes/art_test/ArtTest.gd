@@ -19,11 +19,11 @@ const BACKGROUNDS := {
 		"forest": {"path": "res://assets/art/art_test/illus/bg_forest.jpg", "shift": 122}},
 	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
 		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
-	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：同一片林內的三個季節（Gemini，黃昏）＋林緣草地（DeeVid 免費版，白天、有浮水印）
-	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_meadow.png", "shift": 22, "tint": Color(1.0, 0.98, 0.94)},
-		"forest": {"path": "res://assets/art/art_test/scene/bg_forest_summer.png", "shift": 56, "tint": Color(0.86, 0.78, 0.7)},
-		"forest_snowy": {"path": "res://assets/art/art_test/scene/bg_forest_snowy.png", "shift": 56, "tint": Color(0.9, 0.85, 0.84)},
-		"forest_winter": {"path": "res://assets/art/art_test/scene/bg_forest_winter.png", "shift": 56, "tint": Color(0.92, 0.9, 0.95)}},
+	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：同一片林內的三個季節（Gemini，黃昏）
+	# stage：地面上動物可以站的範圍（x），左邊是岩壁與溪流、右邊是大岩石，不能站上去
+	"scene": {"forest": {"path": "res://assets/art/art_test/scene/bg_forest_summer.png", "shift": 56, "tint": Color(0.86, 0.78, 0.7), "stage": [205, 470]},
+		"forest_snowy": {"path": "res://assets/art/art_test/scene/bg_forest_snowy.png", "shift": 56, "tint": Color(0.9, 0.85, 0.84), "stage": [205, 470]},
+		"forest_winter": {"path": "res://assets/art/art_test/scene/bg_forest_winter.png", "shift": 56, "tint": Color(0.92, 0.9, 0.95), "stage": [205, 470]}},
 }
 const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "forest_snowy": "林內・初雪", "forest_winter": "林內・深冬"}
 const STYLES := ["illus", "pixel", "scene"]
@@ -31,12 +31,14 @@ const STYLE_NAMES := {"illus": "插畫", "pixel": "像素", "scene": "場景"}
 
 var manifest: Dictionary = {}
 var style: String = "illus"
-var bg_key: String = "meadow"
+var bg_key: String = "forest"
 var scenario: String = ""
 var rounds: int = 0
 # 每開始一個情境（或切換風格重來）加一；等待結束後世代不同就不再繼續，避免舊的流程蓋掉新的
 var gen: int = 0
 var walk_tween: Tween
+# 目前背景的可站範圍（x 的左右界）
+var stage: Array = [120, 560]
 
 var bg: TextureRect
 var world: Node2D
@@ -145,9 +147,10 @@ func _setup_sprite(s: Node2D, id: String) -> void:
 func _apply_style() -> void:
 	style_btn.text = "風格：" + STYLE_NAMES[style]
 	# 冬季只有場景版有；其他風格沒有這張時用林緣草地
-	var key: String = bg_key if BACKGROUNDS[style].has(bg_key) else "meadow"
+	var key: String = bg_key if BACKGROUNDS[style].has(bg_key) else ("forest" if bg_key.begins_with("forest") else BACKGROUNDS[style].keys()[0])
 	bg_btn.text = "背景：" + BG_NAMES[key]
 	var bg_info: Dictionary = BACKGROUNDS[style][key]
+	stage = bg_info.get("stage", [120, 560])
 	bg.texture = load(bg_info["path"])
 	bg.offset_top = -float(bg_info["shift"])
 	bg.offset_bottom = -float(bg_info["shift"])
@@ -168,7 +171,8 @@ func _apply_style() -> void:
 	if style == "pixel":
 		lines.append("像素版：背景暫用遊戲現有的地形圖")
 	elif style == "scene":
-		lines.append("林緣草地：DeeVid（白天、浮水印）\n黑狼：第一批的圖")
+		if other_id == "wolf_black":
+			lines.append("黑狼：第一批的圖")
 		if not missing.is_empty():
 			lines.append("、".join(missing) + "還沒有新圖，暫用遊戲現有的像素圖")
 	note.text = "\n".join(lines)
@@ -209,6 +213,19 @@ func _say(text: String, options: Array = []) -> void:
 		b.text = o[0]
 		b.pressed.connect(o[1])
 		buttons.add_child(b)
+
+
+# 可站範圍裡的位置：t = 0 左界、1 右界（可以小於 0 或大於 1，表示走出畫面或範圍外）
+func X(t: float) -> float:
+	return lerpf(float(stage[0]), float(stage[1]), t)
+
+
+# 讓整個身體留在可站範圍裡的位置
+func XS(s: Node2D, t: float) -> float:
+	var hw: float = s.half_width()
+	var lo: float = float(stage[0]) + hw
+	var hi: float = float(stage[1]) - hw
+	return lerpf(lo, hi, t) if hi > lo else (lo + hi) / 2.0
 
 
 func _place(s: Node2D, x: float, face_left: bool) -> void:
@@ -255,7 +272,7 @@ func _menu() -> void:
 	_new_gen()
 	scenario = ""
 	_show_other("")
-	_place(wolf, 300, false)
+	_place(wolf, XS(wolf, 0.5), false)
 	wolf.play("idle")
 	_say("美術測試：選一個情境。右上角可以切換風格與背景，切換後情境會重新開始。", [
 		["狩獵雪兔", func(): _hunt("hare")],
@@ -271,10 +288,10 @@ func _free_walk() -> void:
 	var g := _new_gen()
 	scenario = "walk"
 	_show_other("")
-	_place(wolf, 120, false)
+	_place(wolf, XS(wolf, 0.0), false)
 	_say("灰狼在林間走動。", [["停下", _walk_stop], ["回選單", _menu]])
 	while g == gen:
-		for target in [520.0, 120.0]:
+		for target in [XS(wolf, 1.0), XS(wolf, 0.0)]:
 			wolf.flip = target < wolf.position.x
 			wolf.play("walk")
 			walk_tween = create_tween()
@@ -295,8 +312,8 @@ func _hunt(prey: String) -> void:
 	_new_gen()
 	scenario = "hunt"
 	_show_other(prey)
-	_place(wolf, 120, false)
-	_place(other, 430, false)
+	_place(wolf, XS(wolf, 0.0), false)
+	_place(other, XS(other, 0.75), false)
 	wolf.play("idle")
 	other.play("idle")
 	var nm: String = NAMES[prey]
@@ -307,7 +324,7 @@ func _hunt_stalk() -> void:
 	var g := gen
 	_say("你壓低身子，一步一步靠近……")
 	wolf.play("walk", 0.55)
-	await _move(wolf, 250, 2.4)
+	await _move(wolf, X(0.35), 2.4)
 	if g != gen:
 		return
 	wolf.play("idle")
@@ -324,7 +341,7 @@ func _hunt_chase() -> void:
 	var prey_run := "hop" if other.has_action("hop") else "walk"
 	other.play(prey_run, 1.6)
 	wolf.play("walk", 2.0)
-	var prey_end := 560.0
+	var prey_end := XS(other, 1.0)
 	var gap: float = WOLF_H * 0.9 + other.target_h * 0.55
 	_move(other, prey_end, 1.5)
 	await _move(wolf, prey_end - gap, 1.5)
@@ -349,13 +366,13 @@ func _encounter(id: String) -> void:
 	scenario = "encounter"
 	rounds = 0
 	_show_other(id)
-	_place(wolf, 190, false)
+	_place(wolf, XS(wolf, 0.0), false)
 	_place(other, 720, true)
 	wolf.play("idle")
 	other.play("walk")
 	var text: String = "一頭灰熊從林子裡走出來" if id == "grizzly" else "一隻黑狼從林子裡走出來"
 	_say(text + "……")
-	await _move(other, 430, 2.6)
+	await _move(other, XS(other, 1.0), 2.6)
 	if g != gen:
 		return
 	other.play("idle")
@@ -370,10 +387,11 @@ func _encounter_bite() -> void:
 	var g := gen
 	rounds += 1
 	_say("你撲了上去！")
-	if not await _exchange(wolf, other, 34, g):
+	var lunge: float = 34.0 if style != "scene" else 14.0
+	if not await _exchange(wolf, other, lunge, g):
 		return
 	await get_tree().create_timer(0.25).timeout
-	if g != gen or not await _exchange(other, wolf, -34, g):
+	if g != gen or not await _exchange(other, wolf, -lunge, g):
 		return
 	var nm: String = NAMES[other_id]
 	if rounds >= 2:
