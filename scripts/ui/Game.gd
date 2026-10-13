@@ -425,8 +425,8 @@ func _make_creature_icon(fit_height: int = 0) -> AnimatedIcon:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	return icon
 
-func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle") -> void:
-	if not ArtLibrary.setup_animal(icon, animal_id, life_stage, action):
+func _set_creature(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle", animate: bool = true) -> void:
+	if not ArtLibrary.setup_animal(icon, animal_id, life_stage, action, animate):
 		var fallback_id: String = "gray_wolf" if animal_id == "stranger_wolf" else animal_id # 狼獾、渡鴉的美術之後補上，先用程式佔位
 		icon.show_static(PixelArt.make_animal_sprite(fallback_id, Vector2i(72, 48), _animal_scale(life_stage)))
 
@@ -2479,6 +2479,8 @@ func _render_hunt_stage() -> void:
 	# 搏鬥時獵物擺出反擊的姿勢（有圖的才會換，例如駝鹿的踢擊）
 	if current_hunt.stage == HuntSystem.Stage.FIGHT:
 		prey_action = "attack"
+	# 搏鬥時獵物轉過來面向你（素材都面向右），其他階段照原方向（往右逃）
+	hunt_sprite.flip_h = current_hunt.stage == HuntSystem.Stage.FIGHT
 	_set_creature(hunt_sprite, current_hunt.animal_id, current_hunt.life_stage, prey_action)
 	var pose: String = "stalk"
 	match current_hunt.stage:
@@ -3448,7 +3450,8 @@ func _render_combat() -> void:
 	hunt_overlay.visible = true
 	_clear_children(hunt_buttons_box)
 	var name: String = _combat_name(c)
-	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action)
+	hunt_sprite.flip_h = true # 戰鬥中對手面向你（素材都面向右）
+	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action, false)
 	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose, false)
 	_set_terrain_bg(hunt_bg, c.terrain)
 	var lines: Array[String] = []

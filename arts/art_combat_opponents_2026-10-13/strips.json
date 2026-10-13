@@ -1,0 +1,252 @@
+{
+ "grizzly_bear": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/bear_adult_attack_strip.png",
+   "frame": [
+    69,
+    40
+   ],
+   "frames": 5,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/bear_adult_hurt_strip.png",
+   "frame": [
+    67,
+    41
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "stranger_wolf": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_stranger_attack_strip.png",
+   "frame": [
+    75,
+    48
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_stranger_hurt_strip.png",
+   "frame": [
+    66,
+    42
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "dodge": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_stranger_dodge_strip.png",
+   "frame": [
+    68,
+    39
+   ],
+   "frames": 5,
+   "fps": 16,
+   "loop": false
+  }
+ },
+ "tundra_wolf": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_tundra_attack_strip.png",
+   "frame": [
+    70,
+    45
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_tundra_hurt_strip.png",
+   "frame": [
+    61,
+    38
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "dodge": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_tundra_dodge_strip.png",
+   "frame": [
+    63,
+    36
+   ],
+   "frames": 5,
+   "fps": 16,
+   "loop": false
+  }
+ },
+ "challenger": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_challenger_attack_strip.png",
+   "frame": [
+    75,
+    48
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_challenger_hurt_strip.png",
+   "frame": [
+    66,
+    42
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "dodge": {
+   "sheet": "res://assets/art/sprites/wolf/wolf_challenger_dodge_strip.png",
+   "frame": [
+    68,
+    39
+   ],
+   "frames": 5,
+   "fps": 16,
+   "loop": false
+  }
+ },
+ "wolverine": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/wolverine_attack_strip.png",
+   "frame": [
+    60,
+    33
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/wolverine_hurt_strip.png",
+   "frame": [
+    58,
+    31
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "red_fox": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/fox_adult_attack_strip.png",
+   "frame": [
+    67,
+    35
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/fox_adult_hurt_strip.png",
+   "frame": [
+    65,
+    38
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "cougar": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/cougar_attack_strip.png",
+   "frame": [
+    75,
+    48
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/cougar_hurt_strip.png",
+   "frame": [
+    66,
+    47
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "black_bear": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/blackbear_attack_strip.png",
+   "frame": [
+    69,
+    40
+   ],
+   "frames": 5,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/blackbear_hurt_strip.png",
+   "frame": [
+    67,
+    41
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "coyote": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/coyote_attack_strip.png",
+   "frame": [
+    64,
+    41
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/coyote_hurt_strip.png",
+   "frame": [
+    57,
+    36
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ },
+ "lynx": {
+  "attack": {
+   "sheet": "res://assets/art/sprites/animals/lynx_attack_strip.png",
+   "frame": [
+    49,
+    32
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  },
+  "hurt": {
+   "sheet": "res://assets/art/sprites/animals/lynx_hurt_strip.png",
+   "frame": [
+    48,
+    35
+   ],
+   "frames": 4,
+   "fps": 14,
+   "loop": false
+  }
+ }
+}

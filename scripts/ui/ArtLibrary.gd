@@ -26,7 +26,8 @@ static func frame_size() -> Vector2i:
 	return Vector2i(int(fs[0]), int(fs[1]))
 
 # 動物：sheet 依動作播動畫，single 顯示單張。stage 找不到時用 adult。
-static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle") -> bool:
+# animate = false：回合之間的靜止畫面，略過只播一次的多格動畫（loop false），用單張姿勢或 spritesheet。
+static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle", animate: bool = true) -> bool:
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var entry: Dictionary = table.get(life_stage, table.get("adult", {}))
 	# 季節外觀（例如雪兔冬季變白）：有 life_stage@season 就用那一版
@@ -34,7 +35,8 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 	if table.has(seasonal):
 		entry = table[seasonal]
 	# 1.9 第 4 步：正式的多格動畫（strips 裡有這個動作）優先於單張姿勢，換圖不用改程式
-	if entry.get("strips", {}).has(action) and action != "walk" and _setup_strip(icon, entry["strips"][action]):
+	var one_shot: bool = not bool(entry.get("strips", {}).get(action, {}).get("loop", true))
+	if entry.get("strips", {}).has(action) and action != "walk" and (animate or not one_shot) and _setup_strip(icon, entry["strips"][action]):
 		return true
 	# 單張姿勢（例如陌生灰狼的威嚇、撲咬、示弱）優先於 spritesheet 的列
 	if entry.get("poses", {}).has(action):
@@ -44,7 +46,7 @@ static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: Stri
 			return true
 	# 動作的橫向長條動畫（自訂格子大小）；move 沒有對應時用 walk
 	var strips: Dictionary = entry.get("strips", {})
-	var strip_key: String = action if strips.has(action) else ("walk" if action == "move" and strips.has("walk") else "")
+	var strip_key: String = action if strips.has(action) and (animate or not one_shot) else ("walk" if action == "move" and strips.has("walk") else "")
 	if strip_key != "" and _setup_strip(icon, strips[strip_key]):
 		return true
 	if entry.has("sheet"):

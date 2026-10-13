@@ -85,18 +85,23 @@ func _play_event(e: Dictionary, wolf_home: Vector2, opp_home: Vector2) -> void:
 					_pose(true, "bite")
 					await _dash(wolf_icon, wolf_home, 1.0, 34.0 if act == "bite" else 54.0, 0.14 if act == "bite" else 0.2)
 					if hit:
+						_opp_action("hurt")
 						await _struck(opp_icon, opp_home, dmg, Color(1, 1, 1))
 					else:
+						_opp_action("dodge")
 						await _sidestep(opp_icon, opp_home, 1.0)
 					await _return(wolf_icon, wolf_home)
+					_opp_action("idle")
 				"harass":
 					_pose(true, "circle")
 					await _circle(wolf_icon, wolf_home)
 					_pose(true, "bite")
 					await _dash(wolf_icon, wolf_home, 1.0, 28.0, 0.1)
 					if hit:
+						_opp_action("hurt")
 						await _struck(opp_icon, opp_home, dmg, Color(1, 1, 1))
 					await _return(wolf_icon, wolf_home)
+					_opp_action("idle")
 				"dodge":
 					_pose(true, "dodge")
 					var t := _tween()
@@ -146,7 +151,9 @@ func _play_event(e: Dictionary, wolf_home: Vector2, opp_home: Vector2) -> void:
 					await t.finished
 		"ally":
 			# 苔原狼從側邊咬中：對手閃白、跳出數字（顏色不同）
+			_opp_action("hurt")
 			await _struck(opp_icon, opp_home, dmg, Color(0.75, 0.9, 1.0))
+			_opp_action("idle")
 
 func _pose(is_wolf: bool, pose: String) -> void:
 	if is_wolf and set_wolf_pose.is_valid():
