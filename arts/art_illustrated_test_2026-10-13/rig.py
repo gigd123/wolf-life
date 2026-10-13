@@ -246,7 +246,7 @@ def wolf_rig(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE):
         t[..., :3] *= t[..., 3:4]
         return t
 
-    leg_masks = {k: seg_leg(src, mask_of(cfg["limits"][k]), cfg["seeds"][k], claw_y=cfg["claw_y"]) for k in cfg["limits"]}
+    leg_masks = {k: seg_leg(src, mask_of(cfg["limits"][k]), cfg["seeds"][k], lum_t=cfg.get("lum_t", 0.26), claw_y=cfg["claw_y"]) for k in cfg["limits"]}
     yy = np.arange(H0)[:, None]
     body_hole = np.zeros((H0, W0), bool)
     from scipy import ndimage
@@ -416,12 +416,14 @@ def add_trails(frames, idx, fades=(0.38, 0.16)):
     return out
 
 
-def render_actions(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE):
-    """回傳 {動作: [影格]}，另外存一張靜止姿勢 anim/<name>_rest.png。"""
-    bones, layers, size0 = wolf_rig(name, cfg, base)
+def render_actions(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE, actions=None, rig_fn=None):
+    """回傳 {動作: [影格]}，另外存一張靜止姿勢 anim/<name>_rest.png。
+    actions：{動作: (姿勢函式, 影格數)}，預設是狼的四個動作；rig_fn：自訂的骨架（例如雪兔）。"""
+    actions = actions or ACTIONS
+    bones, layers, size0 = (rig_fn or wolf_rig)(name, cfg, base)
     render(bones, layers, size0, {}).save(os.path.join(base, "anim", f"{name}_rest.png"))
     out = {}
-    for act, (fn, n) in ACTIONS.items():
+    for act, (fn, n) in actions.items():
         frames = []
         for i in range(n):
             t = i / n

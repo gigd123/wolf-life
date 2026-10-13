@@ -54,6 +54,12 @@ func _ready() -> void:
 	visual_test_spacer.custom_minimum_size = Vector2(0, 20)
 	box.add_child(visual_test_spacer)
 
+	# 美術測試（插畫風與像素風的比較場景，prototypes/art_test/；和遊戲進度無關）
+	var art_test_btn := Button.new()
+	art_test_btn.text = tr("menu.art_test")
+	art_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/art_test/ArtTest.tscn"))
+	box.add_child(art_test_btn)
+
 	var visual_test_btn := Button.new()
 	visual_test_btn.text = "3D Visual Test (prototype)"
 	visual_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/visual_test/VisualTest.tscn"))

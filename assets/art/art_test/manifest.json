@@ -1,0 +1,210 @@
+{
+ "illus": {
+  "wolf_gray": {
+   "frame": [
+    450,
+    285
+   ],
+   "foot": 267,
+   "center_x": 223.5,
+   "body_h": 225,
+   "rel_height": 1.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/illus/wolf_gray_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/illus/wolf_gray_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/illus/wolf_gray_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/illus/wolf_gray_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "wolf_black": {
+   "frame": [
+    450,
+    285
+   ],
+   "foot": 267,
+   "center_x": 223.5,
+   "body_h": 225,
+   "rel_height": 1.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/illus/wolf_black_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/illus/wolf_black_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/illus/wolf_black_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/illus/wolf_black_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "grizzly": {
+   "frame": [
+    486,
+    313
+   ],
+   "foot": 280,
+   "center_x": 245.5,
+   "body_h": 238,
+   "rel_height": 1.5,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/illus/grizzly_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/illus/grizzly_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/illus/grizzly_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/illus/grizzly_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "elk_cow": {
+   "frame": [
+    363,
+    276
+   ],
+   "foot": 264,
+   "center_x": 201.5,
+   "body_h": 260,
+   "rel_height": 2.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/illus/elk_cow_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/illus/elk_cow_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/illus/elk_cow_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "hare": {
+   "frame": [
+    337,
+    311
+   ],
+   "foot": 292,
+   "center_x": 165.0,
+   "body_h": 250,
+   "rel_height": 0.5,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/illus/hare_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "hop": {
+     "sheet": "res://assets/art/art_test/illus/hare_hop.png",
+     "frames": 12,
+     "fps": 14,
+     "loop": true
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/illus/hare_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  }
+ },
+ "pixel": {
+  "wolf_gray": {
+   "frame": [
+    114,
+    81
+   ],
+   "foot": 75,
+   "center_x": 57.0,
+   "body_h": 63,
+   "rel_height": 1.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/pixel/wolf_gray_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/pixel/wolf_gray_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/pixel/wolf_gray_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/pixel/wolf_gray_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  }
+ }
+}
