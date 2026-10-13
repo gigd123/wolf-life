@@ -271,8 +271,8 @@
     "forest_edge@winter": "res://assets/art/backgrounds/terrain/forest_edge_winter.png",
     "fallen_logs@burned": "res://assets/art/backgrounds/terrain/fallen_logs_burned.png",
     "fallen_logs@winter": "res://assets/art/backgrounds/terrain/fallen_logs_winter.png",
-    "clearing@burned": "res://assets/art/backgrounds/terrain/forest_edge_burned.png",
-    "clearing@winter": "res://assets/art/backgrounds/terrain/forest_edge_winter.png"
+    "clearing@burned": "res://assets/art/backgrounds/terrain/clearing_burned.png",
+    "clearing@winter": "res://assets/art/backgrounds/terrain/clearing_winter.png"
   },
   "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",
   "carcasses": {
