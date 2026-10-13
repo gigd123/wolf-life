@@ -26,11 +26,12 @@ const BACKGROUNDS := {
 		"forest_winter": {"path": "res://assets/art/art_test/scene/bg_forest_winter.png", "shift": 56, "tint": Color(0.92, 0.9, 0.95), "stage": [205, 470]}},
 }
 const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "forest_snowy": "林內・初雪", "forest_winter": "林內・深冬"}
-const STYLES := ["illus", "pixel", "scene"]
-const STYLE_NAMES := {"illus": "插畫", "pixel": "像素", "scene": "場景"}
+const STYLES := ["scene", "pixel", "illus"]
+# 「主視覺」是最新的一批（黃昏斜角像素場景＋第二批動物），一開始就顯示這個；「大像素」是更早的大尺寸像素灰狼試作
+const STYLE_NAMES := {"scene": "主視覺（最新）", "pixel": "大像素（早期試作）", "illus": "插畫"}
 
 var manifest: Dictionary = {}
-var style: String = "illus"
+var style: String = "scene"
 var bg_key: String = "forest"
 var scenario: String = ""
 var rounds: int = 0
@@ -169,7 +170,7 @@ func _apply_style() -> void:
 			missing.append(NAMES[id])
 	var lines: Array = []
 	if style == "pixel":
-		lines.append("像素版：背景暫用遊戲現有的地形圖")
+		lines.append("大像素：早期試作，只有灰狼；背景與其他動物是遊戲現有的圖")
 	elif style == "scene":
 		if other_id == "wolf_black":
 			lines.append("黑狼：第一批的圖")
