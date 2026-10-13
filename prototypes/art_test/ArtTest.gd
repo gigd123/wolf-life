@@ -20,9 +20,9 @@ const BACKGROUNDS := {
 	"pixel": {"meadow": {"path": "res://assets/art/backgrounds/terrain/forest_edge.png", "shift": 72},
 		"forest": {"path": "res://assets/art/backgrounds/terrain/dense_forest.png", "shift": 72}},
 	# 主視覺（斜角像素場景，arts/art_scene_test_2026-10-13/）：林內（Gemini）、林緣草地與冬季（DeeVid 免費版，右上角有浮水印）
-	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_meadow.png", "shift": 22},
-		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56},
-		"winter": {"path": "res://assets/art/art_test/scene/bg_winter.png", "shift": 24}},
+	"scene": {"meadow": {"path": "res://assets/art/art_test/scene/bg_meadow.png", "shift": 22, "tint": Color(1.0, 0.98, 0.94)},
+		"forest": {"path": "res://assets/art/art_test/scene/bg_forest.png", "shift": 56, "tint": Color(0.74, 0.64, 0.56)},
+		"winter": {"path": "res://assets/art/art_test/scene/bg_winter.png", "shift": 24, "tint": Color(0.94, 0.97, 1.04)}},
 }
 const BG_NAMES := {"meadow": "林緣草地", "forest": "林內", "winter": "冬季"}
 const STYLES := ["illus", "pixel", "scene"]
@@ -150,6 +150,11 @@ func _apply_style() -> void:
 	bg.texture = load(bg_info["path"])
 	bg.offset_top = -float(bg_info["shift"])
 	bg.offset_bottom = -float(bg_info["shift"])
+	# 場景風格：動物照背景的光線調色（黃昏的林內偏暗偏暖、冬季偏冷），腳下加影子
+	world.modulate = bg_info.get("tint", Color.WHITE)
+	for s in [wolf, other]:
+		s.shadow_alpha = 0.32 if style == "scene" else 0.0
+		s.queue_redraw()
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if style == "illus" else CanvasItem.TEXTURE_FILTER_NEAREST
 	_setup_sprite(wolf, "wolf_gray")
 	if other_id != "":

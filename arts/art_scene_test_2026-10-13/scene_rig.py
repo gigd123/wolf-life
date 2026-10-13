@@ -189,12 +189,12 @@ def export(aid, cfg, eye_rgb, body_px=BODY_PX):
     k = body_px / (bb[3] - bb[1])
     bones = [rig.Bone(*b) for b in cfg["bones"]]
     pixel_rig.EYE_RGB = eye_rgb
-    rest_px, pal = pixel_rig.pixelize(rest_hi, k)
+    rest_px, pal = pixel_rig.pixelize(rest_hi, k, outline="shade")
     pixel_rig.put_eye(rest_px, eye_point(cfg, bones, {}, k))
     acts = {}
     for act, frames in acts_hi.items():
         fn, n = rig.ACTIONS[act]
-        acts[act] = [pixel_rig.put_eye(pixel_rig.pixelize(f, k, pal)[0], eye_point(cfg, bones, fn(i / n), k))
+        acts[act] = [pixel_rig.put_eye(pixel_rig.pixelize(f, k, pal, "shade")[0], eye_point(cfg, bones, fn(i / n), k))
                      for i, f in enumerate(frames)]
     acts = export_game.bite_trails(acts)
     return export_game.write_animal("scene", aid, acts, rest_px)

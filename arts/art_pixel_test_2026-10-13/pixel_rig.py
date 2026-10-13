@@ -73,8 +73,9 @@ def put_eye(im, xy):
     return im
 
 
-def pixelize(frame, k, pal_img=None):
-    """高解析影格 → 原生解析度：面積平均縮小、alpha 二值化、套調色盤、補外框。"""
+def pixelize(frame, k, pal_img=None, outline="darkest"):
+    """高解析影格 → 原生解析度：面積平均縮小、alpha 二值化、套調色盤、補外框。
+    outline："darkest" 外框用調色盤最深的顏色（黑線）；"shade" 外框用該像素本身的顏色壓暗（和場景圖的邊一樣，沒有黑線）。"""
     w, h = max(1, round(frame.width * k)), max(1, round(frame.height * k))
     a = np.asarray(frame).astype(float) / 255
     pm = a.copy()
@@ -94,8 +95,13 @@ def pixelize(frame, k, pal_img=None):
     pad = np.pad(alpha, 1)
     edge = alpha & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
     pal = np.array(pal_img.getpalette()[: PALETTE_COLORS * 3]).reshape(-1, 3)
-    darkest = pal[pal.sum(1).argmin()]
-    q[edge] = darkest
+    if outline == "shade":
+        shaded = (q[edge].astype(float) * 0.55).astype(np.uint8)
+        # 壓暗後再對回調色盤裡最近的顏色，維持統一的色數
+        d = ((shaded[:, None, :].astype(int) - pal[None, :, :]) ** 2).sum(2)
+        q[edge] = pal[d.argmin(1)]
+    else:
+        q[edge] = pal[pal.sum(1).argmin()]
     out = np.dstack([q, np.where(alpha, 255, 0)]).astype(np.uint8)
     return Image.fromarray(out, "RGBA"), pal_img
 

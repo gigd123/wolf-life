@@ -20,6 +20,8 @@ var action: String = ""
 var speed: float = 1.0
 # 頂替用舊圖時狼的像素倍率（ArtTest 依畫面上狼的高度設定）
 var fallback_base_zoom: float = 2.0
+# 腳下的影子（場景風格用）：0 不畫，> 0 是影子的不透明度
+var shadow_alpha: float = 0.0
 
 var _sheets: Dictionary = {}
 var _frame: int = 0
@@ -143,7 +145,25 @@ func scale_factor() -> float:
 	return s
 
 
+func _draw_shadow() -> void:
+	if shadow_alpha <= 0.0:
+		return
+	# 身體寬度：有新圖時用格子寬，頂替的舊圖用它的框寬
+	var w: float = 30.0
+	if not entry.is_empty():
+		w = float(entry["frame"][0]) * scale_factor() * 0.62
+	elif _fallback != null:
+		w = _fallback.size.x * 0.6
+	var h: float = maxf(3.0, w * 0.16)
+	var pts := PackedVector2Array()
+	for i in 24:
+		var a: float = TAU * i / 24.0
+		pts.append(Vector2(cos(a) * w / 2.0, sin(a) * h / 2.0 - 1.0))
+	draw_colored_polygon(pts, Color(0.05, 0.04, 0.03, shadow_alpha))
+
+
 func _draw() -> void:
+	_draw_shadow()
 	var tex := _sheet()
 	if tex == null:
 		return
