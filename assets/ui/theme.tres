@@ -1,0 +1,108 @@
+[gd_resource type="Theme" load_steps=8 format=3]
+
+[sub_resource type="StyleBoxFlat" id="overlay"]
+bg_color = Color(0.06, 0.07, 0.06, 0.94)
+
+[sub_resource type="StyleBoxFlat" id="debug"]
+bg_color = Color(0.06, 0.07, 0.06, 1)
+
+[sub_resource type="StyleBoxFlat" id="card"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.04, 0.05, 0.04, 0.72)
+
+[sub_resource type="StyleBoxFlat" id="log"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+bg_color = Color(0, 0, 0, 0.25)
+
+[sub_resource type="StyleBoxFlat" id="strip"]
+content_margin_left = 3.0
+content_margin_top = 3.0
+content_margin_right = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0, 0, 0, 0.35)
+
+[sub_resource type="StyleBoxFlat" id="toast"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0, 0, 0.6)
+
+[sub_resource type="StyleBoxFlat" id="current_region"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.2, 0.18, 0.1, 0.75)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.86, 0.45, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[resource]
+CardPanel/base_type = &"PanelContainer"
+CardPanel/styles/panel = SubResource("card")
+CardTitle/base_type = &"Label"
+CardTitle/font_sizes/font_size = 20
+CurrentRegionButton/base_type = &"Button"
+CurrentRegionButton/colors/font_disabled_color = Color(1, 0.86, 0.45, 1)
+CurrentRegionButton/colors/icon_disabled_color = Color(1, 1, 1, 1)
+CurrentRegionButton/styles/disabled = SubResource("current_region")
+DamageNumber/base_type = &"Label"
+DamageNumber/colors/font_outline_color = Color(0, 0, 0, 1)
+DamageNumber/constants/outline_size = 4
+DebugPanel/base_type = &"Panel"
+DebugPanel/styles/panel = SubResource("debug")
+DetailLabel/base_type = &"Label"
+DetailLabel/colors/font_color = Color(0.8, 0.85, 0.8, 1)
+DetailLabel/font_sizes/font_size = 12
+HintLabel/base_type = &"Label"
+HintLabel/colors/font_color = Color(0.95, 0.9, 0.75, 1)
+HintLabel/font_sizes/font_size = 12
+LogBox/base_type = &"RichTextLabel"
+LogBox/styles/normal = SubResource("log")
+MenuTitle/base_type = &"Label"
+MenuTitle/font_sizes/font_size = 32
+MutedLabel/base_type = &"Label"
+MutedLabel/colors/font_color = Color(0.75, 0.85, 0.75, 1)
+OverlayPanel/base_type = &"Panel"
+OverlayPanel/styles/panel = SubResource("overlay")
+Palette/colors/cost_risk = Color(0.909804, 0.627451, 0.478431, 1)
+Palette/colors/hint = Color(0.95, 0.9, 0.75, 1)
+Palette/colors/log_label = Color(0.847059, 0.784314, 0.564706, 1)
+Palette/colors/log_new = Color(0.941176, 0.933333, 0.894118, 1)
+Palette/colors/log_old = Color(0.556863, 0.592157, 0.54902, 1)
+Palette/colors/screen_bg = Color(0.08, 0.1, 0.08, 1)
+Palette/colors/screen_bg_menu = Color(0.05, 0.08, 0.06, 1)
+Palette/colors/screen_bg_summary = Color(0.05, 0.05, 0.05, 1)
+Palette/colors/stat_gain = Color(0.607843, 0.890196, 0.541176, 1)
+SessionStrip/base_type = &"RichTextLabel"
+SessionStrip/font_sizes/normal_font_size = 12
+SessionStrip/styles/normal = SubResource("strip")
+SmallButton/base_type = &"Button"
+SmallButton/font_sizes/font_size = 11
+SmallLabel/base_type = &"Label"
+SmallLabel/font_sizes/font_size = 12
+SmallRichLabel/base_type = &"RichTextLabel"
+SmallRichLabel/font_sizes/normal_font_size = 12
+StageLabel/base_type = &"Label"
+StageLabel/font_sizes/font_size = 13
+SummaryTitle/base_type = &"Label"
+SummaryTitle/font_sizes/font_size = 28
+Toast/base_type = &"RichTextLabel"
+Toast/styles/normal = SubResource("toast")
+WarmLabel/base_type = &"Label"
+WarmLabel/colors/font_color = Color(0.95, 0.9, 0.75, 1)
+WarningLabel/base_type = &"Label"
+WarningLabel/colors/font_color = Color(0.95, 0.55, 0.4, 1)

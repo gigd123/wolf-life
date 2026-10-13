@@ -5,7 +5,6 @@ const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "str
 const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den", "mark", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
-const CURRENT_REGION_COLOR := Color(1.0, 0.86, 0.45) # 地圖上目前位置的字與框
 
 var stats_bars: Dictionary = {}
 var stats_labels: Dictionary = {}
@@ -15,7 +14,6 @@ var region_buttons: Dictionary = {}
 var map_slots: Array[Button] = []
 var map_title: Label
 var cross_map_box: HFlowContainer
-var current_region_style: StyleBoxFlat
 var rendered_map: String = ""
 var action_buttons: Dictionary = {}
 var explore_hint_label: Label
@@ -46,9 +44,10 @@ var choice_label_regex: RegEx
 const MAIN_LOG_SHOWN := 30
 const MAIN_LOG_KEEP := 400
 const STRIP_LINES := 3
-const LOG_COLOR_NEW := "#f0eee4"
-const LOG_COLOR_OLD := "#8e978c"
-const LOG_COLOR_LABEL := "#d8c890"
+# 紀錄的文字色（theme.tres 的 Palette）
+var LOG_COLOR_NEW := UiTheme.html("log_new")
+var LOG_COLOR_OLD := UiTheme.html("log_old")
+var LOG_COLOR_LABEL := UiTheme.html("log_label")
 var top_label: Label
 var stage_label: Label
 var wolf_portrait: AnimatedIcon
@@ -137,7 +136,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color(0.08, 0.1, 0.08)
+	bg.color = UiTheme.color("screen_bg")
 	bg.anchor_right = 1.0
 	bg.anchor_bottom = 1.0
 	add_child(bg)
@@ -178,7 +177,7 @@ func _build_ui() -> void:
 	portrait_box.add_child(wolf_portrait)
 	stage_label = Label.new()
 	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stage_label.add_theme_font_size_override("font_size", 13)
+	stage_label.theme_type_variation = &"StageLabel"
 	portrait_box.add_child(stage_label)
 
 	var header_text_box := VBoxContainer.new()
@@ -248,7 +247,7 @@ func _build_ui() -> void:
 	stamina_warning.text = tr("ui.stamina_low")
 	stamina_warning.tooltip_text = tr("ui.stamina_low.tip")
 	stamina_warning.mouse_filter = Control.MOUSE_FILTER_PASS
-	stamina_warning.add_theme_color_override("font_color", Color(0.95, 0.55, 0.4))
+	stamina_warning.theme_type_variation = &"WarningLabel"
 	stamina_warning.visible = false
 	status_row.add_child(stamina_warning)
 
@@ -317,12 +316,6 @@ func _build_ui() -> void:
 	var map_grid := GridContainer.new()
 	map_grid.columns = 2
 	map_center.add_child(map_grid)
-	current_region_style = StyleBoxFlat.new()
-	current_region_style.bg_color = Color(0.2, 0.18, 0.1, 0.75)
-	current_region_style.border_color = CURRENT_REGION_COLOR
-	current_region_style.set_border_width_all(1)
-	current_region_style.set_corner_radius_all(3)
-	current_region_style.set_content_margin_all(4)
 	for i in 4:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(150, 40)
@@ -365,20 +358,13 @@ func _build_ui() -> void:
 		action_buttons[action_id] = btn
 	# 「確定」的獵物出沒知識：在行動按鈕下面寫明這次探索發現某種獵物的機率
 	explore_hint_label = Label.new()
-	explore_hint_label.add_theme_font_size_override("font_size", 12)
+	explore_hint_label.theme_type_variation = &"HintLabel"
 	explore_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explore_hint_label.modulate = Color(0.95, 0.9, 0.75)
 	action_panel.add_child(explore_hint_label)
 
 	log_box = RichTextLabel.new()
 	# 高度取整數行，避免最上面一行只露出半截。
-	var log_style := StyleBoxFlat.new()
-	log_style.bg_color = Color(0, 0, 0, 0.25)
-	log_style.content_margin_left = 4
-	log_style.content_margin_right = 4
-	log_style.content_margin_top = 2
-	log_style.content_margin_bottom = 2
-	log_box.add_theme_stylebox_override("normal", log_style)
+	log_box.theme_type_variation = &"LogBox"
 	var log_font := log_box.get_theme_font("normal_font")
 	var log_line_h := log_font.get_height(log_box.get_theme_font_size("normal_font_size")) + log_box.get_theme_constant("line_separation")
 	log_box.custom_minimum_size = Vector2(0, log_line_h * LOG_VISIBLE_LINES + 4)
@@ -458,15 +444,10 @@ func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
 		GameState.burn_state(GameState.current_region) in ["burning", "ash"]) if terrain != "" else null
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
-func _overlay_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.07, 0.06, 0.94)
-	return style
-
 func _build_encounter_overlay() -> void:
 	encounter_overlay = Panel.new()
 	encounter_overlay.visible = false
-	encounter_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	encounter_overlay.theme_type_variation = &"OverlayPanel"
 	encounter_overlay.anchor_right = 1.0
 	encounter_overlay.anchor_bottom = 1.0
 	add_child(encounter_overlay)
@@ -495,8 +476,7 @@ func _build_encounter_overlay() -> void:
 	box.add_child(encounter_buttons_box)
 	encounter_detail = Label.new()
 	encounter_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	encounter_detail.add_theme_font_size_override("font_size", 12)
-	encounter_detail.modulate = Color(0.8, 0.85, 0.8)
+	encounter_detail.theme_type_variation = &"DetailLabel"
 	box.add_child(encounter_detail)
 	encounter_strip = _make_session_strip()
 	box.add_child(encounter_strip)
@@ -504,7 +484,7 @@ func _build_encounter_overlay() -> void:
 func _build_hunt_overlay() -> void:
 	hunt_overlay = Panel.new()
 	hunt_overlay.visible = false
-	hunt_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	hunt_overlay.theme_type_variation = &"OverlayPanel"
 	hunt_overlay.anchor_right = 1.0
 	hunt_overlay.anchor_bottom = 1.0
 	add_child(hunt_overlay)
@@ -552,7 +532,7 @@ func _build_hunt_overlay() -> void:
 	combat_anim_btn = Button.new()
 	combat_anim_btn.flat = true
 	combat_anim_btn.visible = false
-	combat_anim_btn.add_theme_font_size_override("font_size", 11)
+	combat_anim_btn.theme_type_variation = &"SmallButton"
 	combat_anim_btn.anchor_left = 1.0
 	combat_anim_btn.anchor_right = 1.0
 	combat_anim_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -568,7 +548,7 @@ func _build_hunt_overlay() -> void:
 func _build_rest_overlay() -> void:
 	rest_overlay = Panel.new()
 	rest_overlay.visible = false
-	rest_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	rest_overlay.theme_type_variation = &"OverlayPanel"
 	rest_overlay.anchor_right = 1.0
 	rest_overlay.anchor_bottom = 1.0
 	add_child(rest_overlay)
@@ -594,9 +574,7 @@ func _build_debug_overlay() -> void:
 	debug_overlay = Panel.new()
 	debug_overlay.visible = false
 	# 除錯選單蓋住整個畫面，用不透明底色，避免和底下的遊戲畫面混在一起。
-	var debug_style := StyleBoxFlat.new()
-	debug_style.bg_color = Color(0.06, 0.07, 0.06)
-	debug_overlay.add_theme_stylebox_override("panel", debug_style)
+	debug_overlay.theme_type_variation = &"DebugPanel"
 	debug_overlay.anchor_right = 1.0
 	debug_overlay.anchor_bottom = 1.0
 	add_child(debug_overlay)
@@ -886,7 +864,7 @@ func _build_debug_overlay() -> void:
 	)
 	npc_status = Label.new()
 	npc_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	npc_status.add_theme_font_size_override("font_size", 12)
+	npc_status.theme_type_variation = &"SmallLabel"
 	right.add_child(npc_status)
 	_debug_button(combat_row, tr("debug.event.old_injury"), func():
 		debug_overlay.visible = false
@@ -912,7 +890,7 @@ func _debug_row() -> HFlowContainer:
 func _debug_section_label(key: String) -> Label:
 	var l := Label.new()
 	l.text = tr(key)
-	l.modulate = Color(0.75, 0.85, 0.75)
+	l.theme_type_variation = &"MutedLabel"
 	return l
 
 func _debug_button(parent: Node, text: String, callback: Callable) -> void:
@@ -1091,14 +1069,7 @@ func _refresh() -> void:
 			tips.append(tr("map.tip." + burn))
 		btn.tooltip_text = "\n".join(tips)
 		# 目前位置用亮框與亮字標出，不再在名稱後面加「[目前位置]」（按鈕寬度放不下，會被截掉）
-		if is_current:
-			btn.add_theme_stylebox_override("disabled", current_region_style)
-			btn.add_theme_color_override("font_disabled_color", CURRENT_REGION_COLOR)
-			btn.add_theme_color_override("icon_disabled_color", Color.WHITE)
-		else:
-			btn.remove_theme_stylebox_override("disabled")
-			btn.remove_theme_color_override("font_disabled_color")
-			btn.remove_theme_color_override("icon_disabled_color")
+		btn.theme_type_variation = &"CurrentRegionButton" if is_current else &""
 
 	var available: Array[String] = GameState.available_actions()
 	for action_id in action_buttons.keys():
@@ -1231,11 +1202,7 @@ func _make_session_strip() -> RichTextLabel:
 	strip.bbcode_enabled = true
 	strip.scroll_following = true
 	strip.visible = false
-	strip.add_theme_font_size_override("normal_font_size", 12)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.35)
-	style.set_content_margin_all(3)
-	strip.add_theme_stylebox_override("normal", style)
+	strip.theme_type_variation = &"SessionStrip"
 	strip.custom_minimum_size = Vector2(0, _strip_height(strip, STRIP_LINES))
 	return strip
 
@@ -2370,7 +2337,7 @@ func _build_region_info_overlay() -> void:
 	region_info_overlay.visible = false
 	region_info_overlay.anchor_right = 1.0
 	region_info_overlay.anchor_bottom = 1.0
-	region_info_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	region_info_overlay.theme_type_variation = &"OverlayPanel"
 	add_child(region_info_overlay)
 	var root := VBoxContainer.new()
 	root.anchor_right = 1.0
@@ -2618,8 +2585,7 @@ func _add_hunt_choice(label: String, info: Dictionary, callback: Callable) -> vo
 		factor_label.clip_text = true
 		factor_label.tooltip_text = factor_label.text
 		factor_label.mouse_filter = Control.MOUSE_FILTER_PASS
-		factor_label.add_theme_font_size_override("font_size", 12)
-		factor_label.modulate = Color(0.8, 0.85, 0.8)
+		factor_label.theme_type_variation = &"DetailLabel"
 		detail.add_child(factor_label)
 
 func _make_small_rich_label() -> RichTextLabel:
@@ -2629,8 +2595,8 @@ func _make_small_rich_label() -> RichTextLabel:
 	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	label.add_theme_font_size_override("normal_font_size", 12)
-	label.modulate = Color(0.95, 0.9, 0.75)
+	label.theme_type_variation = &"SmallRichLabel"
+	label.modulate = UiTheme.color("hint")
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -2663,7 +2629,7 @@ func _format_cost(info: Dictionary) -> String:
 		parts.append(_icon_bb("cost.turns") + tr("cost.turns").replace("{n}", str(turns)))
 	var risk: int = int(round(float(info.get("injury_risk", 0.0)) * 100.0))
 	if risk > 0:
-		parts.append("[color=#e8a07a]" + _icon_bb("cost.injury_risk") + tr("cost.injury_risk").replace("{n}", str(risk)) + "[/color]")
+		parts.append("[color=%s]" % UiTheme.html("cost_risk") + _icon_bb("cost.injury_risk") + tr("cost.injury_risk").replace("{n}", str(risk)) + "[/color]")
 	return "　".join(parts)
 
 # 感知越高，列出的因素越多（2 個，感知達門檻時 3 個）。
@@ -3590,7 +3556,7 @@ func _finish_combat_ui() -> void:
 func _build_card_overlay() -> void:
 	card_overlay = Panel.new()
 	card_overlay.visible = false
-	card_overlay.add_theme_stylebox_override("panel", _overlay_style())
+	card_overlay.theme_type_variation = &"OverlayPanel"
 	card_overlay.anchor_right = 1.0
 	card_overlay.anchor_bottom = 1.0
 	add_child(card_overlay)
@@ -3601,13 +3567,7 @@ func _build_card_overlay() -> void:
 	center.anchor_bottom = 1.0
 	card_overlay.add_child(center)
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.04, 0.05, 0.04, 0.72)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	panel.add_theme_stylebox_override("panel", style)
+	panel.theme_type_variation = &"CardPanel"
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.custom_minimum_size = Vector2(520, 0)
@@ -3623,7 +3583,7 @@ func _build_card_overlay() -> void:
 	card_sprite_center.add_child(card_wolf)
 	card_title = Label.new()
 	card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	card_title.add_theme_font_size_override("font_size", 20)
+	card_title.theme_type_variation = &"CardTitle"
 	box.add_child(card_title)
 	card_body = RichTextLabel.new()
 	card_body.bbcode_enabled = true
@@ -3904,13 +3864,7 @@ func _build_toast() -> void:
 	toast.offset_left = -200
 	toast.offset_right = 200
 	toast.modulate = Color(1, 1, 1, 0)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.6)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	toast.add_theme_stylebox_override("normal", style)
+	toast.theme_type_variation = &"Toast"
 	add_child(toast)
 
 # 不擋操作的短暫提示：淡入、停留、淡出。
@@ -3948,7 +3902,7 @@ func _show_sleep_summary(summary: Dictionary) -> void:
 	if not gains.is_empty():
 		var parts: Array[String] = []
 		for stat in gains:
-			parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=#9be38a]▲%.1f[/color]" % float(amounts.get(stat, 0.0)))
+			parts.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=%s]▲%.1f[/color]" % [UiTheme.html("stat_gain"), float(amounts.get(stat, 0.0))])
 		lines.append(tr("sleep_summary.today") + "　".join(parts))
 	var reason: String = str(summary.get("reason", ""))
 	if reason != "":

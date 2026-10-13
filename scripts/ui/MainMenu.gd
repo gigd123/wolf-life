@@ -5,7 +5,7 @@ func _ready() -> void:
 	anchor_bottom = 1.0
 
 	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.08, 0.06)
+	bg.color = UiTheme.color("screen_bg_menu")
 	bg.anchor_right = 1.0
 	bg.anchor_bottom = 1.0
 	add_child(bg)
@@ -21,7 +21,7 @@ func _ready() -> void:
 
 	var title := Label.new()
 	title.text = "Timberline"
-	title.add_theme_font_size_override("font_size", 32)
+	title.theme_type_variation = &"MenuTitle"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 

@@ -25,6 +25,10 @@ SaveSystem="*res://scripts/core/SaveSystem.gd"
 GameState="*res://scripts/core/GameState.gd"
 Audio="*res://scripts/core/Audio.gd"
 
+[gui]
+
+theme/custom="res://assets/ui/theme.tres"
+
 [display]
 
 window/size/viewport_width=640

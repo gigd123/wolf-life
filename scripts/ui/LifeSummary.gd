@@ -10,7 +10,7 @@ func _ready() -> void:
 	anchor_bottom = 1.0
 
 	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.05)
+	bg.color = UiTheme.color("screen_bg_summary")
 	bg.anchor_right = 1.0
 	bg.anchor_bottom = 1.0
 	add_child(bg)
@@ -57,14 +57,14 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = tr("summary.title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
+	title.theme_type_variation = &"SummaryTitle"
 	box.add_child(title)
 
 	var bio := Label.new()
 	bio.text = _biography(log_data, wolf)
 	bio.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bio.modulate = Color(0.95, 0.9, 0.75)
+	bio.theme_type_variation = &"WarmLabel"
 	box.add_child(bio)
 
 	_add_line(box, tr("summary.days_lived").replace("{days}", str(int(log_data.get("days_lived", 0)))))
