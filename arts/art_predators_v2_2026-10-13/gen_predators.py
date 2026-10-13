@@ -254,9 +254,11 @@ def draw_frame(sp, pose='idle', phase=0):
             c = cols.get(v, cols[BODY])
             h = (x * 7919 + y * 104729) % 97
             if v == BODY and x in span:
+                is_belly = False
                 top, bot = span[x]
                 depth, height = y - top, max(1, bot - top)
-                if 'belly' in sp and depth > height * sp.get('belly_frac', 0.62):
+                is_belly = 'belly' in sp and depth > height * sp.get('belly_frac', 0.62)
+                if is_belly:
                     c = sp['belly']
                 elif 'back' in sp and depth <= max(1, height * 0.3):
                     c = sp['back']
@@ -265,7 +267,7 @@ def draw_frame(sp, pose='idle', phase=0):
                 if depth <= 0:
                     c = sp['sheen'] if 'sheen' in sp else mul(c, 1.14)
                 elif depth >= height - 1:
-                    c = mul(c, 0.82)
+                    c = mul(c, 0.93 if is_belly else 0.82)  # 淡色腹部的下緣只稍微暗一點，不要壓成灰色條紋
                 if 'sheen' in sp and depth in (1, 2) and h < 40:
                     c = sp['sheen']
                 if (x, y) in spot_set or ((x - 1, y) in spot_set and not sp.get('many_spots')):
@@ -307,7 +309,7 @@ def draw_frame(sp, pose='idle', phase=0):
     def put(p, c):
         if 0 <= p[0] < fw and 0 <= p[1] < fh:
             op[p[0], p[1]] = c
-    put(eye, (220, 180, 60, 255) if sp['file'] in ('lynx', 'cougar', 'coyote') else (230, 230, 230, 255))
+    put(eye, (220, 180, 60, 255) if sp['file'] in ('lynx', 'cougar', 'coyote', 'wolf') else (230, 230, 230, 255))
     put((eye[0] - 1, eye[1]), (20, 18, 18, 255))
     put(nose, (20, 18, 18, 255)); put((nose[0], nose[1] + 1), (20, 18, 18, 255))
     if mouth:
