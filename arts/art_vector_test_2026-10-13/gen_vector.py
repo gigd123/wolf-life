@@ -94,19 +94,56 @@ def leg_shape(joints, widths):
     return right + left[::-1]
 
 
+def claws(x, y, r):
+    return "".join(f'<path d="M{x + r - 1 + i*1.6:.1f} {y - 1:.1f} q2 1 2.4 3" stroke="#1d1a18" stroke-width="1.1" fill="none" stroke-linecap="round"/>'
+                   for i in range(2))
+
+
 def paw_shape(x, y, fill, r=7.5):
     """腳掌：前低後高的橢圓，加兩條趾縫。"""
     return (f'<path d="M{x-r} {y} Q{x-r} {y-6} {x-1} {y-6.5} Q{x+r+2} {y-5} {x+r+2.5} {y-0.5} Q{x+r} {y+1} {x} {y+1} Q{x-r} {y+1} {x-r} {y} Z" fill="{fill}"/>'
             f'<path d="M{x+2} {y-2.5} L{x+2.5} {y+0.5} M{x+5.5} {y-2.5} L{x+6} {y+0.5}" stroke="#00000033" stroke-width="0.9"/>')
 
 
+INK = 'stroke="#2a2420" stroke-width="1.6" stroke-linejoin="round"'
+INK_IN = 'stroke="#2a2420" stroke-width="1.1" stroke-linejoin="round" stroke-opacity="0.8"'
+INK_RGB = (42, 36, 32)
+
+
+def tuft(x, y, length, ang, width, fill):
+    """一撮毛：葉片形，從 (x, y) 往 ang 方向（度）伸出，尾端尖。"""
+    a = math.radians(ang)
+    dx, dy = math.cos(a) * length, math.sin(a) * length
+    nx, ny = -math.sin(a) * width, math.cos(a) * width
+    return (f'<path d="M{x - nx*0.5:.1f} {y - ny*0.5:.1f} Q{x + dx*0.45 - nx:.1f} {y + dy*0.45 - ny:.1f} {x+dx:.1f} {y+dy:.1f} '
+            f'Q{x + dx*0.5 + nx*0.6:.1f} {y + dy*0.5 + ny*0.6:.1f} {x + nx*0.5:.1f} {y + ny*0.5:.1f} Z" fill="{fill}"/>')
+
+
+def tuft_field(seed, box, n, colors, length, ang, width=3.0):
+    """在 box=(x0, y0, x1, y1) 的橢圓範圍內撒 n 撮毛，方向大致一致、略有變化。"""
+    rnd = random.Random(seed)
+    x0, y0, x1, y1 = box
+    cx, cy, rx, ry = (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2, (y1 - y0) / 2
+    out = []
+    while n > 0:
+        u, v = rnd.uniform(-1, 1), rnd.uniform(-1, 1)
+        if u * u + v * v > 1:
+            continue
+        n -= 1
+        out.append(tuft(cx + u * rx, cy + v * ry, length * rnd.uniform(0.7, 1.2), ang + rnd.uniform(-12, 12),
+                        width * rnd.uniform(0.7, 1.2), rnd.choice(colors)))
+    return "".join(out)
+
+
 # ---------------- 灰狼 ----------------
 WOLF_PALETTES = {
     # base 主色、shade 陰影面、light 亮面、cream 臉頰與胸前、saddle 背上深色、far 遠側
-    "gray": dict(base="#8f8b87", shade="#76726f", light="#a9a5a0", cream="#e8e4dd", saddle="#575352",
-                 far="#64605e", nose="#222020", eye="#e2a73c", tip="#2f2c2b", ear_in="#cfc8bf"),
+    "gray": dict(base="#857b6e", shade="#6a6157", light="#aa9c86", cream="#e6dccb", saddle="#4b4640",
+                 far="#5d554c", nose="#1f1c1a", eye="#e2b13c", tip="#26221f", ear_in="#8d5f40", leg="#cdbfa6",
+                 tuft_l="#a09280", tuft_d="#5a534b"),
     "black": dict(base="#3d3c40", shade="#2f2e32", light="#4d4c51", cream="#6a686d", saddle="#232226",
-                  far="#28272b", nose="#121113", eye="#e4b54a", tip="#18171a", ear_in="#5a585d"),
+                  far="#28272b", nose="#121113", eye="#e4b54a", tip="#18171a", ear_in="#5a585d", leg="#4a494e",
+                  tuft_l="#4c4b50", tuft_d="#29282c"),
 }
 
 
@@ -116,15 +153,19 @@ def wolf(pal, pose=None, scale=1.0):
     q = dict(head=0, tail=0, fl=0, fr=0, hl=0, hr=0)
     q.update(pose or {})
     P = lambda spec, fill, sweep=(-0.5, 0.35), extra="": path(outline(spec, sweep), fill, extra)
-    L = lambda joints, widths, fill: path(outline(leg_shape(joints, widths)), fill)
+    L = lambda joints, widths, fill, extra="": path(outline(leg_shape(joints, widths)), fill, extra)
+    PO = lambda spec, fill, sweep=(-0.5, 0.35): path(outline(spec, sweep), fill)
+    PI = lambda spec, fill, sweep=(-0.5, 0.35): path(outline(spec, sweep), fill, INK_IN)
+    PAW = lambda x, y, fill, r: paw_shape(x, y, fill, r) + claws(x, y, r)
     g = []
     # 遠側的腿（深色）
-    g.append(rot(q["fr"], 152, 88, L([(156, 86), (154, 112), (156, 148), (158, 160)], [22, 15, 11, 10.5], p["far"]) + paw_shape(160, 163, p["far"], 8)))
-    g.append(rot(q["hr"], 82, 84, L([(80, 84), (94, 106), (74, 134), (78, 160)], [28, 18, 12, 10.5], p["far"]) + paw_shape(81, 163, p["far"], 8)))
+    g.append(rot(q["fr"], 152, 88, L([(156, 86), (154, 112), (156, 148), (158, 160)], [22, 15, 11, 10.5], p["far"]) + PAW(160, 163, p["far"], 8)))
+    g.append(rot(q["hr"], 82, 84, L([(80, 84), (94, 106), (74, 134), (78, 160)], [28, 18, 12, 10.5], p["far"]) + PAW(81, 163, p["far"], 8)))
     # 尾巴：蓬鬆下垂、兩側毛邊、尾尖深色
     tail_spec = [(62, 62), (60, 86), ("fur", 3, 4), (52, 114), ("fur", 3, 3), (42, 136), (30, 150),
                  (28, 128), ("fur", 4, 4), (34, 98), ("fur", 4, 4), (46, 72), (54, 62)]
-    tail = P(tail_spec, p["shade"], (0.2, 0.4))
+    tail = PO(tail_spec, p["shade"], (0.2, 0.4))
+    tail += tuft_field(3, (34, 76, 58, 128), 9, [p["tuft_l"], p["tuft_d"]], 16, 105, 3.0)
     tail += P([(47, 126), ("fur", 3, 2), (42, 136), (30, 150), (28, 128), ("fur", 2, 2), (30, 120)], p["tip"], (0.2, 0.4))
     tail += P([(54, 70), (56, 88), (48, 110), (44, 92)], p["light"], extra='opacity="0.5"')
     g.append(rot(q["tail"], 60, 66, tail))
@@ -132,38 +173,44 @@ def wolf(pal, pose=None, scale=1.0):
     body = [(58, 58), (84, 54), (112, 56), (136, 46), ("fur", 3, 8), (186, 36),
             (204, 64), ("fur", 4, 4), (200, 86), ("fur", 4, 3), (188, 104), ("fur", 4, 3), (172, 112), ("fur", 3, 4), (146, 108),
             (126, 104), (108, 102), (92, 104), (72, 104), (56, 90), (52, 72)]
-    g.append(P(body, p["base"], (-0.6, 0.3)))
+    g.append(PO(body, p["base"], (-0.6, 0.3)))
     # 肩後的陰影面、背上的深色鞍形毛（下緣是毛邊）
     g.append(P([(144, 60), (158, 70), (162, 94), (154, 106), (144, 100), (138, 78)], p["shade"], extra='opacity="0.7"'))
     g.append(P([(60, 58), (84, 53), (112, 55), (136, 45), (180, 38), (172, 54), ("fur", 4, 6), (128, 66), ("fur", 3, 4), (86, 68), (64, 72)], p["saddle"], (-0.4, 0.5)))
+    # 毛撮：頸背到肩是長毛、側腹短一點，深淺交錯
+    g.append(tuft_field(11, (136, 42, 188, 74), 16, [p["tuft_d"], p["saddle"]], 18, 152, 3.6))
+    g.append(tuft_field(12, (100, 64, 146, 96), 12, [p["tuft_l"], p["shade"]], 15, 165, 3.4))
+    g.append(tuft_field(13, (64, 58, 110, 70), 8, [p["tuft_d"]], 14, 172, 3.0))
     # 胸前與喉嚨的淺色毛
     g.append(P([(194, 62), (204, 64), ("fur", 4, 4), (200, 86), ("fur", 4, 3), (188, 104), ("fur", 4, 3), (174, 110), (178, 92), (186, 74)], p["cream"], (-0.6, 0.3)))
     # 近側後腿：厚實的大腿，後緣是「褲腳」毛邊
     thigh = [(62, 62), (90, 66), (104, 88), (102, 108), (92, 116), ("fur", 4, 4), (66, 104), (56, 84)]
-    hl = (P(thigh, p["base"], (-0.5, 0.4))
+    hl = (PI(thigh, p["base"], (-0.5, 0.4))
+          + tuft_field(21, (66, 72, 98, 106), 7, [p["tuft_l"], p["shade"]], 14, 120, 3.2)
           + P([(74, 70), (92, 72), (101, 90), (96, 100), (84, 88)], p["light"], extra='opacity="0.55"')
           + L([(98, 104), (80, 134), (86, 160)], [19, 13, 11], p["base"])
-          + path(outline(leg_shape([(83, 138), (87, 158)], [3.5, 3])), p["light"])
-          + paw_shape(89, 163, p["base"], 8.5))
+          + path(outline(leg_shape([(84, 134), (87, 159)], [11, 9.5])), p["leg"])
+          + PAW(89, 163, p["leg"], 8.5))
     g.append(rot(q["hl"], 84, 84, hl))
     # 近側前腿：肩胛、上臂粗、腕部細，前緣有一道亮面
     fl = (L([(168, 78), (167, 108), (169, 148), (171, 160)], [28, 17, 12, 11], p["base"])
           + P([(164, 70), (176, 74), (177, 92), (169, 96)], p["light"], extra='opacity="0.55"')
-          + path(outline(leg_shape([(171, 116), (172, 148), (173, 158)], [4, 3.5, 3])), p["light"])
-          + paw_shape(174, 163, p["base"], 8.5))
+          + path(outline(leg_shape([(168, 112), (169, 148), (171, 159)], [15, 11, 10])), p["leg"])
+          + PAW(174, 163, p["leg"], 8.5))
     g.append(rot(q["fl"], 162, 80, fl))
     # 頭：額頭到口鼻收細、鼻樑長；臉頰毛往後下方翹；耳朵大
     hx, hy = 178, 60
-    head = (P([(166, 38), (176, 28), (192, 26), (204, 32), (210, 42), (222, 47), (232, 52), (237, 58), (236, 67),
+    head = (PO([(166, 38), (176, 28), (192, 26), (204, 32), (210, 42), (222, 47), (232, 52), (237, 58), (236, 67),
                (226, 73), (210, 74), (200, 78), ("fur", 4, 4), (178, 78), (170, 64)], p["base"], (-0.7, 0.4))
             # 遠側的耳朵
-            + P([(172, 36), (176, 14), (186, 34)], p["far"])
+            + PO([(172, 36), (176, 14), (186, 34)], p["far"])
             # 口鼻與臉頰的淺色
             + P([(206, 58), (226, 63), (236, 66), (226, 73), (210, 74), (200, 78), ("fur", 5, 4), (180, 82), (184, 70), (196, 62)], p["cream"], (-0.7, 0.5))
             # 額頭到頸背的深色
             + P([(170, 34), (186, 27), (202, 33), (192, 39), (178, 46)], p["saddle"])
             # 近側的耳朵（外深內淺）
-            + P([(180, 36), (188, 10), (200, 34)], p["shade"])
+            + PO([(180, 36), (188, 10), (200, 34)], p["shade"])
+            + tuft_field(31, (172, 44, 194, 70), 6, [p["tuft_d"]], 11, 150, 2.6)
             + P([(185, 33), (189, 17), (195, 33)], p["ear_in"])
             # 眼睛（杏仁形）、鼻子、嘴線
             + f'<path d="M199 45 Q203 41.5 208 44 Q204 47.5 199 45 Z" fill="{p["eye"]}"/>'
@@ -264,15 +311,32 @@ def render(svg_text, out, width=None):
     cairosvg.svg2png(bytestring=svg_text.encode(), write_to=out, output_width=width)
 
 
+def render_inked(svg_text, width, radius):
+    """畫成透明底 PNG，再沿外輪廓加一圈墨線（只描外框，內部重疊不描）。"""
+    import io
+    from PIL import Image, ImageFilter
+    img = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg_text.encode(), output_width=width))).convert("RGBA")
+    a = img.split()[3].point(lambda v: 255 if v > 40 else 0)
+    grown = a.filter(ImageFilter.MaxFilter(radius * 2 + 1)).filter(ImageFilter.GaussianBlur(0.6))
+    ink = Image.new("RGBA", img.size, INK_RGB + (0,))
+    ink.putalpha(grown)
+    return Image.alpha_composite(ink, img)
+
+
 def preview():
+    from PIL import Image
     bg = background_meadow()
     render(bg, os.path.join(HERE, "preview_meadow.png"))
-    # 灰狼與黑狼的單張與擺在背景上的樣子
-    pair = svg(500, 176, f'<rect width="500" height="176" fill="#e9e3d6"/>'
-               f'{wolf("gray")}<g transform="translate(250 0)">{wolf("black")}</g>')
-    render(pair, os.path.join(HERE, "preview_wolves.png"), 1000)
-    scene = bg.replace("</svg>", f'<g transform="translate(420 432) scale(1.45)">{wolf("gray")}</g></svg>')
-    render(scene, os.path.join(HERE, "preview_scene.png"))
+    W, H = 240, 176
+    pair = Image.new("RGBA", (1000, 352), (233, 227, 214, 255))
+    for i, pal in enumerate(["gray", "black"]):
+        im = render_inked(svg(W, H, wolf(pal)), 480, 3)
+        pair.alpha_composite(im, (i * 500 + 10, 0))
+    pair.convert("RGB").save(os.path.join(HERE, "preview_wolves.png"))
+    scene = Image.open(os.path.join(HERE, "preview_meadow.png")).convert("RGBA")
+    im = render_inked(svg(W, H, wolf("gray")), 348, 2)
+    scene.alpha_composite(im, (420, 432))
+    scene.convert("RGB").save(os.path.join(HERE, "preview_scene.png"))
 
 
 if __name__ == "__main__":
