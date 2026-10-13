@@ -281,11 +281,9 @@ if __name__ == '__main__':
         for winter in (False, True):
             im = region(r, winter)
             suffix = '_winter' if winter else ''
-            gm.save(im, gm.OUT_REG + r + suffix + '.png', r + suffix) if False else None
             im.save(gm.OUT_REG + r + suffix + '.png')
             im.save(ARCH + r + suffix + '_1x.png')
-            im.resize((w * 4 for w in im.size), Image.NEAREST).save(ARCH + r + suffix + '_4x.png') if False else \
-                im.resize((im.width * 4, im.height * 4), Image.NEAREST).save(ARCH + r + suffix + '_4x.png')
+            im.resize((im.width * 4, im.height * 4), Image.NEAREST).save(ARCH + r + suffix + '_4x.png')
             if not winter:
                 tile = im.resize((18, 18), Image.BOX)
                 tile.save(gm.OUT_ICON + 'region_tile_' + r + '.png')
