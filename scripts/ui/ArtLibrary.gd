@@ -76,14 +76,14 @@ static func _setup_strip(icon: AnimatedIcon, strip: Dictionary) -> bool:
 	icon.setup(tex, _entry_frame(strip), 0, int(strip.get("frames", 4)), float(strip.get("fps", 5.0)), bool(strip.get("loop", true)))
 	return true
 
-# 相對灰狼的顯示倍率（art.json 動物的 display_scale；沒寫的生命階段用成體 × 0.7）。狩獵與戰鬥畫面照比例顯示用。
+# 相對灰狼的顯示倍率（art.json 動物的 display_scale；沒寫的幼獸用成體 × 0.7，其他階段例如雄鹿用成體）。狩獵與戰鬥畫面照比例顯示用。
 static func display_scale(animal_id: String, life_stage: String) -> float:
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var ds: Dictionary = table.get("display_scale", {})
 	if ds.has(life_stage):
 		return float(ds[life_stage])
 	var adult: float = float(ds.get("adult", 1.0))
-	return adult if life_stage == "adult" else adult * 0.7
+	return adult * 0.7 if life_stage == "juvenile" else adult
 
 # 動物待機時一格的大小（spritesheet 的格子，或單張圖的大小）；決定狩獵畫面要留多大的位置。
 static func idle_frame_size(animal_id: String, life_stage: String) -> Vector2:

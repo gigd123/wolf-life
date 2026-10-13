@@ -51,6 +51,9 @@ def scaled(sp, k, frame, ground, file, drop=()):
     out['muzzle_x'] = fx((sp['muzzle_x'], 0))[0]
     out['legs'] = [(s_, fx(a), max(2, round(wt * k)), max(2, round(wb * k)), b) for s_, a, wt, wb, b in sp['legs']]
     out['patches'] = [(c, [fx(p) for p in pts], h) for c, pts, h in sp.get('patches', [])]
+    for key in ('antlers', 'horns'):
+        if sp.get(key):
+            out[key] = [[fx(p) for p in line] for line in sp[key]]
     out['split'] = round(sp['split'] * k)
     out['frame'] = frame; out['ground'] = ground; out['file'] = file
     for key in drop:
@@ -120,7 +123,78 @@ def preview(path):
     out.resize((W * 4, H * 4), Image.NEAREST).save(path)
 
 
+def trim(im):
+    bb = im.getbbox()
+    return im.crop(bb) if bb else im
+
+
+def save(im, name):
+    im.save(OUT + name + '.png')
+    im.save(ARCH + name + '_1x.png')
+    im.resize((im.width * 4, im.height * 4), Image.NEAREST).save(ARCH + name + '_4x.png')
+
+
+def herd(members, size=(114, 42)):
+    """成群圖：幾隻待機圖縮小、前後錯開（遠看的一群）。members = [(種, 縮放, x, 底部 y)]，後面的先畫。"""
+    out = Image.new('RGBA', size, (0, 0, 0, 0))
+    for sp, k, x, by in members:
+        im = trim(gp.draw_frame(sp, 'idle', 0))
+        im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.NEAREST)
+        out.alpha_composite(im, (x, by - im.height))
+    return out
+
+
+def actions(sp):
+    """反擊與受傷：馬鹿抬起前身用前蹄踢，野牛低頭衝撞。"""
+    # 抬起前身時上方多留 12 像素，鹿角才不會被格子切掉
+    fw, fh = sp['frame']
+    tall = scaled(sp, 1.0, (fw, fh + 12), sp['ground'] + 12, sp['file'])
+    tall['colors'] = sp['colors']
+    attack = gp.draw_frame(tall, 'charge') if sp['file'].startswith('bison') else gp.draw_frame(tall, 'swipe2')
+    return trim(attack), trim(gp.draw_frame(sp, 'hurt'))
+
+
+def preview_actions(path):
+    rows = [[a for a in actions(sp)] for sp in [ELK_BULL, ELK_COW, BISON]]
+    rows.append([herd_elk(), herd_bison()])
+    W = max(sum(f.width + 6 for f in r) for r in rows) + 6
+    H = sum(max(f.height for f in r) + 6 for r in rows) + 6
+    out = Image.new('RGBA', (W, H), (96, 116, 96, 255))
+    y = 6
+    for r in rows:
+        h = max(f.height for f in r); x = 6
+        for f in r:
+            out.alpha_composite(f, (x, y + h - f.height)); x += f.width + 6
+        y += h + 6
+    out.resize((W * 4, H * 4), Image.NEAREST).save(path)
+
+
+def herd_elk():
+    return herd([(ELK_COW, 0.42, 4, 36), (ELK_COW, 0.42, 62, 34), (ELK_BULL, 0.42, 30, 40), (ELK_COW, 0.42, 78, 41),
+                 (ELK_CALF, 0.42, 14, 42)])
+
+
+def herd_bison():
+    return herd([(BISON, 0.36, 2, 34), (BISON, 0.36, 66, 33), (BISON, 0.36, 34, 41), (BISON_CALF, 0.4, 84, 42)])
+
+
 if __name__ == '__main__':
     if '--preview' in sys.argv:
         preview(ARCH + 'preview_basic.png')
         sys.exit(0)
+    if '--preview-actions' in sys.argv:
+        preview_actions(ARCH + 'preview_actions.png')
+        sys.exit(0)
+    for sp in ALL:
+        fw, fh = sp['frame']
+        sheet = Image.new('RGBA', (fw * 4, fh * 2), (0, 0, 0, 0))
+        for i in range(4):
+            sheet.alpha_composite(gp.draw_frame(sp, 'idle', i), (i * fw, 0))
+            sheet.alpha_composite(gp.draw_frame(sp, 'move', i), (i * fw, fh))
+        save(sheet, sp['file'] + '_sheet')
+        if sp in (ELK_BULL, ELK_COW, BISON):
+            atk, hurt = actions(sp)
+            save(atk, sp['file'] + '_attack'); save(hurt, sp['file'] + '_hurt')
+    save(herd_elk(), 'elk_herd')
+    save(herd_bison(), 'bison_herd')
+    print('done')

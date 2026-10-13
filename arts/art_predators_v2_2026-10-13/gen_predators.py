@@ -121,6 +121,9 @@ def pose_params(pose, phase, bear):
         fdx, fdy, hdx, hdy = 1, 3, 2, 1
         swing = [1, -1, 3, -2]
         mouth = ears_back = True
+    elif pose == 'charge':  # 低頭衝撞（野牛）：頭壓低往前，前腳往前踏
+        fdx, fdy, hdx, hdy = 2, 1, 3, 4
+        swing = [3, -1, 5, -3]; lift = [1, 0, 2, 0]
     elif pose.startswith('swipe'):
         k = int(pose[-1])
         fdy = -[2, 6, 7, 3][k]; fdx = [0, 1, 3, 1][k]

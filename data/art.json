@@ -46,17 +46,8 @@
       "adult": { "single": "res://assets/art/sprites/animals/moose.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/moose_walk_strip.png", "frame": [82, 76], "frames": 4 } }, "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
       "juvenile": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png" } }
     },
-    "elk": { "display_scale": {"adult": 2.069, "juvenile": 1.571},
-      "adult": { "sheet": "res://assets/art/sprites/animals/elk_cow_sheet.png", "rows": { "idle": 0, "move": 1 },
-        "poses": { "herd": "res://assets/art/sprites/animals/elk_herd.png" } },
-      "buck": { "sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "rows": { "idle": 0, "move": 1 } },
-      "juvenile": { "sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
-    },
-    "bison": { "display_scale": {"adult": 2.036, "juvenile": 1.5},
-      "adult": { "sheet": "res://assets/art/sprites/animals/bison_sheet.png", "rows": { "idle": 0, "move": 1 },
-        "poses": { "herd": "res://assets/art/sprites/animals/bison_herd.png" } },
-      "juvenile": { "sheet": "res://assets/art/sprites/animals/bison_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
-    },
+    "elk": {"display_scale": {"adult": 1.0, "buck": 0.94, "juvenile": 0.846}, "adult": {"sheet": "res://assets/art/sprites/animals/elk_cow_sheet.png", "frame": [88, 64], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/elk_herd.png", "attack": "res://assets/art/sprites/animals/elk_cow_attack.png", "hurt": "res://assets/art/sprites/animals/elk_cow_hurt.png"}}, "buck": {"sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "frame": [96, 84], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/elk_herd.png", "attack": "res://assets/art/sprites/animals/elk_bull_attack.png", "hurt": "res://assets/art/sprites/animals/elk_bull_hurt.png"}}, "juvenile": {"sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "frame": [56, 44], "rows": {"idle": 0, "move": 1}}},
+    "bison": {"display_scale": {"adult": 1.053, "juvenile": 1.239}, "adult": {"sheet": "res://assets/art/sprites/animals/bison_sheet.png", "frame": [104, 64], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/bison_herd.png", "attack": "res://assets/art/sprites/animals/bison_attack.png", "hurt": "res://assets/art/sprites/animals/bison_hurt.png"}}, "juvenile": {"sheet": "res://assets/art/sprites/animals/bison_calf_sheet.png", "frame": [56, 40], "rows": {"idle": 0, "move": 1}}},
     "pronghorn": { "display_scale": {"adult": 1.078, "juvenile": 1.026},
       "adult": { "sheet": "res://assets/art/sprites/animals/pronghorn_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/pronghorn_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
