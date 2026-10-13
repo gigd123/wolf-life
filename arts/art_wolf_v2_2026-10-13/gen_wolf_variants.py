@@ -39,6 +39,20 @@ def shift(sp, dx):
     return out
 
 
+def lower_head(sp, dy):
+    """頭和脖子前端往下（頭微微低於背線、往前伸的走姿）。"""
+    f = lambda p: (p[0], p[1] + dy)
+    out = dict(sp)
+    for key in ('head', 'jaw'):
+        out[key] = [f(p) for p in sp[key]]
+    out['ears'] = [[f(p) for p in e] for e in sp['ears']]
+    out['eye'] = f(sp['eye']); out['nose'] = f(sp['nose'])
+    nk = sp['neck']
+    out['neck'] = [nk[0], f(nk[1]), f(nk[2]), nk[3]]
+    out['patches'] = [(c, [f(p) for p in pts] if h else pts, h) for c, pts, h in sp.get('patches', [])]
+    return out
+
+
 def variant(colors, belly, back, patches, **extra):
     sp = dict(BASE)
     sp.update(colors=colors, belly=belly, back=back, patches=patches, grizzle=True, **extra)
@@ -68,6 +82,24 @@ VARIANTS = {
                  belly=(236, 220, 190), back=(94, 82, 74),
                  patches=[((238, 224, 196), [(35, 9), (40, 11), (41, 13), (38, 18), (34, 18), (32, 13)], True),
                           ((84, 72, 64), BROW, True)]),
+}
+
+
+# E：偏概念圖 1（對比強：深灰背鞍、褐色體側帶米黃色塊、米白四肢、白頰、耳緣深色、尾巴深色帶黑尖）
+# F：偏概念圖 3（柔和：灰褐偏黃、淡色腹部與四肢、背部稍深、白頰）
+SADDLE = [(20, 10), (31, 9), (35, 10), (36, 13), (30, 14), (22, 13)]
+VARIANTS = {
+    'E': lower_head(variant({BODY: (142, 120, 92), HEAD: (152, 126, 94), EAR: (112, 92, 72), LEG: (226, 212, 180),
+                             FARLEG: (180, 164, 136), PAW: (236, 226, 204), MUZZLE: (232, 222, 200), TAIL: (104, 98, 92),
+                             TAILTIP: (28, 26, 26)},
+                            belly=(228, 214, 184), back=(78, 76, 74),
+                            patches=[((92, 90, 90), SADDLE, False), ((200, 178, 132), [(19, 13), (22, 12), (25, 19), (21, 20)], False),
+                                     ((238, 232, 220), CHEEK, True), ((70, 60, 52), BROW, True)]), 1),
+    'F': lower_head(variant({BODY: (176, 154, 124), HEAD: (178, 156, 124), EAR: (120, 102, 82), LEG: (214, 198, 170),
+                             FARLEG: (168, 152, 126), PAW: (226, 214, 192), MUZZLE: (232, 222, 200), TAIL: (158, 138, 110),
+                             TAILTIP: (88, 74, 62)},
+                            belly=(230, 218, 194), back=(146, 124, 98),
+                            patches=[((154, 134, 108), SADDLE, False), ((234, 224, 204), CHEEK, True)]), 1),
 }
 
 
