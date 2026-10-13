@@ -22,6 +22,7 @@ SPECIES = {
         head=[(32, 13), (35, 9), (38, 9), (40, 11), (45, 12), (45, 14), (41, 15), (37, 16), (33, 17)],
         jaw=[(39, 14), (44, 14), (43, 16), (39, 16)],
         ears=[[(34, 10), (35, 4), (37, 9)], [(36, 9), (38, 3), (39, 9)]],
+        neck=[(28, 15), (34, 10), (36, 16), (32, 20)],
         eye=(38, 11), nose=(45, 12),
         legs=[('far', (29, 20), 3, 2, 1), ('far', (16, 20), 3, 2, -1), ('near', (31, 20), 3, 2, 1), ('near', (14, 20), 4, 2, -1)],
         paw=2, tail=[(11, 17), (8, 20), (6, 24), (6, 28)], tail_w=4, tail_tip=3,
@@ -29,54 +30,56 @@ SPECIES = {
                 FARLEG: (142, 96, 62), TAIL: (148, 130, 108), TAILTIP: (44, 38, 34), PAW: (156, 108, 68), MUZZLE: (226, 212, 188)},
         belly=(224, 210, 186), back=(118, 104, 90), grizzle=True),
     'lynx': dict(
+        # 照使用者的參考圖（短尾貓的樣子）：黃褐帶灰、斑點明顯、白色胸腹、臉頰毛有黑紋、黑耳背與黑耳簇、短尾上黑下白；四肢粗壯、大掌
         frame=(48, 32), ground=30, split=25, file='lynx',
-        body=[(14, 17), (16, 14), (22, 13), (29, 13), (32, 15), (33, 18), (31, 21), (24, 22), (17, 21), (14, 20)],
+        body=[(13, 18), (15, 14), (22, 13), (29, 13), (32, 15), (33, 19), (31, 22), (24, 23), (17, 22), (13, 21)],
         head=[(31, 11), (33, 7), (37, 6), (40, 8), (41, 11), (40, 14), (37, 15), (33, 15)],
         jaw=[(37, 13), (40, 13), (39, 15), (37, 15)],
-        ruff=[(31, 12), (32, 17), (35, 18), (38, 16), (36, 14)],
+        ruff=[(31, 12), (32, 17), (35, 18), (38, 16), (36, 14)], ruff_stripes=[[(33, 14), (34, 16)]],
         neck=[(27, 14), (32, 9), (34, 15), (31, 19)],
-        ears=[[(33, 8), (34, 3), (36, 7)], [(37, 7), (39, 2), (40, 7)]],
-        tufts=[[(34, 3), (34, 0)], [(39, 2), (39, 0)]],
+        ears=[[(32, 8), (34, 3), (36, 7)], [(36, 7), (38, 2), (40, 7)]],
+        tufts=[[(34, 3), (34, 1)], [(38, 2), (38, 0)]],
         eye=(38, 9), nose=(41, 11),
-        legs=[('far', (29, 19), 3, 3, 1), ('far', (18, 19), 4, 3, -1), ('near', (31, 19), 4, 3, 1), ('near', (16, 19), 5, 3, -1)],
-        paw=3, tail=[(15, 15), (12, 17)], tail_w=3, tail_tip=2,
-        colors={BODY: (172, 160, 140), HEAD: (178, 166, 146), EAR: (120, 104, 90), LEG: (170, 156, 136),
-                FARLEG: (140, 128, 112), TAIL: (166, 152, 132), TAILTIP: (30, 28, 28), TUFT: (30, 28, 28),
-                PAW: (180, 168, 150), MUZZLE: (232, 226, 212)},
-        belly=(230, 222, 204), spots=(112, 96, 82)),
+        legs=[('far', (29, 20), 4, 4, 1), ('far', (18, 20), 5, 4, -1), ('near', (31, 20), 5, 4, 1), ('near', (16, 20), 6, 4, -1)],
+        paw=4, tail=[(14, 15), (11, 17), (10, 19)], tail_w=3, tail_tip=2, tail_under=(238, 232, 220),
+        colors={BODY: (186, 152, 112), HEAD: (190, 158, 118), EAR: (150, 118, 88), LEG: (184, 150, 112),
+                FARLEG: (150, 122, 92), TAIL: (182, 148, 108), TAILTIP: (30, 26, 24), TUFT: (30, 26, 24),
+                PAW: (210, 190, 160), MUZZLE: (240, 234, 222)},
+        belly=(238, 232, 220), back=(166, 134, 100), spots=(112, 82, 58), many_spots=True, legs_behind=True),
     'cougar': dict(
         frame=(72, 32), ground=30, split=40, file='cougar',
-        body=[(21, 17), (24, 12), (30, 11), (40, 11), (46, 10), (50, 12), (52, 16), (49, 20), (40, 21), (30, 21), (24, 20)],
-        head=[(49, 9), (52, 6), (56, 6), (58, 8), (62, 9), (62, 12), (59, 14), (54, 15), (50, 14)],
-        jaw=[(57, 12), (61, 12), (60, 14), (57, 14)],
-        ears=[[(51, 7), (52, 3), (55, 6)]],
-        eye=(57, 8), nose=(62, 9),
-        legs=[('far', (46, 18), 4, 3, 1), ('far', (27, 18), 5, 3, -1), ('near', (48, 18), 5, 4, 1), ('near', (25, 18), 6, 4, -1)],
-        paw=3, tail=[(22, 15), (17, 18), (12, 23), (8, 26), (4, 26), (2, 23), (3, 19)], tail_w=4, tail_tip=3,
+        body=[(20, 17), (23, 11), (30, 10), (40, 10), (46, 9), (51, 11), (53, 16), (50, 21), (40, 22), (30, 22), (23, 21)],
+        head=[(49, 8), (52, 5), (57, 5), (59, 7), (63, 9), (63, 12), (60, 14), (55, 15), (50, 14)],
+        jaw=[(58, 12), (62, 12), (61, 14), (58, 14)],
+        neck=[(44, 11), (50, 7), (52, 14), (48, 19)],
+        ears=[[(51, 6), (53, 2), (55, 5)]],
+        eye=(57, 7), nose=(63, 9),
+        legs=[('far', (46, 18), 5, 4, 1), ('far', (27, 18), 6, 4, -1), ('near', (48, 18), 6, 5, 1), ('near', (25, 18), 7, 5, -1)],
+        paw=3, tail=[(21, 15), (16, 18), (11, 23), (7, 26), (3, 26), (1, 23), (2, 19)], tail_w=5, tail_tip=4,
         colors={BODY: (198, 142, 86), HEAD: (200, 146, 92), EAR: (150, 100, 62), LEG: (194, 140, 86),
                 FARLEG: (160, 112, 66), TAIL: (192, 136, 82), TAILTIP: (74, 50, 36), PAW: (222, 194, 156), MUZZLE: (240, 230, 212)},
         belly=(236, 218, 182), back=(178, 124, 72), mask=(84, 60, 46)),
     'black_bear': dict(
         frame=(64, 40), ground=38, split=34, file='blackbear',
-        body=[(11, 26), (13, 19), (19, 15), (31, 14), (40, 15), (45, 17), (48, 21), (47, 27), (41, 30), (22, 30), (14, 29)],
+        body=[(8, 27), (9, 20), (13, 15), (20, 13), (31, 13), (40, 14), (45, 16), (48, 21), (47, 27), (42, 31), (22, 32), (12, 31)],
         head=[(44, 15), (48, 12), (52, 13), (54, 16), (59, 18), (59, 21), (54, 23), (48, 23), (45, 21)],
         jaw=[(53, 21), (58, 21), (57, 23), (53, 23)],
         ears=[[(46, 13), (47, 10), (50, 11), (49, 13)]],
         eye=(51, 16), nose=(59, 18), muzzle_x=53,
-        legs=[('far', (41, 26), 6, 5, 0), ('far', (19, 26), 6, 5, 0), ('near', (44, 26), 6, 5, 0), ('near', (16, 26), 7, 5, 0)],
+        legs=[('far', (40, 27), 6, 5, 0), ('far', (20, 27), 8, 6, 0), ('near', (43, 27), 7, 6, 0), ('near', (16, 27), 9, 6, 0)],
         paw=2, tail=None,
         colors={BODY: (42, 42, 50), HEAD: (46, 46, 54), EAR: (40, 40, 48), LEG: (38, 38, 46),
                 FARLEG: (28, 28, 34), PAW: (32, 32, 38), MUZZLE: (176, 142, 104)},
         sheen=(92, 96, 114)),
     'grizzly_bear': dict(
         frame=(80, 52), ground=50, split=42, file='bear_adult',
-        body=[(13, 34), (15, 26), (21, 21), (32, 20), (41, 17), (47, 12), (53, 12), (58, 16), (61, 21), (62, 28), (59, 36),
-              (51, 38), (30, 38), (19, 38), (14, 37)],
+        body=[(10, 37), (10, 28), (14, 22), (21, 19), (32, 19), (42, 17), (48, 14), (53, 14), (58, 17), (61, 22), (62, 29), (59, 37),
+              (51, 40), (30, 40), (17, 40), (11, 39)],
         head=[(57, 19), (62, 17), (66, 19), (68, 22), (70, 24), (75, 25), (76, 28), (72, 31), (65, 32), (60, 30), (57, 26)],
         jaw=[(69, 29), (75, 29), (73, 31), (69, 31)],
         ears=[[(60, 18), (61, 15), (64, 15), (64, 18)]],
         eye=(66, 23), nose=(76, 25), muzzle_x=70,
-        legs=[('far', (52, 34), 8, 7, 0), ('far', (24, 34), 8, 7, 0), ('near', (56, 34), 8, 7, 0), ('near', (20, 34), 9, 7, 0)],
+        legs=[('far', (52, 36), 8, 7, 0), ('far', (23, 36), 10, 8, 0), ('near', (56, 36), 9, 8, 0), ('near', (19, 36), 12, 8, 0)],
         paw=3, tail=None, claws=True,
         colors={BODY: (128, 96, 66), HEAD: (140, 104, 72), EAR: (104, 76, 54), LEG: (94, 68, 48),
                 FARLEG: (74, 54, 38), PAW: (80, 58, 42), MUZZLE: (160, 124, 88)},
@@ -158,6 +161,9 @@ def draw_frame(sp, pose='idle', phase=0):
         return foot
 
     leg(0, 'far'); leg(1, 'far')
+    if sp.get('legs_behind'):
+        # 近側腿也畫在身體後面，只露出身體下方那段（猞猁：腿的上段畫在身上會留下斜線）
+        feet = [leg(2, 'near'), leg(3, 'near')]
     if sp.get('tail'):
         pts = [tf(p) for p in sp['tail']]
         if pose in ('idle', 'move'):
@@ -176,6 +182,8 @@ def draw_frame(sp, pose='idle', phase=0):
         d.polygon(jaw, fill=HEAD)
     if sp.get('ruff'):
         d.polygon([tf(p, True) for p in sp['ruff']], fill=MUZZLE)
+        for st in sp.get('ruff_stripes', []):
+            d.line([tf(p, True) for p in st], fill=TUFT)
     for ear in sp['ears']:
         pts = [tf(p, True) for p in ear]
         if ears_back:
@@ -186,7 +194,8 @@ def draw_frame(sp, pose='idle', phase=0):
         if ears_back:
             a = (a[0] - 1, a[1] + 2); b = (b[0] - 2, b[1] + 3)
         d.line([a, b], fill=TUFT)
-    feet = [leg(2, 'near'), leg(3, 'near')]
+    if not sp.get('legs_behind'):
+        feet = [leg(2, 'near'), leg(3, 'near')]
 
     # ---- 上色 ----
     out = Image.new('RGBA', (fw, fh), (0, 0, 0, 0))
@@ -204,6 +213,11 @@ def draw_frame(sp, pose='idle', phase=0):
         if ys:
             hspan[x] = (min(ys), max(ys))
     spot_set = set()
+    if sp.get('many_spots'):
+        import random as _r
+        r2 = _r.Random('spots')
+        for _ in range(16):
+            spot_set.add(tf((r2.randint(15, 31), r2.randint(15, 21))))
     if sp.get('spots'):
         for x, y in [(17, 16), (20, 18), (23, 15), (25, 19), (28, 16), (30, 18), (19, 14), (26, 21), (22, 20), (15, 18),
                      (31, 24), (17, 25), (30, 27), (16, 27), (29, 22), (21, 22)]:
@@ -232,7 +246,7 @@ def draw_frame(sp, pose='idle', phase=0):
                     c = mul(c, 0.82)
                 if 'sheen' in sp and depth in (1, 2) and h < 40:
                     c = sp['sheen']
-                if (x, y) in spot_set or (x - 1, y) in spot_set:
+                if (x, y) in spot_set or ((x - 1, y) in spot_set and not sp.get('many_spots')):
                     c = sp['spots']
                 elif h < 7:
                     c = mul(c, 0.86)
@@ -246,8 +260,10 @@ def draw_frame(sp, pose='idle', phase=0):
                     c = sp['sheen'] if 'sheen' in sp else mul(c, 1.12)
                 if 'mask' in sp and x in (nose[0] - 3, nose[0] - 2) and y == nose[1] + 1:
                     c = sp['mask']
-            elif v in (LEG, FARLEG) and sp.get('spots') and (x * 13 + y * 5) % 9 == 0:
-                c = mul(c, 0.72)
+            elif v in (LEG, FARLEG) and sp.get('spots') and (x * 13 + y * 5) % 9 == 0 and y < sp['ground'] - 3:
+                c = mul(c, 0.78)
+            elif v == TAILTIP and 'tail_under' in sp and mp[x, y + 1 if y + 1 < fh else y] == 0:
+                c = sp['tail_under']
             op[x, y] = c + (255,)
     # 外框
     edge = []
@@ -290,7 +306,28 @@ def save(im, name):
     im.resize((im.width * 4, im.height * 4), Image.NEAREST).save(ARCH + name + '_4x.png')
 
 
+def preview(path):
+    wolf = Image.open('assets/art/sprites/wolf/wolf_adult_sheet.png').convert('RGBA')
+    rows = [[wolf.crop((0, 0, 48, 32)), wolf.crop((0, 32, 48, 64)), wolf.crop((96, 32, 144, 64))]]
+    for sp in SPECIES.values():
+        rows.append([draw_frame(sp, 'idle', 0), draw_frame(sp, 'move', 0), draw_frame(sp, 'move', 2)])
+    W = max(sum(f.width + 6 for f in r) for r in rows) + 6
+    H = sum(max(f.height for f in r) + 6 for r in rows) + 6
+    out = Image.new('RGBA', (W, H), (96, 116, 96, 255))
+    y = 6
+    for r in rows:
+        h = max(f.height for f in r); x = 6
+        for f in r:
+            out.alpha_composite(f, (x, y + h - f.height)); x += f.width + 6
+        y += h + 6
+    out.resize((W * 5, H * 5), Image.NEAREST).save(path)
+
+
 if __name__ == '__main__':
+    import sys
+    if '--preview' in sys.argv:
+        preview(ARCH + 'preview_v3_basic.png')
+        sys.exit(0)
     for key, sp in SPECIES.items():
         fw, fh = sp['frame']
         bear = sp.get('tail') is None
