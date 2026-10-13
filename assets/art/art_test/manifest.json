@@ -210,12 +210,12 @@
  "scene": {
   "wolf_gray": {
    "frame": [
-    53,
-    39
+    62,
+    40
    ],
-   "foot": 35,
-   "center_x": 26.0,
-   "body_h": 29,
+   "foot": 36,
+   "center_x": 31.0,
+   "body_h": 30,
    "rel_height": 1.0,
    "actions": {
     "idle": {
@@ -238,6 +238,42 @@
     },
     "hurt": {
      "sheet": "res://assets/art/art_test/scene/wolf_gray_hurt.png",
+     "frames": 8,
+     "fps": 12,
+     "loop": false
+    }
+   }
+  },
+  "wolf_black": {
+   "frame": [
+    54,
+    39
+   ],
+   "foot": 35,
+   "center_x": 27.0,
+   "body_h": 30,
+   "rel_height": 1.0,
+   "actions": {
+    "idle": {
+     "sheet": "res://assets/art/art_test/scene/wolf_black_idle.png",
+     "frames": 12,
+     "fps": 10,
+     "loop": true
+    },
+    "walk": {
+     "sheet": "res://assets/art/art_test/scene/wolf_black_walk.png",
+     "frames": 12,
+     "fps": 12,
+     "loop": true
+    },
+    "bite": {
+     "sheet": "res://assets/art/art_test/scene/wolf_black_bite.png",
+     "frames": 16,
+     "fps": 18,
+     "loop": false
+    },
+    "hurt": {
+     "sheet": "res://assets/art/art_test/scene/wolf_black_hurt.png",
      "frames": 8,
      "fps": 12,
      "loop": false

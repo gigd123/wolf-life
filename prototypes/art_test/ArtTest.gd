@@ -158,7 +158,7 @@ func _apply_style() -> void:
 	if style == "pixel":
 		lines.append("像素版：背景暫用遊戲現有的地形圖")
 	elif style == "scene":
-		lines.append("場景版（主視覺）：目前只有林內一張場景；灰狼由像素版縮小")
+		lines.append("場景版（主視覺）：目前只有林內一張場景")
 		if not missing.is_empty():
 			lines.append("、".join(missing) + "還沒有新圖，暫用遊戲現有的像素圖")
 	note.text = "\n".join(lines)

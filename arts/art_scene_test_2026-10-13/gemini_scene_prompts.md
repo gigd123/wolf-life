@@ -148,7 +148,8 @@ Only the wolf, on a plain white background. No ground, no scenery, no text.
 把 `a gray wolf` 換成：
 - `a black wolf`
 - `a grizzly bear, much bigger than a wolf`
-- `a female elk (no antlers)`
+- `a female elk (wapiti cow), NOT a moose: slim deer body, long thin legs, no antlers, no bell under the chin, small narrow head, dark brown neck and pale cream rump`
+  （參考圖裡是駝鹿，Gemini 容易照抄；公鹿用 `a bull elk (wapiti), NOT a moose: slim deer body, tall branching antlers like thin tree branches, NOT flat palm-shaped antlers, no bell under the chin, pale cream rump`）
 - `a brown snowshoe hare`
 
 不合格時的追問（同一個對話裡接著說）：
