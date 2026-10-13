@@ -178,40 +178,58 @@ def seg_leg(src, limit_img, seeds, lum_t=0.26, grow=5, claw_y=575):
     return region
 
 
-def wolf_rig(name="wolf_gray"):
-    img = Image.open(os.path.join(HERE, "cut", name + ".png")).convert("RGBA")
+# 插畫風灰狼的設定（cut/wolf_gray.png 的座標）。別的圖照同樣的格式給一份。
+WOLF_ILLUS = dict(
+    bones=[
+        ("hips", None, (330, 262), (560, 250)),
+        ("chest", "hips", (560, 250), (790, 225)),
+        ("head", "chest", (800, 220), (1040, 230)),
+        ("jaw", "head", (948, 240), (1035, 256)),
+        ("tail1", "hips", (238, 236), (140, 322)),
+        ("tail2", "tail1", (140, 322), (30, 440)),
+        ("nh_thigh", "hips", (262, 300), (302, 396)),
+        ("nh_shin", "nh_thigh", (302, 396), (140, 462)),
+        ("nh_foot", "nh_shin", (140, 462), (165, 615)),
+        ("fh_thigh", "hips", (395, 330), (395, 420)),
+        ("fh_shin", "fh_thigh", (395, 420), (320, 502)),
+        ("fh_foot", "fh_shin", (320, 502), (440, 600)),
+        ("nf_upper", "chest", (630, 330), (612, 410)),
+        ("nf_lower", "nf_upper", (612, 410), (622, 556)),
+        ("nf_paw", "nf_lower", (622, 556), (675, 615)),
+        ("ff_upper", "chest", (716, 330), (715, 410)),
+        ("ff_lower", "ff_upper", (715, 410), (706, 556)),
+        ("ff_paw", "ff_lower", (706, 556), (765, 600)),
+    ],
+    # 下顎（張嘴時轉動的部分）與嘴裡的深色（只填在下顎原本的位置，閉嘴時完全被蓋住）、上排犬齒
+    jaw=[(944, 240), (975, 247), (1005, 251), (1035, 249), (1048, 245), (1042, 258), (1010, 270), (985, 270), (958, 263), (944, 254)],
+    mouth=[(946, 242), (975, 248), (1005, 252), (1035, 250), (1044, 247), (1038, 257), (1010, 267), (986, 267), (960, 261), (946, 253)],
+    teeth=[(1012, 249, 6, 10), (1026, 249, 6, 10)],
+    # 腿：從種子點往外長，碰到黑色外框就停（限制在 limits 範圍內），再往外擴幾像素把自己的外框收進來
+    limits={
+        "nh": [(108, 470), (150, 412), (250, 364), (338, 364), (338, 420), (270, 470), (222, 520), (222, 648), (80, 648), (96, 540)],
+        "fh": [(300, 372), (458, 372), (450, 470), (500, 560), (500, 648), (360, 648), (284, 520), (296, 440)],
+        "nf": [(562, 364), (674, 364), (676, 420), (700, 540), (750, 600), (750, 648), (580, 648), (580, 470)],
+        "ff": [(676, 364), (796, 364), (790, 470), (830, 600), (830, 648), (700, 648), (690, 540), (678, 420)],
+    },
+    seeds={"nh": [(170, 540), (240, 420)], "fh": [(370, 470), (420, 590)], "nf": [(630, 480), (650, 610)], "ff": [(735, 470), (770, 590)]},
+    hole_y=398,          # 身體只挖掉這條線以下的腿，腿層往上到 limits 的頂端，兩者重疊不露縫
+    claw_y=575,          # 爪子（深色）從這裡往下收進腿
+    head_x=(770, 830),   # 頭骨只影響 x > 770；胸骨在 x > 830 幾乎不影響
+    tail_x=262,          # 尾巴骨只影響 x < 262
+    stretch_center=(560, 600),
+)
+
+
+def wolf_rig(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE):
+    global STRETCH_CENTER
+    STRETCH_CENTER = cfg["stretch_center"]
+    img = Image.open(os.path.join(base, "cut", name + ".png")).convert("RGBA")
     W0, H0 = img.size
-    os.makedirs(os.path.join(HERE, "anim"), exist_ok=True)
-
-    bones = [
-        Bone("hips", None, (330, 262), (560, 250)),
-        Bone("chest", "hips", (560, 250), (790, 225)),
-        Bone("head", "chest", (800, 220), (1040, 230)),
-        Bone("jaw", "head", (948, 240), (1035, 256)),
-        Bone("tail1", "hips", (238, 236), (140, 322)),
-        Bone("tail2", "tail1", (140, 322), (30, 440)),
-        Bone("nh_thigh", "hips", (262, 300), (302, 396)),
-        Bone("nh_shin", "nh_thigh", (302, 396), (140, 462)),
-        Bone("nh_foot", "nh_shin", (140, 462), (165, 615)),
-        Bone("fh_thigh", "hips", (395, 330), (395, 420)),
-        Bone("fh_shin", "fh_thigh", (395, 420), (320, 502)),
-        Bone("fh_foot", "fh_shin", (320, 502), (440, 600)),
-        Bone("nf_upper", "chest", (630, 330), (612, 410)),
-        Bone("nf_lower", "nf_upper", (612, 410), (622, 556)),
-        Bone("nf_paw", "nf_lower", (622, 556), (675, 615)),
-        Bone("ff_upper", "chest", (716, 330), (715, 410)),
-        Bone("ff_lower", "ff_upper", (715, 410), (706, 556)),
-        Bone("ff_paw", "ff_lower", (706, 556), (765, 600)),
-    ]
-
-    # 遮罩（原尺寸座標）
-    polys = {
-        "nh": [(92, 436), (160, 402), (250, 384), (334, 384), (334, 420), (262, 468), (208, 500), (215, 648), (88, 648)],
-        "fh": [(300, 392), (458, 392), (444, 470), (414, 520), (486, 560), (494, 648), (370, 648), (288, 520), (300, 450)],
-        "nf": [(566, 384), (672, 384), (668, 500), (690, 560), (722, 585), (728, 648), (588, 648), (588, 480)],
-        "ff": [(672, 384), (792, 384), (772, 500), (822, 648), (728, 648), (722, 585), (700, 560), (672, 500)],
-        "jaw": [(944, 240), (975, 247), (1005, 251), (1035, 249), (1048, 245), (1042, 258), (1010, 270), (985, 270), (958, 263), (944, 254)],
-    }
+    os.makedirs(os.path.join(base, "anim"), exist_ok=True)
+    bones = [Bone(*b) for b in cfg["bones"]]
+    # 補畫：例如把眼睛放大到縮小後至少一格（像素版用）
+    for x0, y0, x1, y1, col in cfg.get("paint", []):
+        ImageDraw.Draw(img).rectangle([x0, y0, x1, y1], fill=col)
 
     def mask_of(poly):
         m = Image.new("L", (W0, H0), 0)
@@ -219,61 +237,48 @@ def wolf_rig(name="wolf_gray"):
         return m
 
     src = np.asarray(img).astype(float) / 255.0
+    small = np.asarray(img.resize((int(W0 * SCALE), int(H0 * SCALE)), Image.LANCZOS)).astype(float) / 255.0
 
-    def tex_from(mask_img, base=None):
+    def tex_from(mask_img, base_arr=None):
         m = np.asarray(mask_img.resize((int(W0 * SCALE), int(H0 * SCALE)), Image.BILINEAR)).astype(float)[..., None] / 255
-        b = base if base is not None else small
-        t = b.copy()
+        t = (base_arr if base_arr is not None else small).copy()
         t[..., 3:4] *= m
         t[..., :3] *= t[..., 3:4]
         return t
 
-    small = np.asarray(img.resize((int(W0 * SCALE), int(H0 * SCALE)), Image.LANCZOS)).astype(float) / 255.0
-
-    # 腿：從腿裡的種子點往外長，碰到黑色外框就停（限制在 limits 的範圍內），再往外擴幾像素把自己的外框收進來。
-    # 這樣切線會沿著原圖的線條走，不會把另一條腿的外框切進來。
-    limits = {
-        "nh": [(108, 470), (150, 412), (250, 364), (338, 364), (338, 420), (270, 470), (222, 520), (222, 648), (80, 648), (96, 540)],
-        "fh": [(300, 372), (458, 372), (450, 470), (500, 560), (500, 648), (360, 648), (284, 520), (296, 440)],
-        "nf": [(562, 364), (674, 364), (676, 420), (700, 540), (750, 600), (750, 648), (580, 648), (580, 470)],
-        "ff": [(676, 364), (796, 364), (790, 470), (830, 600), (830, 648), (700, 648), (690, 540), (678, 420)],
-    }
-    seeds = {"nh": [(170, 540), (240, 420)], "fh": [(370, 470), (420, 590)], "nf": [(630, 480), (650, 610)], "ff": [(735, 470), (770, 590)]}
-    leg_masks = {k: seg_leg(src, mask_of(limits[k]), seeds[k]) for k in limits}
-    # 腿和身體在腹部重疊一段：身體只挖掉 y ≥ 398 的部分，腿層往上到 364，接縫不會露白
+    leg_masks = {k: seg_leg(src, mask_of(cfg["limits"][k]), cfg["seeds"][k], claw_y=cfg["claw_y"]) for k in cfg["limits"]}
     yy = np.arange(H0)[:, None]
     body_hole = np.zeros((H0, W0), bool)
     from scipy import ndimage
     for m in leg_masks.values():
-        body_hole |= ndimage.binary_dilation(m, iterations=4) & (yy >= 398)
+        body_hole |= ndimage.binary_dilation(m, iterations=4) & (yy >= cfg["hole_y"])
     body_mask = Image.fromarray(np.where(body_hole, 0, 255).astype(np.uint8))
     leg_masks = {k: Image.fromarray((m * 255).astype(np.uint8)) for k, m in leg_masks.items()}
     dbg = np.asarray(img).copy()
     for k, col in zip(leg_masks, [(255, 0, 0), (0, 160, 255), (0, 200, 0), (255, 160, 0)]):
         m = np.asarray(leg_masks[k]) > 0
         dbg[m, :3] = (dbg[m, :3] * 0.4 + np.array(col) * 0.6).astype(np.uint8)
-    Image.fromarray(dbg).save(os.path.join(HERE, "anim", name + "_masks.png"))
+    Image.fromarray(dbg).save(os.path.join(base, "anim", name + "_masks.png"))
 
-    # 身體層：下顎的位置換成嘴裡的深色，下顎張開時才看得到
     body_img = img.copy()
     d = ImageDraw.Draw(body_img)
-    # 嘴裡：只填在下顎原本的位置（閉嘴時完全被下顎蓋住），顏色是接近黑的深褐，上排有兩顆犬齒
-    d.polygon([(946, 242), (975, 248), (1005, 252), (1035, 250), (1044, 247), (1038, 257), (1010, 267), (986, 267), (960, 261), (946, 253)],
-              fill=(34, 26, 25, 255))
-    for x in (1012, 1026):
-        d.polygon([(x, 249), (x + 6, 249), (x + 2, 259)], fill=(236, 230, 214, 255))
+    d.polygon(cfg["mouth"], fill=(34, 26, 25, 255))
+    for x, y, w, h in cfg["teeth"]:
+        d.polygon([(x, y), (x + w, y), (x + w // 3, y + h)], fill=(236, 230, 214, 255))
     body_small = np.asarray(body_img.resize(small.shape[1::-1], Image.LANCZOS)).astype(float) / 255.0
 
-    head_only = lambda p: np.clip((p[:, 0] - 770) / 40, 0, 1)
-    not_head = lambda p: np.clip((830 - p[:, 0]) / 60, 0.02, 1)
-    tail_only = lambda p: np.clip((262 - p[:, 0]) / 30, 0, 1)
+    h0, h1 = cfg["head_x"]
+    tx = cfg["tail_x"]
+    head_only = lambda p: np.clip((p[:, 0] - h0) / 40, 0, 1)
+    not_head = lambda p: np.clip((h1 - p[:, 0]) / 60, 0.02, 1)
+    tail_only = lambda p: np.clip((tx - p[:, 0]) / 30, 0, 1)
 
     layers = [
         Layer("fh", tex_from(leg_masks["fh"]), bones, ["hips", "fh_thigh", "fh_shin", "fh_foot"]),
         Layer("ff", tex_from(leg_masks["ff"]), bones, ["chest", "ff_upper", "ff_lower", "ff_paw"]),
         Layer("body", tex_from(body_mask, body_small), bones, ["hips", "chest", "head", "tail1", "tail2"],
               bias={"head": head_only, "chest": not_head, "tail1": tail_only, "tail2": tail_only}),
-        Layer("jaw", tex_from(mask_of(polys["jaw"])), bones, ["jaw"]),
+        Layer("jaw", tex_from(mask_of(cfg["jaw"])), bones, ["jaw"]),
         Layer("nh", tex_from(leg_masks["nh"]), bones, ["hips", "nh_thigh", "nh_shin", "nh_foot"]),
         Layer("nf", tex_from(leg_masks["nf"]), bones, ["chest", "nf_upper", "nf_lower", "nf_paw"]),
     ]
@@ -411,12 +416,11 @@ def add_trails(frames, idx, fades=(0.38, 0.16)):
     return out
 
 
-def main(name="wolf_gray"):
-    out_dir = os.path.join(HERE, "anim")
-    os.makedirs(out_dir, exist_ok=True)
-    bones, layers, size0 = wolf_rig(name)
-    rest = render(bones, layers, size0, {})
-    rest.save(os.path.join(out_dir, f"{name}_rest.png"))
+def render_actions(name="wolf_gray", cfg=WOLF_ILLUS, base=HERE):
+    """回傳 {動作: [影格]}，另外存一張靜止姿勢 anim/<name>_rest.png。"""
+    bones, layers, size0 = wolf_rig(name, cfg, base)
+    render(bones, layers, size0, {}).save(os.path.join(base, "anim", f"{name}_rest.png"))
+    out = {}
     for act, (fn, n) in ACTIONS.items():
         frames = []
         for i in range(n):
@@ -425,14 +429,24 @@ def main(name="wolf_gray"):
             if act == "hurt":
                 im = tint(im, (200, 40, 30), 0.35 * max(0.0, 1 - t * 3))
             frames.append(im)
-        if act == "bite":
-            frames = add_trails(frames, [i for i in range(n) if 0.36 <= i / n <= 0.56])
-        w, h = frames[0].size
-        sheet = Image.new("RGBA", (w * n, h))
-        for i, f in enumerate(frames):
-            sheet.paste(f, (i * w, 0))
-        sheet.save(os.path.join(out_dir, f"{name}_{act}.png"))
-        print(act, n, "frames", (w, h))
+        out[act] = frames
+    return out
+
+
+def save_sheet(frames, path):
+    w, h = frames[0].size
+    sheet = Image.new("RGBA", (w * len(frames), h))
+    for i, f in enumerate(frames):
+        sheet.paste(f, (i * w, 0))
+    sheet.save(path)
+
+
+def main(name="wolf_gray"):
+    acts = render_actions(name)
+    acts["bite"] = add_trails(acts["bite"], [i for i in range(len(acts["bite"])) if 0.36 <= i / len(acts["bite"]) <= 0.56])
+    for act, frames in acts.items():
+        save_sheet(frames, os.path.join(HERE, "anim", f"{name}_{act}.png"))
+        print(act, len(frames), "frames", frames[0].size)
 
 
 if __name__ == "__main__":
