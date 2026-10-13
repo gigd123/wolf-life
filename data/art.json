@@ -1,93 +1,92 @@
 {
   "_comment": "美術對應表。原始交付檔在 arts/（files/wolf_assets 為主、phase1.5_art 補充），程式只讀 assets/art/。sheet 是 48×32 一格的 spritesheet，rows 是動作所在的列（frame／frames 可以覆寫這個條目的格子大小與格數）；single 是單張圖；poses 是動作的單張圖；strips 是動作的橫向長條動畫 {sheet, frame: [寬, 高], frames}（1.5 遺留的走路動畫，每格比 48×32 大）。move 沒有對應時會用 walk。",
   "frame_size": [48, 32],
+  "_display_scale_comment": "狩獵與戰鬥畫面用固定像素倍率顯示（2026-10-13）：display_scale 是這張圖相對灰狼的縮放，讓體型照比例（例如雪兔小、灰熊大、駝鹿很大）。由各圖待機格的實際高度與目標高度（灰狼 = 1）算出；沒寫的生命階段用成體 × 0.7。",
   "animals": {
-    "white_tailed_deer": {
+    "white_tailed_deer": { "display_scale": {"adult": 0.981, "juvenile": 1.239},
       "adult": { "single": "res://assets/art/sprites/animals/deer_doe.png", "poses": { "herd": "res://assets/art/sprites/animals/deer_herd.png" }, "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
       "buck": { "single": "res://assets/art/sprites/animals/deer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/deer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/deer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "bighorn_sheep": {
+    "bighorn_sheep": { "display_scale": {"adult": 1.125, "juvenile": 0.955},
       "adult": { "sheet": "res://assets/art/sprites/animals/bighorn_ewe_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "herd": "res://assets/art/sprites/animals/bighorn_herd.png" } },
       "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bighorn_lamb_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "beaver": {
+    "beaver": { "display_scale": {"adult": 0.711, "juvenile": 0.64},
       "adult": { "sheet": "res://assets/art/sprites/animals/beaver_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/beaver_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "mule_deer": {
+    "mule_deer": { "display_scale": {"adult": 1.01, "juvenile": 1.239},
       "adult": { "single": "res://assets/art/sprites/animals/muledeer_doe.png", "poses": { "herd": "res://assets/art/sprites/animals/muledeer_herd.png" }, "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/muledeer_doe_walk_strip.png", "frame": [57, 52], "frames": 4 } } },
       "buck": { "single": "res://assets/art/sprites/animals/muledeer_buck.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/muledeer_buck_walk_strip.png", "frame": [57, 61], "frames": 4 } } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/muledeer_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "hare": {
+    "hare": { "display_scale": {"adult": 0.652, "juvenile": 0.553},
       "adult": { "sheet": "res://assets/art/sprites/animals/hare_adult_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/hare_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "red_fox": {
+    "red_fox": { "display_scale": {"adult": 0.72, "juvenile": 0.573},
       "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/fox_adult_attack_strip.png", "frame": [67, 35], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/fox_adult_hurt_strip.png", "frame": [65, 38], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/fox_adult_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/fox_kit_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "snowshoe_hare": {
+    "snowshoe_hare": { "display_scale": {"adult": 0.652, "juvenile": 0.496},
       "adult": { "sheet": "res://assets/art/sprites/animals/snowhare_summer_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "adult@winter": { "sheet": "res://assets/art/sprites/animals/snowhare_winter_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/snowhare_summer_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile@winter": { "sheet": "res://assets/art/sprites/animals/snowhare_winter_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "caribou": {
+    "caribou": { "display_scale": {"adult": 1.547, "juvenile": 0.938},
       "adult": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "herd": "res://assets/art/sprites/animals/caribou_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/caribou_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "moose": {
+    "moose": { "display_scale": {"adult": 0.987, "juvenile": 0.572},
       "adult": { "single": "res://assets/art/sprites/animals/moose.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/moose_walk_strip.png", "frame": [82, 76], "frames": 4 } }, "poses": { "move": "res://assets/art/sprites/animals/moose_run.png", "attack": "res://assets/art/sprites/animals/moose_kick.png", "hurt": "res://assets/art/sprites/animals/moose_hurt.png" } },
       "juvenile": { "single": "res://assets/art/sprites/animals/moose.png", "poses": { "move": "res://assets/art/sprites/animals/moose_run.png" } }
     },
-    "elk": {
+    "elk": { "display_scale": {"adult": 2.069, "juvenile": 1.571},
       "adult": { "sheet": "res://assets/art/sprites/animals/elk_cow_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "herd": "res://assets/art/sprites/animals/elk_herd.png" } },
       "buck": { "sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "bison": {
+    "bison": { "display_scale": {"adult": 2.036, "juvenile": 1.5},
       "adult": { "sheet": "res://assets/art/sprites/animals/bison_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "herd": "res://assets/art/sprites/animals/bison_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bison_calf_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "pronghorn": {
+    "pronghorn": { "display_scale": {"adult": 1.078, "juvenile": 1.026},
       "adult": { "sheet": "res://assets/art/sprites/animals/pronghorn_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/pronghorn_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
-    "lynx": {
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/lynx_attack_strip.png", "frame": [49, 32], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/lynx_hurt_strip.png", "frame": [48, 35], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/lynx_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    "lynx": { "display_scale": {"adult": 0.726},
+      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/lynx_attack_strip.png", "frame": [56, 45], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/lynx_hurt_strip.png", "frame": [51, 45], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/lynx_sheet.png", "frame": [48, 32], "rows": { "idle": 0, "move": 1 }, "poses": { "attack": "res://assets/art/sprites/animals/lynx_bite.png", "hurt": "res://assets/art/sprites/animals/lynx_hurt.png" } }
     },
-    "coyote": {
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/coyote_attack_strip.png", "frame": [64, 41], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/coyote_hurt_strip.png", "frame": [57, 36], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/coyote_sheet.png", "rows": { "idle": 0, "move": 1 },
-        "poses": { "attack": "res://assets/art/sprites/animals/coyote_bite.png", "hurt": "res://assets/art/sprites/animals/coyote_hurt.png" } }
+    "coyote": { "display_scale": {"adult": 0.836},
+      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/coyote_attack_strip.png", "frame": [63, 45], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/coyote_hurt_strip.png", "frame": [60, 42], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/coyote_sheet.png", "frame": [48, 32], "rows": { "idle": 0, "move": 1 }, "poses": { "attack": "res://assets/art/sprites/animals/coyote_bite.png", "hurt": "res://assets/art/sprites/animals/coyote_hurt.png" } }
     },
-    "cougar": {
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/cougar_attack_strip.png", "frame": [75, 48], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/cougar_hurt_strip.png", "frame": [66, 47], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/cougar_sheet.png", "rows": { "idle": 0, "move": 1 },
-        "poses": { "attack": "res://assets/art/sprites/animals/cougar_bite.png", "hurt": "res://assets/art/sprites/animals/cougar_hurt.png", "threaten": "res://assets/art/sprites/animals/cougar_threaten.png" } }
+    "cougar": { "display_scale": {"adult": 0.964},
+      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/cougar_attack_strip.png", "frame": [87, 46], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/cougar_hurt_strip.png", "frame": [81, 45], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/cougar_sheet.png", "frame": [72, 32], "rows": { "idle": 0, "move": 1 }, "poses": { "attack": "res://assets/art/sprites/animals/cougar_bite.png", "hurt": "res://assets/art/sprites/animals/cougar_hurt.png", "threaten": "res://assets/art/sprites/animals/cougar_threaten.png" } }
     },
-    "black_bear": {
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/blackbear_attack_strip.png", "frame": [69, 40], "frames": 5, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/blackbear_hurt_strip.png", "frame": [67, 41], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/blackbear_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } }
+    "black_bear": { "display_scale": {"adult": 1.138},
+      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/blackbear_attack_strip.png", "frame": [72, 46], "frames": 5, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/blackbear_hurt_strip.png", "frame": [69, 45], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/blackbear_sheet.png", "frame": [64, 40], "rows": { "idle": 0, "move": 1, "attack": 2 }, "poses": { "hurt": "res://assets/art/sprites/animals/blackbear_hurt.png" } }
     },
-    "grizzly_bear": {
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/bear_adult_attack_strip.png", "frame": [69, 40], "frames": 5, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/bear_adult_hurt_strip.png", "frame": [67, 41], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
+    "grizzly_bear": { "display_scale": {"adult": 1.154, "juvenile": 1.219},
+      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/bear_adult_attack_strip.png", "frame": [87, 56], "frames": 5, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/bear_adult_hurt_strip.png", "frame": [84, 55], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "frame": [80, 52], "rows": { "idle": 0, "move": 1, "attack": 2 }, "poses": { "hurt": "res://assets/art/sprites/animals/bear_adult_hurt.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bear_cub_sheet.png", "rows": { "idle": 0, "move": 1, "attack": 2 } },
       "distant": { "single": "res://assets/art/sprites/animals/bear_distant.png", "strips": { "walk": { "sheet": "res://assets/art/sprites/animals/bear_distant_walk_strip.png", "frame": [47, 24], "frames": 4 } } }
     },
-    "wolverine": {
+    "wolverine": { "display_scale": {"adult": 0.833},
       "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/animals/wolverine_attack_strip.png", "frame": [60, 33], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/animals/wolverine_hurt_strip.png", "frame": [58, 31], "frames": 4, "fps": 14, "loop": false } }, "sheet": "res://assets/art/sprites/animals/wolverine_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "attack": "res://assets/art/sprites/animals/wolverine_bite.png", "hurt": "res://assets/art/sprites/animals/wolverine_hurt.png" } }
     },
-    "raven": {
+    "raven": { "display_scale": {"adult": 1.05},
       "adult": { "sheet": "res://assets/art/sprites/animals/raven_sheet.png", "rows": { "idle": 0 }, "frames": 2,
         "poses": { "circling": "res://assets/art/sprites/animals/ravens_circling.png" } }
     },
-    "tundra_wolf": {
+    "tundra_wolf": { "display_scale": {"adult": 1.26},
       "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_attack_strip.png", "frame": [70, 45], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_hurt_strip.png", "frame": [61, 38], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_dodge_strip.png", "frame": [63, 36], "frames": 5, "fps": 16, "loop": false } },
         "sheet": "res://assets/art/sprites/wolf/wolf_tundra_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
@@ -102,7 +101,7 @@
         }
       }
     },
-    "challenger": {
+    "challenger": { "display_scale": {"adult": 1.071},
       "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_attack_strip.png", "frame": [75, 48], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_hurt_strip.png", "frame": [66, 42], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_dodge_strip.png", "frame": [68, 39], "frames": 5, "fps": 16, "loop": false } },
         "sheet": "res://assets/art/sprites/wolf/wolf_challenger_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
@@ -116,7 +115,7 @@
         }
       }
     },
-    "stranger_wolf": {
+    "stranger_wolf": { "display_scale": {"adult": 1.125},
       "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_attack_strip.png", "frame": [75, 48], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_hurt_strip.png", "frame": [66, 42], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_dodge_strip.png", "frame": [68, 39], "frames": 5, "fps": 16, "loop": false } },
         "sheet": "res://assets/art/sprites/wolf/wolf_stranger_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },

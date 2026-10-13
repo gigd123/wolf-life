@@ -79,6 +79,10 @@ var combat_notes: Array[String] = []
 var combat_wolf_pose: String = "threaten"
 var combat_anim: CombatAnimator # 1.9 第 2 步：戰鬥回合的補間動畫
 var combat_anim_btn: Button # 動畫速度切換，固定在戰鬥畫面右上角（不占選項列的高度）
+# 狩獵、戰鬥畫面照比例顯示（2026-10-13）：灰狼 32 像素高的格子 = hunt_unit_h，對手乘上自己的 display_scale
+var hunt_unit_h: float = 40.0
+var hunt_opp_scale: float = 1.0
+var hunt_opp_frame: Vector2 = Vector2(48, 32)
 var combat_opp_action: String = "idle"
 
 var rest_overlay: Panel
@@ -524,6 +528,9 @@ func _build_hunt_overlay() -> void:
 	sprite_row.add_child(hunt_wolf_sprite)
 	hunt_sprite = _make_creature_icon(40)
 	sprite_row.add_child(hunt_sprite)
+	# 照比例顯示：固定像素倍率、底部對齊（_set_hunt_sprite_height 依版面調整）
+	hunt_wolf_sprite.zoom = 40.0 / 32.0
+	hunt_sprite.zoom = 40.0 / 32.0
 	combat_anim = CombatAnimator.new()
 	add_child(combat_anim)
 	combat_anim.wolf_icon = hunt_wolf_sprite
@@ -1245,8 +1252,22 @@ func _fit_hunt_layout(_option_count: int) -> void:
 	_shrink_hunt_layout.call_deferred()
 
 func _set_hunt_sprite_height(h: float) -> void:
-	for sprite in [hunt_wolf_sprite, hunt_sprite]:
-		sprite.custom_minimum_size = Vector2(h * 1.8, h)
+	hunt_unit_h = h
+	var z: float = h / 32.0
+	hunt_wolf_sprite.zoom = z
+	hunt_wolf_sprite.custom_minimum_size = Vector2(h * 1.8, h)
+	# 對手的框照牠的體型放大（最多 2.4 倍高），兩隻底部對齊
+	var oz: float = z * hunt_opp_scale
+	if hunt_opp_frame.y * oz > h * 2.4:
+		oz = h * 2.4 / hunt_opp_frame.y
+	hunt_sprite.zoom = oz
+	hunt_sprite.custom_minimum_size = Vector2(max(h * 1.8, hunt_opp_frame.x * oz), max(h, hunt_opp_frame.y * oz))
+
+# 換對手時記下牠的顯示倍率與格子大小，照目前的大小重新排
+func _set_hunt_opponent(animal_id: String, life_stage: String) -> void:
+	hunt_opp_scale = ArtLibrary.display_scale(animal_id, life_stage)
+	hunt_opp_frame = ArtLibrary.idle_frame_size(animal_id, life_stage)
+	_set_hunt_sprite_height(hunt_unit_h)
 
 func _shrink_hunt_layout() -> void:
 	var box: Control = hunt_message.get_parent()
@@ -2481,6 +2502,7 @@ func _render_hunt_stage() -> void:
 		prey_action = "attack"
 	# 搏鬥時獵物轉過來面向你（素材都面向右），其他階段照原方向（往右逃）
 	hunt_sprite.flip_h = current_hunt.stage == HuntSystem.Stage.FIGHT
+	_set_hunt_opponent(current_hunt.animal_id, current_hunt.life_stage)
 	_set_creature(hunt_sprite, current_hunt.animal_id, current_hunt.life_stage, prey_action)
 	var pose: String = "stalk"
 	match current_hunt.stage:
@@ -3451,6 +3473,7 @@ func _render_combat() -> void:
 	_clear_children(hunt_buttons_box)
 	var name: String = _combat_name(c)
 	hunt_sprite.flip_h = true # 戰鬥中對手面向你（素材都面向右）
+	_set_hunt_opponent(c.animal_id, c.life_stage)
 	_set_creature(hunt_sprite, c.animal_id, c.life_stage, combat_opp_action, false)
 	_set_wolf_pose(hunt_wolf_sprite, combat_wolf_pose, false)
 	_set_terrain_bg(hunt_bg, c.terrain)

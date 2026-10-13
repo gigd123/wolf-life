@@ -3,8 +3,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/animals/bear_adult_attack_strip.png",
    "frame": [
-    69,
-    40
+    87,
+    56
    ],
    "frames": 5,
    "fps": 14,
@@ -13,8 +13,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/animals/bear_adult_hurt_strip.png",
    "frame": [
-    67,
-    41
+    84,
+    55
    ],
    "frames": 4,
    "fps": 14,
@@ -165,8 +165,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/animals/cougar_attack_strip.png",
    "frame": [
-    75,
-    48
+    87,
+    46
    ],
    "frames": 4,
    "fps": 14,
@@ -175,8 +175,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/animals/cougar_hurt_strip.png",
    "frame": [
-    66,
-    47
+    81,
+    45
    ],
    "frames": 4,
    "fps": 14,
@@ -187,8 +187,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/animals/blackbear_attack_strip.png",
    "frame": [
-    69,
-    40
+    72,
+    46
    ],
    "frames": 5,
    "fps": 14,
@@ -197,8 +197,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/animals/blackbear_hurt_strip.png",
    "frame": [
-    67,
-    41
+    69,
+    45
    ],
    "frames": 4,
    "fps": 14,
@@ -209,8 +209,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/animals/coyote_attack_strip.png",
    "frame": [
-    64,
-    41
+    63,
+    45
    ],
    "frames": 4,
    "fps": 14,
@@ -219,8 +219,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/animals/coyote_hurt_strip.png",
    "frame": [
-    57,
-    36
+    60,
+    42
    ],
    "frames": 4,
    "fps": 14,
@@ -231,8 +231,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/animals/lynx_attack_strip.png",
    "frame": [
-    49,
-    32
+    56,
+    45
    ],
    "frames": 4,
    "fps": 14,
@@ -241,8 +241,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/animals/lynx_hurt_strip.png",
    "frame": [
-    48,
-    35
+    51,
+    45
    ],
    "frames": 4,
    "fps": 14,
