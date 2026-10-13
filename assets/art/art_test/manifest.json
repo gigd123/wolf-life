@@ -210,12 +210,12 @@
  "scene": {
   "wolf_gray": {
    "frame": [
-    49,
-    40
+    105,
+    82
    ],
-   "foot": 35,
-   "center_x": 24.0,
-   "body_h": 30,
+   "foot": 75,
+   "center_x": 52.5,
+   "body_h": 63,
    "rel_height": 1.0,
    "actions": {
     "idle": {
@@ -246,12 +246,12 @@
   },
   "wolf_black": {
    "frame": [
-    54,
-    39
+    114,
+    80
    ],
-   "foot": 35,
-   "center_x": 27.0,
-   "body_h": 30,
+   "foot": 74,
+   "center_x": 56.5,
+   "body_h": 63,
    "rel_height": 1.0,
    "actions": {
     "idle": {
@@ -282,12 +282,12 @@
   },
   "grizzly": {
    "frame": [
-    68,
-    57
+    144,
+    119
    ],
-   "foot": 52,
-   "center_x": 33.5,
-   "body_h": 45,
+   "foot": 109,
+   "center_x": 70.0,
+   "body_h": 96,
    "rel_height": 1.5,
    "actions": {
     "idle": {
@@ -318,12 +318,12 @@
   },
   "elk_cow": {
    "frame": [
-    70,
-    65
+    145,
+    137
    ],
-   "foot": 63,
-   "center_x": 38.0,
-   "body_h": 60,
+   "foot": 133,
+   "center_x": 79.0,
+   "body_h": 127,
    "rel_height": 2.0,
    "actions": {
     "idle": {
@@ -348,13 +348,13 @@
   },
   "elk_bull": {
    "frame": [
-    81,
-    84
+    168,
+    173
    ],
-   "foot": 80,
-   "center_x": 44.0,
-   "body_h": 77,
-   "rel_height": 2.6,
+   "foot": 168,
+   "center_x": 90.5,
+   "body_h": 165,
+   "rel_height": 2.59375,
    "actions": {
     "idle": {
      "sheet": "res://assets/art/art_test/scene/elk_bull_idle.png",
@@ -378,12 +378,12 @@
   },
   "hare": {
    "frame": [
-    22,
-    20
+    45,
+    41
    ],
-   "foot": 17,
-   "center_x": 11.0,
-   "body_h": 14,
+   "foot": 37,
+   "center_x": 21.5,
+   "body_h": 31,
    "rel_height": 0.5,
    "actions": {
     "idle": {

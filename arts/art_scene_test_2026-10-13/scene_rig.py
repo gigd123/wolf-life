@@ -341,8 +341,9 @@ HARE_W = dict(
 WOLVES = {"wolf_gray": WOLF_GRAY, "wolf_black": WOLF_BLACK, "grizzly": GRIZZLY,
           "wolf_gray2": WOLF_GRAY2, "grizzly2": GRIZZLY2, "elk_cow": ELK_COW, "elk_bull": ELK_BULL, "hare_winter": HARE_W}
 # 本體高度：狼 30 像素，其他照相對灰狼的比例（灰熊 1.5）
-BODY = {"wolf_gray": 30, "wolf_black": 30, "grizzly": 45,
-        "wolf_gray2": 30, "grizzly2": 45, "elk_cow": 60, "elk_bull": 78, "hare_winter": 15}
+# 本體高度（原生像素）：主視覺的背景是 640×360（和畫面邏輯尺寸 1:1），狼 64 像素；其他照相對灰狼的比例
+BODY = {"wolf_gray": 64, "wolf_black": 64, "grizzly": 96,
+        "wolf_gray2": 64, "grizzly2": 96, "elk_cow": 128, "elk_bull": 166, "hare_winter": 32}
 EYES = {"wolf_gray": (222, 160, 70), "wolf_black": (226, 196, 80), "grizzly": (40, 30, 26),
         "wolf_gray2": (222, 160, 70), "grizzly2": (150, 92, 48), "elk_cow": (40, 30, 26), "elk_bull": (40, 30, 26),
         "hare_winter": (30, 24, 24)}
@@ -385,7 +386,7 @@ def export(aid, cfg, eye_rgb, body_px=BODY_PX):
                      for i, f in enumerate(frames)]
     acts = export_game.bite_trails(acts)
     gid = GAME_ID.get(aid, aid)
-    export_game.REL.setdefault(gid, body_px / 30.0)
+    export_game.REL.setdefault(gid, body_px / 64.0)
     return export_game.write_animal("scene", gid, acts, rest_px)
 
 
