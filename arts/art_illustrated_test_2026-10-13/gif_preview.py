@@ -8,7 +8,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 def frames(name, act):
     sheet = Image.open(os.path.join(HERE, "anim", f"{name}_{act}.png"))
     h = sheet.height
-    w = 593
+    w = Image.open(os.path.join(HERE, "anim", f"{name}_rest.png")).width
     return [sheet.crop((i * w, 0, (i + 1) * w, h)) for i in range(sheet.width // w)]
 
 
@@ -37,7 +37,7 @@ def main(name="wolf_gray"):
     for f, x in seq:
         fr = bg.copy()
         im = f.resize((int(f.width * k), int(f.height * k)), Image.LANCZOS)
-        fr.alpha_composite(im, (int(x), 536 - im.height - 18))
+        fr.alpha_composite(im, (int(x), 536 - im.height + 12))
         out.append(fr.convert("RGB").quantize(colors=255, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
     out[0].save(os.path.join(HERE, "anim", f"{name}_scene.gif"), save_all=True, append_images=out[1:], duration=83, loop=0)
 

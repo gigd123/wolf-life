@@ -15,7 +15,8 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCALE = 0.5
-PAD = 60          # 畫布四周的空間（原尺寸像素），撲咬往前衝時不會被切掉
+PAD = 120          # 畫布四周的空間（原尺寸像素），撲咬往前衝時不會被切掉
+STRETCH_CENTER = (560, 600)  # 腳底附近，伸縮時腳不會離地太多
 GRID = 14         # 網格間距（原尺寸像素）
 
 
@@ -43,7 +44,11 @@ def world_mats(bones, pose):
     for b in bones:  # 骨頭依父子順序排列
         local = rot_about(b.a, pose.get(b.name, 0.0))
         if b.parent is None:
-            mats[b.name] = translate(pose.get("root_dx", 0.0), pose.get("root_dy", 0.0)) @ local
+            # 壓縮與伸展：以身體中心為準縮放（root_sx 水平、root_sy 垂直）
+            cx, cy = STRETCH_CENTER
+            sx, sy = pose.get("root_sx", 1.0), pose.get("root_sy", 1.0)
+            stretch = translate(cx, cy) @ np.diag([sx, sy, 1.0]) @ translate(-cx, -cy)
+            mats[b.name] = translate(pose.get("root_dx", 0.0), pose.get("root_dy", 0.0)) @ stretch @ local
         else:
             mats[b.name] = mats[b.parent] @ local
     return mats
@@ -205,7 +210,7 @@ def wolf_rig(name="wolf_gray"):
         "fh": [(300, 392), (458, 392), (444, 470), (414, 520), (486, 560), (494, 648), (370, 648), (288, 520), (300, 450)],
         "nf": [(566, 384), (672, 384), (668, 500), (690, 560), (722, 585), (728, 648), (588, 648), (588, 480)],
         "ff": [(672, 384), (792, 384), (772, 500), (822, 648), (728, 648), (722, 585), (700, 560), (672, 500)],
-        "jaw": [(940, 238), (1000, 242), (1046, 238), (1042, 258), (1012, 268), (972, 270), (944, 258)],
+        "jaw": [(944, 240), (975, 247), (1005, 251), (1035, 249), (1048, 245), (1042, 258), (1010, 270), (985, 270), (958, 263), (944, 254)],
     }
 
     def mask_of(poly):
@@ -252,9 +257,11 @@ def wolf_rig(name="wolf_gray"):
     # 身體層：下顎的位置換成嘴裡的深色，下顎張開時才看得到
     body_img = img.copy()
     d = ImageDraw.Draw(body_img)
-    d.polygon([(944, 240), (1040, 240), (1030, 252), (990, 258), (950, 254)], fill=(70, 22, 24, 255))
-    for x in (1010, 1024):
-        d.polygon([(x, 240), (x + 6, 240), (x + 3, 250)], fill=(240, 236, 226, 255))
+    # 嘴裡：只填在下顎原本的位置（閉嘴時完全被下顎蓋住），顏色是接近黑的深褐，上排有兩顆犬齒
+    d.polygon([(946, 242), (975, 248), (1005, 252), (1035, 250), (1044, 247), (1038, 257), (1010, 267), (986, 267), (960, 261), (946, 253)],
+              fill=(34, 26, 25, 255))
+    for x in (1012, 1026):
+        d.polygon([(x, 249), (x + 6, 249), (x + 2, 259)], fill=(236, 230, 214, 255))
     body_small = np.asarray(body_img.resize(small.shape[1::-1], Image.LANCZOS)).astype(float) / 255.0
 
     head_only = lambda p: np.clip((p[:, 0] - 770) / 40, 0, 1)
@@ -323,28 +330,48 @@ def pose_walk(t):
     return q
 
 
+def keyframes(keys, t):
+    """keys：[(時間, 姿勢), ...]；兩個關鍵影格之間用緩入緩出內插。"""
+    for (t0, p0), (t1, p1) in zip(keys, keys[1:]):
+        if t0 <= t <= t1:
+            k = (t - t0) / (t1 - t0) if t1 > t0 else 1.0
+            k = k * k * (3 - 2 * k)
+            names = set(p0) | set(p1)
+            dv = lambda n: 1.0 if n in ("root_sx", "root_sy") else 0.0
+            return {n: p0.get(n, dv(n)) + (p1.get(n, dv(n)) - p0.get(n, dv(n))) * k for n in names}
+    return dict(keys[-1][1])
+
+
+def _legs(hind_t, hind_s, hind_f, front_u, front_l, front_p, far_k=0.85):
+    return {"nh_thigh": hind_t, "nh_shin": hind_s, "nh_foot": hind_f,
+            "fh_thigh": hind_t * far_k, "fh_shin": hind_s * far_k, "fh_foot": hind_f * far_k,
+            "nf_upper": front_u, "nf_lower": front_l, "nf_paw": front_p,
+            "ff_upper": front_u * far_k, "ff_lower": front_l * far_k, "ff_paw": front_p * far_k}
+
+
+BITE_KEYS = [
+    (0.00, {}),
+    # 蓄力：重心壓低往後、頭壓低盯著前方、尾巴放低
+    (0.32, dict(root_dx=-26, root_dy=16, root_sx=0.95, root_sy=1.0, hips=4, chest=7, head=10, tail1=-12, tail2=-6,
+                **_legs(-12, 22, -12, 16, -24, 8))),
+    # 起跳：後腿蹬直往後、前腿往前伸、前身抬高、嘴張大
+    (0.44, dict(root_dx=60, root_dy=-26, root_sx=1.12, root_sy=0.94, hips=-12, chest=-10, head=-4, jaw=40, tail1=-18, tail2=-12,
+                **_legs(34, -24, 34, -60, 24, 32))),
+    # 咬中：衝到最前、嘴猛然合上、頭往下壓
+    (0.54, dict(root_dx=104, root_dy=-4, root_sx=1.05, root_sy=0.97, hips=-6, chest=-2, head=8, jaw=2, tail1=-14, tail2=-8,
+                **_legs(26, -16, 22, -30, 12, 12))),
+    # 咬住甩頭
+    (0.64, dict(root_dx=98, root_dy=0, hips=-4, chest=0, head=-6, jaw=0, tail1=-10, tail2=-4,
+                **_legs(20, -10, 14, -20, 8, 6))),
+    (0.72, dict(root_dx=100, root_dy=0, hips=-4, chest=0, head=6, jaw=0, tail1=-8,
+                **_legs(18, -8, 12, -18, 6, 4))),
+    (1.00, {}),
+]
+
+
 def pose_bite(t):
-    """撲咬：先往後蓄力、再往前撲、張嘴咬、收回。"""
-    if t < 0.3:          # 蓄力：重心後移、頭壓低
-        k = t / 0.3
-        return {"root_dx": -14 * k, "root_dy": 6 * k, "hips": 2 * k, "head": 10 * k, "chest": 3 * k,
-                "nh_thigh": -6 * k, "fh_thigh": -6 * k, "nh_shin": 10 * k, "fh_shin": 10 * k,
-                "nf_upper": 8 * k, "ff_upper": 8 * k, "nf_lower": -8 * k, "ff_lower": -8 * k, "tail1": -6 * k}
-    if t < 0.6:          # 撲出：前身抬起前伸、嘴張開
-        k = (t - 0.3) / 0.3
-        e = math.sin(k * math.pi / 2)
-        return {"root_dx": -14 + 70 * e, "root_dy": 6 - 16 * e, "hips": 2 - 8 * e, "chest": 3 - 6 * e,
-                "head": 10 - 18 * e, "jaw": 34 * e,
-                "nh_thigh": -6 + 22 * e, "fh_thigh": -6 + 22 * e, "nh_shin": 10 - 16 * e, "fh_shin": 10 - 16 * e,
-                "nh_foot": 20 * e, "fh_foot": 20 * e,
-                "nf_upper": 8 - 48 * e, "ff_upper": 8 - 40 * e, "nf_lower": -8 + 30 * e, "ff_lower": -8 + 26 * e,
-                "nf_paw": 20 * e, "ff_paw": 20 * e, "tail1": -6 - 8 * e, "tail2": -10 * e}
-    k = (t - 0.6) / 0.4  # 咬合後落地收回
-    e = 1 - (1 - k) ** 2
-    b = pose_bite(0.5999)
-    out = {key: v * (1 - e) for key, v in b.items()}
-    out["jaw"] = 34 * max(0.0, 1 - k * 3)
-    return out
+    """撲咬：壓低蓄力 → 3 格內撲出（張大嘴、四肢伸展）→ 咬中猛然合嘴、甩頭 → 收回。"""
+    return keyframes(BITE_KEYS, t)
 
 
 def pose_hurt(t):
@@ -356,7 +383,7 @@ def pose_hurt(t):
             "tail1": 14 * k, "tail2": 18 * k}
 
 
-ACTIONS = {"idle": (pose_idle, 12), "walk": (pose_walk, 12), "bite": (pose_bite, 10), "hurt": (pose_hurt, 8)}
+ACTIONS = {"idle": (pose_idle, 12), "walk": (pose_walk, 12), "bite": (pose_bite, 16), "hurt": (pose_hurt, 8)}
 
 
 def tint(im, rgb, amount):
@@ -367,6 +394,21 @@ def tint(im, rgb, amount):
     mixed = Image.blend(im.convert("RGBA"), flat, amount)
     mixed.putalpha(a)
     return mixed
+
+
+def add_trails(frames, idx, fades=(0.38, 0.16)):
+    """撲出的那幾格，把前兩格淡淡疊在後面當殘影。"""
+    out = list(frames)
+    for i in idx:
+        base = Image.new("RGBA", frames[i].size, (0, 0, 0, 0))
+        for back, f in zip((2, 1), reversed(fades)):
+            if i - back >= 0:
+                g = frames[i - back].copy()
+                g.putalpha(g.split()[3].point(lambda v, f=f: int(v * f)))
+                base.alpha_composite(g)
+        base.alpha_composite(frames[i])
+        out[i] = base
+    return out
 
 
 def main(name="wolf_gray"):
@@ -383,6 +425,8 @@ def main(name="wolf_gray"):
             if act == "hurt":
                 im = tint(im, (200, 40, 30), 0.35 * max(0.0, 1 - t * 3))
             frames.append(im)
+        if act == "bite":
+            frames = add_trails(frames, [i for i in range(n) if 0.36 <= i / n <= 0.56])
         w, h = frames[0].size
         sheet = Image.new("RGBA", (w * n, h))
         for i, f in enumerate(frames):
