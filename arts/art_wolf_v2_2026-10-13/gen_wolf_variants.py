@@ -94,7 +94,7 @@ VARIANTS = {
     'G': shift(variant({BODY: (150, 138, 126), HEAD: (156, 144, 132), EAR: (126, 114, 104), LEG: (150, 138, 126),
                         FARLEG: (96, 86, 80), PAW: (206, 196, 182), MUZZLE: (228, 218, 202), TAIL: (146, 134, 122),
                         TAILTIP: (118, 106, 96)},
-                       belly=(224, 212, 194), back=(130, 118, 108), belly_frac=0.66,
+                       belly=(224, 212, 194), back=(130, 118, 108), belly_frac=0.66, legs_behind=True,
                        patches=[((226, 216, 200), CHEEK, True)]), -1),
     'H': shift(variant({BODY: (120, 112, 106), HEAD: (150, 142, 132), EAR: (88, 82, 78), LEG: (196, 186, 172),
                         FARLEG: (142, 132, 122), PAW: (214, 206, 194), MUZZLE: (214, 206, 194), TAIL: (104, 98, 94),
