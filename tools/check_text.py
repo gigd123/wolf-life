@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 文案的靜態檢查（2026-10-13，pre-2.0-plan 的「文案檢查工具」）：依 docs/writing-guide.md 找出明顯的問題。
 # 錯誤（回傳 1）：重複的鍵、半形標點、「我／玩家」、文字裡的 {佔位} 在程式裡沒有被替換。
-# 提醒（只列出，要人看）：敘事文字裡出現遊戲用語、苔原狼的「牠們」沒有單數版本、可能在苔原出現的文字用了森林字眼。
+# 提醒（只列出，要人看）：敘事文字裡出現遊戲用語、苔原狼的「牠們」沒有單數版本、可能在苔原出現的文字用了森林字眼、單一文案超過 90 字。
 # 用法：python3 tools/check_text.py [--notes]（加 --notes 才列出提醒的細節）
 import csv, glob, re, sys
 
@@ -68,6 +68,12 @@ TUNDRA_OK = ('scavenger.', 'combat.', 'bear_steal.', 'challenger.', 'year.', 'hu
 for k, v in texts.items():
     if k.startswith(TUNDRA_OK) and re.search('林|樹|松|雲杉', v):
         notes.append(f'森林字眼（苔原也會出現嗎？）：{k}  {v}')
+
+# 文字量（writing-guide「畫面上的文字量」）：單一文案超過 90 字（去掉 BBCode 與 {佔位}）
+for k, v in texts.items():
+    plain = re.sub(r'\[/?[a-z]+[^\]]*\]|\{[a-z_]+\}', '', v).replace('\\n', '')
+    if len(plain) > 90:
+        notes.append(f'太長（{len(plain)} 字，單一文案 90 字以內）：{k}')
 
 for e in errors:
     print('錯誤：' + e)
