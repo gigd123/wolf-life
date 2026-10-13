@@ -124,6 +124,33 @@ def pose_params(pose, phase, bear):
     elif pose == 'charge':  # 低頭衝撞（野牛）：頭壓低往前，前腳往前踏
         fdx, fdy, hdx, hdy = 2, 1, 3, 4
         swing = [3, -1, 5, -3]; lift = [1, 0, 2, 0]
+    elif pose.startswith('howl'):  # 嚎叫：頭慢慢抬起、口鼻朝上，最後兩格張口
+        k = int(pose[-1])
+        # 稍微蹲低、頭往後收，口鼻朝上時才不會超出 48×32 的格子
+        bob = -[0, 1, 2, 2][k]; hdx = -[0, 1, 2, 3][k]; hdy = [0, 1, 1, 2][k]
+        mouth = k >= 2
+    elif pose.startswith('down'):  # 倒下：慢慢趴低，前腳往前伸、後腳往後
+        k = int(pose[-1])
+        bob = -[1, 3, 6, 8][k]; hdy = [1, 2, 3, 4][k]
+        swing = [[0, 0, 0, 0], [1, -1, 1, -1], [3, -2, 4, -3], [5, -3, 6, -4]][k]
+        ears_back = k >= 2
+    elif pose == 'stalk':  # 潛行：身體壓低、頭低往前
+        bob = -3; fdy = 1; hdx, hdy = 2, 2
+        swing = [1, -1, 2, -1]
+    elif pose == 'pounce':  # 撲擊：前身抬起往前、後腳蹬地
+        fdx, fdy, hdx, hdy = 3, -5, 2, 2
+        swing = [4, -4, 8, -6]; lift = [4, 1, 6, 1]
+    elif pose == 'dodge':  # 閃避：前身往後上方縮、前腳離地
+        fdx, fdy, hdy = -2, -3, -1
+        swing = [-3, 2, -4, 3]; lift = [3, 0, 4, 0]
+    elif pose == 'submit':  # 示弱：壓低、頭低、耳朵往後、夾尾
+        bob = -3; fdy = 2; hdx, hdy = -1, 3
+        ears_back = True
+    elif pose == 'eat':  # 進食：低頭到地面
+        fdy = 2; hdx, hdy = 2, 6
+    elif pose == 'sleep':  # 睡覺：趴下、腿收起、頭靠在前面
+        bob = -9; hdx, hdy = -2, 2
+        ears_back = True
     elif pose.startswith('swipe'):
         k = int(pose[-1])
         fdy = -[2, 6, 7, 3][k]; fdx = [0, 1, 3, 1][k]
@@ -133,14 +160,23 @@ def pose_params(pose, phase, bear):
     return fdx, fdy, hdx, hdy, bob, swing, lift, mouth, ears_back
 
 
+# 頭的轉動（度，正值口鼻往下）、尾巴姿勢、腿收起：只有少數姿勢用
+POSE_EXTRA = {'howl0': dict(head_rot=-10), 'howl1': dict(head_rot=-22), 'howl2': dict(head_rot=-32), 'howl3': dict(head_rot=-34),
+              'stalk': dict(tail='low'), 'submit': dict(tail='tuck', head_rot=10), 'eat': dict(head_rot=30),
+              'sleep': dict(hide_legs=True, tail='curl', head_rot=8), 'down2': dict(tail='low'), 'down3': dict(tail='low')}
+
+
 def draw_frame(sp, pose='idle', phase=0):
+    import math
     fw, fh = sp['frame']
     g = sp['ground']
     split = sp['split']
     bear = sp.get('tail') is None
     fdx, fdy, hdx, hdy, bob, swing, lift, mouth, ears_back = pose_params(pose, phase, bear)
+    ex = POSE_EXTRA.get(pose, {})
+    rot = math.radians(ex.get('head_rot', 0))
 
-    def tf(p, head=False):
+    def base(p, head=False):
         x, y = p
         y -= bob
         if x > split:
@@ -149,6 +185,16 @@ def draw_frame(sp, pose='idle', phase=0):
             x += fdx * t; y += fdy * t
         if head:
             x += hdx; y += hdy
+        return x, y
+
+    pivot = base(sp['head'][0], True)
+
+    def tf(p, head=False):
+        x, y = base(p, head)
+        if head and rot:
+            dx, dy = x - pivot[0], y - pivot[1]
+            x = pivot[0] + dx * math.cos(rot) - dy * math.sin(rot)
+            y = pivot[1] + dx * math.sin(rot) + dy * math.cos(rot)
         return (round(x), round(y))
 
     m = Image.new('L', (fw, fh), 0)
@@ -167,12 +213,21 @@ def draw_frame(sp, pose='idle', phase=0):
         d.rectangle([foot[0] - wb // 2, foot[1] - 1, foot[0] - wb // 2 + wb + p - 2, foot[1]], fill=mat if side == 'far' else PAW)
         return foot
 
+    if ex.get('hide_legs'):
+        leg = lambda i, kind: (0, 0)
     leg(0, 'far'); leg(1, 'far')
     if sp.get('legs_behind'):
         # 近側腿也畫在身體後面，只露出身體下方那段（猞猁：腿的上段畫在身上會留下斜線）
         feet = [leg(2, 'near'), leg(3, 'near')]
     if sp.get('tail'):
         pts = [tf(p) for p in sp['tail']]
+        t0 = pts[0]
+        if ex.get('tail') == 'tuck':  # 夾尾：往下往前收到後腿之間
+            pts = [t0, (t0[0] + 1, t0[1] + 4), (t0[0] + 4, t0[1] + 7)]
+        elif ex.get('tail') == 'curl':  # 睡覺：沿著地面往前捲
+            pts = [t0, (t0[0] - 2, g - 3), (t0[0] + 6, g - 1), (t0[0] + 14, g - 1)]
+        elif ex.get('tail') == 'low':  # 低垂：尾巴貼近地面往後
+            pts = [t0] + [(x - 1, min(g - 1, y + 2)) for x, y in pts[1:]]
         if pose in ('idle', 'move'):
             pts = pts[:-1] + [(pts[-1][0] + [0, 1, 0, -1][phase], pts[-1][1])]
         d.line(pts, fill=TAIL, width=sp['tail_w'], joint='curve')

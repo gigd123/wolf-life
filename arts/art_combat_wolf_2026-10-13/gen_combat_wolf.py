@@ -56,7 +56,8 @@ def make(prefix):
     down = sheet_frame(sheet, 3, 2)
     # 撲咬、撲擊的單張比 spritesheet 的狼大一圈，縮到和待機差不多的體型
     pounce, bite = load(prefix, 'pounce'), load(prefix, 'bite')
-    k = trim(idle).width / max(1, trim(bite).width - 6)
+    # 2026-10-13 灰狼重畫後姿勢圖和待機的體型一致，不再縮放
+    k = 1.0
     pounce = pounce.resize((round(pounce.width * k), round(pounce.height * k)), Image.NEAREST)
     bite = bite.resize((round(bite.width * k), round(bite.height * k)), Image.NEAREST)
     dodge, hurt = load(prefix, 'dodge'), load(prefix, 'hurt')

@@ -77,8 +77,8 @@
       "adult": { "sheet": "res://assets/art/sprites/animals/raven_sheet.png", "rows": { "idle": 0 }, "frames": 2,
         "poses": { "circling": "res://assets/art/sprites/animals/ravens_circling.png" } }
     },
-    "tundra_wolf": { "display_scale": {"adult": 1.26},
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_attack_strip.png", "frame": [70, 45], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_hurt_strip.png", "frame": [61, 38], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_tundra_dodge_strip.png", "frame": [63, 36], "frames": 5, "fps": 16, "loop": false } },
+    "tundra_wolf": { "display_scale": {"adult": 1.05},
+      "adult": { "strips": {"attack": {"sheet": "res://assets/art/sprites/wolf/wolf_tundra_attack_strip.png", "frame": [71, 48], "frames": 4, "fps": 14, "loop": false}, "hurt": {"sheet": "res://assets/art/sprites/wolf/wolf_tundra_hurt_strip.png", "frame": [65, 46], "frames": 4, "fps": 14, "loop": false}, "dodge": {"sheet": "res://assets/art/sprites/wolf/wolf_tundra_dodge_strip.png", "frame": [68, 46], "frames": 5, "fps": 16, "loop": false}},
         "sheet": "res://assets/art/sprites/wolf/wolf_tundra_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
         "poses": {
@@ -92,8 +92,8 @@
         }
       }
     },
-    "challenger": { "display_scale": {"adult": 1.071},
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_attack_strip.png", "frame": [75, 48], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_hurt_strip.png", "frame": [66, 42], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_challenger_dodge_strip.png", "frame": [68, 39], "frames": 5, "fps": 16, "loop": false } },
+    "challenger": { "display_scale": {"adult": 1.0},
+      "adult": { "strips": {"attack": {"sheet": "res://assets/art/sprites/wolf/wolf_challenger_attack_strip.png", "frame": [71, 48], "frames": 4, "fps": 14, "loop": false}, "hurt": {"sheet": "res://assets/art/sprites/wolf/wolf_challenger_hurt_strip.png", "frame": [65, 46], "frames": 4, "fps": 14, "loop": false}, "dodge": {"sheet": "res://assets/art/sprites/wolf/wolf_challenger_dodge_strip.png", "frame": [68, 46], "frames": 5, "fps": 16, "loop": false}},
         "sheet": "res://assets/art/sprites/wolf/wolf_challenger_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
         "poses": {
@@ -106,8 +106,8 @@
         }
       }
     },
-    "stranger_wolf": { "display_scale": {"adult": 1.125},
-      "adult": { "strips": { "attack": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_attack_strip.png", "frame": [75, 48], "frames": 4, "fps": 14, "loop": false }, "hurt": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_hurt_strip.png", "frame": [66, 42], "frames": 4, "fps": 14, "loop": false }, "dodge": { "sheet": "res://assets/art/sprites/wolf/wolf_stranger_dodge_strip.png", "frame": [68, 39], "frames": 5, "fps": 16, "loop": false } },
+    "stranger_wolf": { "display_scale": {"adult": 1.05},
+      "adult": { "strips": {"attack": {"sheet": "res://assets/art/sprites/wolf/wolf_stranger_attack_strip.png", "frame": [71, 48], "frames": 4, "fps": 14, "loop": false}, "hurt": {"sheet": "res://assets/art/sprites/wolf/wolf_stranger_hurt_strip.png", "frame": [65, 46], "frames": 4, "fps": 14, "loop": false}, "dodge": {"sheet": "res://assets/art/sprites/wolf/wolf_stranger_dodge_strip.png", "frame": [68, 46], "frames": 5, "fps": 16, "loop": false}},
         "sheet": "res://assets/art/sprites/wolf/wolf_stranger_sheet.png",
         "rows": { "idle": 0, "move": 1, "howl": 2, "down": 3 },
         "poses": {

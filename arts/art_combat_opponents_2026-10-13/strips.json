@@ -25,7 +25,7 @@
   "attack": {
    "sheet": "res://assets/art/sprites/wolf/wolf_stranger_attack_strip.png",
    "frame": [
-    75,
+    71,
     48
    ],
    "frames": 4,
@@ -35,8 +35,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/wolf/wolf_stranger_hurt_strip.png",
    "frame": [
-    66,
-    42
+    65,
+    46
    ],
    "frames": 4,
    "fps": 14,
@@ -46,7 +46,7 @@
    "sheet": "res://assets/art/sprites/wolf/wolf_stranger_dodge_strip.png",
    "frame": [
     68,
-    39
+    46
    ],
    "frames": 5,
    "fps": 16,
@@ -57,8 +57,8 @@
   "attack": {
    "sheet": "res://assets/art/sprites/wolf/wolf_tundra_attack_strip.png",
    "frame": [
-    70,
-    45
+    71,
+    48
    ],
    "frames": 4,
    "fps": 14,
@@ -67,8 +67,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/wolf/wolf_tundra_hurt_strip.png",
    "frame": [
-    61,
-    38
+    65,
+    46
    ],
    "frames": 4,
    "fps": 14,
@@ -77,8 +77,8 @@
   "dodge": {
    "sheet": "res://assets/art/sprites/wolf/wolf_tundra_dodge_strip.png",
    "frame": [
-    63,
-    36
+    68,
+    46
    ],
    "frames": 5,
    "fps": 16,
@@ -89,7 +89,7 @@
   "attack": {
    "sheet": "res://assets/art/sprites/wolf/wolf_challenger_attack_strip.png",
    "frame": [
-    75,
+    71,
     48
    ],
    "frames": 4,
@@ -99,8 +99,8 @@
   "hurt": {
    "sheet": "res://assets/art/sprites/wolf/wolf_challenger_hurt_strip.png",
    "frame": [
-    66,
-    42
+    65,
+    46
    ],
    "frames": 4,
    "fps": 14,
@@ -110,7 +110,7 @@
    "sheet": "res://assets/art/sprites/wolf/wolf_challenger_dodge_strip.png",
    "frame": [
     68,
-    39
+    46
    ],
    "frames": 5,
    "fps": 16,
