@@ -2522,6 +2522,14 @@ func _render_hunt_stage() -> void:
 		if current_hunt.reaction == "stand":
 			lines.append(tr("prey_reaction.stand"))
 		header += "\n" + "　".join(lines)
+	# 苔原狼一起狩獵：牠們幫的是改變條件、不直接加成功率，所以要寫出來（2026-10-15 試玩回報 20）
+	if current_hunt.tundra_help > 0:
+		var help: String = "other"
+		if current_hunt.in_herd:
+			help = "herd"
+		elif HuntSystem.size_of(current_hunt.animal_id) == "large":
+			help = "large"
+		header += "\n" + _tt("hunt.tundra_help." + help)
 	if current_hunt.stage == HuntSystem.Stage.POUNCE and current_hunt.hiding:
 		header += "\n" + tr("hunt.hide.start").replace("{animal}", animal_name)
 	if current_hunt.stage == HuntSystem.Stage.FIGHT:

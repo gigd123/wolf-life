@@ -1270,6 +1270,12 @@ tundra.hunt.leftover,你在殘骸邊緣等著，等牠們吃飽走開，撿了�
 tundra.hunt.leftover.single,你在殘骸邊緣等著，等牠吃飽走開，撿了剩下的。
 tundra.hunt.followed,那對苔原狼聽到動靜，從坡後跟了上來。
 tundra.hunt.followed.single,那隻苔原狼聽到動靜，從坡後跟了上來。
+hunt.tundra_help.herd,苔原狼在一旁衝散了獸群，跑得慢的那一隻被逼了出來。
+hunt.tundra_help.herd.single,那隻苔原狼在一旁衝散了獸群，跑得慢的那一隻被逼了出來。
+hunt.tundra_help.large,苔原狼從側面牽制，牠的踢擊會分散到不同的狼身上。
+hunt.tundra_help.large.single,那隻苔原狼從側面牽制，牠的踢擊不會全衝著你來。
+hunt.tundra_help.other,苔原狼在一旁一起追，替你看清了牠的體況。
+hunt.tundra_help.other.single,那隻苔原狼在一旁一起追，替你看清了牠的體況。
 tundra.hunt.shared,苔原狼也圍上來吃了一部分。
 tundra.hunt.shared.single,那隻苔原狼也湊上來吃了一部分。
 tundra.young_left,一隻年輕的苔原狼離開了這一群，往遠方去找自己的地方。
