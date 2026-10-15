@@ -1,0 +1,3742 @@
+{
+  "age_years": 6.9167,
+  "den": "forest_north",
+  "knowledge": [
+    {
+      "animal": "grizzly_bear",
+      "count": 3.0,
+      "region": "forest_east",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1.0,
+      "region": "forest_east",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2,
+      "region": "forest_east",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 5,
+      "region": "forest_north",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 7,
+      "region": "forest_north",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 4.0,
+      "region": "forest_south",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 5,
+      "region": "forest_south",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 10.0,
+      "region": "forest_west",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 4,
+      "region": "forest_west",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2.0,
+      "region": "grassland_plains",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2,
+      "region": "grassland_plains",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1.0,
+      "region": "grassland_riverwoods",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1.0,
+      "region": "grassland_riverwoods",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 6.0,
+      "region": "grassland_river",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2.0,
+      "region": "mountain_canyon",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2,
+      "region": "mountain_canyon",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1.0,
+      "region": "mountain_headwaters",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1.0,
+      "region": "mountain_meadow",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 2.0,
+      "region": "tundra_central",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 4.0,
+      "region": "tundra_east",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 6.0,
+      "region": "tundra_east",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 7.0,
+      "region": "tundra_south",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 3.0,
+      "region": "tundra_south",
+      "season": "spring",
+      "type": "danger"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 8.0,
+      "region": "tundra_south",
+      "season": "summer",
+      "type": "danger"
+    },
+    {
+      "animal": "cougar",
+      "count": 2.0,
+      "life_stage": "adult",
+      "type": "opponent"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 7,
+      "life_stage": "adult",
+      "type": "opponent"
+    },
+    {
+      "animal": "beaver",
+      "count": 2.0,
+      "region": "grassland_river",
+      "type": "overhunt"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1.0,
+      "region": "mountain_canyon",
+      "type": "overhunt"
+    },
+    {
+      "animal": "caribou",
+      "count": 1.0,
+      "region": "tundra_central",
+      "type": "overhunt"
+    },
+    {
+      "animal": "caribou",
+      "count": 2.0,
+      "region": "tundra_north",
+      "type": "overhunt"
+    },
+    {
+      "animal": "caribou",
+      "count": 3.0,
+      "region": "tundra_south",
+      "type": "overhunt"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "region": "forest_east",
+      "type": "overhunt"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "region": "forest_west",
+      "type": "overhunt"
+    },
+    {
+      "animal": "moose",
+      "count": 1.0,
+      "region": "tundra_south",
+      "type": "overhunt"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2.0,
+      "region": "tundra_south",
+      "type": "overhunt"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "region": "forest_east",
+      "type": "overhunt"
+    },
+    {
+      "animal": "beaver",
+      "count": 2.0,
+      "last_day": 57.0,
+      "period": "dawn",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 1.0,
+      "last_day": 11.0,
+      "period": "predawn",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 1.0,
+      "last_day": 58.0,
+      "period": "dawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 3,
+      "last_day": 149,
+      "period": "day",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 5,
+      "last_day": 149,
+      "period": "dusk",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 3,
+      "last_day": 146,
+      "period": "night",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 2,
+      "last_day": 147,
+      "period": "predawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 1.0,
+      "last_day": 114.0,
+      "period": "predawn",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 3.0,
+      "last_day": 131.0,
+      "period": "day",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 6.0,
+      "last_day": 126.0,
+      "period": "dusk",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 5.0,
+      "last_day": 126.0,
+      "period": "predawn",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1.0,
+      "last_day": 10.0,
+      "period": "dawn",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1.0,
+      "last_day": 2.0,
+      "period": "day",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 1.0,
+      "last_day": 61.0,
+      "period": "night",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 1.0,
+      "last_day": 13.0,
+      "period": "night",
+      "region": "grassland_plains",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 1.0,
+      "last_day": 14.0,
+      "period": "night",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 2,
+      "last_day": 146,
+      "period": "predawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 2.0,
+      "last_day": 34.0,
+      "period": "dawn",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1.0,
+      "last_day": 33.0,
+      "period": "dusk",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1.0,
+      "last_day": 35.0,
+      "period": "dawn",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1.0,
+      "last_day": 35.0,
+      "period": "predawn",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 2.0,
+      "last_day": 67.0,
+      "period": "day",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1.0,
+      "last_day": 65.0,
+      "period": "dusk",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 3.0,
+      "last_day": 67.0,
+      "period": "night",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 3.0,
+      "last_day": 68.0,
+      "period": "predawn",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 6.0,
+      "last_day": 172,
+      "period": "dawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 4,
+      "last_day": 181,
+      "period": "day",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 3,
+      "last_day": 165,
+      "period": "dusk",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 4,
+      "last_day": 166,
+      "period": "night",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 4,
+      "last_day": 159,
+      "period": "predawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 90.0,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "last_day": 88.0,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "last_day": 89.0,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2.0,
+      "last_day": 79.0,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "last_day": 77.0,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2,
+      "last_day": 195,
+      "period": "night",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 52.0,
+      "period": "predawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 5.0,
+      "last_day": 140.0,
+      "period": "dawn",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2.0,
+      "last_day": 111.0,
+      "period": "day",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2.0,
+      "last_day": 142.0,
+      "period": "dusk",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 95.0,
+      "period": "night",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "last_day": 139.0,
+      "period": "predawn",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 1.0,
+      "period": "day",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2.0,
+      "last_day": 9.0,
+      "period": "dusk",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 4.0,
+      "period": "day",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 4.0,
+      "period": "night",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 116.0,
+      "period": "day",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1.0,
+      "last_day": 119.0,
+      "period": "night",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 12.0,
+      "period": "dusk",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 59.0,
+      "period": "night",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 2.0,
+      "last_day": 59.0,
+      "period": "predawn",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 60.0,
+      "period": "day",
+      "region": "grassland_plains",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 61.0,
+      "period": "dawn",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 21.0,
+      "period": "dusk",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 1.0,
+      "last_day": 60.0,
+      "period": "night",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "hare",
+      "count": 3.0,
+      "last_day": 60.0,
+      "period": "predawn",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 1.0,
+      "last_day": 10.0,
+      "period": "predawn",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 3.0,
+      "last_day": 69.0,
+      "period": "dawn",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 3.0,
+      "last_day": 105.0,
+      "period": "day",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 1.0,
+      "last_day": 26.0,
+      "period": "dusk",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 2.0,
+      "last_day": 104.0,
+      "period": "night",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 1.0,
+      "last_day": 69.0,
+      "period": "predawn",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 6,
+      "last_day": 170,
+      "period": "dawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 11.0,
+      "last_day": 176,
+      "period": "day",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 2.0,
+      "last_day": 121.0,
+      "period": "dusk",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 4.0,
+      "last_day": 180,
+      "period": "night",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "moose",
+      "count": 4.0,
+      "last_day": 103.0,
+      "period": "predawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2.0,
+      "last_day": 113.0,
+      "period": "dusk",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 12.0,
+      "period": "night",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 13.0,
+      "period": "day",
+      "region": "grassland_plains",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 13.0,
+      "period": "predawn",
+      "region": "grassland_plains",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2,
+      "last_day": 148,
+      "period": "dusk",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 20.0,
+      "period": "night",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 3,
+      "last_day": 147,
+      "period": "predawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 7.0,
+      "period": "dawn",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2,
+      "last_day": 156,
+      "period": "day",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 5.0,
+      "period": "dusk",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 127.0,
+      "period": "night",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 3.0,
+      "last_day": 130.0,
+      "period": "predawn",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 3.0,
+      "last_day": 124.0,
+      "period": "day",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2.0,
+      "last_day": 3.0,
+      "period": "dusk",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 124.0,
+      "period": "predawn",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 4.0,
+      "period": "day",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 116.0,
+      "period": "day",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 119.0,
+      "period": "dusk",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1.0,
+      "last_day": 133.0,
+      "period": "predawn",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "pronghorn",
+      "count": 1.0,
+      "last_day": 12.0,
+      "period": "dusk",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "pronghorn",
+      "count": 1.0,
+      "last_day": 58.0,
+      "period": "night",
+      "region": "grassland_plains",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 87.0,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 89.0,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 5,
+      "last_day": 243,
+      "period": "dawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 236,
+      "period": "day",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 3,
+      "last_day": 239,
+      "period": "predawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2.0,
+      "last_day": 139.0,
+      "period": "dawn",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 3.0,
+      "last_day": 139.0,
+      "period": "day",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 5,
+      "last_day": 149,
+      "period": "night",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2.0,
+      "last_day": 138.0,
+      "period": "predawn",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 136.0,
+      "period": "dawn",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2.0,
+      "last_day": 136.0,
+      "period": "dusk",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 6.0,
+      "last_day": 142.0,
+      "period": "night",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 7.0,
+      "period": "dusk",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 126.0,
+      "period": "predawn",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 123.0,
+      "period": "dusk",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 125.0,
+      "period": "day",
+      "region": "mountain_headwaters",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 6.0,
+      "period": "day",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 6.0,
+      "period": "dusk",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 6.0,
+      "period": "night",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 162,
+      "period": "day",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1.0,
+      "last_day": 69.0,
+      "period": "dusk",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2.0,
+      "last_day": 104.0,
+      "period": "night",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 164,
+      "period": "night",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 9,
+      "last_day": 181,
+      "period": "dawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 6,
+      "last_day": 181,
+      "period": "dusk",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 5.0,
+      "last_day": 181,
+      "period": "night",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 5.0,
+      "last_day": 181,
+      "period": "predawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 80.0,
+      "period": "dawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 87.0,
+      "period": "day",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 87.0,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 50.0,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 4.0,
+      "last_day": 51.0,
+      "period": "predawn",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 232,
+      "period": "dawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "last_day": 254,
+      "period": "day",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 4,
+      "last_day": 243,
+      "period": "dusk",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "last_day": 250,
+      "period": "night",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 243,
+      "period": "predawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "last_day": 144,
+      "period": "dawn",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 86.0,
+      "period": "day",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 5,
+      "last_day": 150,
+      "period": "dusk",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 48.0,
+      "period": "night",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 54.0,
+      "period": "predawn",
+      "region": "forest_south",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 141.0,
+      "period": "dawn",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 94.0,
+      "period": "day",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 142.0,
+      "period": "dusk",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 112.0,
+      "period": "night",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 142.0,
+      "period": "predawn",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 56.0,
+      "period": "dawn",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 114.0,
+      "period": "day",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 114.0,
+      "period": "dusk",
+      "region": "grassland_riverwoods",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 17.0,
+      "period": "dawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 4,
+      "last_day": 146,
+      "period": "day",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "last_day": 57.0,
+      "period": "dusk",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3.0,
+      "last_day": 57.0,
+      "period": "predawn",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 10.0,
+      "period": "dawn",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 3.0,
+      "period": "dusk",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "last_day": 123.0,
+      "period": "night",
+      "region": "mountain_foothills",
+      "type": "prey"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 2.0,
+      "region": "forest_east",
+      "type": "stranger"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 1.0,
+      "region": "forest_north",
+      "type": "stranger"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 3.0,
+      "region": "forest_south",
+      "type": "stranger"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 5.0,
+      "region": "forest_west",
+      "type": "stranger"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 2.0,
+      "region": "forest_north",
+      "type": "territory"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 3,
+      "region": "forest_south",
+      "type": "territory"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 10.0,
+      "region": "forest_west",
+      "type": "territory"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1.0,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1.0,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 3,
+      "life_stage": "buck",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "bison",
+      "count": 2,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "caribou",
+      "count": 13,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "elk",
+      "count": 2,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "elk",
+      "count": 4.0,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "life_stage": "buck",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "elk",
+      "count": 3.0,
+      "life_stage": "buck",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "moose",
+      "count": 5.0,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "moose",
+      "count": 8.0,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2.0,
+      "life_stage": "buck",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "pronghorn",
+      "count": 1.0,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "life_stage": "adult",
+      "option": "drive_forest",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 5.0,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "life_stage": "adult",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1.0,
+      "life_stage": "buck",
+      "option": "drive_forest",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 3,
+      "life_stage": "buck",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2.0,
+      "life_stage": "buck",
+      "option": "follow",
+      "type": "weakness"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "region": "forest_south",
+      "type": "overhunt"
+    },
+    {
+      "animal": "hare",
+      "count": 1,
+      "last_day": 145,
+      "period": "day",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 1,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 2,
+      "life_stage": "adult",
+      "option": "flank",
+      "type": "weakness"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1,
+      "last_day": 148,
+      "period": "day",
+      "region": "grassland_river",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 174,
+      "period": "day",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1,
+      "last_day": 154,
+      "period": "night",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1,
+      "region": "mountain_meadow",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1,
+      "last_day": 155,
+      "period": "day",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "bighorn_sheep",
+      "count": 1,
+      "last_day": 156,
+      "period": "dawn",
+      "region": "mountain_canyon",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1,
+      "last_day": 162,
+      "period": "dusk",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 164,
+      "period": "day",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 163,
+      "period": "dusk",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 163,
+      "period": "night",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 163,
+      "period": "predawn",
+      "region": "tundra_central",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 164,
+      "period": "day",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 164,
+      "period": "dusk",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 165,
+      "period": "dawn",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2,
+      "last_day": 254,
+      "period": "dusk",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 4,
+      "last_day": 243,
+      "period": "night",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 4,
+      "last_day": 249,
+      "period": "dawn",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 252,
+      "period": "dusk",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 2,
+      "region": "forest_north",
+      "type": "overhunt"
+    },
+    {
+      "animal": "beaver",
+      "count": 2,
+      "last_day": 223,
+      "period": "night",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 2,
+      "last_day": 253,
+      "period": "day",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "beaver",
+      "count": 2,
+      "last_day": 242,
+      "period": "dusk",
+      "region": "forest_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "region": "forest_north",
+      "type": "overhunt"
+    },
+    {
+      "animal": "mule_deer",
+      "count": 1,
+      "last_day": 227,
+      "period": "dawn",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "bison",
+      "count": 1,
+      "last_day": 227,
+      "period": "day",
+      "region": "grassland_hills",
+      "type": "prey"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 3,
+      "region": "forest_north",
+      "season": "autumn",
+      "type": "danger"
+    },
+    {
+      "animal": "beaver",
+      "count": 1,
+      "last_day": 253,
+      "period": "dawn",
+      "region": "forest_north",
+      "type": "prey"
+    }
+  ],
+  "life_log": {
+    "adult_body": "adult_body.skill_stealth",
+    "adult_bonus": {
+      "health_max": 3.0,
+      "speed": 3.0,
+      "strength": 3.0
+    },
+    "adult_stats": {
+      "age": 2.17,
+      "health_max": 109.0,
+      "perception": 57.0,
+      "skill": 65.6,
+      "speed": 61.8,
+      "strength": 85.5
+    },
+    "after_deer": {},
+    "bear_steals": 18,
+    "beaten_opponents": [
+      "black_bear|adult",
+      "stranger_wolf|adult",
+      "grizzly_bear|juvenile",
+      "coyote|adult",
+      "lynx|adult",
+      "red_fox|adult",
+      "challenger|adult"
+    ],
+    "biggest_prey": "bison",
+    "biggest_prey_stage": "adult",
+    "bison_region": "grassland_hills",
+    "blizzards": [
+      {
+        "age": 0.7,
+        "choice": "",
+        "days": 2.0,
+        "in_tundra": false,
+        "result": ""
+      },
+      {
+        "age": 1.7,
+        "choice": "",
+        "days": 3.0,
+        "in_tundra": false,
+        "result": ""
+      },
+      {
+        "age": 6.7,
+        "choice": "",
+        "days": 2,
+        "in_tundra": false,
+        "result": ""
+      }
+    ],
+    "challenger_day": 269,
+    "challenger_meetings": [
+      {
+        "age": 6.4,
+        "won": true
+      },
+      {
+        "age": 6.7,
+        "won": false
+      },
+      {
+        "age": 6.9,
+        "won": true
+      }
+    ],
+    "challenger_visits": 3,
+    "challenger_wins": 2,
+    "chase_give_ups": 2.0,
+    "cougar_ambushes": 2.0,
+    "cougar_caches": 9.0,
+    "days_lived": 257,
+    "death_cause": "",
+    "decisions": [
+      "other",
+      "other",
+      "stealth",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "cautious",
+      "other",
+      "other",
+      "stealth",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "cautious",
+      "other",
+      "assault",
+      "assault",
+      "assault",
+      "assault",
+      "assault",
+      "assault",
+      "cautious"
+    ],
+    "den_defended": 3.0,
+    "den_moves": [
+      {
+        "age": 2.2,
+        "from": "mountain_foothills",
+        "to": "tundra_north"
+      },
+      {
+        "age": 2.2,
+        "from": "tundra_north",
+        "to": "tundra_south"
+      },
+      {
+        "age": 4.9,
+        "from": "tundra_south",
+        "to": "forest_north"
+      }
+    ],
+    "elder_age": 6.17,
+    "first_big_kill": {
+      "age": 0.7,
+      "animal": "white_tailed_deer",
+      "stage": "buck"
+    },
+    "hare_year": 6,
+    "hunger_tier": 0.0,
+    "hunt_attempts": 315,
+    "hunt_successes": 223,
+    "ice_known": {
+      "solid": true,
+      "thin": true
+    },
+    "joint_hunts": 10.0,
+    "lost_sleep_spots": {},
+    "main_tendency": "assault",
+    "maps_visited": [
+      "mountain",
+      "grassland",
+      "tundra",
+      "forest"
+    ],
+    "marks": {
+      "forest_north": 136.0,
+      "forest_south": 138.0
+    },
+    "marks_made": 3.0,
+    "metrics": {
+      "best_choices": 631,
+      "cards": 289,
+      "choices": 725,
+      "events": 145,
+      "longest_quiet": 14,
+      "play_seconds": 7071.36625525729,
+      "quick_cards": 174,
+      "quiet_streak": 0,
+      "stage_seconds": {
+        "adult": 3696.51049264674,
+        "elder": 375.86836899975,
+        "subadult": 2998.98739365225
+      }
+    },
+    "next_notable_id": 40,
+    "own_territory": "forest_north",
+    "potential": {
+      "health_max": 120.0,
+      "perception": 80.5399375000002,
+      "skill": 93.4369046875001,
+      "speed": 83.1505264532444,
+      "strength": 100.0
+    },
+    "prey_count": {
+      "beaver": 10,
+      "bighorn_sheep": 10,
+      "bison": 1.0,
+      "caribou": 31,
+      "elk": 28,
+      "hare": 10,
+      "moose": 20,
+      "mule_deer": 11,
+      "pronghorn": 1.0,
+      "snowshoe_hare": 48,
+      "white_tailed_deer": 53
+    },
+    "pushed_on": 9,
+    "ravens_cooldown_until": 165,
+    "ravens_followed": 1,
+    "ravens_seen": 1,
+    "recent_combats": [
+      {
+        "age": 6.4,
+        "animal": "challenger",
+        "context": "meet",
+        "opp_hp_max": 98.0,
+        "opp_power": 115.0,
+        "outcome": "killed",
+        "rounds": [
+          {
+            "choice": "probe",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.probe.resolute"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 98.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "attack",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.hit.bite",
+              "combat.opp_submits"
+            ],
+            "opp_dmg": 16.7,
+            "opp_hp": 81.3,
+            "r": 2,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "pursue",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.bite"
+            ],
+            "opp_dmg": 16.5,
+            "opp_hp": 64.8,
+            "r": 3,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "bite",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.bite"
+            ],
+            "opp_dmg": 17.7,
+            "opp_hp": 47.1,
+            "r": 4,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "bite",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.first.opp",
+              "combat.hit.bite"
+            ],
+            "opp_dmg": 18.4,
+            "opp_hp": 28.7,
+            "r": 5,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "dodge",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.dodge.success"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 28.7,
+            "r": 6,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          },
+          {
+            "choice": "lunge",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.lunge",
+              "combat.opp_killed"
+            ],
+            "opp_dmg": 29.0,
+            "opp_hp": 0.0,
+            "r": 7,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 117.9
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 110.0,
+          "injury": 0,
+          "power": 196.3,
+          "skill": 97.3,
+          "speed": 80.7,
+          "strength": 99.0
+        },
+        "wolf_hp_max": 117.920969874247,
+        "wolf_start_hp": 117.9
+      },
+      {
+        "age": 6.7,
+        "animal": "red_fox",
+        "context": "carcass",
+        "opp_hp_max": 18.0,
+        "opp_power": 30.0,
+        "outcome": "drove_off",
+        "rounds": [
+          {
+            "choice": "threaten",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.threaten.success"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 18.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 116.9
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 120.0,
+          "injury": 0,
+          "power": 195.8,
+          "skill": 97.3,
+          "speed": 79.7,
+          "strength": 98.5
+        },
+        "wolf_hp_max": 116.920969874247,
+        "wolf_start_hp": 116.9
+      },
+      {
+        "age": 6.9,
+        "animal": "black_bear",
+        "context": "carcass",
+        "opp_hp_max": 160.0,
+        "opp_power": 125.0,
+        "outcome": "abandon",
+        "rounds": [
+          {
+            "choice": "abandon",
+            "danger": false,
+            "desperate": false,
+            "notes": [],
+            "opp_dmg": 0.0,
+            "opp_hp": 160.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.9
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 124.0,
+          "injury": 0,
+          "power": 195.3,
+          "skill": 97.3,
+          "speed": 70.8,
+          "strength": 98.0
+        },
+        "wolf_hp_max": 115.920969874247,
+        "wolf_start_hp": 115.9
+      },
+      {
+        "age": 6.9,
+        "animal": "challenger",
+        "context": "meet",
+        "opp_hp_max": 101.0,
+        "opp_power": 121.0,
+        "outcome": "killed",
+        "rounds": [
+          {
+            "choice": "attack",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.hit.bite",
+              "combat.opp_submits"
+            ],
+            "opp_dmg": 17.0,
+            "opp_hp": 84.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.9
+          },
+          {
+            "choice": "pursue",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.miss"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 84.0,
+            "r": 2,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.9
+          },
+          {
+            "choice": "bite",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.bite"
+            ],
+            "opp_dmg": 17.2,
+            "opp_hp": 66.8,
+            "r": 3,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.9
+          },
+          {
+            "choice": "bite",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.bite"
+            ],
+            "opp_dmg": 16.9,
+            "opp_hp": 49.9,
+            "r": 4,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.9
+          },
+          {
+            "choice": "lunge",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.lunge",
+              "combat.opp_hit.leg"
+            ],
+            "opp_dmg": 23.7,
+            "opp_hp": 26.2,
+            "r": 5,
+            "wolf_dmg": 16.5,
+            "wolf_hp": 99.4
+          },
+          {
+            "choice": "lunge",
+            "danger": false,
+            "desperate": true,
+            "notes": [
+              "combat.hit.lunge",
+              "combat.opp_killed"
+            ],
+            "opp_dmg": 32.8,
+            "opp_hp": 0.0,
+            "r": 6,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 99.4
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 106.0,
+          "injury": 0,
+          "power": 195.3,
+          "skill": 97.3,
+          "speed": 78.7,
+          "strength": 98.0
+        },
+        "wolf_hp_max": 115.920969874247,
+        "wolf_start_hp": 115.9
+      },
+      {
+        "age": 6.9,
+        "animal": "grizzly_bear",
+        "context": "encounter",
+        "opp_hp_max": 300.0,
+        "opp_power": 170.0,
+        "outcome": "yield",
+        "rounds": [
+          {
+            "choice": "yield",
+            "danger": false,
+            "desperate": false,
+            "notes": [],
+            "opp_dmg": 0.0,
+            "opp_hp": 300.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 115.3
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 94.0,
+          "injury": 1,
+          "power": 195.3,
+          "skill": 97.3,
+          "speed": 78.7,
+          "strength": 98.0
+        },
+        "wolf_hp_max": 115.920969874247,
+        "wolf_start_hp": 115.3
+      }
+    ],
+    "recent_messages": [
+      "春 D4 凌晨　溪流旁，一截倒木被翻了過來，是灰熊翻找食物的痕跡（還很新）。你學到：【確定】春季的森林北部有灰熊出沒。",
+      "春 D6 凌晨　過了 2 天：獵到 白尾鹿 1；在巢穴睡了 3 晚，在野外 0 晚。周圍起了變化。雨停了。泥地上的新足跡特別清楚。",
+      "春 D8 黃昏　過了 2 天：獵到 白尾鹿 1；在巢穴睡了 4 晚，在野外 0 晚。周圍起了變化。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D1 清晨　你學到：【通常】深夜的森林北部常有河狸。",
+      "夏 D1 清晨　密林裡，你聞到灰熊的氣味（還很新）。",
+      "夏 D1 深夜　你學到：【似乎】黃昏的森林北部常有河狸。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D2 清晨　過了 1 天：獵到 什麼也沒獵到；在巢穴睡了 2 晚，在野外 0 晚。周圍起了變化。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D2 清晨　清晨的溪流旁，你知道馬鹿會來。你學到：【確定】清晨的森林北部常有馬鹿。你獵到了母馬鹿。你放棄了獵物，退到安全的地方。",
+      "夏 D2 深夜　深夜的密林裡，你知道雪兔會來。你學到：【確定】深夜的森林北部常有雪兔。你獵到了雪兔。下起了暴雨。雨聲蓋過了一切，氣味和舊足跡都被沖散了。",
+      "夏 D2 凌晨　溪流旁，一截倒木被翻了過來，是灰熊翻找食物的痕跡（已經有點舊了）。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D2 凌晨　凌晨的溪流旁，你知道雪兔會來。你學到：【確定】凌晨的森林北部常有雪兔。你獵到了雪兔。",
+      "夏 D3 清晨　密林裡，你發現陳舊的雪兔足跡。",
+      "夏 D3 白天　你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。",
+      "夏 D3 白天　你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。",
+      "夏 D3 黃昏　你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。",
+      "夏 D3 黃昏　溪流旁，你發現新鮮的被啃斷的樹（樹樁上滿是牙印），是跛腳的河狸留下的。你學到：【通常】黃昏的森林北部常有河狸。你獵到了受傷的河狸。",
+      "夏 D3 深夜　深夜的密林裡，你知道雪兔會來。你獵到了雪兔。你學到：【似乎】在森林北部連續獵雪兔之後，那一帶的雪兔會少好幾天。",
+      "夏 D3 凌晨　一隻猞猁正咬著一隻剛抓到的雪兔。牠看見你，耳朵往後一貼。",
+      "夏 D4 白天　你趕走了猞猁。這一仗幾乎沒受傷，你打得越來越熟練。牠丟下雪兔跳上樹逃走了，雪兔歸你。你獵到了小馬鹿。你把獵物吃完了。",
+      "夏 D4 白天　你在巢穴裡安穩地睡了一覺。你老了，身體不再長了；只有經驗還在累積。",
+      "夏 D4 黃昏　黃昏的密林裡，你知道白尾鹿會來。你獵到了小鹿。你趕走了狐狸。這一仗幾乎沒受傷，你打得越來越熟練。你把獵物吃完了。下起了暴雨。雨聲蓋過了一切，氣味和舊足跡都被沖散了。你越來越常正面撲上去，用力量和牙齒結束一場狩獵。",
+      "夏 D4 深夜　你記得：【似乎】夏季的森林東部有灰熊出沒。你移動到了森林東部。一頭帶著幼熊的母灰熊擋在前面，牠非常激動。你學到：【通常】夏季的森林東部有灰熊出沒。",
+      "夏 D5 清晨　你退開了，母灰熊沒有追來。你學到：【似乎】清晨的丘陵草地常有騾鹿。你在上風處，騾鹿聞到了你。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D5 白天　草原上什麼也沒發現，這裡最近沒有騾鹿來過。你學到：【似乎】白天的丘陵草地常有美洲野牛。",
+      "夏 D5 黃昏　你在好睡處睡得很好。你老了，身體不再長了；只有經驗還在累積。",
+      "夏 D7 黃昏　過了 2 天：獵到 白尾鹿 1；在巢穴睡了 0 晚，在野外 4 晚。你受了傷，停了下來。獵鹿時受了輕傷：體力消耗增加，約 2 天痊癒。",
+      "夏 D8 清晨　過了 1 天：獵到 什麼也沒獵到；在巢穴睡了 2 晚，在野外 0 晚。周圍起了變化。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。",
+      "夏 D10 清晨　過了 2 天：獵到 什麼也沒獵到；在巢穴睡了 4 晚，在野外 0 晚。周圍起了變化。雨停了。泥地上的新足跡特別清楚。",
+      "夏 D10 凌晨　過了 0 天：獵到 白尾鹿 1；在巢穴睡了 0 晚，在野外 0 晚。周圍起了變化。雨停了。泥地上的新足跡特別清楚。",
+      "秋 D1 白天　你學到：【似乎】秋季的森林北部有灰熊出沒。",
+      "秋 D6 清晨　你咬死了年輕的狼。這一仗幾乎沒受傷，你打得越來越熟練。你學到：【通常】白天的森林北部常有馬鹿。你學到：【通常】秋季的森林北部有灰熊出沒。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。",
+      "秋 D9 清晨　過了 3 天：獵到 馬鹿 1；在巢穴睡了 5 晚，在野外 0 晚。日子平平靜靜地過去了。",
+      "秋 D10 深夜　你學到：【確定】秋季的森林北部有灰熊出沒。",
+      "秋 D10 凌晨　過了 0 天：獵到 什麼也沒獵到；在巢穴睡了 1 晚，在野外 0 晚。周圍起了變化。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。",
+      "冬 D2 黃昏　過了 2 天：獵到 白尾鹿 1；在巢穴睡了 1 晚，在野外 0 晚。周圍起了變化。北方傳來低沉的風聲，苔原那邊起了暴風雪。",
+      "冬 D5 清晨　你學到：【通常】母馬鹿被切側翼時比較容易得手。",
+      "冬 D8 清晨　過了 3 天：獵到 馬鹿 1；在巢穴睡了 6 晚，在野外 0 晚。日子平平靜靜地過去了。",
+      "春 D1 清晨　過了 3 天：獵到 白尾鹿 1；在巢穴睡了 4 晚，在野外 0 晚。日子平平靜靜地過去了。",
+      "春 D2 白天　你學到：【似乎】清晨的森林北部常有河狸。",
+      "春 D4 凌晨　過了 2 天：獵到 馬鹿 1；在巢穴睡了 4 晚，在野外 0 晚。周圍起了變化。一頭灰熊從你休息的地方旁邊經過。你一動也不動。灰熊沒有發現你，慢慢走遠了。"
+    ],
+    "region_periods": {
+      "forest_east": 1,
+      "forest_north": 23
+    },
+    "regions_visited": [
+      "mountain_foothills",
+      "mountain_headwaters",
+      "mountain_canyon",
+      "mountain_meadow",
+      "grassland_riverwoods",
+      "grassland_hills",
+      "grassland_plains",
+      "grassland_river",
+      "tundra_south",
+      "tundra_central",
+      "tundra_east",
+      "tundra_north",
+      "forest_north",
+      "forest_east",
+      "forest_west",
+      "forest_south"
+    ],
+    "scavenged": 23,
+    "scavenged_by_bear": 19,
+    "season_days": 4,
+    "season_fed_days": 4,
+    "season_snapshot": {
+      "health_max": 115.920969874247,
+      "perception": 77.4089486315921,
+      "skill": 97.3232159328002,
+      "speed": 78.6932295835128,
+      "strength": 97.9892988650668
+    },
+    "seasons_seen": [
+      "mountain:winter",
+      "mountain:spring",
+      "grassland:spring",
+      "grassland:summer",
+      "mountain:summer",
+      "tundra:summer",
+      "tundra:autumn",
+      "tundra:winter",
+      "spring",
+      "winter",
+      "tundra:spring",
+      "autumn",
+      "grassland:autumn",
+      "mountain:autumn",
+      "summer"
+    ],
+    "severe_streak": 1,
+    "shared_with_wolverine": 5,
+    "since_sleep": {},
+    "sleep_snapshot": {
+      "health_max": 115.920969874247,
+      "perception": 77.4089486315921,
+      "skill": 97.3336354382184,
+      "speed": 78.6932295835128,
+      "strength": 97.9892988650668
+    },
+    "spooked": {
+      "forest_east": {
+        "elk": 91.0,
+        "white_tailed_deer": 88.0
+      },
+      "forest_north": {
+        "elk": 196
+      },
+      "forest_west": {
+        "white_tailed_deer": 95.0
+      },
+      "grassland_hills": {
+        "bison": 62.0
+      },
+      "grassland_plains": {
+        "pronghorn": 59.0
+      },
+      "grassland_river": {
+        "bison": 148,
+        "mule_deer": 21.0
+      },
+      "mountain_canyon": {
+        "bighorn_sheep": 157
+      },
+      "mountain_foothills": {
+        "bighorn_sheep": 11.0
+      },
+      "mountain_meadow": {
+        "bighorn_sheep": 156,
+        "elk": 117.0
+      },
+      "tundra_north": {
+        "caribou": 70.0
+      }
+    },
+    "start_map": "mountain",
+    "stats": {
+      "after_deer": [
+        {
+          "actions": {
+            "explore": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 7.0,
+            "find_sleep_spot": 1.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 2.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "find_sleep_spot": 1.0,
+            "move": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 3.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 5.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 4.0,
+            "sleep": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 4.0,
+            "find_sleep_spot": 1.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 2.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 13.0,
+            "move": 2.0,
+            "sleep": 1.0
+          },
+          "days": 2.0
+        },
+        {
+          "actions": {
+            "explore": 3.0,
+            "move": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 2.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 3.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 4.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 2.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 2.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "move": 2.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 6.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 3.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 5.0,
+            "move": 3.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 7.0,
+            "move": 1.0,
+            "sleep": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 3.0,
+            "move": 8.0,
+            "routine": 2.0,
+            "short_rest": 11.0,
+            "sleep": 4.0
+          },
+          "days": 3.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "move": 2.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "move": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "move": 4.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "move": 2.0,
+            "sleep": 1.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1.0,
+            "mark": 1.0,
+            "sleep": 1.0
+          },
+          "days": 0.0
+        },
+        {
+          "actions": {
+            "explore": 4.0,
+            "move": 1.0,
+            "routine": 2.0,
+            "sleep": 3.0
+          },
+          "days": 1.0
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "move": 5.0,
+            "sleep": 1.0
+          },
+          "days": 0
+        },
+        {
+          "actions": {
+            "explore": 3
+          },
+          "days": 0
+        },
+        {
+          "actions": {
+            "explore": 1
+          },
+          "days": 0
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "move": 10,
+            "routine": 1,
+            "short_rest": 10,
+            "sleep": 4
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 3,
+            "routine": 1,
+            "short_rest": 4,
+            "sleep": 2
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 10,
+            "routine": 2,
+            "short_rest": 14,
+            "sleep": 6
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 5,
+            "routine": 1,
+            "short_rest": 8,
+            "sleep": 3
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 5,
+            "short_rest": 7,
+            "sleep": 3
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 3,
+            "routine": 1,
+            "short_rest": 13,
+            "sleep": 4
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 3,
+            "routine": 1,
+            "short_rest": 14,
+            "sleep": 4
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "routine": 1,
+            "short_rest": 14,
+            "sleep": 5
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "routine": 1,
+            "short_rest": 16,
+            "sleep": 3
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 2,
+            "routine": 1,
+            "short_rest": 15,
+            "sleep": 3
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "routine": 1,
+            "short_rest": 14,
+            "sleep": 6
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 7,
+            "short_rest": 6,
+            "sleep": 1
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 1,
+            "routine": 1,
+            "short_rest": 11,
+            "sleep": 4
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 27,
+            "routine": 4,
+            "short_rest": 11,
+            "sleep": 8
+          },
+          "days": 4
+        },
+        {
+          "actions": {
+            "explore": 5,
+            "move": 6,
+            "routine": 1,
+            "short_rest": 9,
+            "sleep": 5
+          },
+          "days": 3
+        },
+        {
+          "actions": {
+            "explore": 5,
+            "routine": 2,
+            "short_rest": 9,
+            "sleep": 4
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 5,
+            "routine": 2,
+            "short_rest": 4,
+            "sleep": 2
+          },
+          "days": 1
+        },
+        {
+          "actions": {
+            "explore": 19,
+            "routine": 1,
+            "short_rest": 14,
+            "sleep": 7
+          },
+          "days": 4
+        },
+        {
+          "actions": {
+            "explore": 2,
+            "routine": 1,
+            "short_rest": 15,
+            "sleep": 3
+          },
+          "days": 2
+        },
+        {
+          "actions": {
+            "explore": 8,
+            "routine": 1,
+            "short_rest": 11,
+            "sleep": 4
+          },
+          "days": 3
+        }
+      ],
+      "combat": {
+        "black_bear.abandon": 2,
+        "black_bear.drove_off": 2.0,
+        "black_bear.grab": 2.0,
+        "black_bear.started": 6,
+        "challenger.killed": 2,
+        "challenger.started": 2,
+        "cougar.drove_off": 2.0,
+        "cougar.retreated": 2.0,
+        "cougar.started": 4.0,
+        "coyote.drove_off": 4,
+        "coyote.started": 4,
+        "grizzly_bear.drove_off": 4.0,
+        "grizzly_bear.retreated": 7,
+        "grizzly_bear.started": 29,
+        "grizzly_bear.yield": 18,
+        "lynx.drove_off": 6,
+        "lynx.started": 6,
+        "red_fox.drove_off": 37,
+        "red_fox.started": 37,
+        "stranger_wolf.drove_off": 2.0,
+        "stranger_wolf.started": 2.0,
+        "tundra_wolf.let_eat": 1.0,
+        "tundra_wolf.started": 1.0,
+        "wolverine.share": 5,
+        "wolverine.started": 5
+      },
+      "counters": {
+        "hunts": 315,
+        "observe_opportunities": 153
+      },
+      "fights_by_animal": {
+        "black_bear": 6,
+        "challenger": 2,
+        "cougar": 4.0,
+        "coyote": 4,
+        "grizzly_bear": 29,
+        "lynx": 6,
+        "red_fox": 37,
+        "stranger_wolf": 2.0,
+        "tundra_wolf": 1.0,
+        "wolverine": 5
+      },
+      "hunts_by_animal": {
+        "beaver": 15,
+        "bighorn_sheep": 20,
+        "bison": 6,
+        "caribou": 37,
+        "elk": 36,
+        "hare": 13,
+        "moose": 45,
+        "mule_deer": 20,
+        "pronghorn": 2.0,
+        "snowshoe_hare": 52,
+        "white_tailed_deer": 69
+      },
+      "nights": {
+        "den": 182
+      },
+      "option_counts": {
+        "avoid": 5,
+        "challenger.yield": 1,
+        "chase.attack_standing": 4,
+        "chase.drive_forest": 2.0,
+        "chase.flank": 45,
+        "chase.follow": 48,
+        "chase.harass": 25,
+        "chase.probe": 5.0,
+        "chase.sprint": 36,
+        "combat.abandon": 2,
+        "combat.attack": 52,
+        "combat.bite": 12,
+        "combat.dodge": 10,
+        "combat.grab": 2.0,
+        "combat.harass": 14.0,
+        "combat.let_eat": 1.0,
+        "combat.let_go": 1.0,
+        "combat.lunge": 6,
+        "combat.probe": 2,
+        "combat.pursue": 2,
+        "combat.retreat": 13,
+        "combat.share": 5,
+        "combat.threaten": 6,
+        "combat.yield": 18,
+        "cougar.cache.eat": 9.0,
+        "explore.border": 10.0,
+        "explore.remains": 26,
+        "explore.ridge": 9,
+        "explore.water": 16.0,
+        "fight.bite_leg": 61,
+        "fight.bite_throat": 48,
+        "fight.dodge": 51,
+        "give_up": 8.0,
+        "migration.follow": 1.0,
+        "move.ice_shortcut": 3,
+        "observe.observe": 137,
+        "observe.skip_observe": 5,
+        "pounce.creep_pounce": 146,
+        "pounce.pounce": 7.0,
+        "pounce.search": 22,
+        "ravens.follow": 1,
+        "routine.big": 68,
+        "routine.heal": 3.0,
+        "scavenger.abandon": 18,
+        "scavenger.bite": 23,
+        "scavenger.carry": 3.0,
+        "scavenger.grab": 1.0,
+        "stalk.ambush": 5.0,
+        "stalk.direct": 1,
+        "stalk.downwind": 106,
+        "stalk.edge_strike": 1.0,
+        "stalk.upstream": 2.0,
+        "stalk.wait": 39,
+        "tundra.approach": 5,
+        "tundra.den.approach": 4.0,
+        "tundra.den.threaten": 3.0,
+        "tundra.howl.reply": 12,
+        "tundra.hunt.join": 11.0,
+        "tundra.wait.share": 3.0
+      }
+    },
+    "stranger_death": {
+      "age": 4.9,
+      "cause": "old_age",
+      "npc_age": 7.5
+    },
+    "stranger_first_win": true,
+    "stranger_meetings": [
+      {
+        "age": 2.9,
+        "kind": "drive_off",
+        "npc_damage": 36.0,
+        "outcome": "drove_off",
+        "region": "forest_west",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.9,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "drove_off",
+        "region": "forest_west",
+        "wolf_damage": 0.0
+      }
+    ],
+    "stranger_observed": true,
+    "stranger_unlock": "adult",
+    "tendency_history": [
+      {
+        "age": 0.7,
+        "day": 1.0,
+        "type": "stealth"
+      },
+      {
+        "age": 0.7,
+        "day": 5.0,
+        "type": "assault"
+      },
+      {
+        "age": 0.7,
+        "day": 10.0,
+        "type": "stealth"
+      },
+      {
+        "age": 1.2,
+        "day": 24.0,
+        "type": "cautious"
+      },
+      {
+        "age": 1.2,
+        "day": 28.0,
+        "type": "assault"
+      },
+      {
+        "age": 1.2,
+        "day": 31.0,
+        "type": "pursuit"
+      },
+      {
+        "age": 1.7,
+        "day": 45.0,
+        "type": "stealth"
+      },
+      {
+        "age": 2.2,
+        "day": 63.0,
+        "type": "assault"
+      },
+      {
+        "age": 2.2,
+        "day": 70.0,
+        "type": "cautious"
+      },
+      {
+        "age": 2.2,
+        "day": 71.0,
+        "type": "stealth"
+      },
+      {
+        "age": 2.4,
+        "day": 79.0,
+        "type": "assault"
+      },
+      {
+        "age": 2.7,
+        "day": 87.0,
+        "type": "stealth"
+      },
+      {
+        "age": 2.9,
+        "day": 93.0,
+        "type": "assault"
+      },
+      {
+        "age": 2.9,
+        "day": 102.0,
+        "type": "stealth"
+      },
+      {
+        "age": 3.2,
+        "day": 104.0,
+        "type": "assault"
+      },
+      {
+        "age": 3.4,
+        "day": 122.0,
+        "type": "stealth"
+      },
+      {
+        "age": 3.7,
+        "day": 130.0,
+        "type": "assault"
+      },
+      {
+        "age": 4.2,
+        "day": 148,
+        "type": "stealth"
+      },
+      {
+        "age": 5.4,
+        "day": 193,
+        "type": "cautious"
+      },
+      {
+        "age": 5.7,
+        "day": 204,
+        "type": "stealth"
+      },
+      {
+        "age": 6.2,
+        "day": 226,
+        "type": "assault"
+      },
+      {
+        "age": 6.7,
+        "day": 244,
+        "type": "stealth"
+      },
+      {
+        "age": 6.9,
+        "day": 257,
+        "type": "assault"
+      }
+    ],
+    "tundra_litters": 4.0,
+    "tundra_meetings": [
+      {
+        "age": 1.2,
+        "kind": "carcass",
+        "npc_damage": 0.0,
+        "outcome": "let_eat",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_central",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.2,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "approached",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.2,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "seen",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.4,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_caribou",
+        "pair": 2.0,
+        "region": "tundra_central",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.4,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_moose",
+        "pair": 2.0,
+        "region": "tundra_east",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.7,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_moose",
+        "pair": 2.0,
+        "region": "tundra_east",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 1.7,
+        "kind": "carcass",
+        "npc_damage": 0.0,
+        "outcome": "shared",
+        "pair": 2.0,
+        "region": "tundra_east",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_east",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "approached",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "seen",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "approached",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.2,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_moose",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.4,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.7,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_moose",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "bear_driven_off",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_caribou",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "carcass",
+        "npc_damage": 0.0,
+        "outcome": "shared",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "bear_driven_off",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "bear_driven_off",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_caribou",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_caribou",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "seen",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_moose",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "carcass",
+        "npc_damage": 0.0,
+        "outcome": "shared",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "approached",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.2,
+        "kind": "den",
+        "npc_damage": 0.0,
+        "outcome": "seen",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 3.9,
+        "kind": "hunt",
+        "npc_damage": 0.0,
+        "outcome": "joint_caribou",
+        "pair": 2.0,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.4,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 1,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 1,
+        "region": "tundra_north",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "approached",
+        "pair": 1,
+        "region": "tundra_north",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 1,
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      }
+    ],
+    "tundra_relation": 67,
+    "tundra_wolf_death": {
+      "age": 4.9,
+      "cause": "old_age",
+      "npc_age": 8.25
+    },
+    "tundra_wolf_mate_death": {
+      "age": 4.2,
+      "cause": "old_age",
+      "npc_age": 6.5
+    },
+    "tundra_young": {
+      "pups": 0,
+      "young": 0
+    },
+    "whiteouts": 1.0,
+    "wild_nights": 155,
+    "wolverine_meetings": [
+      {
+        "age": 1.4,
+        "context": "carcass",
+        "gen": 1.0,
+        "npc_damage": 0.0,
+        "outcome": "share",
+        "region": "tundra_central",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 2.9,
+        "context": "carcass",
+        "gen": 1.0,
+        "npc_damage": 0.0,
+        "outcome": "share",
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "context": "carcass",
+        "gen": 1,
+        "npc_damage": 0.0,
+        "outcome": "share",
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "context": "carcass",
+        "gen": 1,
+        "npc_damage": 0.0,
+        "outcome": "share",
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 4.7,
+        "context": "carcass",
+        "gen": 1,
+        "npc_damage": 0.0,
+        "outcome": "share",
+        "region": "tundra_south",
+        "wolf_damage": 0.0
+      }
+    ],
+    "year": {
+      "hare": 5,
+      "summer": "dry",
+      "winter": "severe"
+    },
+    "year_harsh": false,
+    "year_mild_last": true,
+    "year_no": 7,
+    "year_stats": {
+      "biggest": "elk",
+      "biggest_stage": "buck",
+      "flags": [],
+      "heavy_start": 12,
+      "kills": 2,
+      "snap": {
+        "health_max": 116.920969874247,
+        "perception": 77.9089486315921,
+        "skill": 97.3232159328002,
+        "speed": 79.6932295835128,
+        "strength": 98.4892988650668
+      }
+    },
+    "yearling_age": 1.17,
+    "years": [
+      {
+        "age": 0.9,
+        "biggest": "elk",
+        "biggest_stage": "adult",
+        "headline": "big_prey",
+        "heavy": 0.0,
+        "kills": 9.0,
+        "n": 1.0,
+        "summer": "normal",
+        "winter": "mild"
+      },
+      {
+        "age": 1.9,
+        "biggest": "bison",
+        "biggest_stage": "adult",
+        "headline": "near_death",
+        "heavy": 5.0,
+        "kills": 43.0,
+        "n": 2.0,
+        "summer": "dry",
+        "winter": "normal"
+      },
+      {
+        "age": 2.9,
+        "biggest": "moose",
+        "biggest_stage": "adult",
+        "headline": "den_moved",
+        "heavy": 2.0,
+        "kills": 45.0,
+        "n": 3.0,
+        "summer": "normal",
+        "winter": "normal"
+      },
+      {
+        "age": 3.9,
+        "biggest": "moose",
+        "biggest_stage": "adult",
+        "headline": "stranger_win",
+        "heavy": 2.0,
+        "kills": 45.0,
+        "n": 4.0,
+        "summer": "normal",
+        "winter": "mild"
+      },
+      {
+        "age": 4.9,
+        "biggest": "moose",
+        "biggest_stage": "adult",
+        "headline": "stranger_win",
+        "heavy": 3,
+        "kills": 43,
+        "n": 5,
+        "summer": "wet",
+        "winter": "severe"
+      },
+      {
+        "age": 5.9,
+        "biggest": "moose",
+        "biggest_stage": "adult",
+        "headline": "den_moved",
+        "heavy": 0,
+        "kills": 16,
+        "n": 6,
+        "summer": "dry",
+        "winter": "normal"
+      },
+      {
+        "age": 6.9,
+        "biggest": "elk",
+        "biggest_stage": "adult",
+        "headline": "hare_year",
+        "heavy": 0,
+        "kills": 20,
+        "n": 7,
+        "summer": "normal",
+        "winter": "mild"
+      }
+    ]
+  },
+  "metrics": {
+    "best_choice_ratio": 0.87,
+    "decisions_per_day": 4.6,
+    "events_per_day": 0.56,
+    "longest_quiet_days": 14,
+    "play_minutes": 117.9,
+    "quick_card_ratio": 0.6,
+    "stage_minutes": [
+      "adult 61.6",
+      "subadult 50.0",
+      "elder 6.3"
+    ]
+  },
+  "region": "forest_north",
+  "tendency": {
+    "effect": 0.03,
+    "share": 0.2,
+    "type": "assault"
+  },
+  "time": {
+    "day": 5,
+    "period": "predawn",
+    "season": "spring"
+  },
+  "wolf": {
+    "age_years": 6.9167,
+    "alive": true,
+    "death_cause": "",
+    "fed_streak": 0,
+    "flare_days": 0,
+    "flare_index": -1,
+    "health": 115.261769874247,
+    "health_max": 115.920969874247,
+    "health_value": 79.0,
+    "heavy_injury_count": 12,
+    "hunger": 90.0,
+    "injury": 1,
+    "injury_days_remaining": 2,
+    "injury_part": "",
+    "injury_source": "",
+    "injury_stat": "",
+    "old_injuries": [
+      {
+        "age": 2.9,
+        "part": "leg",
+        "part_key": "injury_part.leg.left",
+        "source": "black_bear.carcass",
+        "stat": "speed"
+      }
+    ],
+    "perception": 77.4089486315921,
+    "poison_days_remaining": 0,
+    "potential": {
+      "health_max": 120.0,
+      "perception": 80.5399375000002,
+      "skill": 97.4369046875001,
+      "speed": 83.1505264532444,
+      "strength": 100.0
+    },
+    "season_reserve": {
+      "health_max": 0.0,
+      "speed": 0.0,
+      "strength": 0.0
+    },
+    "skill": 97.3336354382184,
+    "speed": 78.6932295835128,
+    "stamina": 75.3,
+    "start_stats": {
+      "health_max": 80.0,
+      "perception": 40.0,
+      "skill": 40.0,
+      "speed": 40.0,
+      "strength": 40.0
+    },
+    "strength": 97.9892988650668,
+    "training": {}
+  }
+}
