@@ -80,6 +80,17 @@ func _play(h, pol: String) -> void:
 		_step(h, pol)
 
 func _step(h, pol: String) -> void:
+	# 咬住了：壓倒和咬喉挑機率高的；都做不到就鬆口
+	if h.held:
+		var opts: Dictionary = h.hold_options()
+		var pick := "release"
+		var bc := -1.0
+		for k in ["takedown", "throat"]:
+			if opts.has(k) and float(opts[k]["chance"]) > bc:
+				bc = float(opts[k]["chance"])
+				pick = k
+		h.hold_action(pick)
+		return
 	var targets: Dictionary = h.pounce_targets()
 	if not targets.is_empty():
 		# 挑命中率最高（聰明的策略也看被踢的風險）的那一格；聰明的策略在鹿還沒逃、機率不到 60% 時先不撲

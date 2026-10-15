@@ -18,25 +18,65 @@ var grid: Array = [] # grid[y] 是一列字元：. 開闊、f 密林、l 倒木
 var wind := Vector2i(-1, 0)
 var scenario_id: String = ""
 
-# 狼
-var wolf_pos := Vector2i.ZERO
-var wolf: Dictionary = {} # speed, skill, perception, stamina, health, health_max
-var breath: float = 0.0
-var breath_max: float = 0.0
-var breath_used: float = 0.0
-
-# 鹿
-var deer_pos := Vector2i.ZERO
-var deer_facing := Vector2i(1, 0)
-var deer_state: String = "unaware" # unaware / suspicious / flee / stand
-var alert: float = 0.0
-var flee_round: int = 0 # 逃跑了幾回合（下一次移動用 profile[flee_round]）
-var condition: String = "healthy"
-var condition_known: bool = false
+# 狼與鹿都是清單（之後的鹿群、狼群用；2026-10-15 使用者同意）。原型只有一隻狼、一隻鹿；
+# 下面的屬性是「目前這隻」（wolves[wi]、herd[di]）的捷徑，邏輯照舊寫 wolf_pos、deer_state…
+var wolves: Array = [] # {pos, stats{speed, strength, skill, perception, stamina, health, health_max}, breath, breath_max, breath_used}
+var herd: Array = [] # {pos, facing, state(unaware/suspicious/flee/stand), alert, flee_round, condition, condition_known, held, wounds, lost_turns, goal_index, last_cells}
+var wi: int = 0
+var di: int = 0
 var observed: int = 0 # 觀察過幾次（意圖範圍縮小）
-var lost_turns: int = 0
-var deer_goal_index: int = 0
-var deer_last_cells: Array = [] # 卡住檢查用
+var hold_side: String = "" # 咬住的位置（rear / side / front）
+var wolf_pos: Vector2i:
+	get: return wolves[wi]["pos"]
+	set(v): wolves[wi]["pos"] = v
+var wolf: Dictionary:
+	get: return wolves[wi]["stats"]
+	set(v): wolves[wi]["stats"] = v
+var breath: float:
+	get: return wolves[wi]["breath"]
+	set(v): wolves[wi]["breath"] = v
+var breath_max: float:
+	get: return wolves[wi]["breath_max"]
+	set(v): wolves[wi]["breath_max"] = v
+var breath_used: float:
+	get: return wolves[wi]["breath_used"]
+	set(v): wolves[wi]["breath_used"] = v
+var deer_pos: Vector2i:
+	get: return herd[di]["pos"]
+	set(v): herd[di]["pos"] = v
+var deer_facing: Vector2i:
+	get: return herd[di]["facing"]
+	set(v): herd[di]["facing"] = v
+var deer_state: String:
+	get: return herd[di]["state"]
+	set(v): herd[di]["state"] = v
+var alert: float:
+	get: return herd[di]["alert"]
+	set(v): herd[di]["alert"] = v
+var flee_round: int:
+	get: return herd[di]["flee_round"]
+	set(v): herd[di]["flee_round"] = v
+var condition: String:
+	get: return herd[di]["condition"]
+	set(v): herd[di]["condition"] = v
+var condition_known: bool:
+	get: return herd[di]["condition_known"]
+	set(v): herd[di]["condition_known"] = v
+var lost_turns: int:
+	get: return herd[di]["lost_turns"]
+	set(v): herd[di]["lost_turns"] = v
+var deer_goal_index: int:
+	get: return herd[di]["goal_index"]
+	set(v): herd[di]["goal_index"] = v
+var deer_last_cells: Array:
+	get: return herd[di]["last_cells"]
+	set(v): herd[di]["last_cells"] = v
+var held: bool:
+	get: return herd[di]["held"]
+	set(v): herd[di]["held"] = v
+var wounds: int:
+	get: return herd[di]["wounds"]
+	set(v): herd[di]["wounds"] = v
 
 # 結果
 var rounds: int = 0
@@ -62,26 +102,20 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	height = grid.size()
 	width = String(grid[0]).length()
 	wind = Vector2i(int(sc["wind"][0]), int(sc["wind"][1]))
-	wolf_pos = Vector2i(int(sc["wolf"][0]), int(sc["wolf"][1]))
-	deer_pos = Vector2i(int(sc["deer"][0]), int(sc["deer"][1]))
-	wolf = (t["wolves"][wolf_profile] as Dictionary).duplicate()
-	wolf["stamina"] = float(wolf["stamina"]) * stamina_mult
-	wolf["health_max"] = 100.0
-	wolf["health"] = 100.0
+	var stats: Dictionary = (t["wolves"][wolf_profile] as Dictionary).duplicate()
+	stats["stamina"] = float(stats["stamina"]) * stamina_mult
+	stats["health_max"] = 100.0
+	stats["health"] = 100.0
 	var b: Dictionary = t["breath"]
-	breath_max = clamp(float(b["base"]) + float(wolf["stamina"]) * float(b["per_stamina"]) + (float(wolf["speed"]) - 50.0) * float(b["per_speed"]),
+	var bmax: float = clamp(float(b["base"]) + float(stats["stamina"]) * float(b["per_stamina"]) + (float(stats["speed"]) - 50.0) * float(b["per_speed"]),
 		float(b["min"]), float(b["max"]))
-	breath = breath_max
-	breath_used = 0.0
-	deer_facing = DIRS[rng.randi_range(0, 7)]
-	deer_state = "unaware"
-	alert = 0.0
-	flee_round = 0
-	condition = str(_weighted(t["deer"]["condition_weights"]))
-	condition_known = false
+	wolves = [{"pos": Vector2i(int(sc["wolf"][0]), int(sc["wolf"][1])), "stats": stats, "breath": bmax, "breath_max": bmax, "breath_used": 0.0}]
+	herd = [{"pos": Vector2i(int(sc["deer"][0]), int(sc["deer"][1])), "facing": DIRS[rng.randi_range(0, 7)], "state": "unaware", "alert": 0.0,
+		"flee_round": 0, "condition": str(_weighted(t["deer"]["condition_weights"])), "condition_known": false, "held": false, "wounds": 0,
+		"lost_turns": 0, "goal_index": 0, "last_cells": []}]
+	wi = 0
+	di = 0
 	observed = 0
-	lost_turns = 0
-	deer_goal_index = 0
 	rounds = 0
 	done = false
 	result = ""
@@ -89,7 +123,6 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	detect_cause = ""
 	kicks = 0
 	events = []
-	deer_last_cells = []
 	stats = {"stuck": 0, "toward_wolf": 0}
 
 # --- 地形與距離 ---
@@ -154,6 +187,8 @@ func mode_for_cost(cost: float) -> String:
 # 畫面用：能到的格子與方式 {cell: "creep"|"trot"|"sprint"}
 func reachable() -> Dictionary:
 	var out := {}
+	if held:
+		return out
 	var costs := costs_from(wolf_pos, max_move(), deer_pos)
 	for c in costs.keys():
 		if c != wolf_pos:
@@ -200,7 +235,7 @@ func _spend(key: String) -> void:
 # 鹿還沒在逃時，用小跑或衝刺衝過去撲，牠會先驚覺（rush 扣命中）；潛行或原地撲沒有這個扣分。
 func pounce_targets() -> Dictionary:
 	var out := {}
-	if done:
+	if done or held:
 		return out
 	var need: float = -float(t["move"]["breath_pounce"])
 	var cells := {}
@@ -306,8 +341,12 @@ func pounce_at(cell: Vector2i) -> void:
 		kicks += 1
 		events.append(("牠的後腿踢中了你" if side == "rear" else "牠的蹄子踢中了你") + "（血量 −%d）。" % dmg)
 	if rng.randf() < float(info["chance"]):
+		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
+		held = true
+		hold_side = side
+		events.append({"rear": "你從後方咬住了牠的後腿！", "side": "你從側面咬住了牠！", "front": "你正面咬住了牠的脖子！"}[side])
 		rounds += 1
-		_finish("caught", {"rear": "你從後方撲倒了牠。", "side": "你從側面撲上去，咬住了牠。", "front": "你正面撲上去，壓倒了牠。"}[side])
+		_deer_turn()
 		return
 	events.append("撲空了！")
 	if deer_state != "flee":
@@ -317,6 +356,79 @@ func pounce_at(cell: Vector2i) -> void:
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
 		_finish("timeout", "拖太久了，牠走遠了。")
+
+# --- 咬住之後：壓倒（力量）、咬喉（技巧，成功就咬死）、鬆口 ---
+
+func hold_options() -> Dictionary:
+	if not held or done:
+		return {}
+	var h: Dictionary = t["hold"]
+	var fat: float = deer_fatigue_any()
+	var out := {}
+	var td: float = float(h["takedown_base"]) + (float(wolf["strength"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) \
+		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"])
+	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]),
+		"factors": [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]}
+	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) + wounds * float(h["per_wound"])
+	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]),
+		"factors": [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]}
+	for k in out.keys():
+		if breath < float(out[k]["breath"]):
+			out.erase(k)
+	out["release"] = {"chance": 1.0, "breath": 0.0, "factors": []}
+	return out
+
+# 牠掙脫的機率（每回合）：越累越低；咬喉失敗那一回合更容易掙脫
+func break_chance(after_throat_miss: bool = false) -> float:
+	var h: Dictionary = t["hold"]
+	return clamp(float(h["break_base"]) - deer_fatigue_any() * float(h["break_tired"]) + (float(h["throat_miss_break"]) if after_throat_miss else 0.0), 0.05, 0.95)
+
+# 疲勞：逃跑的回合數，或咬住時掙扎的消耗（沒在逃也算）
+func deer_fatigue_any() -> float:
+	return clamp(float(flee_round - 2) / 3.0 + float(herd[di].get("struggle", 0)) * 0.15, 0.0, 1.0)
+
+func hold_action(id: String) -> void:
+	var opts := hold_options()
+	if not opts.has(id):
+		return
+	var o: Dictionary = opts[id]
+	if id == "release":
+		_let_go("你鬆開了口，牠一跛一跛地跑開。")
+		rounds += 1
+		_deer_turn()
+		return
+	breath = max(0.0, breath - float(o["breath"]))
+	breath_used += float(o["breath"])
+	if rng.randf() < float(o["chance"]):
+		rounds += 1
+		_finish("caught", "你把牠壓倒在地，獵到了。" if id == "takedown" else "你咬住牠的咽喉，牠倒了下去。")
+		return
+	events.append("牠還在掙扎。" if id == "takedown" else "沒咬到要害，牠猛力一甩。")
+	rounds += 1
+	_deer_turn(id == "throat")
+	if not done and rounds >= int(t["max_rounds"]):
+		_finish("timeout", "拖太久了。")
+
+func _let_go(text: String) -> void:
+	held = false
+	wounds += 1
+	deer_state = "flee"
+	flee_round = maxi(flee_round, 1)
+	events.append(text)
+
+# 咬住時鹿的回合：掙扎（可能踢中你），可能掙脫、帶傷逃跑
+func _deer_struggle(after_throat_miss: bool) -> void:
+	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
+	var h: Dictionary = t["hold"]
+	if rng.randf() < float(h["kick"]):
+		var k: Array = t["pounce"]["kick_damage"]
+		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
+		wolf["health"] = float(wolf["health"]) - dmg
+		kicks += 1
+		events.append("掙扎中牠踢中了你（血量 −%d）。" % dmg)
+	if rng.randf() < break_chance(after_throat_miss):
+		_let_go("牠掙脫了，帶著傷逃跑！")
+		_deer_flee()
 
 # --- 回合結束：警覺值、鹿行動 ---
 
@@ -389,8 +501,12 @@ func _start_flee(cause: String) -> void:
 		detect_cause = cause
 	events.append({"scent": "風把你的氣味送了過去，牠猛地跳開！", "noise": "牠聽到動靜，拔腿就跑！", "close": "牠發現你了，拔腿就跑！", "missed": "牠受驚，拔腿就跑！"}.get(cause, "牠跑了！"))
 
-func _deer_turn() -> void:
+func _deer_turn(after_throat_miss: bool = false) -> void:
 	if done:
+		return
+	if held:
+		breath = max(0.0, breath - float(t["hold"]["hold_breath"])) # 咬著不放也很累
+		_deer_struggle(after_throat_miss)
 		return
 	match deer_state:
 		"unaware":
@@ -477,7 +593,8 @@ func deer_intent() -> Array:
 
 func _flee_budget() -> float:
 	var prof: Array = t["deer"]["flee_profile"][condition]
-	return float(prof[mini(flee_round, prof.size() - 1)])
+	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
+	return max(1.0, float(prof[mini(flee_round, prof.size() - 1)]) - wounds * float(t["hold"]["wound_slow"]))
 
 # 沿一個方向跑：撞到邊界就出場；遇到障礙轉 ±45° 繼續。回傳 {end, out, logs, blocked, moved}
 func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:

@@ -176,19 +176,22 @@
       "speed": 40,
       "skill": 45,
       "perception": 45,
-      "stamina": 80
+      "stamina": 80,
+      "strength": 45
     },
     "normal": {
       "speed": 60,
       "skill": 55,
       "perception": 55,
-      "stamina": 80
+      "stamina": 80,
+      "strength": 55
     },
     "fast": {
       "speed": 85,
       "skill": 60,
       "perception": 60,
-      "stamina": 80
+      "stamina": 80,
+      "strength": 60
     }
   },
   "scenarios": {
@@ -348,5 +351,22 @@
       ]
     }
   },
-  "_size_comment": "2026-10-15：22×12 時鹿 2 回合就跑出場地 → 32×16；使用者要普通的狼靠耐力追上約 50%，鹿要跑 5～6 回合才出得去 → 40×16（畫面一格 14 像素，560×224）。"
+  "_size_comment": "2026-10-15：22×12 時鹿 2 回合就跑出場地 → 32×16；使用者要普通的狼靠耐力追上約 50%，鹿要跑 5～6 回合才出得去 → 40×16（畫面一格 14 像素，560×224）。",
+  "hold": {
+    "_comment": "咬住之後（2026-10-15 使用者同意的兩步）：每回合選壓倒（看力量）、咬喉（看技巧，成功就咬死，失敗那一回合更容易被甩開）或鬆口；鹿每回合掙扎，可能踢中、可能掙脫帶傷逃跑（之後每道傷少 wound_slow 格）。數值是初始值。",
+    "takedown_base": 0.35,
+    "throat_base": 0.2,
+    "divisor": 150.0,
+    "tired": 0.3,
+    "rear": 0.1,
+    "per_wound": 0.05,
+    "takedown_breath": 8.0,
+    "throat_breath": 5.0,
+    "hold_breath": 3.0,
+    "break_base": 0.35,
+    "break_tired": 0.2,
+    "throat_miss_break": 0.2,
+    "kick": 0.1,
+    "wound_slow": 1.0
+  }
 }
