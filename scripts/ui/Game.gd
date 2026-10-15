@@ -119,7 +119,11 @@ func _ready() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	_build_ui()
-	restored_messages = GameState.life_log.get("recent_messages", []).duplicate()
+	# 任何畫面關掉時都接著處理排隊的事件（2026-10-15 試玩回報 16、17：進食結束、離開等 9 處只關畫面、
+	# 沒有 _refresh，字卡要等到下一個行動才出現）。_process_events 自己會檢查還有沒有畫面開著。
+	for overlay in [encounter_overlay, hunt_overlay, rest_overlay, region_info_overlay, card_overlay, debug_overlay]:
+		overlay.visibility_changed.connect(func(): if not overlay.visible: _process_events.call_deferred())
+	restored_messages =GameState.life_log.get("recent_messages", []).duplicate()
 	GameState.state_changed.connect(_refresh)
 	GameState.log_message.connect(_log)
 	GameState.wolf_died.connect(_on_wolf_died)
