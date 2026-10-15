@@ -2377,7 +2377,8 @@ func _write_playtest_log() -> String:
 		"time": {"season": GameTime.current_season(), "day": GameTime.day, "period": GameTime.current_period()}}, "  ")
 	file.store_string(text)
 	file.close()
-	if OS.has_feature("editor") and DisplayServer.get_name() != "headless" and not auto_playing:
+	# 照常過日子時死去也要複製一份（原本 auto_playing 一律略過，只留在 user://）
+	if OS.has_feature("editor") and DisplayServer.get_name() != "headless" and (not auto_playing or routine_running):
 		var project_dir := ProjectSettings.globalize_path("res://playtest_logs")
 		DirAccess.make_dir_recursive_absolute(project_dir)
 		var copy := FileAccess.open(project_dir.path_join(name), FileAccess.WRITE)
