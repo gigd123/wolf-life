@@ -1859,6 +1859,9 @@ func _discovery_text(d: Dictionary) -> String:
 		return tr("explore.clue.bugle").replace("{location}", location)
 	# 有寫新不新鮮時，氣味用「陳舊的野兔氣味」，避免「陳舊的野兔的氣味」
 	var clue_key: String = "explore.clue." + clue + ("_fresh" if clue == "scent" and fresh != "" else "")
+	# 成群：看到的是一小群（發現時決定，狩獵沿用，試玩回報 4）
+	if clue == "sight" and bool(d.get("herd", false)):
+		clue_key = "explore.clue.sight_herd"
 	var text: String = tr(clue_key).replace("{location}", location).replace("{animal}", animal) \
 		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + _sign_of(str(d["source"]), str(d.get("life_stage", "adult")))))
 	if not d.get("fresh_known", true):

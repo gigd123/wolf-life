@@ -201,7 +201,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var injured: bool = life_stage != "juvenile" and RNGService.chance(float(cfg.get("injured_chance", 0.08)))
 	var result := {"kind": "clue", "source_kind": "prey", "source": source, "clue": clue, "location": location,
 		"fresh": fresh, "fresh_known": fresh_known, "wind": wind, "prey_dir": prey_dir, "life_stage": life_stage,
-		"injured": injured, "mode": mode}
+		"injured": injured, "mode": mode, "herd": HuntSystem.roll_herd(source, life_stage, injured)}
 	if bugling and clue == "sound":
 		result["bugle"] = true
 	# 夏季剛出生的幼鹿躲在草裡、沒有氣味：找到的是母鹿留下的線索，要靠搜尋把牠找出來
@@ -217,6 +217,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 		if str(n.get("animal", "")) == source and RNGService.chance(float(n_cfg.get("again_chance", 0.35))):
 			result["life_stage"] = str(n.get("stage", "adult"))
 			result["injured"] = true
+			result["herd"] = false
 			result["notable_id"] = int(n.get("id", 0))
 			result["trait"] = str(n.get("trait", "lame"))
 			result["again"] = true

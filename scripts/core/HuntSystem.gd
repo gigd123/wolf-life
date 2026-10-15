@@ -859,16 +859,27 @@ func _pick_condition() -> String:
 
 # 成群（1.8 第 5 步）：herd 的動物一律成群；其他依季節的機率（herd_by_season × herd_stage_mult）。受傷、落單的幼體不算。
 func _roll_herd() -> void:
-	var data: Dictionary = GameData.animals.get(animal_id, {})
-	if injured:
-		return
+	in_herd = roll_herd(animal_id, life_stage, injured)
+
+# 擲成不成群。發現獵物時就擲（ExploreSystem），狩獵沿用發現時的結果，文字才會一致（2026-10-15 試玩回報 4）。
+static func roll_herd(p_animal_id: String, p_life_stage: String, p_injured: bool) -> bool:
+	var data: Dictionary = GameData.animals.get(p_animal_id, {})
+	if p_injured:
+		return false
 	if bool(data.get("herd", false)):
-		in_herd = true
-		return
-	if life_stage == "juvenile" or not data.has("herd_by_season"):
-		return
-	var chance: float = float(data["herd_by_season"].get(GameTime.current_season(), 0.0)) * float(data.get("herd_stage_mult", {}).get(life_stage, 1.0))
-	in_herd = RNGService.chance(chance)
+		return true
+	if p_life_stage == "juvenile" or not data.has("herd_by_season"):
+		return false
+	var chance: float = float(data["herd_by_season"].get(GameTime.current_season(), 0.0)) * float(data.get("herd_stage_mult", {}).get(p_life_stage, 1.0))
+	return RNGService.chance(chance)
+
+# 發現時已經決定成不成群：照那個結果（成群時先觀察鹿群；完整深度本來就從觀察開始）。
+func set_herd(value: bool) -> void:
+	in_herd = value
+	if value and stage == Stage.STALK:
+		stage = Stage.OBSERVE
+	elif not value and stage == Stage.OBSERVE and depth != "full":
+		stage = Stage.STALK
 
 # 避難處（Phase 2 第 2 步）：大角羊的岩壁、河狸的水。依地形與季節擲牠離避難處近不近。
 func _roll_refuge() -> void:

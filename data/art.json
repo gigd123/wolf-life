@@ -11,7 +11,7 @@
     "bighorn_sheep": { "display_scale": {"adult": 1.125, "juvenile": 0.955},
       "adult": { "sheet": "res://assets/art/sprites/animals/bighorn_ewe_sheet.png", "rows": { "idle": 0, "move": 1 },
         "poses": { "herd": "res://assets/art/sprites/animals/bighorn_herd.png" } },
-      "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 }, "poses": { "herd": "res://assets/art/sprites/animals/bighorn_ram_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bighorn_lamb_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
     "beaver": { "display_scale": {"adult": 0.711, "juvenile": 0.64},

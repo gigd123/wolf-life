@@ -128,7 +128,7 @@
     "size": "medium",
     "name_key": "animal.bighorn_sheep",
     "_comment": "大角羊（Phase 2 第 2 步）：岩壁峽谷，成群、視力好。refuge：活動多在離岩壁不遠處，一被追就往岩壁跑；開始狩獵時依地形擲牠離岩壁近不近（near_chance），近的話潛近較難、沒追上時多半就此逃上岩壁（escape），離得遠才有機會（far_bonus）。對狼是很少得手的獵物。",
-    "herd": true,
+    "herd_by_season": { "spring": 0.5, "summer": 0.8, "autumn": 0.85, "winter": 0.9 }, "herd_stage_mult": { "buck": 0.75 }, "_herd_comment": "2026-10-15 試玩回報 4、5：原本一律成群，改成依季節（母羊與小羊多半成群，春季產羔時母羊會暫時離群；公羊常組成小公羊群）",
     "herd_weak_bonus": 0.05,
     "period_activity": { "dawn": 1.3, "day": 1.2, "dusk": 1.3, "night": 0.3 },
     "depth": { "juvenile": "simple", "adult": "standard", "buck": "standard" },

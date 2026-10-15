@@ -1553,7 +1553,7 @@ func action_track() -> Dictionary:
 		return {"success": false, "reason_key": reason}
 	hunting_notable = int(d.get("notable_id", 0))
 	return {"success": true, "hunt": start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), true,
-		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)))}
+		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)), _discovery_herd(d))}
 
 # 直接目擊獵物：不用追蹤，直接進入狩獵（從潛近開始）。
 func action_hunt_sighted() -> HuntSystem:
@@ -1561,9 +1561,12 @@ func action_hunt_sighted() -> HuntSystem:
 	current_discovery = {}
 	hunting_notable = int(d.get("notable_id", 0))
 	var h := start_hunt(d["source"], d.get("life_stage", "adult"), int(d.get("prey_dir", -1)), false,
-		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)))
+		str(d.get("location", "")), bool(d.get("injured", false)), bool(d.get("hidden", false)), _discovery_herd(d))
 	h.ambush_bonus = float(d.get("ambush", 0.0))
 	return h
+
+func _discovery_herd(d: Dictionary) -> int:
+	return (1 if bool(d["herd"]) else 0) if d.has("herd") else -1
 
 # 採集探索到的採集物。
 func action_gather_discovered() -> String:
@@ -2098,8 +2101,9 @@ func action_sleep() -> Dictionary:
 # 開始狩獵：依狩獵深度消耗回合（簡易 1、標準 2、完整 3）。
 # from_tracking：經由追蹤找到獵物（追蹤的感知成長在 action_track 結算）。terrain：遭遇時的地形，空字串則隨機取區域的地形。
 # injured：受傷個體，一律走簡易流程。
+# herd：發現時決定的成不成群（-1 = 現在才擲，例如獵物靠近、苔原狼的狩獵）。
 func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_tracking: bool = false,
-		terrain: String = "", injured: bool = false, hidden: bool = false) -> HuntSystem:
+		terrain: String = "", injured: bool = false, hidden: bool = false, herd: int = -1) -> HuntSystem:
 	var depth: String = "simple" if injured else HuntSystem.depth_of(animal_id, life_stage)
 	_stat_inc("hunts_by_animal", animal_id) # 判斷準不準（Phase 1.7b）看同一種獵物狩獵過幾次
 	GameTime.advance_turns(HuntSystem.depth_turns(depth))
@@ -2117,6 +2121,8 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	if terrain == "":
 		terrain = _random_terrain(current_region)
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
+	if herd >= 0 and not injured:
+		hunt.set_herd(herd == 1)
 	# 夏季躲在草裡的幼鹿：一開始就要搜尋
 	if hidden and hunt.stage == HuntSystem.Stage.POUNCE:
 		hunt.hiding = true

@@ -399,6 +399,7 @@ explore.clue.track,{location}，你發現{fresh}{animal}足跡
 explore.clue.sound,{location}，你聽見{animal}的動靜
 explore.clue.sign,{location}，你發現{fresh}{sign}，是{animal}留下的
 explore.clue.sight,{location}，你看見一隻{animal}
+explore.clue.sight_herd,{location}，你看見一小群{animal}
 explore.gather,{location}，你發現了{item}
 explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
 explore.feature,{location}，你發現了{feature}
