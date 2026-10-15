@@ -1093,6 +1093,9 @@ log.slept_woken.normal,你在找到的地方睡下。
 log.slept_woken.rough,你勉強找了個地方睡下。
 encounter.woken,你睜開眼，一頭{animal}就在不遠處，正盯著你。
 encounter.woken_mother,你睜開眼，一頭帶著幼熊的母灰熊就在不遠處，牠護著身後的小熊，非常激動。
+encounter.woken_direct,你被一陣沉重的腳步聲驚醒，一頭{animal}已經朝你衝了過來。
+encounter.woken_direct_mother,你被一陣沉重的腳步聲驚醒，一頭帶著幼熊的母灰熊護著身後的小熊，已經朝你衝了過來。
+encounter.direct_hit,你來不及閃開，被牠撞倒在地（血量 −{n}）。
 fire.rain_warning,暴雨落了下來，風裡的焦味漸漸散了。這場火沒有燒起來。
 fire.rain_out,暴雨傾盆而下，大火在雨裡一點一點熄滅了。
 ui.too_tired_to_hunt,（太累了，追不動）

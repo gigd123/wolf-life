@@ -75,6 +75,8 @@ var current_hunt: HuntSystem = null
 # 戰鬥模式（1.6 第 3 步）：和狩獵共用同一個畫面（hunt_overlay）。
 var current_combat: Combat = null
 var combat_notes: Array[String] = []
+var combat_intro: String = "" # 戰鬥畫面第一次顯示時，開頭寫出怎麼打起來的（被驚醒、被撞倒）
+var level_up_pending: bool = false # 睡覺時長了能力：音效等睡醒卡片（或換季卡片）出現時才播（試玩回報 14）
 var combat_wolf_pose: String = "threaten"
 var combat_anim: CombatAnimator # 1.9 第 2 步：戰鬥回合的補間動畫
 var combat_anim_btn: Button # 動畫速度切換，固定在戰鬥畫面右上角（不占選項列的高度）
@@ -128,7 +130,7 @@ func _ready() -> void:
 	GameState.log_message.connect(_log)
 	GameState.wolf_died.connect(_on_wolf_died)
 	GameState.encounter_triggered.connect(_on_encounter_triggered)
-	GameState.growth_applied.connect(func(): if not GameState.auto_playing: Audio.play_level_up())
+	GameState.growth_applied.connect(func(): if not GameState.auto_playing: level_up_pending = true)
 	# 學到的知識等這次行動的訊息（例如探索的發現）寫完再補上，順序才是「看到 → 學到」（QA-39）
 	GameState.knowledge_learned.connect(func(entry):
 		_knowledge_buffer.append(tr("log.knowledge_learned") + _knowledge_text(entry))
@@ -2732,11 +2734,21 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		key = "encounter.direct_mother" if encounter.get("mother", false) else "encounter.direct"
 	if encounter.get("woken", false):
 		key = "encounter.woken_mother" if encounter.get("mother", false) else "encounter.woken"
-	_log(tr(key).replace("{animal}", _prey_name(animal_id, life_stage)))
+		# 被驚醒時牠已經衝過來：不能寫「正盯著你」（2026-10-15 試玩回報 14、15）
+		if encounter.get("direct", false):
+			key = "encounter.woken_direct_mother" if encounter.get("mother", false) else "encounter.woken_direct"
+	var intro: Array[String] = [tr(key).replace("{animal}", _prey_name(animal_id, life_stage))]
+	# 直接衝撞的傷害在進入戰鬥前就扣了，要寫出來（試玩回報 15）
+	if encounter.get("direct", false) and float(encounter.get("damage", 0.0)) > 0.0:
+		intro.append(tr("encounter.direct_hit").replace("{n}", str(int(round(float(encounter["damage"]))))))
+	for line in intro:
+		_log(line)
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
 		return
+	# 戰鬥畫面的開頭也寫出怎麼打起來的（紀錄欄之外，試玩回報 14）
+	combat_intro = "".join(intro)
 	_begin_combat(GameState.start_combat(animal_id, life_stage, "encounter", encounter),
 		"attack" if encounter.get("direct", false) else "idle")
 
@@ -3467,6 +3479,8 @@ func _render_combat() -> void:
 		lines.append(tr("combat.danger"))
 	if GameState.wolf.in_burst:
 		lines.append(tr("hunt.breath").replace("{n}", str(int(round(GameState.wolf.breath)))).replace("{max}", str(int(round(GameState.wolf.breath_max)))))
+	if combat_intro != "":
+		lines.insert(0, combat_intro)
 	hunt_message.text = "\n".join(lines)
 	for opt in c.options():
 		var id: String = opt["id"]
@@ -3491,6 +3505,7 @@ func _on_combat_choice(id: String) -> void:
 	if combat_anim.playing:
 		combat_anim.skip()
 		return
+	combat_intro = ""
 	for o in c.options():
 		if str(o.get("id", "")) == id:
 			_metric_choice(o, c.options())
@@ -3520,6 +3535,7 @@ func _on_combat_choice(id: String) -> void:
 func _finish_combat_ui() -> void:
 	var c := current_combat
 	current_combat = null
+	combat_intro = ""
 	var r := GameState.finish_combat(c)
 	hunt_overlay.visible = false
 	var name: String = _combat_name(c)
@@ -3662,6 +3678,7 @@ func _show_season_card(event: Dictionary) -> void:
 	if str(event.get("map", "forest")) != "forest":
 		bg = ArtLibrary.region_background(str(event.get("region", GameState.current_region)), season)
 	_show_card(tr("season_card.title").replace("{season}", tr("season." + season)), body, bg)
+	_play_pending_level_up() # 換季的那一覺沒有睡醒卡片，成長併在換季卡片
 
 # 第一次獨自擊退成年灰熊的卡片：當下的成長與提高的上限（SPEC「灰熊：血量與耐力」）。
 func _show_bear_first_win(event: Dictionary) -> void:
@@ -3915,6 +3932,13 @@ func _show_sleep_summary(summary: Dictionary) -> void:
 	if lines.is_empty():
 		return
 	_show_card(tr("sleep_summary.title"), "\n".join(lines))
+	_play_pending_level_up()
+
+# 能力提升的音效跟著卡片出現（被驚醒時卡片排在遭遇之後，音效不先播，試玩回報 14）
+func _play_pending_level_up() -> void:
+	if level_up_pending:
+		level_up_pending = false
+		Audio.play_level_up()
 
 # --- 除錯：模擬到死亡 ---
 
