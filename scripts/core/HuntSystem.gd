@@ -673,8 +673,9 @@ func prey_state_keys() -> Array:
 	if condition != "" and (condition_known or wolf.effective_perception() >= float(_tuning().get("condition", {}).get("see_perception", 50))):
 		condition_known = true
 		keys.append("prey_state.condition." + condition)
+	# 危險的描述依動物與年齡（母馬鹿沒有鹿角，2026-10-15 試玩回報 3）；沒有專屬句子時用通用的
 	if prey_counter_attack >= 20.0:
-		keys.append("prey_state.dangerous")
+		keys.append(_variant_key("prey_state.dangerous"))
 	# 感知夠高時看得出牠是哪一種跑法（1.7 第 4 步）
 	if not chase_style.is_empty() and wolf.effective_perception() >= float(_tuning().get("chase", {}).get("style_perception", 55)):
 		keys.append("prey_style." + str(chase_style.get("type", "")))
@@ -779,7 +780,12 @@ func _do_harass(opt: Dictionary) -> Dictionary:
 	if RNGService.chance(prey_counter_attack / 100.0):
 		damage = _hurt_wolf(int(cfg.get("counter_damage_min", 5)), int(cfg.get("counter_damage_max", 12)))
 		notes.append("hunt.counter.hit")
-	return {"success": false, "text_key": "hunt.harass.fail", "notes": notes, "damage": damage}
+	return {"success": false, "text_key": _variant_key("hunt.harass.fail"), "notes": notes, "damage": damage}
+
+# 依動物與年齡的專屬句子（例如有鹿角的才寫鹿角，試玩回報 3）；沒有時用通用的。
+func _variant_key(key: String) -> String:
+	var specific: String = "%s.%s.%s" % [key, animal_id, life_stage]
+	return specific if tr(specific) != specific else key
 
 # 直接攻擊站定的雄鹿：進入搏鬥，但成功率大降、反擊更凶。
 func _do_attack_standing() -> Dictionary:
