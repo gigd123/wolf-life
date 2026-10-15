@@ -2,11 +2,13 @@ extends SceneTree
 # 一生的生存壓力（2026-10-15 試玩紀錄分析第 1 項：後半生幾乎沒有壓力）：
 # 自動玩家（什麼都獵、平均打法）從各地圖的巢穴玩 RUNS 隻狼到死，每天結束時記飽食度，統計
 #   - 各生命階段每年的挨餓天數（飽食度 < HUNGRY，預設 30）、吃不飽天數（< 60）
-#   - 荒年（嚴冬、乾旱的夏天、雪兔低谷）與平常年的挨餓天數
+#   - 荒年（暖冬、夏末到秋天、雪兔低谷）與平常年的挨餓天數
 #   - 各階段的狩獵成功率、每年獵到的大／中／小型獵物
 #   - 死因與壽命
 # 通過標準（使用者 2026-10-15 同意的初始值）：成年每年挨餓 2～5 天、荒年 ≥ 10 天、老年每年 ≥ 5 天、
 # 餓死約 15～30%、平均壽命 9～11 歲。
+# 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
+# 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
 # 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）
 
 const STAGES := ["subadult", "adult", "elder"]
@@ -30,12 +32,22 @@ func _process(_d):
 	var year_days := {"lean": 0, "normal": 0}; var year_hungry := {"lean": 0, "normal": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
+	var duel_ages := [2.0, 3.0, 4.0]
+	var duel := {} # 年齡 -> [場數, 贏]
+	for a in duel_ages: duel[a] = [0, 0]
+	var duels := _env_int("DUELS", 30)
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
+		var dueled := {}
 		while not ap.done() and guard < 2000:
 			guard += 1
+			for a in duel_ages:
+				if not dueled.has(a) and GS.wolf.age_years >= a:
+					dueled[a] = true
+					var res: Array = _duel(GS, duels)
+					duel[a][0] += res[0]; duel[a][1] += res[1]
 			var stage: String = STAGES[GS.wolf.life_stage()]
 			var t0 := int(GS.life_log.get("hunt_attempts", 0)); var w0 := int(GS.life_log.get("hunt_successes", 0))
 			var prey0: Dictionary = GS.life_log.get("prey_count", {}).duplicate()
@@ -51,10 +63,8 @@ func _process(_d):
 				break
 			days[stage] += 1
 			var h: float = GS.wolf.hunger
-			var y: Dictionary = GS.year_state()
-			var season: String = GT.current_season()
-			var lean: bool = (season == "winter" and str(y.get("winter", "")) == "severe") \
-				or (season == "summer" and str(y.get("summer", "")) == "dry") or GS.hare_mult(false) <= 0.3
+			# 對狼的荒年：暖冬、夏末到秋天、雪兔低谷（GameState.lean_effects；嚴冬對狼有利，不算）
+			var lean: bool = not GS.lean_effects()["kinds"].is_empty()
 			var yk: String = "lean" if lean else "normal"
 			year_days[yk] += 1
 			if h < hungry_at:
@@ -85,5 +95,47 @@ func _process(_d):
 	for a in ages: total += a
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
 	print("  死因：", deaths)
+	for a in duel_ages:
+		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0]])
 	quit()
 	return true
+
+# 用這時候的狼和黑狼各複製一份單挑 n 場，回傳 [場數, 贏]。不動到正在玩的那隻狼與黑狼。
+func _duel(GS, n: int) -> Array:
+	var npc0 = GS.stranger()
+	if npc0 == null or not npc0.alive:
+		return [0, 0]
+	var CombatScript = load("res://scripts/core/Combat.gd")
+	var FR = load("res://scripts/core/FightRules.gd")
+	var WolfScript = load("res://scripts/core/Wolf.gd")
+	var NPC = load("res://scripts/core/NpcWolf.gd")
+	var keep = GS.wolf
+	var wd: Dictionary = keep.to_dict()
+	var nd: Dictionary = npc0.to_dict()
+	var won := 0
+	for i in n:
+		var w = WolfScript.from_dict(wd)
+		w.health = w.health_max
+		w.stamina = 100.0
+		w.injury = 0
+		GS.wolf = w
+		var npc = NPC.from_dict(nd)
+		npc.health = npc.health_max
+		var c = CombatScript.new(w, "stranger_wolf", "adult", "meet", false)
+		c.set_npc(npc)
+		var g := 0
+		while c.phase != 2 and g < 40:
+			g += 1
+			var ids: Array = c.options().map(func(o): return o["id"])
+			var pick: String = "bite"
+			if ids.has("let_go"):
+				pick = "let_go"
+			elif c.phase == 0:
+				pick = "attack"
+			elif FR.in_danger(w):
+				pick = "submit" if ids.has("submit") else "retreat"
+			c.choose(pick)
+		if c.outcome in ["drove_off", "killed"]:
+			won += 1
+	GS.wolf = keep
+	return [n, won]

@@ -345,7 +345,15 @@
     }
   },
   "_elder_comment": "老年（Phase 1.9b 第 2 步，提案之十二 C）。teeth：牙齒磨損，進入老年後每年咬合傷害 − per_year（最低 min），搏鬥時力量值也打 power_share 的折扣（獵倒大型獵物越來越難）。experience：老狼看得最準，大型獵物的體況一眼就看出來；季節卡片提早一季感覺到年況。challenger：年輕的挑戰者，進入老年後 first_days 天內出現，之後每 return_days 天回來一次（打贏後牠走，下次更強 + grow；讓了或輸了，下次來得更快 × yield_return_mult）；你在探索或吃東西時找上門（探索時 explore_chance）。lie_down：很老、很虛弱時（老年 min_elder_years 年以上，或血量上限低於 max_health_below）多一個選項「找一個安靜的地方躺下」。",
+  "_lean_comment": "對狼的荒年（2026-10-15 使用者同意方案三，GameState.lean_effects）：暖冬（冬季，獵物體況好）、夏末到秋天（每年；幼獸長大、成獸肥壯）、雪兔低谷（雪兔週期倍率 ≤ hare_low_at）。prey_mult：中大型獵物出現的倍率；nothing_mult：探索落空的倍率（最多 0.8）。嚴冬對狼有利，不算荒年。數值為初始值，依 tools/sim/life_pressure.gd 調整。",
+  "lean": {
+    "hare_low_at": 0.3,
+    "mild_winter": { "prey_mult": 0.7, "nothing_mult": 2.0 },
+    "late_summer": { "prey_mult": 0.8, "nothing_mult": 1.5 },
+    "hare_low": { "nothing_mult": 1.3 }
+  },
   "elder": {
+    "stamina_mult": 1.3,
     "teeth": { "per_year": 0.07, "min": 0.6, "power_share": 0.5 },
     "challenger": { "first_days": [5, 15], "return_days": [10, 16], "yield_return_mult": 0.6, "grow": 3, "explore_chance": 0.5 },
     "lie_down": { "min_elder_years": 3.0, "max_health_below": 70 }
@@ -387,7 +395,7 @@
     "summer": { "dry": 0.25, "normal": 0.5, "wet": 0.25 },
     "severe_max_streak": 2,
     "effects": {
-      "mild": { "snow": { "none": 1.8, "light": 1.0, "deep": 0.4, "crust": 0.6 }, "weak_mult": 0.8, "moose_tick_spring": 1.8, "cold_mult": 0.85 },
+      "mild": { "snow": { "none": 1.8, "light": 1.0, "deep": 0.4, "crust": 0.6 }, "weak_mult": 0.5, "moose_tick_spring": 1.8, "cold_mult": 0.85, "winter_kill_extra": -1 },
       "normal": {},
       "severe": { "snow": { "none": 0.5, "light": 1.0, "deep": 1.8, "crust": 1.4 }, "weak_mult": 1.5, "cold_mult": 1.2, "winter_kill_extra": 1 },
       "dry": { "fire": 1.8, "berries": 0.6, "storm": 0.7 },
@@ -454,7 +462,7 @@
       "subadult_young": { "body": 1.3, "mind": 0.5 },
       "subadult": { "body": 0.25, "mind": 0.6 },
       "adult": { "body": 0.7, "mind": 0.7 },
-      "elder": { "body": 0.0, "skill": 0.3, "perception": 0.0 }
+      "elder": { "body": 0.0, "skill": 0.0, "perception": 0.0 }
     },
     "approach_range": 12,
     "_potential_comment": "潛力結算（進入成年）：上限 = base_cap + 次成年期成長 × growth_mult，最高 max。base_cap 依 tools/sim/growth_sim.gd 的模擬決定（見 progress.md）。",

@@ -66,6 +66,8 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var nothing_max: float = float(cfg.get("nothing_chance_max", 0.15))
 	var nothing_chance: float = nothing_min + (nothing_max - nothing_min) * clamp(1.0 - ratio, 0.0, 1.0)
 	nothing_chance *= float(mc.get("nothing_mult", 1.0))
+	# 荒年：常常整片走過去什麼也沒有（GameState.lean_effects）
+	nothing_chance = min(0.8, nothing_chance * float(ctx.get("lean_nothing", 1.0)))
 	if spot_known:
 		nothing_chance *= float(mc.get("spot_nothing_mult", 1.0))
 	if not wind_good:

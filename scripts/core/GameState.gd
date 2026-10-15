@@ -1267,6 +1267,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"stranger_territory": stranger_territory,
 		"mode": mode,
 		"berries_mult": float(year_effects("summer").get("berries", 1.0)),
+		"lean_nothing": float(lean_effects().get("nothing_mult", 1.0)),
 		"marks": _nearby_marks(),
 		"notables": _notables_here(),
 	})
@@ -3211,6 +3212,27 @@ func hare_mult(with_season: bool = true) -> float:
 			m *= float(cfg.get("late_summer_mult", 1.4))
 	return m
 
+# 對狼的荒年（2026-10-15 使用者同意方案三）：暖冬（獵物體況好）、夏末到秋天（幼獸長大、成獸肥壯）、雪兔低谷。
+# 嚴冬對狼有利，不算。幾種同時成立時倍率相乘。回傳 {prey_mult：中大型獵物出現的倍率, nothing_mult：探索落空的倍率, kinds}
+func lean_effects() -> Dictionary:
+	var cfg: Dictionary = GameData.balance.get("lean", {})
+	var prey: float = 1.0
+	var nothing: float = 1.0
+	var kinds: Array = []
+	var season: String = GameTime.current_season()
+	var half: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10)) / 2
+	if season == "winter" and str(year_state().get("winter", "normal")) == "mild":
+		kinds.append("mild_winter")
+	if (season == "summer" and GameTime.day > half) or season == "autumn":
+		kinds.append("late_summer")
+	if hare_mult(false) <= float(cfg.get("hare_low_at", 0.3)):
+		kinds.append("hare_low")
+	for k in kinds:
+		var e: Dictionary = cfg.get(k, {})
+		prey *= float(e.get("prey_mult", 1.0))
+		nothing *= float(e.get("nothing_mult", 1.0))
+	return {"prey_mult": prey, "nothing_mult": nothing, "kinds": kinds}
+
 func prey_mults(region_id: String) -> Dictionary:
 	var result: Dictionary = region_depletion.get(region_id, {}).duplicate()
 	_migration_mults(region_id, result)
@@ -3220,6 +3242,12 @@ func prey_mults(region_id: String) -> Dictionary:
 		var camo: float = HuntSystem.camouflage(animal_id)
 		if camo != 0.0:
 			result[animal_id] = float(result.get(animal_id, 1.0)) * (1.0 - camo)
+	# 荒年（2026-10-15 後半生的生存壓力）：中、大型獵物變少
+	var lean_prey: float = float(lean_effects().get("prey_mult", 1.0))
+	if lean_prey != 1.0:
+		for animal_id in GameData.animals.keys():
+			if HuntSystem.size_of(animal_id) in ["medium", "large"]:
+				result[animal_id] = float(result.get(animal_id, 1.0)) * lean_prey
 	var after: Dictionary = _fire_cfg().get("after", {})
 	match burn_state(region_id):
 		"burning", "ash":
@@ -3966,7 +3994,7 @@ func _end_blizzard() -> void:
 	var wk: Dictionary = _blizzard_cfg().get("winter_kill", {})
 	var regions: Array = GameData.map_regions(_blizzard_map())
 	var today: int = int(life_log.get("days_lived", 1))
-	var kills: int = RNGService.randi_range(int(wk.get("count_min", 1)), int(wk.get("count_max", 3))) + int(year_effects("winter").get("winter_kill_extra", 0))
+	var kills: int = max(0, RNGService.randi_range(int(wk.get("count_min", 1)), int(wk.get("count_max", 3))) + int(year_effects("winter").get("winter_kill_extra", 0)))
 	for i in kills:
 		var region_id: String = str(regions[RNGService.randi_range(0, regions.size() - 1)])
 		var animal_id: String = str(RNGService.weighted_pick(wk.get("animals", {"caribou": 1})))
