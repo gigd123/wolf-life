@@ -11,6 +11,7 @@
 | `combat_sim` | 三種能力的狼（次成年、成年、巔峰）× 對手（灰熊搶食／遭遇、母熊、幼熊、狐狸、陌生灰狼壯年／護地盤／7 歲）× 打法（一直撲咬、猛撲、騷擾（只對灰熊）、先威嚇、瀕危也不退），統計勝、撤退、戰死、受傷、重傷與回合數 | 1.6 戰鬥模式、勝算基準、戰鬥中的死亡 |
 | `fire_sim` | 自動玩家玩到死，一生遇到大火的機率、每場燒過幾個區域、逃生結果與死因；不同狀態的狼在各種逃生方式下的結果分布 | 1.6 森林大火 |
 | `tundra_sim` | 自動玩家把巢穴安在苔原玩到死：壽命與死因、獵物、暴風雪（每年幾場、怎麼躲、凍傷）、狼獾交手、渡鴉、白矇天、河冰、苔原狼相遇與關係；暴風雪各選項的平安率分布；不同強度的狼單挑狼獾、苔原狼 | 1.6 苔原的事件與苔原狼（6d、6e） |
+| `sleep_bear` | 灰熊出沒的區域與季節（森林西部、夏季），巢穴、好睡處、普通睡處、勉強過夜各睡 N 晚，被驚醒與「灰熊路過」的比例 | 野外過夜、灰熊路過（2026-10-15 試玩回報 24） |
 | `growth_sim` | 七種玩法（平均、偏追獵、偏強攻、偏潛伏、偏謹慎、只吃小獵物、以鹿為主）各 RUNS 隻狼的次成年期成長與成年時的巔峰上限；`ADULT=1` 時再玩到 5 歲，看各年齡離上限多遠。機器人是 `scripts/core/AutoPlayer.gd` | 1.6 成長系統、潛力結算 |
 
 ## 執行
@@ -21,6 +22,7 @@ bash tools/run_sim.sh hunt_outcomes
 bash tools/run_sim.sh explore_distribution
 bash tools/run_sim.sh event_frequency
 bash tools/run_sim.sh growth_sim 0 20          # 每種玩法 20 隻
+bash tools/run_sim.sh sleep_bear 0 1000        # 每種睡處 1000 晚
 bash tools/run_sim.sh combat_sim 0 400         # 每格 400 場
 bash tools/run_sim.sh fire_sim 0 60            # 60 隻狼玩到死（較慢，約 3 分鐘）
 ADULT=1 bash tools/run_sim.sh growth_sim 0 8  # 再玩到 5 歲（較慢）
