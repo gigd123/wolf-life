@@ -585,7 +585,7 @@ combat.stake.carcass.grizzly_bear,牠想要你的獵物。
 combat.stake.carcass.red_fox,牠想從你的獵物上偷一口。
 combat.stake.encounter.grizzly_bear,你們冷不防撞見了彼此，牠壓低了頭。
 combat.stake.mother,牠身後有幼熊，牠會拚命。
-combat.remember,你記得：上次你還不是牠的對手。
+combat.remember,你記得：上次交手，你沒佔到上風。
 combat.remember_won,你記得：上次你贏了牠。
 combat.opp.strong,牠還很有力。
 combat.opp.hurt,牠身上帶著傷，動作慢了些。
@@ -646,7 +646,7 @@ factor.combat.determined,牠不肯退
 factor.combat.opening,閃開就有破綻
 factor.combat.outclassed,牠看得出打不過你
 factor.combat.tiring,消耗牠的體力
-knowledge.opponent,{animal}：現在的你還不是牠的對手
+knowledge.opponent,{animal}：上次交手，你沒佔到上風
 day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
 day_summary.old_injury_flare,{part}的舊傷又隱隱作痛。
 day_summary.old_injury_calm,{part}的舊傷平息了。
@@ -719,6 +719,10 @@ first_win.caps,能力的巔峰上限也提高了：
 stranger.killed_card,牠倒在{region}的落葉裡，再也沒有起來。那個從可怕氣味的主人爪下奪回一頭鹿的傳說，是真是假，已經沒有誰能說了。這一帶的狐狸不必再繞開牠的氣味；從今以後，{region}是你的範圍。
 combat.stake.meet.stranger_wolf,牠盯著你，尾巴高高舉起。
 combat.stake.territory.stranger_wolf,這裡是牠的地盤，牠會拚命守住。
+combat.stake.meet.challenger,牠壓低身子，一步也不退，像是在試你還剩多少力氣。
+combat.stake.territory.challenger,牠要的是你的地盤，打輸了這一帶就是牠的。
+combat.stake.carcass.challenger,牠盯著你的獵物，喉嚨裡低低地吼著。
+animal_unknown.challenger,一隻年輕的狼
 combat.option.let_go,放牠走
 combat.option.pursue,追擊
 combat.opp_submits,{animal}低下頭，夾起尾巴，向你示弱。
@@ -742,6 +746,9 @@ bio.stranger.drove_off,{age} 歲那年，你把那隻黑狼趕出了{region}
 bio.stranger.submit,{age} 歲那年，你在{region}和那隻黑狼對峙，最後低下了頭
 death_bio.combat.stranger_wolf.meet,拒絕向那隻黑狼低頭，死在牠的牙下
 death_bio.combat.stranger_wolf.territory,拒絕向那隻黑狼低頭，死在牠的牙下
+death_bio.combat.challenger.meet,老了也不肯讓路，死在那隻年輕的狼牙下
+death_bio.combat.challenger.territory,守著自己的地盤到最後，死在那隻年輕的狼牙下
+death_bio.combat.challenger.carcass,不肯把獵物讓給那隻年輕的狼，死在牠的牙下
 injury_source.stranger_wolf.meet,和那隻黑狼打鬥
 injury_source.stranger_wolf.territory,和那隻黑狼爭地盤
 debug.event.stranger_meet,黑狼直接互動
@@ -1062,13 +1069,13 @@ season_card.tundra.winter.blizzard,天色發黃、風突然停下的時候，要
 season_card.tundra.winter.wolverine,狼獾不冬眠。雪地上那串寬大的腳印，說明牠還在附近找吃的。
 factor.even,勢均力敵
 encounter.direct_mother,你撞見了一頭帶著幼熊的母灰熊，牠護著身後的小熊，直接朝你衝了過來。
-combat.remember.plural,你記得：上次你還不是牠們的對手。
+combat.remember.plural,你記得：上次交手，你沒能贏過牠們。
 combat.remember_won.plural,你記得：上次你贏了牠們。
 combat.remember.generic.much_stronger,你記得{animal}比你強大許多。
 combat.remember.generic.stronger,你記得{animal}比你強，上次你沒能贏過牠。
-combat.remember.generic.even,上次你沒能贏過{animal}，但現在的你們也許不相上下。
-combat.remember.generic.weaker,上次你沒能贏過{animal}，但現在的你已經比當時強壯。
-combat.remember.generic.much_weaker,上次你沒能贏過{animal}，現在的你已經遠比當時強壯。
+combat.remember.generic.even,上次你沒能贏過{animal}；現在看來，你們也許不相上下。
+combat.remember.generic.weaker,上次你沒能贏過{animal}；現在看來，你比牠強一些。
+combat.remember.generic.much_weaker,上次你沒能贏過{animal}；現在看來，你比牠強得多。
 tundra.compare.much_stronger,牠們比你強壯得多。
 tundra.compare.stronger,牠們比你強一些。
 tundra.compare.even,你和牠們不相上下。
@@ -1184,7 +1191,9 @@ routine.option.small,在附近獵小獵物 {n} 天
 routine.option.big,找大型獵物 {n} 天
 routine.option.heal,待在巢穴養傷 {n} 天
 routine.card_title,這幾天
-routine.summary,過了 {days} 天：獵到 {prey}；在巢穴睡了 {den} 晚，在野外 {wild} 晚。
+routine.summary,過了 {days} 天：{prey}；在巢穴睡了 {den} 晚，在野外 {wild} 晚。
+routine.summary.short,還不到一天：{prey}。
+routine.prey,獵到{list}
 routine.no_prey,什麼也沒獵到
 routine.stop.done,日子平平靜靜地過去了。
 routine.stop.healed,傷養好了。

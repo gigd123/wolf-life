@@ -2,6 +2,7 @@ extends Control
 
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
+const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
 const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den", "mark", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
 const LOG_VISIBLE_LINES := 4
@@ -446,8 +447,13 @@ func _set_wolf_pose(icon: AnimatedIcon, pose: String, animate: bool = true) -> v
 		icon.show_static(PixelArt.make_animal_sprite("gray_wolf"))
 
 func _set_terrain_bg(rect: TextureRect, terrain: String) -> void:
-	rect.texture = ArtLibrary.terrain_background(terrain, GameTime.current_season(),
-		GameState.burn_state(GameState.current_region) in ["burning", "ash"]) if terrain != "" else null
+	var burn: String = GameState.burn_state(GameState.current_region)
+	rect.texture = ArtLibrary.terrain_background(terrain, GameTime.current_season(), burn == "ash") if terrain != "" else null
+	# 正在燒：原本的地形加火光（燒完才是焦黑）
+	if burn == "burning":
+		rect.modulate = FIRE_TINT
+	elif rect.modulate == FIRE_TINT:
+		rect.modulate = Color.WHITE
 
 # 遭遇、狩獵、休息選單的底色：幾乎不透明，避免和底下的主畫面文字混在一起。
 func _build_encounter_overlay() -> void:
@@ -969,10 +975,11 @@ func _refresh() -> void:
 	rain.emitting = GameState.weather == "storm" and not GameState.blizzard_here()
 	snow.emitting = GameState.blizzard_here() or GameState.whiteout_here()
 	snow.amount = 400 if GameState.blizzard_here() else 160
-	# 燒過一片焦黑時換成燒毀的區域背景（art.json 的 region@burned）
-	var scorched: bool = GameState.burn_state(GameState.current_region) in ["burning", "ash"]
-	region_bg.texture = ArtLibrary.region_background(GameState.current_region, "burned" if scorched else GameTime.current_season())
-	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period())
+	# 燒完一片焦黑時換成燒毀的區域背景（art.json 的 region@burned）；正在燒時用原本的背景加火光，
+	# 不然還在燒的區域看起來像已經燒完（試玩 BUG-07、08）
+	var here_burn: String = GameState.burn_state(GameState.current_region)
+	region_bg.texture = ArtLibrary.region_background(GameState.current_region, "burned" if here_burn == "ash" else GameTime.current_season())
+	region_bg.modulate = ArtLibrary.period_tint(GameTime.current_period()) * (FIRE_TINT if here_burn == "burning" else Color.WHITE)
 	_process_events.call_deferred()
 	# 血量顯示「血量 72／90」，條的上限是血量上限（SPEC 1.6「血量上限成為能力值」）
 	stats_bars["health"].max_value = w.health_max
@@ -1739,8 +1746,12 @@ func _run_routine(days: int, style: String) -> void:
 	var parts: Array[String] = []
 	for k in res.get("prey", {}).keys():
 		parts.append("%s %d" % [tr("animal." + str(k)), int(res["prey"][k])])
-	var prey_text: String = "、".join(parts) if not parts.is_empty() else tr("routine.no_prey")
-	var body: String = tr("routine.summary").replace("{days}", str(int(res.get("days", 0)))).replace("{prey}", prey_text) \
+	var prey_text: String = tr("routine.prey").replace("{list}", "、".join(parts)) if not parts.is_empty() else tr("routine.no_prey")
+	# 還不到一天就停下時不寫「過了 0 天」（試玩 BUG-11）
+	# 換季那一晚不會算進天數（換季把日期歸 1），所以和睡了幾晚取大的
+	var days_passed: int = max(int(res.get("days", 0)), int(res.get("den_nights", 0)) + int(res.get("wild_nights", 0)))
+	var summary_key: String = "routine.summary" if days_passed > 0 else "routine.summary.short"
+	var body: String = tr(summary_key).replace("{days}", str(days_passed)).replace("{prey}", prey_text) \
 		.replace("{den}", str(int(res.get("den_nights", 0)))).replace("{wild}", str(int(res.get("wild_nights", 0))))
 	if str(res.get("moved_to", "")) != "":
 		body += tr("routine.moved").replace("{region}", tr("region." + str(res["moved_to"])))
@@ -2855,7 +2866,7 @@ func _show_fire_escape(event: Dictionary) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_wolf_pose(encounter_sprite, "walk")
-	encounter_bg.texture = ArtLibrary.region_background(region, "burned")
+	encounter_bg.texture = ArtLibrary.region_background(region, GameTime.current_season())
 	encounter_bg.modulate = Color(1.0, 0.55, 0.35)
 	_clear_children(encounter_buttons_box)
 	for opt in GameState.fire_escape_options():
@@ -3351,6 +3362,7 @@ func _show_challenger(d: Dictionary, carcass: bool) -> void:
 	encounter_message.text = text
 	encounter_detail.text = ""
 	_set_creature(encounter_sprite, "challenger", "adult", "idle")
+	GameState.identify("challenger", false) # 親眼看到了（試玩 BUG-02、03：受傷來源與知識原本寫成未知的名字）
 	_set_terrain_bg(encounter_bg, str(d.get("location", GameState.current_feeding.get("terrain", ""))))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("challenger.confront"), func():
@@ -4074,7 +4086,10 @@ func _remember_line(animal_id: String, life_stage: String) -> String:
 	var history: String = GameState.opponent_history(animal_id, life_stage)
 	if history == "":
 		return ""
-	var named: bool = animal_id in ["stranger_wolf", "tundra_wolf"]
+	var named: bool = animal_id in ["stranger_wolf", "tundra_wolf", "challenger"]
+	# 年輕的挑戰者每次來都更壯：用牠現在的實際能力比（試玩 BUG-04，原本用資料表的固定力量）
+	if history == "lost" and animal_id == "challenger" and GameState.challenger() != null:
+		return tr("combat.remember") + tr("stranger.compare." + str(GameState.npc_assessment(GameState.challenger())["compare"]))
 	if history == "lost" and not named:
 		var opp_power: float = float(FightRules.opponent_profile(animal_id, life_stage).get("power", 100))
 		return tr("combat.remember.generic." + GameState.power_compare(opp_power)).replace("{animal}", _prey_name(animal_id, life_stage))

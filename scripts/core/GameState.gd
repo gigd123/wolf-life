@@ -284,7 +284,10 @@ func _season_review(fed_ratio: float) -> Dictionary:
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
 
 func _queue_notice(event: Dictionary) -> void:
-	if auto_playing or wolf == null or not wolf.alive:
+	if wolf == null or not wolf.alive:
+		return
+	# 自動玩家（模擬到死亡）不排字卡；照常過日子時留下重要的字卡，結束後顯示（睡醒的摘要不留，照常過日子的卡片已經寫了成長）
+	if auto_playing and not (routine_running and AutoPlayer.ROUTINE_NOTICES.has(str(event.get("type", "")))):
 		return
 	pending_events.append(event)
 
@@ -432,7 +435,11 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 		var at_peak: bool = not wolf.potential.is_empty() and Growth.BODY_STATS.all(
 			func(stat): return Growth.cap_of(wolf, stat) - float(wolf.get(stat)) < float(cfg.get("peak_margin", 2.0)))
 		if wolf.life_stage() == Wolf.LifeStage.ELDER:
-			reason = str(none.get("elder", ""))
+			# 老了不再長：每季只說一次，不然每晚都同一句（試玩 BUG-12 截圖）
+			var season_key: String = "%d" % int(round(wolf.age_years * 4.0)) # 年齡以季為單位增加
+			if str(life_log.get("elder_none_season", "")) != season_key:
+				life_log["elder_none_season"] = season_key
+				reason = str(none.get("elder", ""))
 		elif float(settle.get("points", 0.0)) < float(cfg.get("idle_points", 4)):
 			reason = str(none.get("idle", ""))
 		elif at_peak:

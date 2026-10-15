@@ -11,7 +11,10 @@ extends RefCounted
 
 const MAX_YEARS := 15.0
 # 照常過日子時不必停下的小事件：照常處理（獵物靠近就獵、聽到狼嚎、下雨）
-const ROUTINE_IGNORE := ["prey_nearby", "howl", "storm", "storm_end", "after_rain"]
+const ROUTINE_IGNORE := ["prey_nearby", "howl", "storm", "storm_end", "after_rain", "rain_stopped"]
+# 照常過日子期間排進的字卡（GameState._queue_notice）：留到結束後顯示，不讓它們打斷（2026-10-15 試玩 BUG-12）
+const ROUTINE_NOTICES := ["season_card", "blizzard_over", "yearling", "elder_transition", "adult_transition", "year_review",
+	"tendency_changed", "first_big_kill", "fire_over", "stranger_killed"]
 const MAX_ACTIONS_PER_DAY := 80
 
 var prey: String
@@ -23,6 +26,7 @@ var routine: bool = false
 var routine_style: String = "small"
 var routine_end_day: int = 0
 var routine_start_injury: int = 0
+var routine_start_season: int = 0
 var stop_reason: String = ""
 var stop_encounter: Dictionary = {}
 var stop_scavenger: String = "" # 照常過日子進食時有東西來搶：停下交給玩家（2026-10-15 試玩回報 23）
@@ -91,6 +95,7 @@ func start_routine(days: int, style_policy: String) -> void:
 	style = "cautious"
 	routine_end_day = int(GameState.life_log.get("days_lived", 1)) + days
 	routine_start_injury = GameState.wolf.injury
+	routine_start_season = GameTime.season_index
 	_connect()
 
 # 照常過日子要不要停下：有遭遇或事件、受傷變重、餓或血量低、換季到期、天數到了。
@@ -99,7 +104,7 @@ func _routine_stop() -> bool:
 		stop_reason = "encounter"
 		stop_encounter = _encounter
 		_encounter = {}
-	elif GameState.pending_events.any(func(e): return not ROUTINE_IGNORE.has(str(e.get("type", "")))):
+	elif GameState.pending_events.any(func(e): return not ROUTINE_IGNORE.has(str(e.get("type", ""))) and not ROUTINE_NOTICES.has(str(e.get("type", "")))):
 		stop_reason = "event"
 	elif GameState.wolf.injury > routine_start_injury:
 		stop_reason = "injured"
@@ -109,7 +114,8 @@ func _routine_stop() -> bool:
 		stop_reason = "hungry"
 	elif GameState.wolf.health < GameState.wolf.health_max * 0.5 and routine_style != "heal":
 		stop_reason = "hurt"
-	elif GameTime.season_due():
+	elif GameTime.season_index != routine_start_season:
+		# 季節要睡覺才換：到期時照常過到睡覺換季，換了才停（原本到期就停，按幾次都是「過了 0 天」，試玩 BUG-10）
 		stop_reason = "season"
 	elif int(GameState.life_log.get("days_lived", 1)) >= routine_end_day:
 		stop_reason = "done"
@@ -160,10 +166,14 @@ func _handle_pending() -> void:
 			_meet_stranger()
 		else:
 			play_combat(GameState.start_combat(str(e.get("animal_id", "grizzly_bear")), str(e.get("life_stage", "adult")), "encounter", e))
+	var kept: Array = [] # 照常過日子時，字卡留著給玩家看
 	while not done():
 		var event := GameState.pop_event()
 		if event.is_empty():
 			break
+		if routine and ROUTINE_NOTICES.has(str(event.get("type", ""))):
+			kept.append(event)
+			continue
 		match event.get("type", ""):
 			"driven_off":
 				GameState.apply_drive_off()
@@ -203,6 +213,7 @@ func _handle_pending() -> void:
 					if str(res.get("event", "")) != "":
 						_scavenger(str(res["event"]))
 					_feed_loop()
+	GameState.pending_events.append_array(kept)
 
 func _explore_once() -> void:
 	var d: Dictionary = GameState.action_explore()
