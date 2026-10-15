@@ -1727,14 +1727,31 @@ func _run_routine(days: int, style: String) -> void:
 	var prey_text: String = "、".join(parts) if not parts.is_empty() else tr("routine.no_prey")
 	var body: String = tr("routine.summary").replace("{days}", str(int(res.get("days", 0)))).replace("{prey}", prey_text) \
 		.replace("{den}", str(int(res.get("den_nights", 0)))).replace("{wild}", str(int(res.get("wild_nights", 0))))
-	body += "\n\n" + tr("routine.stop." + str(res.get("reason", "done")))
-	_log(body.replace("\n\n", ""))
+	if str(res.get("moved_to", "")) != "":
+		body += tr("routine.moved").replace("{region}", tr("region." + str(res["moved_to"])))
+	# 成長：卡片用圖示與顏色，紀錄欄用純文字
+	var log_body: String = body
+	var growth: Dictionary = res.get("growth", {})
+	if not growth.is_empty():
+		var gparts: Array[String] = []
+		var plain: Array[String] = []
+		for stat in GameState.SLEEP_SUMMARY_STATS:
+			if growth.has(stat):
+				gparts.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " [color=%s]▲%.1f[/color]" % [UiTheme.html("stat_gain"), float(growth[stat])])
+				plain.append(tr("stat." + stat) + " ▲%.1f" % float(growth[stat]))
+		body += "\n" + tr("routine.growth") + "　".join(gparts)
+		log_body += tr("routine.growth") + "　".join(plain) + "。"
+	var stop_text: String = tr("routine.stop." + str(res.get("reason", "done")))
+	body += "\n\n" + stop_text
+	_log(log_body + stop_text)
 	if not res.get("alive", true):
 		_on_wolf_died(GameState.wolf.death_cause)
 		return
 	_show_card(tr("routine.card_title"), body)
 	if not (res.get("encounter", {}) as Dictionary).is_empty():
 		_on_encounter_triggered(res["encounter"])
+	elif str(res.get("scavenger", "")) != "" and GameState.is_feeding():
+		_show_scavenger(str(res["scavenger"]), false)
 	elif not GameState.current_discovery.is_empty():
 		_show_discovery(GameState.current_discovery)
 	_process_events()

@@ -1447,6 +1447,10 @@ func run_routine(days: int, style: String) -> Dictionary:
 	var before_days: int = int(life_log.get("days_lived", 1))
 	var before_den: int = int(life_log.get("stats", {}).get("nights", {}).get("den", 0))
 	var before_wild: int = int(life_log.get("wild_nights", 0))
+	var before_region: String = current_region
+	var before_stats: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		before_stats[stat] = float(wolf.get(stat))
 	_record_action("routine")
 	record_decision("routine." + style)
 	auto_playing = true
@@ -1466,8 +1470,15 @@ func run_routine(days: int, style: String) -> Dictionary:
 		var n: int = int(life_log["prey_count"][k]) - int(before_prey.get(k, 0))
 		if n > 0:
 			gained[k] = n
+	# 摘要寫出這幾天的成長與走到哪裡（試玩回報 21、22）
+	var growth: Dictionary = {}
+	for stat in SLEEP_SUMMARY_STATS:
+		var d: float = float(wolf.get(stat)) - float(before_stats[stat])
+		if d >= 0.05:
+			growth[stat] = d
 	state_changed.emit()
-	return {"reason": ap.stop_reason, "encounter": ap.stop_encounter, "days": int(life_log.get("days_lived", 1)) - before_days,
+	return {"reason": ap.stop_reason, "encounter": ap.stop_encounter, "scavenger": ap.stop_scavenger, "growth": growth,
+		"moved_to": current_region if current_region != before_region else "", "days": int(life_log.get("days_lived", 1)) - before_days,
 		"prey": gained, "den_nights": int(life_log.get("stats", {}).get("nights", {}).get("den", 0)) - before_den,
 		"wild_nights": int(life_log.get("wild_nights", 0)) - before_wild, "alive": wolf.alive}
 

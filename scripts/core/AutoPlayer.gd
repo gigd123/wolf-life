@@ -25,6 +25,7 @@ var routine_end_day: int = 0
 var routine_start_injury: int = 0
 var stop_reason: String = ""
 var stop_encounter: Dictionary = {}
+var stop_scavenger: String = "" # 照常過日子進食時有東西來搶：停下交給玩家（2026-10-15 試玩回報 23）
 var _finished: bool = false
 var _encounter: Dictionary = {}
 
@@ -343,6 +344,12 @@ func _feed_loop() -> void:
 	while GameState.is_feeding() and not done():
 		var fr: Dictionary = GameState.feed_once()
 		var ev: String = str(fr.get("event", ""))
+		# 照常過日子：搶食要不要守、怎麼守是玩家的決定，停下交給玩家（試玩回報 23）
+		if ev != "" and routine:
+			stop_reason = "scavenger"
+			stop_scavenger = ev
+			_finished = true
+			return
 		if ev != "":
 			_scavenger(ev)
 
@@ -386,6 +393,9 @@ func _pick_safest(opts: Array, key: String, apply: Callable) -> void:
 # 逃離大火或風雪後不在巢穴：一步一步走回去（巢穴正在燒就先不回去）。回傳有沒有移動。
 func _go_home() -> bool:
 	if GameState.current_region == GameState.den_region or GameState.burn_state(GameState.den_region) == "burning":
+		return false
+	# 照常過日子是在附近過日子：巢穴在別的地圖時不一路走回去（試玩回報 21；養傷例外，那個選項就是回巢休息）
+	if routine and routine_style != "heal" and GameData.map_of(GameState.den_region) != GameState.current_map():
 		return false
 	var step := GameState.next_step_toward(GameState.den_region)
 	if step == "":
