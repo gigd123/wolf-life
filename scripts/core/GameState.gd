@@ -307,7 +307,7 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 		elif _notice_condition(str(line.get("if", ""))):
 			lines.append({"key": str(line["text"]), "region": _sensed_region(str(line.get("animal", "")))})
 	# 年況的徵兆（1.8 第 11 步）：不直接說，從季節卡片察覺
-	var hint: String = ""
+	var hint: String = "normal"
 	# 老狼看得最準：秋天就感覺得到這個冬天（1.9b 第 2 步）
 	if wolf != null and wolf.life_stage() == Wolf.LifeStage.ELDER and season == "autumn" and str(year_state().get("winter", "normal")) != "normal":
 		lines.append({"key": "year.hint.elder.winter." + str(year_state()["winter"])})

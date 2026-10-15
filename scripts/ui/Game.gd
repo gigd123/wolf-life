@@ -1351,8 +1351,12 @@ func _circled(n: int) -> String:
 	const CIRCLED := "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
 	return CIRCLED[n - 1] if n >= 1 and n <= CIRCLED.length() else "(%d)" % n
 
+# 先隱藏再刪除：queue_free 到這一格結束才真的刪掉，期間仍算進容器的大小；
+# 隱藏的元件不算，避免狩獵畫面量高度時把舊按鈕算進去、誤拿掉角色圖（試玩回報 2）
 func _clear_children(node: Node) -> void:
 	for child in node.get_children():
+		if child is CanvasItem:
+			child.visible = false
 		child.queue_free()
 
 # --- Region movement ---
@@ -3567,6 +3571,11 @@ func _on_combat_choice(id: String) -> void:
 		_finish_combat_ui()
 	else:
 		_render_combat()
+	# 動畫播完才結算：_session_choice 在動畫開始時就檢查過遭遇結束，這裡要再檢查一次，
+	# 不然戰鬥結束後沒有結果畫面、結果也不會寫回主畫面（試玩回報 10）
+	if not session_check_pending:
+		session_check_pending = true
+		_check_session_end.call_deferred()
 
 func _finish_combat_ui() -> void:
 	var c := current_combat

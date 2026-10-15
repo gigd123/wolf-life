@@ -82,6 +82,11 @@ func _play(den: String) -> void:
 			await _wait(3)
 		var ctx := "%s step %d %s" % [den, step, _overlay_kind(game)]
 		var found := _scan(game, ctx)
+		# 狩獵畫面放得下卻拿掉了角色圖（試玩回報 2：舊按鈕還沒刪掉就被算進高度）
+		if game.hunt_overlay.visible and game.current_combat == null and not game.hunt_wolf_sprite.get_parent().get_parent().visible \
+				and game.hunt_message.get_parent().get_combined_minimum_size().y + 48.0 < game.get_viewport_rect().size.y - 6.0:
+			_issue("HUNT_SPRITE_HIDDEN", ctx)
+			found = true
 		var sig := _overlay_kind(game)
 		if found or (sig != last_sig and shots < 400 and rng.randf() < 0.35) or step % 40 == 0:
 			_shot("%s_%03d_%s" % [den, step, sig])
