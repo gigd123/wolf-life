@@ -34,7 +34,10 @@ func _process(_d):
 	var deaths := {}; var ages: Array = []
 	var duel_ages := [2.0, 3.0, 4.0]
 	var duel := {} # 年齡 -> [場數, 贏]
-	for a in duel_ages: duel[a] = [0, 0]
+	var stat_sum := {}
+	for a in duel_ages:
+		duel[a] = [0, 0]
+		stat_sum[a] = {}
 	var duels := _env_int("DUELS", 30)
 	for r in runs:
 		var ap = AP.new("all", "average")
@@ -48,6 +51,9 @@ func _process(_d):
 					dueled[a] = true
 					var res: Array = _duel(GS, duels)
 					duel[a][0] += res[0]; duel[a][1] += res[1]
+					for st in ["strength", "skill", "speed", "health_max"]:
+						stat_sum[a][st] = float(stat_sum[a].get(st, 0.0)) + float(GS.wolf.get(st))
+					stat_sum[a]["n"] = int(stat_sum[a].get("n", 0)) + 1
 			var stage: String = STAGES[GS.wolf.life_stage()]
 			var t0 := int(GS.life_log.get("hunt_attempts", 0)); var w0 := int(GS.life_log.get("hunt_successes", 0))
 			var prey0: Dictionary = GS.life_log.get("prey_count", {}).duplicate()
@@ -96,7 +102,9 @@ func _process(_d):
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
 	print("  死因：", deaths)
 	for a in duel_ages:
-		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0]])
+		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
+		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）；這時平均 力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0],
+			float(stat_sum[a].get("strength", 0)) / sn, float(stat_sum[a].get("skill", 0)) / sn, float(stat_sum[a].get("speed", 0)) / sn, float(stat_sum[a].get("health_max", 0)) / sn])
 	quit()
 	return true
 
