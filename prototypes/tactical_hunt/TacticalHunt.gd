@@ -1,0 +1,521 @@
+extends RefCounted
+
+# 戰術狩獵原型的邏輯（docs/proposals/tactical-hunt-prototype.md）。純邏輯、不碰 GameState，可以 headless 測試；
+# 畫面層與模擬都只呼叫這裡的公開函式。數值在 tuning.json。
+#
+# 一回合：狼行動（移動／觀察／撲咬／放棄）→ 鹿行動 → 更新。座標是格子（Vector2i），x 往右、y 往下。
+# 風向 wind 是風吹「往」的方向：狼在上風＝氣味從狼吹向鹿。
+
+const TUNING_PATH := "res://prototypes/tactical_hunt/tuning.json"
+const DIRS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+	Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
+
+var t: Dictionary = {}
+var rng := RandomNumberGenerator.new()
+var width: int
+var height: int
+var grid: Array = [] # grid[y] 是一列字元：. 開闊、f 密林、l 倒木
+var wind := Vector2i(-1, 0)
+var scenario_id: String = ""
+
+# 狼
+var wolf_pos := Vector2i.ZERO
+var wolf: Dictionary = {} # speed, skill, perception, stamina, health, health_max
+var breath: float = 0.0
+var breath_max: float = 0.0
+var breath_used: float = 0.0
+
+# 鹿
+var deer_pos := Vector2i.ZERO
+var deer_facing := Vector2i(1, 0)
+var deer_state: String = "unaware" # unaware / suspicious / flee / stand
+var alert: float = 0.0
+var flee_round: int = 0 # 逃跑了幾回合（下一次移動用 profile[flee_round]）
+var condition: String = "healthy"
+var condition_known: bool = false
+var observed: int = 0 # 觀察過幾次（意圖範圍縮小）
+var lost_turns: int = 0
+var deer_last_cells: Array = [] # 卡住檢查用
+
+# 結果
+var rounds: int = 0
+var done: bool = false
+var result: String = "" # caught / escaped / lost / gave_up / timeout
+var reason: String = ""
+var detect_cause: String = ""
+var kicks: int = 0
+var events: Array = [] # 發生的事（原型直接用中文）
+var stats := {"stuck": 0, "toward_wolf": 0}
+
+func _init() -> void:
+	t = JSON.parse_string(FileAccess.get_file_as_string(TUNING_PATH))
+
+# --- 開局 ---
+
+func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: float = 1.0) -> void:
+	rng.seed = seed
+	scenario_id = p_scenario
+	var sc: Dictionary = t["scenarios"][p_scenario]
+	var map_src: Dictionary = t["scenarios"][sc["map_from"]] if sc.has("map_from") else sc
+	grid = map_src["map"].duplicate()
+	height = grid.size()
+	width = String(grid[0]).length()
+	wind = Vector2i(int(sc["wind"][0]), int(sc["wind"][1]))
+	wolf_pos = Vector2i(int(sc["wolf"][0]), int(sc["wolf"][1]))
+	deer_pos = Vector2i(int(sc["deer"][0]), int(sc["deer"][1]))
+	wolf = (t["wolves"][wolf_profile] as Dictionary).duplicate()
+	wolf["stamina"] = float(wolf["stamina"]) * stamina_mult
+	wolf["health_max"] = 100.0
+	wolf["health"] = 100.0
+	var b: Dictionary = t["breath"]
+	breath_max = clamp(float(b["base"]) + float(wolf["stamina"]) * float(b["per_stamina"]) + (float(wolf["speed"]) - 50.0) * float(b["per_speed"]),
+		float(b["min"]), float(b["max"]))
+	breath = breath_max
+	breath_used = 0.0
+	deer_facing = DIRS[rng.randi_range(0, 7)]
+	deer_state = "unaware"
+	alert = 0.0
+	flee_round = 0
+	condition = str(_weighted(t["deer"]["condition_weights"]))
+	condition_known = false
+	observed = 0
+	lost_turns = 0
+	rounds = 0
+	done = false
+	result = ""
+	reason = ""
+	detect_cause = ""
+	kicks = 0
+	events = []
+	deer_last_cells = []
+	stats = {"stuck": 0, "toward_wolf": 0}
+
+# --- 地形與距離 ---
+
+func terrain(c: Vector2i) -> String:
+	return String(grid[c.y])[c.x]
+
+func in_bounds(c: Vector2i) -> bool:
+	return c.x >= 0 and c.y >= 0 and c.x < width and c.y < height
+
+func step_cost(from: Vector2i, to: Vector2i) -> float:
+	var d := to - from
+	var base: float = float(t["move"]["diag_cost"]) if d.x != 0 and d.y != 0 else 1.0
+	return base + float(t["move"]["terrain_extra"].get(terrain(to), 0.0))
+
+func dist(a: Vector2i, b: Vector2i) -> float:
+	return Vector2(a - b).length()
+
+# 從 start 出發、花費不超過 limit 能到的格子：{cell: cost}（不能走進鹿那一格）。
+func costs_from(start: Vector2i, limit: float, block: Vector2i = Vector2i(-99, -99)) -> Dictionary:
+	var best := {start: 0.0}
+	var open: Array = [start]
+	while not open.is_empty():
+		var cur: Vector2i = open.pop_front()
+		for d in DIRS:
+			var n: Vector2i = cur + d
+			if not in_bounds(n) or n == block:
+				continue
+			var c: float = float(best[cur]) + step_cost(cur, n)
+			if c <= limit + 0.001 and (not best.has(n) or c < float(best[n])):
+				best[n] = c
+				open.append(n)
+	return best
+
+# --- 狼的行動 ---
+
+func sprint_range() -> float:
+	for pair in t["move"]["sprint_by_speed"]:
+		if float(wolf["speed"]) < float(pair[0]):
+			return float(pair[1])
+	return 4.0
+
+func trot_range() -> float:
+	return float(t["move"]["trot_range_slow"]) if float(wolf["speed"]) < float(t["move"]["trot_slow_speed"]) else float(t["move"]["trot_range"])
+
+func max_move() -> float:
+	var m: Dictionary = t["move"]
+	if breath >= -float(m["breath_sprint"]):
+		return sprint_range()
+	if breath >= -float(m["breath_trot"]):
+		return trot_range()
+	return float(m["creep_range"])
+
+# 依花費決定方式：潛行（≤1）、小跑、衝刺。
+func mode_for_cost(cost: float) -> String:
+	if cost <= float(t["move"]["creep_range"]) + 0.001:
+		return "creep"
+	if cost <= trot_range() + 0.001:
+		return "trot"
+	return "sprint"
+
+# 畫面用：能到的格子與方式 {cell: "creep"|"trot"|"sprint"}
+func reachable() -> Dictionary:
+	var out := {}
+	var costs := costs_from(wolf_pos, max_move(), deer_pos)
+	for c in costs.keys():
+		if c != wolf_pos:
+			out[c] = mode_for_cost(float(costs[c]))
+	return out
+
+func move_to(cell: Vector2i) -> void:
+	if done:
+		return
+	var r := reachable()
+	if not r.has(cell):
+		return
+	var mode: String = r[cell]
+	wolf_pos = cell
+	_spend("breath_" + mode)
+	_end_wolf_turn(mode)
+
+func observe() -> void:
+	if done:
+		return
+	_spend("breath_observe")
+	condition_known = true
+	observed += 1
+	events.append("你停下來觀察。牠的體況：%s。" % {"healthy": "健康", "average": "普通", "weak": "虛弱"}[condition])
+	_end_wolf_turn("still")
+
+func give_up() -> void:
+	if done:
+		return
+	_finish("gave_up", "你放棄了。")
+
+func _spend(key: String) -> void:
+	var v: float = float(t["move"][key])
+	if v < 0.0:
+		breath_used += -v
+	breath = clamp(breath + v, 0.0, breath_max)
+
+func can_pounce() -> bool:
+	return not done and _cheb(wolf_pos, deer_pos) <= 1 and breath >= -float(t["move"]["breath_pounce"])
+
+func _cheb(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+# 狼在鹿的哪一側（依鹿面向的方向）：front / side / rear
+func angle_side() -> String:
+	var to_wolf := Vector2(wolf_pos - deer_pos).normalized()
+	var face := Vector2(deer_facing).normalized()
+	var c: float = to_wolf.dot(face)
+	if c > 0.5:
+		return "front"
+	if c < -0.5:
+		return "rear"
+	return "side"
+
+func deer_fatigue() -> float:
+	if deer_state != "flee":
+		return 0.0
+	return clamp(float(flee_round - 2) / 3.0, 0.0, 1.0)
+
+# 撲咬命中率與因素：{"chance", "factors": [[文字, 加減]]}
+func pounce_chance() -> Dictionary:
+	var p: Dictionary = t["pounce"]
+	var side := angle_side()
+	var factors: Array = []
+	var v: float = float(p["base"])
+	var a: float = float(p["angle"][side])
+	v += a
+	factors.append([{"rear": "從後方", "side": "從側面", "front": "從正面"}[side], a])
+	var tired: float = deer_fatigue() * float(p["tired_max"])
+	if tired > 0.0:
+		v += tired
+		factors.append(["牠累了", tired])
+	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - float(t["deer"]["speed"])) / float(p["ability_divisor"])
+	v += ab
+	factors.append(["你的速度與技巧", ab])
+	if terrain(deer_pos) == "l":
+		v += float(p["in_logs"])
+		factors.append(["牠在倒木裡", float(p["in_logs"])])
+	return {"chance": clamp(v, 0.05, 0.95), "factors": factors, "side": side, "kick": kick_chance()}
+
+func kick_chance() -> float:
+	var side := angle_side()
+	var k: Dictionary = t["pounce"]["kick"]
+	if side == "rear":
+		return float(k["rear"]) if deer_state == "flee" else 0.0
+	if side == "front":
+		return float(k["front"]) if deer_state != "flee" else 0.0
+	return float(k["side"])
+
+func pounce() -> void:
+	if not can_pounce():
+		return
+	var info := pounce_chance()
+	_spend("breath_pounce")
+	var side: String = info["side"]
+	if rng.randf() < float(info["kick"]):
+		var k: Array = t["pounce"]["kick_damage"]
+		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
+		wolf["health"] = float(wolf["health"]) - dmg
+		kicks += 1
+		events.append(("牠的後腿踢中了你" if side == "rear" else "牠的蹄子踢中了你") + "（血量 −%d）。" % dmg)
+	if rng.randf() < float(info["chance"]):
+		rounds += 1
+		_finish("caught", {"rear": "你從後方撲倒了牠。", "side": "你從側面撲上去，咬住了牠。", "front": "你正面撲上去，壓倒了牠。"}[side])
+		return
+	events.append("撲空了！")
+	if deer_state != "flee":
+		_start_flee("missed")
+	flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
+	rounds += 1
+	_deer_turn()
+	if not done and rounds >= int(t["max_rounds"]):
+		_finish("timeout", "拖太久了，牠走遠了。")
+
+# --- 回合結束：警覺值、鹿行動 ---
+
+func _end_wolf_turn(mode: String) -> void:
+	rounds += 1
+	if deer_state in ["unaware", "suspicious"]:
+		_raise_alert(mode)
+	_deer_turn()
+	if not done and rounds >= int(t["max_rounds"]):
+		_finish("timeout", "拖太久了，牠走遠了。")
+
+func wind_side() -> String:
+	var v := Vector2(deer_pos - wolf_pos)
+	if v.length() == 0.0:
+		return "crosswind"
+	var c: float = v.normalized().dot(Vector2(wind).normalized())
+	if c > 0.5:
+		return "upwind"
+	if c < -0.5:
+		return "downwind"
+	return "crosswind"
+
+func has_sight() -> bool:
+	# 兩格之間有密林就擋住視線（端點不算）
+	var a := Vector2(wolf_pos)
+	var b := Vector2(deer_pos)
+	var n: int = int(ceil(a.distance_to(b) * 2.0))
+	for i in range(1, n):
+		var p := a.lerp(b, float(i) / n)
+		var c := Vector2i(roundi(p.x), roundi(p.y))
+		if c != wolf_pos and c != deer_pos and terrain(c) == "f":
+			return false
+	return true
+
+func alert_gain(mode: String) -> Dictionary:
+	var al: Dictionary = t["alert"]
+	var d: float = dist(wolf_pos, deer_pos)
+	var base: float = 0.0
+	for pair in al["by_distance"]:
+		if d <= float(pair[0]):
+			base = float(pair[1])
+			break
+	var ws := wind_side()
+	var g: float = base * float(al["mode"][mode]) * float(al[ws])
+	if not has_sight():
+		g *= float(al["no_sight"])
+	g *= 1.0 - (float(wolf["skill"]) - 40.0) / float(al["skill_divisor"])
+	var scent: float = 0.0
+	if ws == "upwind" and d <= float(al["scent_range"]):
+		scent = float(al["scent_flat"])
+	return {"gain": g + scent, "scent": scent, "noise": g}
+
+func _raise_alert(mode: String) -> void:
+	var a := alert_gain(mode)
+	var gain: float = float(a["gain"])
+	if gain <= 0.0 and deer_state == "unaware" and dist(wolf_pos, deer_pos) > float(t["alert"]["relax_beyond"]):
+		alert = max(0.0, alert - float(t["alert"]["relax"]))
+		return
+	alert = min(100.0, alert + gain)
+	if alert >= float(t["deer"]["flee_at"]):
+		var cause: String = "scent" if float(a["scent"]) >= float(a["noise"]) else ("noise" if mode in ["trot", "sprint"] else "close")
+		_start_flee(cause)
+	elif alert >= float(t["deer"]["suspicious_at"]) and deer_state == "unaware":
+		deer_state = "suspicious"
+		events.append("牠抬起頭，朝你這邊張望。")
+
+func _start_flee(cause: String) -> void:
+	deer_state = "flee"
+	flee_round = 0
+	if detect_cause == "":
+		detect_cause = cause
+	events.append({"scent": "風把你的氣味送了過去，牠猛地跳開！", "noise": "牠聽到動靜，拔腿就跑！", "close": "牠發現你了，拔腿就跑！", "missed": "牠受驚，拔腿就跑！"}.get(cause, "牠跑了！"))
+
+func _deer_turn() -> void:
+	if done:
+		return
+	match deer_state:
+		"unaware":
+			_deer_wander()
+		"suspicious", "stand":
+			deer_facing = _dir_toward(deer_pos, wolf_pos)
+		"flee":
+			_deer_flee()
+	_check_lost()
+
+func _dir_toward(from: Vector2i, to: Vector2i) -> Vector2i:
+	var d := to - from
+	return Vector2i(signi(d.x), signi(d.y)) if d != Vector2i.ZERO else deer_facing
+
+func _deer_wander() -> void:
+	if rng.randf() < 0.5:
+		return
+	var options: Array = []
+	for d in DIRS:
+		var n: Vector2i = deer_pos + d
+		if in_bounds(n) and n != wolf_pos and n.x >= 2 and n.y >= 2 and n.x < width - 2 and n.y < height - 2 and terrain(n) != "l":
+			options.append(d)
+	if options.is_empty():
+		return
+	var d: Vector2i = options[rng.randi_range(0, options.size() - 1)]
+	deer_pos += d
+	deer_facing = d
+
+# 逃跑的方向打分：離狼越遠越好、往場地外（逃得掉）加分、經過倒木扣分；不往狼的方向。
+func flee_options() -> Array:
+	var away := Vector2(deer_pos - wolf_pos).normalized()
+	var scored: Array = []
+	var budget: float = _flee_budget()
+	for d in DIRS:
+		if Vector2(d).normalized().dot(away) < -0.2:
+			continue # 不往狼的方向跑
+		var sim := _run_line(deer_pos, d, budget)
+		var end: Vector2i = sim["end"]
+		var score: float = dist(end, wolf_pos) * 1.0 + Vector2(d).normalized().dot(away) * 3.0
+		if sim["out"]:
+			score += 8.0
+		score -= float(sim["logs"]) * 2.5
+		score -= float(sim["blocked"]) * 3.0
+		if float(sim["moved"]) <= 0.0:
+			score -= 20.0
+		scored.append({"dir": d, "score": score})
+	scored.sort_custom(func(a, b): return float(a["score"]) > float(b["score"]))
+	return scored
+
+# 意圖範圍：顯示幾個方向（感知越高越少，觀察過再少一個）
+func intent_count() -> int:
+	var n: int = 3
+	if float(wolf["perception"]) >= float(t["intent"]["perception_one"]):
+		n = 1
+	elif float(wolf["perception"]) >= float(t["intent"]["perception_two"]):
+		n = 2
+	return maxi(1, n - mini(observed, 1))
+
+func deer_intent() -> Array:
+	if deer_state != "flee":
+		return []
+	var opts := flee_options()
+	var out: Array = []
+	for i in mini(intent_count(), opts.size()):
+		out.append(opts[i]["dir"])
+	return out
+
+func _flee_budget() -> float:
+	var prof: Array = t["deer"]["flee_profile"][condition]
+	return float(prof[mini(flee_round, prof.size() - 1)])
+
+# 沿一個方向跑：撞到邊界就出場；遇到障礙轉 ±45° 繼續。回傳 {end, out, logs, blocked, moved}
+func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
+	var pos := start
+	var left := budget
+	var logs := 0
+	var blocked := 0
+	var moved := 0.0
+	var dir := d
+	var guard := 0
+	while left > 0.0 and guard < 20:
+		guard += 1
+		var n: Vector2i = pos + dir
+		if not in_bounds(n):
+			return {"end": n, "out": true, "logs": logs, "blocked": blocked, "moved": moved + 1.0}
+		if n == wolf_pos:
+			blocked += 1
+			break
+		var c := step_cost(pos, n)
+		if terrain(n) == "l":
+			logs += 1
+		if c > left and moved > 0.0:
+			break
+		left -= c
+		moved += c
+		pos = n
+	return {"end": pos, "out": false, "logs": logs, "blocked": blocked, "moved": moved}
+
+func _deer_flee() -> void:
+	var opts := flee_options()
+	if opts.is_empty() or float(opts[0]["score"]) < -10.0:
+		deer_state = "stand"
+		deer_facing = _dir_toward(deer_pos, wolf_pos)
+		events.append("牠被逼到角落，轉身站定。")
+		return
+	# 從最好的二到三個方向隨機選一個；在密林裡有機會急轉成第二好的
+	var weights: Array = t["deer"]["pick_weights"]
+	var n: int = mini(3, opts.size())
+	var pick: int = 0
+	var r := rng.randf() * (float(weights[0]) + (float(weights[1]) if n > 1 else 0.0) + (float(weights[2]) if n > 2 else 0.0))
+	for i in n:
+		r -= float(weights[i])
+		if r <= 0.0:
+			pick = i
+			break
+	if terrain(deer_pos) == "f" and n > 1 and rng.randf() < float(t["deer"]["forest_turn"]):
+		pick = 1
+	var d: Vector2i = opts[pick]["dir"]
+	var before := dist(deer_pos, wolf_pos)
+	var sim := _run_line(deer_pos, d, _flee_budget())
+	flee_round += 1
+	deer_facing = d
+	if sim["out"]:
+		_finish("escaped", _escape_reason())
+		return
+	deer_pos = sim["end"]
+	if dist(deer_pos, wolf_pos) < before - 0.01:
+		stats["toward_wolf"] += 1
+	deer_last_cells.append(deer_pos)
+	if deer_last_cells.size() > 4:
+		deer_last_cells.pop_front()
+	if deer_last_cells.size() == 4 and deer_last_cells[0] == deer_last_cells[2] and deer_last_cells[1] == deer_last_cells[3]:
+		stats["stuck"] += 1
+
+func _check_lost() -> void:
+	if done or deer_state != "flee":
+		lost_turns = 0
+		return
+	if terrain(deer_pos) == "f" and not has_sight():
+		lost_turns += 1
+		if lost_turns >= int(t["deer"]["lost_sight_turns"]):
+			_finish("lost", "牠鑽進密林，不見了。")
+	else:
+		lost_turns = 0
+
+func _escape_reason() -> String:
+	match detect_cause:
+		"scent":
+			return "牠從上風聞到你，早早就跑了。"
+		"missed":
+			return "撲空之後，牠跑掉了。"
+	if breath < -float(t["move"]["breath_sprint"]):
+		return "你喘不過氣，追不上了。"
+	return "開闊地上，你追不上牠。"
+
+func _finish(p_result: String, text: String) -> void:
+	done = true
+	result = p_result
+	reason = text
+	events.append(text)
+
+# --- 結算（接進主遊戲時用）---
+
+func game_turns() -> int:
+	return clampi(int(ceil(rounds / 5.0)), 1, 3)
+
+func stamina_cost() -> float:
+	return min(18.0, 2.0 + breath_used * 0.08)
+
+func _weighted(table: Dictionary) -> String:
+	var total := 0.0
+	for k in table:
+		total += float(table[k])
+	var r := rng.randf() * total
+	for k in table:
+		r -= float(table[k])
+		if r <= 0.0:
+			return k
+	return table.keys()[0]
