@@ -189,8 +189,36 @@ func _spend(key: String) -> void:
 		breath_used += -v
 	breath = clamp(breath + v, 0.0, breath_max)
 
+# 撲咬：移動到鹿旁邊的一格、同一回合撲上去（追上就撲）。回傳 {格子: 撲咬資訊}；已經相鄰時原地撲（mode "still"）。
+# 鹿還沒在逃時，用小跑或衝刺衝過去撲，牠會先驚覺（rush 扣命中）；潛行或原地撲沒有這個扣分。
+func pounce_targets() -> Dictionary:
+	var out := {}
+	if done:
+		return out
+	var need: float = -float(t["move"]["breath_pounce"])
+	var cells := {}
+	if _cheb(wolf_pos, deer_pos) <= 1:
+		cells[wolf_pos] = "still"
+	var reach := reachable()
+	for c in reach.keys():
+		if _cheb(c, deer_pos) <= 1:
+			var mode: String = reach[c]
+			var cost: float = max(0.0, -float(t["move"]["breath_" + mode]))
+			if breath >= cost + need:
+				cells[c] = mode
+	if breath < need:
+		return out
+	var keep := wolf_pos
+	for c in cells.keys():
+		wolf_pos = c
+		var info := pounce_chance(str(cells[c]))
+		info["mode"] = cells[c]
+		out[c] = info
+	wolf_pos = keep
+	return out
+
 func can_pounce() -> bool:
-	return not done and _cheb(wolf_pos, deer_pos) <= 1 and breath >= -float(t["move"]["breath_pounce"])
+	return not pounce_targets().is_empty()
 
 func _cheb(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y))
@@ -211,8 +239,8 @@ func deer_fatigue() -> float:
 		return 0.0
 	return clamp(float(flee_round - 2) / 3.0, 0.0, 1.0)
 
-# 撲咬命中率與因素：{"chance", "factors": [[文字, 加減]]}
-func pounce_chance() -> Dictionary:
+# 撲咬命中率與因素（狼在 wolf_pos）：{"chance", "factors": [[文字, 加減]], "side", "kick"}
+func pounce_chance(mode: String = "still") -> Dictionary:
 	var p: Dictionary = t["pounce"]
 	var side := angle_side()
 	var factors: Array = []
@@ -230,6 +258,16 @@ func pounce_chance() -> Dictionary:
 	if terrain(deer_pos) == "l":
 		v += float(p["in_logs"])
 		factors.append(["牠在倒木裡", float(p["in_logs"])])
+	# 牠還沒發現你（沒察覺）就撲到：最好的機會
+	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
+		v += float(p["unaware"])
+		factors.append(["牠還沒發現你", float(p["unaware"])])
+	# 鹿還沒逃、你用小跑或衝刺衝過去：這一步的動靜會讓牠警覺；會讓牠跳開的話命中大降
+	if deer_state != "flee" and mode in ["trot", "sprint"]:
+		var bolt: bool = alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])
+		var r: float = float(p["rush_bolt"]) if bolt else float(p["rush"])
+		v -= r
+		factors.append(["衝過去，牠先跳開" if bolt else "衝過去，牠先驚覺", -r])
 	return {"chance": clamp(v, 0.05, 0.95), "factors": factors, "side": side, "kick": kick_chance()}
 
 func kick_chance() -> float:
@@ -242,9 +280,16 @@ func kick_chance() -> float:
 	return float(k["side"])
 
 func pounce() -> void:
-	if not can_pounce():
+	pounce_at(wolf_pos)
+
+func pounce_at(cell: Vector2i) -> void:
+	var targets := pounce_targets()
+	if not targets.has(cell):
 		return
-	var info := pounce_chance()
+	var info: Dictionary = targets[cell]
+	if str(info["mode"]) != "still":
+		wolf_pos = cell
+		_spend("breath_" + str(info["mode"]))
 	_spend("breath_pounce")
 	var side: String = info["side"]
 	if rng.randf() < float(info["kick"]):
@@ -299,23 +344,22 @@ func has_sight() -> bool:
 			return false
 	return true
 
+# 警覺值的增加 = 看見（距離 × 移動方式，密林擋住打折，技巧越高越不顯眼）＋ 聞到（只看風向與距離）。
 func alert_gain(mode: String) -> Dictionary:
 	var al: Dictionary = t["alert"]
 	var d: float = dist(wolf_pos, deer_pos)
-	var base: float = 0.0
-	for pair in al["by_distance"]:
-		if d <= float(pair[0]):
-			base = float(pair[1])
-			break
-	var ws := wind_side()
-	var g: float = base * float(al["mode"][mode]) * float(al[ws])
+	var sight: float = _band(al["sight_by_distance"], d) * float(al["mode"][mode])
 	if not has_sight():
-		g *= float(al["no_sight"])
-	g *= 1.0 - (float(wolf["skill"]) - 40.0) / float(al["skill_divisor"])
-	var scent: float = 0.0
-	if ws == "upwind" and d <= float(al["scent_range"]):
-		scent = float(al["scent_flat"])
-	return {"gain": g + scent, "scent": scent, "noise": g}
+		sight *= float(al["no_sight"])
+	sight *= 1.0 - (float(wolf["skill"]) - 40.0) / float(al["skill_divisor"])
+	var scent: float = _band(al["scent"].get(wind_side(), []), d)
+	return {"gain": sight + scent, "scent": scent, "noise": sight}
+
+func _band(table: Array, d: float) -> float:
+	for pair in table:
+		if d <= float(pair[0]):
+			return float(pair[1])
+	return 0.0
 
 func _raise_alert(mode: String) -> void:
 	var a := alert_gain(mode)

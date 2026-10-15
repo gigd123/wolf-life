@@ -12,8 +12,7 @@ func _process(_d) -> bool:
 	f += 1
 	if f != 3:
 		return f > 10
-	var args := OS.get_cmdline_user_args()
-	var runs: int = int(args[1]) if args.size() > 1 and int(args[1]) > 0 else 300
+	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 150
 	var h = TH.new()
 	print("== 戰術狩獵模擬（每格 %d 場）" % runs)
 	var totals := {"stuck": 0, "toward": 0, "games": 0}
@@ -57,6 +56,7 @@ func _speed_tiers(h, runs: int) -> void:
 			h.wolf_pos = h.deer_pos - Vector2i(5, 0)
 			h.deer_facing = Vector2i(1, 0)
 			h._start_flee("close")
+			h._deer_turn() # 察覺的那一回合鹿先跑（和實際流程一樣）
 			var start: int = h.rounds
 			_play(h, "chase")
 			if h.result == "caught":
@@ -76,11 +76,19 @@ func _play(h, pol: String) -> void:
 		_step(h, pol)
 
 func _step(h, pol: String) -> void:
-	if h.can_pounce():
-		var info: Dictionary = h.pounce_chance()
-		# 聰明的策略：鹿還沒逃、角度不好時先繞到側後方；笨策略一相鄰就撲
-		if pol in ["dumb_pounce", "dumb_sprint", "chase"] or h.deer_state == "flee" or info["side"] != "front" or float(info["chance"]) >= 0.6:
-			h.pounce()
+	var targets: Dictionary = h.pounce_targets()
+	if not targets.is_empty():
+		# 挑命中率最高（聰明的策略也看被踢的風險）的那一格；聰明的策略在鹿還沒逃、機率不到 60% 時先不撲
+		var best := Vector2i(-1, -1)
+		var bs := -1.0
+		for c in targets.keys():
+			var info: Dictionary = targets[c]
+			var sc: float = float(info["chance"]) - (0.0 if pol.begins_with("dumb") else float(info["kick"]) * 0.5)
+			if sc > bs:
+				bs = sc
+				best = c
+		if pol.begins_with("dumb") or pol == "chase" or h.deer_state == "flee" or float(targets[best]["chance"]) >= 0.6:
+			h.pounce_at(best)
 			return
 	var reach: Dictionary = h.reachable()
 	if reach.is_empty():
@@ -123,16 +131,22 @@ func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind: bool 
 			continue
 		var s: float = h.dist(c, target)
 		if avoid_wind:
-			var v := Vector2(h.deer_pos - c).normalized()
-			if v.dot(Vector2(h.wind).normalized()) > 0.5:
-				s += 4.0
+			s += _wind_penalty(h, c)
 		if s < best_score:
 			best_score = s
 			best = c
-	if best == Vector2i(-1, -1) or best_score >= h.dist(h.wolf_pos, target) - 0.01:
+	var here: float = h.dist(h.wolf_pos, target) + (_wind_penalty(h, h.wolf_pos) if avoid_wind else 0.0)
+	if best == Vector2i(-1, -1) or best_score >= here - 0.01:
 		h.observe()
 	else:
 		h.move_to(best)
+
+# 站在上風（氣味吹向鹿）而且在聞得到的距離內：很不利
+func _wind_penalty(h, c: Vector2i) -> float:
+	var v := Vector2(h.deer_pos - c)
+	if v.length() > 9.0:
+		return 0.0
+	return 12.0 if v.normalized().dot(Vector2(h.wind).normalized()) > 0.5 else 0.0
 
 # 鹿接下來大概在哪：意圖的第一個方向 × 下一回合的格數
 func _predict(h) -> Vector2i:

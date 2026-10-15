@@ -7,8 +7,7 @@ func _process(_d) -> bool:
 	f += 1
 	if f != 3:
 		return f > 10
-	var args := OS.get_cmdline_user_args()
-	var runs: int = int(args[1]) if args.size() > 1 else 1000
+	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 1000
 	var gs = root.get_node("GameState")
 	var gt = root.get_node("GameTime")
 	print("== 睡覺遇灰熊（每種睡處 %d 晚；巢穴在 forest_south（灰熊權重 2），其他睡處在 forest_west（權重 7）；夏季、成年狼、沒有傾向）" % runs)
