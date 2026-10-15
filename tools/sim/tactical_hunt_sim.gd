@@ -47,7 +47,11 @@ func _process(_d) -> bool:
 
 # 測試 10：距離 5 格時被察覺，猛追，幾回合追上
 func _speed_tiers(h, runs: int) -> void:
-	print("\n-- 速度分級：距離 5 格被察覺後猛追（開闊地）")
+	for pol in ["chase", "pace"]:
+		_speed_tier_rows(h, runs, pol)
+
+func _speed_tier_rows(h, runs: int, pol: String) -> void:
+	print("\n-- 速度分級：距離 5 格被察覺後%s（開闊地）" % ("猛追（一開始就衝刺）" if pol == "chase" else "耐力追（先小跑跟著，鹿慢下來再衝）"))
 	for profile in ["slow", "normal", "fast"]:
 		var caught := 0
 		var by_round := {}
@@ -58,7 +62,7 @@ func _speed_tiers(h, runs: int) -> void:
 			h._start_flee("close")
 			h._deer_turn() # 察覺的那一回合鹿先跑（和實際流程一樣）
 			var start: int = h.rounds
-			_play(h, "chase")
+			_play(h, pol)
 			if h.result == "caught":
 				caught += 1
 				var r: int = h.rounds - start
@@ -102,6 +106,10 @@ func _step(h, pol: String) -> void:
 			_go(h, reach, h.deer_pos, ["trot", "creep"])
 		"chase":
 			_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"] if fleeing else ["trot", "creep"])
+		"pace":
+			# 耐力追：鹿跑了 3 回合以上（開始慢下來）才衝刺，之前小跑跟著
+			var late: bool = fleeing and int(h.flee_round) >= 3
+			_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"] if late else ["trot", "creep"])
 		"stalk":
 			if fleeing:
 				_go(h, reach, _predict(h), ["sprint", "trot", "creep"])
@@ -160,15 +168,17 @@ func _predict(h) -> Vector2i:
 func _behind(h) -> Vector2i:
 	return h.deer_pos - h.deer_facing
 
+# 伏擊點：鹿的目的地附近、離目的地最近的掩蔽（密林、倒木）
 func _cover_near(h) -> Vector2i:
+	var goal: Vector2i = h.deer_goal()
 	var best := Vector2i(-1, -1)
 	var bd := INF
 	for y in h.height:
 		for x in h.width:
 			var c := Vector2i(x, y)
 			if h.terrain(c) in ["f", "l"] and c != h.deer_pos:
-				var d: float = h.dist(c, h.deer_pos)
-				if d < bd and d >= 1.0:
+				var d: float = h.dist(c, goal)
+				if d < bd:
 					bd = d
 					best = c
 	return best if bd <= 5.0 else Vector2i(-1, -1)

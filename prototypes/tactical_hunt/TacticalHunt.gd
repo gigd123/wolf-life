@@ -35,6 +35,7 @@ var condition: String = "healthy"
 var condition_known: bool = false
 var observed: int = 0 # 觀察過幾次（意圖範圍縮小）
 var lost_turns: int = 0
+var deer_goal_index: int = 0
 var deer_last_cells: Array = [] # 卡住檢查用
 
 # 結果
@@ -80,6 +81,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	condition_known = false
 	observed = 0
 	lost_turns = 0
+	deer_goal_index = 0
 	rounds = 0
 	done = false
 	result = ""
@@ -156,6 +158,11 @@ func reachable() -> Dictionary:
 	for c in costs.keys():
 		if c != wolf_pos:
 			out[c] = mode_for_cost(float(costs[c]))
+	# 潛行一定能走一格（密林、倒木裡也能慢慢潛行；原本密林一格花 2，潛行走不動）
+	for d in DIRS:
+		var n: Vector2i = wolf_pos + d
+		if in_bounds(n) and n != deer_pos:
+			out[n] = "creep" # 相鄰的一格永遠算潛行
 	return out
 
 func move_to(cell: Vector2i) -> void:
@@ -398,19 +405,36 @@ func _dir_toward(from: Vector2i, to: Vector2i) -> Vector2i:
 	var d := to - from
 	return Vector2i(signi(d.x), signi(d.y)) if d != Vector2i.ZERO else deer_facing
 
+# 沒察覺時：邊吃草邊往目的地（水邊、林緣…）慢慢走，走到了換下一個。有固定的去向，伏擊才有意義（2026-10-15 使用者同意）。
 func _deer_wander() -> void:
-	if rng.randf() < 0.5:
+	if rng.randf() < float(t["deer"]["graze_idle"]):
 		return
-	var options: Array = []
+	var goal: Vector2i = deer_goal()
+	if goal == deer_pos or (deer_goal_index >= 0 and dist(deer_pos, goal) <= 1.0):
+		deer_goal_index += 1
+		goal = deer_goal()
+	var best := Vector2i.ZERO
+	var bd := INF
 	for d in DIRS:
 		var n: Vector2i = deer_pos + d
-		if in_bounds(n) and n != wolf_pos and n.x >= 2 and n.y >= 2 and n.x < width - 2 and n.y < height - 2 and terrain(n) != "l":
-			options.append(d)
-	if options.is_empty():
+		if not in_bounds(n) or n == wolf_pos or terrain(n) == "l":
+			continue
+		var dd: float = dist(n, goal) + rng.randf() * 0.8 # 一點隨機，路線不會完全筆直
+		if dd < bd:
+			bd = dd
+			best = d
+	if best == Vector2i.ZERO:
 		return
-	var d: Vector2i = options[rng.randi_range(0, options.size() - 1)]
-	deer_pos += d
-	deer_facing = d
+	deer_pos += best
+	deer_facing = best
+
+# 目前的目的地（開局情境的 goals 依序循環）
+func deer_goal() -> Vector2i:
+	var goals: Array = t["scenarios"][scenario_id].get("goals", [])
+	if goals.is_empty():
+		return deer_pos
+	var g: Array = goals[maxi(0, deer_goal_index) % goals.size()]
+	return Vector2i(int(g[0]), int(g[1]))
 
 # 逃跑的方向打分：離狼越遠越好、往場地外（逃得掉）加分、經過倒木扣分；不往狼的方向。
 func flee_options() -> Array:
@@ -502,8 +526,16 @@ func _deer_flee() -> void:
 	if terrain(deer_pos) == "f" and n > 1 and rng.randf() < float(t["deer"]["forest_turn"]):
 		pick = 1
 	var d: Vector2i = opts[pick]["dir"]
-	var before := dist(deer_pos, wolf_pos)
 	var sim := _run_line(deer_pos, d, _flee_budget())
+	# 不在兩格之間來回：會回到上上回合的位置時，換下一個方向
+	if deer_last_cells.size() >= 2 and sim["end"] == deer_last_cells[-2]:
+		for o in opts:
+			var alt := _run_line(deer_pos, o["dir"], _flee_budget())
+			if alt["end"] != deer_last_cells[-2] and float(o["score"]) > -10.0:
+				d = o["dir"]
+				sim = alt
+				break
+	var before := dist(deer_pos, wolf_pos)
 	flee_round += 1
 	deer_facing = d
 	if sim["out"]:
