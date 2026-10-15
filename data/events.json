@@ -67,7 +67,10 @@
   "ice_break": { "region": "tundra_east", "season": "spring", "move_chance": 0.2, "jump_base": 0.6, "speed_divisor": 150, "crawl_chance": 0.8, "crawl_turns": 2, "fail_stamina": 100, "fail_hunger": 10, "fail_damage": 8 },
   "ravens": { "map": "tundra", "periods": ["dawn", "day", "dusk"], "period_chance": 0.03, "found_chance": 0.6, "carcass_chance_mult": 3.0, "follow_cooldown_days": 2, "leftover": { "animals": { "caribou": 2, "moose": 1 }, "segments_min": 1, "segments_max": 2 }, "feeding_bonus_per_turn": 0.04 },
   "bear_passing": {
-    "sleep_chance": 0.08,
+    "_comment": "2026-10-15 試玩回報 24：sleep_chance 0.08 → 0.04，再乘那一區這一季的灰熊權重 ÷ ref_weight（最多 1 倍，森林西部 7 是最多的），巢穴 × den_mult。",
+    "sleep_chance": 0.04,
+    "ref_weight": 7,
+    "den_mult": 0.5,
     "hide_base": 0.7,
     "hide_divisor": 200
   },

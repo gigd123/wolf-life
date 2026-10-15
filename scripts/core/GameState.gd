@@ -2084,7 +2084,7 @@ func action_sleep() -> Dictionary:
 	wolf.clamp_stats()
 	# 灰熊路過：在巢穴或睡處休息時（沒有被驚醒的情況下）。
 	if not season_sleep and not encounter.get("encountered", false) and quality != "rough":
-		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina)
+		_maybe_bear_passing(wolf.health - before_health, wolf.stamina - before_stamina, quality)
 	var summary := sleep_summary(settle)
 	var season_changed: bool = season_sleep and wolf.alive
 	if season_changed:
@@ -2577,11 +2577,17 @@ func hunt_nearby_prey(event: Dictionary) -> HuntSystem:
 	return start_hunt(event["animal_id"], event["life_stage"], -1, false, str(event.get("terrain", "")))
 
 # 灰熊路過：在巢穴或睡處休息時。保持不動（看技巧）或立刻離開（失去這次休息的回復）。
-func _maybe_bear_passing(gained_health: float, gained_stamina: float) -> void:
+# 機率依那一區灰熊的多寡（權重 ÷ ref_weight，最多 1 倍），巢穴 × den_mult（2026-10-15 試玩回報 24）。
+func _maybe_bear_passing(gained_health: float, gained_stamina: float, quality: String = "") -> void:
 	var weights: Dictionary = EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {})
-	if float(weights.get(GameTime.current_season(), 0)) <= 0.0 or not _can_trigger_event():
+	var weight: float = float(weights.get(GameTime.current_season(), 0))
+	if weight <= 0.0 or not _can_trigger_event():
 		return
-	if RNGService.chance(float(_events_cfg().get("bear_passing", {}).get("sleep_chance", 0.08)) * threat_mult()):
+	var cfg: Dictionary = _events_cfg().get("bear_passing", {})
+	var chance: float = float(cfg.get("sleep_chance", 0.04)) * min(1.0, weight / float(cfg.get("ref_weight", 7.0)))
+	if quality == "den":
+		chance *= float(cfg.get("den_mult", 0.5))
+	if RNGService.chance(chance * threat_mult()):
 		_queue_event({"type": "bear_passing", "health": gained_health, "stamina": gained_stamina})
 
 func bear_hide_chance() -> float:

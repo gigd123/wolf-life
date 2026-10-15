@@ -11,7 +11,7 @@ func _process(_d) -> bool:
 	var runs: int = int(args[1]) if args.size() > 1 else 1000
 	var gs = root.get_node("GameState")
 	var gt = root.get_node("GameTime")
-	print("== 睡覺遇灰熊（每種睡處 %d 晚；區域 forest_west，季節 summer，成年狼，沒有傾向）" % runs)
+	print("== 睡覺遇灰熊（每種睡處 %d 晚；巢穴在 forest_south（灰熊權重 2），其他睡處在 forest_west（權重 7）；夏季、成年狼、沒有傾向）" % runs)
 	for quality in ["den", "good", "normal", "rough"]:
 		gs.new_game("forest_south")
 		gs.debug_force_transition("adult")
