@@ -318,7 +318,9 @@ func _routine_notable(d: Dictionary) -> bool:
 	var kind: String = str(d.get("kind", ""))
 	# 新發現的地點照常記下、剩肉照常啃、受傷的獵物照常獵；其他狼、殘骸、危險的線索交給玩家
 	if kind == "remains":
-		GameState.eat_remains()
+		var res: Dictionary = GameState.eat_remains()
+		if not (res["encounter"] as Dictionary).is_empty():
+			_encounter = res["encounter"]
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
 	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache"]:

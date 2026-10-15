@@ -911,7 +911,7 @@ animal.tundra_wolf,苔原狼
 combat.option.let_eat,讓牠們先吃
 combat.option.guard_together,保持距離一起守著
 combat.result.let_eat,你退到一旁，看著牠們撕下兩大塊肉。牠們吃完抬頭看了你一眼，讓出了位置。
-combat.result.guard_together,你們隔著屍體各據一邊，誰也沒有動手。牠們叼走了一段，你守住了剩下的。
+combat.result.guard_together,你們隔著屍體各據一邊，誰也沒有動手。牠們叼走了一段，你守住了剩下的；要是有別的東西來搶，牠們會站在你這一邊。
 combat.stake.meet.tundra_wolf,帶頭的那隻擋在你面前，另一隻在牠身後不遠處盯著你。
 combat.stake.carcass.tundra_wolf,牠們聞到了肉味，一左一右慢慢靠近你的獵物。
 combat.partner_joins,另一隻也撲了上來！
@@ -1148,7 +1148,9 @@ explore.until.none,這半天沒有什麼值得停下來的。
 explore.ridge.wind_bad,你爬上高處，可是風從背後吹來，什麼也聞不到。
 explore.water.nothing,你伏在{location}的水邊等了好一陣子，沒有動物來喝水。
 explore.water.ambush,牠低頭喝水，還沒發現你。
-explore.remains,{location}，你發現一具被吃剩的{animal}殘骸，骨頭上還掛著一點肉。
+explore.remains.bones,{location}，你發現一具被啃得差不多的{animal}殘骸，只剩骨頭和一點碎肉。
+explore.remains.some,{location}，你發現一具被吃剩的{animal}殘骸，骨頭上還掛著一些肉。
+explore.remains.fresh,{location}，你發現一具才被吃了一部分的{animal}，肉還很多，氣味很新。
 explore.mark.stranger_wolf.here,{location}，樹根上有新鮮的尿痕，是那隻黑狼留下的。牠最近就在這一帶。
 explore.mark.stranger_wolf.near,{location}，你聞到黑狼的氣味標記，從{region}那邊延過來。
 explore.mark.tundra_wolf.here,{location}，雪地上有苔原狼刨過的痕跡和氣味標記，牠們最近就在這一帶。
@@ -1158,7 +1160,10 @@ explore.trait.old,年老的
 explore.trait.injured,受傷的
 explore.again,{location}，又是那頭{animal}。牠還在這一帶。
 ui.eat_remains,啃剩下的肉
-log.eat_remains,你撕下骨頭上剩的一點肉（飽食度 +{n}）。
+log.eat_remains.bones,你啃了啃骨頭上的碎肉（飽食度 +{n}）。
+log.eat_remains.some,你撕下骨頭上剩的肉（飽食度 +{n}）。
+log.eat_remains.fresh,你大口撕下還新鮮的肉（飽食度 +{n}）。
+remains.bear_returns,灌木後傳來一陣沉重的腳步聲，有個大傢伙循著肉味回來了。
 factor.ambush_water,在水邊伏擊
 action.routine,照常過日子…
 routine.title,這幾天要怎麼過？
@@ -1318,7 +1323,7 @@ year.hint.winter.mild,這個冬天暖得出奇，雪下了又融。
 year.hint.summer.dry,這個夏天幾乎沒有下雨，草地乾得發黃。
 year.hint.summer.wet,這個夏天雨下個不停，溪水漲得很高。
 year.hint.spring.hare_high,灌木叢裡到處是雪兔的足跡，多得數不清。
-year.hint.spring.hare_low,今年幾乎看不到雪兔的蹤影。
+year.hint.spring.hare_low,灌木叢裡難得看到雪兔的足跡，牠們好像少了很多。
 summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。
 combat.anim.normal,動畫：一般（按一下切換；播放中按一下略過）
 combat.anim.fast,動畫：快（按一下切換；播放中按一下略過）

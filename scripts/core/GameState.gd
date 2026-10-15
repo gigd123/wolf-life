@@ -843,6 +843,9 @@ func _update_sleep_spots() -> void:
 			var lost: Dictionary = life_log.get("lost_sleep_spots", {})
 			lost[region_id] = str(RNGService.weighted_pick(causes))
 			life_log["lost_sleep_spots"] = lost
+			# 人就在這一區：當下就說（2026-10-15 試玩回報 25）
+			if region_id == current_region:
+				_notice_lost_sleep_spot()
 
 # 來到這一區時告訴你好睡處沒了（只說一次）
 func _notice_lost_sleep_spot() -> void:
@@ -1409,15 +1412,24 @@ func _add_notable(d: Dictionary) -> void:
 	current_discovery["notable_id"] = id
 
 # 啃別人吃剩的殘骸（提案之十 B）：一點點飽食度、1 回合。
-func eat_remains() -> int:
+# 回傳 {"gain": 飽食度, "encounter": 撞見回來的灰熊（空的就是沒有）}；遭遇交給呼叫端，先寫完吃了多少再進遭遇。
+func eat_remains() -> Dictionary:
+	var tier: String = str(current_discovery.get("tier", "some"))
 	current_discovery = {}
 	GameTime.advance_turns(1)
-	var gain: int = int(GameData.discovery.get("remains_hunger", 6))
+	var cfg: Dictionary = GameData.discovery.get("remains_tiers", {}).get(tier, {})
+	var range_: Array = cfg.get("hunger", [6, 6])
+	var gain: int = RNGService.randi_range(int(range_[0]), int(range_[1]))
 	wolf.hunger += gain
 	wolf.clamp_stats()
 	record_decision("explore.remains")
 	state_changed.emit()
-	return gain
+	# 大半具、剛被放下的殘骸：牠可能就在附近，吃的時候撞見回來的灰熊
+	var bear: float = float(EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {}).get(GameTime.current_season(), 0))
+	var encounter: Dictionary = {}
+	if bear > 0.0 and RNGService.chance(float(cfg.get("bear_chance", 0.0)) * threat_mult()):
+		encounter = prepare_bear_encounter({"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult"})
+	return {"gain": gain, "encounter": encounter}
 
 # 探索到有值得注意的發現為止（提案之十 E）：最多 max_tries 次；回傳 {"discovery": 最後的發現, "skipped": [略過的發現]}。
 func action_explore_until(mode: String = "trail") -> Dictionary:
@@ -3034,6 +3046,9 @@ func _carcass_after_combat(c: Combat) -> void:
 				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - lost
 				if int(current_feeding["segments_left"]) <= 0:
 					current_feeding = {}
+				elif c.outcome == "guard_together":
+					# 一起守著：之後灰熊來搶時牠們在你這一邊（2026-10-15 試玩回報 19，和一起獵到的殘骸相同）
+					current_feeding["with_tundra"] = true
 			return
 		"grab":
 			wolf.hunger += float(current_feeding.get("segment_value", 0))

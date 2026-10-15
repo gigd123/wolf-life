@@ -1589,10 +1589,14 @@ func _show_discovery(d: Dictionary) -> void:
 		)
 	if d.get("kind", "") == "remains":
 		_add_encounter_button(tr("ui.eat_remains"), func():
-			var gain: int = GameState.eat_remains()
-			_log(tr("log.eat_remains").replace("{n}", str(gain)))
+			var tier: String = str(d.get("tier", "some"))
+			var res: Dictionary = GameState.eat_remains()
+			_log(tr("log.eat_remains." + tier).replace("{n}", str(int(res["gain"]))))
 			encounter_overlay.visible = false
 			_refresh()
+			if not (res["encounter"] as Dictionary).is_empty():
+				_log(tr("remains.bear_returns"))
+				_on_encounter_triggered(res["encounter"])
 		)
 	if d.get("kind", "") == "clue" and d.get("source_kind", "") == "threat":
 		_add_threat_options(d)
@@ -1816,7 +1820,7 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("explore.nothing").replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))
 		"remains":
-			return tr("explore.remains").replace("{location}", location).replace("{animal}", tr("animal." + str(d["animal_id"])))
+			return tr("explore.remains." + str(d.get("tier", "some"))).replace("{location}", location).replace("{animal}", tr("animal." + str(d["animal_id"])))
 		"mark":
 			var who_key: String = "explore.mark." + str(d.get("who", ""))
 			return tr(who_key + (".here" if str(d.get("region", "")) == GameState.current_region else ".near")) \

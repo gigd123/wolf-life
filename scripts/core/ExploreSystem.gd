@@ -83,7 +83,12 @@ static func generate(ctx: Dictionary) -> Dictionary:
 			if str(GameData.animals.get(animal_id, {}).get("size", "small")) != "small":
 				big.append(animal_id)
 		if not big.is_empty():
-			return {"kind": "remains", "location": location, "animal_id": big[RNGService.randi_range(0, big.size() - 1)], "mode": mode}
+			# 剩多少：骨頭、一些肉、少見的大半具（2026-10-15 試玩回報 11）
+			var tiers: Dictionary = {}
+			for t in GameData.discovery.get("remains_tiers", {}):
+				tiers[t] = float(GameData.discovery["remains_tiers"][t].get("weight", 1))
+			var tier: String = str(RNGService.weighted_pick(tiers)) if not tiers.is_empty() else "some"
+			return {"kind": "remains", "location": location, "animal_id": big[RNGService.randi_range(0, big.size() - 1)], "mode": mode, "tier": tier}
 	var marks: Array = ctx.get("marks", [])
 	if not marks.is_empty() and RNGService.chance(float(mc.get("mark", 0.0))):
 		var m: Dictionary = marks[RNGService.randi_range(0, marks.size() - 1)]

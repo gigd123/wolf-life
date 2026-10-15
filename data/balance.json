@@ -376,8 +376,8 @@
     "mountain": { "stats": { "strength": 2 } },
     "grassland": { "stats": { "speed": 2 } }
   },
-  "_sleep_spot_loss_comment": "睡處會變差（Phase 2 第 7 步）：你記得的好睡處每天可能失去（巢穴所在的區域除外）：base 每天的基本機率；blizzard 那張地圖正在起暴風雪；flood 春季、這一區有溪流或河；animal 這一區這一季的灰熊權重 × animal_per_weight。下次來到或在這一區探索時寫出原因。",
-  "sleep_spot_loss": { "base": 0.004, "blizzard": 0.08, "flood": 0.02, "flood_terrains": ["stream", "river", "river_willow"], "animal_per_weight": 0.004 },
+  "_sleep_spot_loss_comment": "睡處會變差（Phase 2 第 7 步）：你記得的好睡處每天可能失去（巢穴所在的區域除外）：base 每天的基本機率；blizzard 那張地圖正在起暴風雪；flood 春季、這一區有溪流或河；animal 這一區這一季的灰熊權重 × animal_per_weight。下次來到或在這一區探索時寫出原因；人就在那一區時當下就寫。animal_per_weight 0.004 → 0.0015（2026-10-15 試玩回報 25：森林西部灰熊權重 7，一季約 3 成會失去，太常；改成約 1 成多）。",
+  "sleep_spot_loss": { "base": 0.004, "blizzard": 0.08, "flood": 0.02, "flood_terrains": ["stream", "river", "river_willow"], "animal_per_weight": 0.0015 },
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
   "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },
