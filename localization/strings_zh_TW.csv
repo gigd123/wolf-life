@@ -5,6 +5,7 @@ menu.continue,繼續遊戲
 menu.quit,離開遊戲
 menu.main_menu,回到主選單
 menu.art_test,美術測試
+menu.tactical_hunt,狩獵原型
 den.select_title,選擇你的第一個巢穴
 den.forest_east.desc,靠近山地，地形起伏，交通方便
 den.forest_north.desc,靠近苔原，冬季鹿群聚集，較寒冷

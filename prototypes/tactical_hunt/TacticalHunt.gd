@@ -102,14 +102,14 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	height = grid.size()
 	width = String(grid[0]).length()
 	wind = Vector2i(int(sc["wind"][0]), int(sc["wind"][1]))
-	var stats: Dictionary = (t["wolves"][wolf_profile] as Dictionary).duplicate()
-	stats["stamina"] = float(stats["stamina"]) * stamina_mult
-	stats["health_max"] = 100.0
-	stats["health"] = 100.0
+	var wstats: Dictionary = (t["wolves"][wolf_profile] as Dictionary).duplicate()
+	wstats["stamina"] = float(wstats["stamina"]) * stamina_mult
+	wstats["health_max"] = 100.0
+	wstats["health"] = 100.0
 	var b: Dictionary = t["breath"]
-	var bmax: float = clamp(float(b["base"]) + float(stats["stamina"]) * float(b["per_stamina"]) + (float(stats["speed"]) - 50.0) * float(b["per_speed"]),
+	var bmax: float = clamp(float(b["base"]) + float(wstats["stamina"]) * float(b["per_stamina"]) + (float(wstats["speed"]) - 50.0) * float(b["per_speed"]),
 		float(b["min"]), float(b["max"]))
-	wolves = [{"pos": Vector2i(int(sc["wolf"][0]), int(sc["wolf"][1])), "stats": stats, "breath": bmax, "breath_max": bmax, "breath_used": 0.0}]
+	wolves = [{"pos": Vector2i(int(sc["wolf"][0]), int(sc["wolf"][1])), "stats": wstats, "breath": bmax, "breath_max": bmax, "breath_used": 0.0}]
 	herd = [{"pos": Vector2i(int(sc["deer"][0]), int(sc["deer"][1])), "facing": DIRS[rng.randi_range(0, 7)], "state": "unaware", "alert": 0.0,
 		"flee_round": 0, "condition": str(_weighted(t["deer"]["condition_weights"])), "condition_known": false, "held": false, "wounds": 0,
 		"lost_turns": 0, "goal_index": 0, "last_cells": []}]
@@ -557,14 +557,25 @@ func flee_options() -> Array:
 	var away := Vector2(deer_pos - wolf_pos).normalized()
 	var scored: Array = []
 	var budget: float = _flee_budget()
+	# 只往大致遠離狼的方向跑（夾角 < 約 80°）；被逼到沒有這種方向時才放寬
+	var limit: float = 0.2
+	var any_open := false
 	for d in DIRS:
-		if Vector2(d).normalized().dot(away) < -0.2:
+		if Vector2(d).normalized().dot(away) >= limit and not bool(_run_line(deer_pos, d, budget)["wall"]):
+			any_open = true
+			break
+	if not any_open:
+		limit = -0.2
+	for d in DIRS:
+		if Vector2(d).normalized().dot(away) < limit:
 			continue # 不往狼的方向跑
 		var sim := _run_line(deer_pos, d, budget)
 		var end: Vector2i = sim["end"]
 		var score: float = dist(end, wolf_pos) * 1.0 + Vector2(d).normalized().dot(away) * 3.0
 		if sim["out"]:
 			score += 8.0
+		# 慣性：傾向沿原本的方向繼續跑（貼著邊緣時不會左右來回）
+		score += Vector2(d).normalized().dot(Vector2(deer_facing).normalized()) * float(t["deer"]["momentum"])
 		score -= float(sim["logs"]) * 2.5
 		score -= float(sim["blocked"]) * 3.0
 		if float(sim["moved"]) <= 0.0:
@@ -609,7 +620,10 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		guard += 1
 		var n: Vector2i = pos + dir
 		if not in_bounds(n):
-			return {"end": n, "out": true, "logs": logs, "blocked": blocked, "moved": moved + 1.0}
+			# 左右兩端（長邊的方向）可以跑出場地＝逃脫；上下邊緣是擋住的（16 格高，往上下跑 2 回合就出去，2026-10-15）
+			if n.x < 0 or n.x >= width:
+				return {"end": n, "out": true, "wall": false, "logs": logs, "blocked": blocked, "moved": moved + 1.0}
+			return {"end": pos, "out": false, "wall": true, "logs": logs, "blocked": blocked + 1, "moved": moved}
 		if n == wolf_pos:
 			blocked += 1
 			break
@@ -621,7 +635,7 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		left -= c
 		moved += c
 		pos = n
-	return {"end": pos, "out": false, "logs": logs, "blocked": blocked, "moved": moved}
+	return {"end": pos, "out": false, "wall": false, "logs": logs, "blocked": blocked, "moved": moved}
 
 func _deer_flee() -> void:
 	var opts := flee_options()
@@ -659,6 +673,10 @@ func _deer_flee() -> void:
 		_finish("escaped", _escape_reason())
 		return
 	deer_pos = sim["end"]
+	# 和狼拉開到 escape_dist 格以上，或已經跑了 max_flee_rounds 回合（狼不會無限追下去）：逃脫
+	if dist(deer_pos, wolf_pos) >= float(t["deer"]["escape_dist"]) or flee_round >= int(t["deer"]["max_flee_rounds"]):
+		_finish("escaped", _escape_reason())
+		return
 	if dist(deer_pos, wolf_pos) < before - 0.01:
 		stats["toward_wolf"] += 1
 	deer_last_cells.append(deer_pos)

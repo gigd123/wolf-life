@@ -60,6 +60,12 @@ func _ready() -> void:
 	art_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/art_test/ArtTest.tscn"))
 	box.add_child(art_test_btn)
 
+	# 戰術狩獵原型（prototypes/tactical_hunt/；和遊戲進度無關，docs/proposals/tactical-hunt-prototype.md）
+	var tactical_btn := Button.new()
+	tactical_btn.text = tr("menu.tactical_hunt")
+	tactical_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_hunt/TacticalHunt.tscn"))
+	box.add_child(tactical_btn)
+
 	var visual_test_btn := Button.new()
 	visual_test_btn.text = "3D Visual Test (prototype)"
 	visual_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/visual_test/VisualTest.tscn"))

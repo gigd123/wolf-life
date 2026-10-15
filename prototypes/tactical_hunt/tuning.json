@@ -111,7 +111,11 @@
     "flee_at": 100.0,
     "lost_sight_turns": 2,
     "graze_idle": 0.4,
-    "_goal_comment": "沒察覺時邊吃草邊往目的地（goals）走：每回合 graze_idle 的機率停下吃草，否則往目的地走 1 格。"
+    "_goal_comment": "沒察覺時邊吃草邊往目的地（goals）走：每回合 graze_idle 的機率停下吃草，否則往目的地走 1 格。",
+    "escape_dist": 14,
+    "_escape_comment": "2026-10-15 截圖發現：16 格高的場地，鹿往上下邊緣跑 2 回合就「逃出場地」。改成上下邊緣擋住、左右兩端可以跑出去；另外和狼拉開到 escape_dist 格以上也算逃脫。",
+    "max_flee_rounds": 10,
+    "momentum": 3.0
   },
   "alert": {
     "_comment": "2026-10-15 模擬後改版：原本「距離 × 移動方式 × 風」相乘，下風時小跑幾乎不會被發現（猛追成功率 65～76%）。改成看見（距離 × 移動方式，密林擋住 × no_sight）＋聞到（只看風向與距離）分開算。",
