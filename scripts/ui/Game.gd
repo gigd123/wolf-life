@@ -1334,6 +1334,13 @@ func _render_strips() -> void:
 	# 結果畫面：最後一段已經寫在上面的描述，紀錄只列之前的
 	if session_result_mode and not shown.is_empty():
 		shown.pop_back()
+	# 狩獵畫面上方列著觀察到的狀態：最後一段的那一句不再寫在下方紀錄
+	if hunt_overlay.visible and hunt_notes_log != "" and not shown.is_empty() and shown.back()["lines"].has(hunt_notes_log):
+		var last: Dictionary = shown.back().duplicate(true)
+		last["lines"].erase(hunt_notes_log)
+		shown[shown.size() - 1] = last
+		if last["lines"].is_empty():
+			shown.pop_back()
 	var parts: Array[String] = []
 	for i in shown.size():
 		var e: Dictionary = shown[i]
@@ -2487,6 +2494,20 @@ func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> v
 
 # 依 HuntSystem.options() 畫出目前階段的選項；階段說明下方是觀察到的獵物狀態與搏鬥進度。
 var hunt_notes: Array[String] = []
+var hunt_notes_log: String = "" # 觀察結果寫進紀錄的那一句；狩獵畫面上方已經列出，下方紀錄不再重複
+
+# 把幾段短句排成幾行：一段不拆開，放不下才換行（試玩回報：觀察到的狀態接成一長串時，句子在中間被折斷）
+func _pack_phrases(parts: Array[String], label: Label) -> String:
+	var font: Font = label.get_theme_font("font")
+	var font_size: int = label.get_theme_font_size("font_size")
+	var max_w: float = label.size.x if label.size.x > 0.0 else 600.0
+	var lines: Array[String] = []
+	for part in parts:
+		if not lines.is_empty() and font.get_string_size(lines.back() + "　" + part, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= max_w:
+			lines[lines.size() - 1] += "　" + part
+		else:
+			lines.append(part)
+	return "\n".join(lines)
 
 func _render_hunt_stage() -> void:
 	if current_hunt == null:
@@ -2554,7 +2575,7 @@ func _render_hunt_stage() -> void:
 		if FightRules.in_danger(GameState.wolf):
 			header += "\n" + tr("combat.danger")
 	if not hunt_notes.is_empty():
-		header += "\n" + "　".join(hunt_notes)
+		header += "\n" + _pack_phrases(hunt_notes, hunt_message)
 	if GameState.wolf.in_burst:
 		header += "\n" + tr("hunt.breath").replace("{n}", str(int(round(GameState.wolf.breath)))).replace("{max}", str(int(round(GameState.wolf.breath_max))))
 	hunt_message.text = header
@@ -2703,7 +2724,8 @@ func _resolve_stage(stage_result: Dictionary) -> void:
 		hunt_notes.clear()
 		for key in stage_result["prey_state"]:
 			hunt_notes.append(tr(key))
-		_log(tr("hunt.observe.success") + "　".join(hunt_notes))
+		hunt_notes_log = tr("hunt.observe.success") + "　".join(hunt_notes)
+		_log(hunt_notes_log)
 		stage_result["text_key"] = ""
 	if float(stage_result.get("damage", 0.0)) > 0.0:
 		_log(tr("log.counter_damage").replace("{n}", str(int(stage_result["damage"]))))
@@ -2732,6 +2754,7 @@ func _finish_hunt() -> void:
 	hunt_overlay.visible = false
 	current_hunt = null
 	hunt_notes.clear()
+	hunt_notes_log = ""
 	_refresh()
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
