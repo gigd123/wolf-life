@@ -460,7 +460,7 @@
     "fed_streak": { "threshold": 100, "bonus_per_day": 0.05, "max_bonus": 0.3 },
     "stage_mult": {
       "subadult_young": { "body": 2.2, "mind": 0.8 },
-      "subadult": { "body": 0.45, "mind": 0.6 },
+      "subadult": { "body": 0.8, "mind": 1.0 },
       "adult": { "body": 0.7, "mind": 0.7 },
       "elder": { "body": 0.0, "skill": 0.0, "perception": 0.0 }
     },
