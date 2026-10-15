@@ -422,11 +422,13 @@
     "learn_per_unit": { "skill": 0.25, "perception": 0.25 },
     "_adult_bonus_comment": "成年的那一刻各成長一次（約次成年期一週的鍛鍊量），受潛力上限限制。",
     "adult_bonus": { "speed": 3, "strength": 3, "health_max": 3 },
-    "_stranger_first_win_comment": "第一次打贏黑狼、這一戰沒有受重傷：技巧成長一次（只限第一次）。",
-    "stranger_first_win_skill": 4,
-    "stranger_first_win_cap": 4,
-    "_bear_first_win_comment": "第一次獨自擊退成年灰熊：caps 提高潛力上限，gains 當下成長（受新的上限限制）。只限第一次。",
-    "bear_first_win": { "caps": { "strength": 5, "health_max": 5, "skill": 3 }, "gains": { "strength": 2, "health_max": 2, "skill": 3 } },
+    "_first_win_comment": "第一次打贏危險的對手（2026-10-15 試玩回報 13，使用者決定）：灰熊 > 美洲獅 > 黑熊 > 黑狼。每種對手只有第一次打贏（趕走或咬死）才給，突襲、直接衝撞、你主動打都算；有同伴幫忙的不算；撤退、打輸不算、也不用掉機會。這一戰沒受重傷（從開打後算）：caps 提高潛力上限、gains 當下成長；受重傷才打贏：heavy 同時是上限與成長（約三分之一）。黑狼原本是技巧 +4，改成 +3。",
+    "first_win": {
+      "grizzly_bear": { "caps": { "strength": 5, "health_max": 5, "skill": 3 }, "gains": { "strength": 2, "health_max": 2, "skill": 3 }, "heavy": { "strength": 1, "skill": 1 } },
+      "cougar": { "caps": { "speed": 2, "skill": 2, "perception": 1 }, "gains": { "speed": 2, "skill": 2, "perception": 1 }, "heavy": { "speed": 1, "skill": 1 } },
+      "black_bear": { "caps": { "strength": 2, "health_max": 2 }, "gains": { "strength": 2, "health_max": 2 }, "heavy": { "strength": 1 } },
+      "stranger_wolf": { "caps": { "skill": 3 }, "gains": { "skill": 3 }, "heavy": { "skill": 1 } }
+    },
     "fail_mult": 0.25,
     "fail_streak_decay": 0.5,
     "_repeat_comment": "同一場狩獵裡，同一項能力第 repeat_free 次之後的練習，每次再 × repeat_decay。",

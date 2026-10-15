@@ -2195,11 +2195,15 @@ func _process_events() -> void:
 		"stranger_killed":
 			# 咬死黑狼的專屬卡片，接牠的傳說作結尾（SPEC「陌生灰狼」勝負的結果）
 			var region: String = tr("region." + str(event.get("region", "")))
-			_show_card(tr("stranger.killed_card.title"), tr("stranger.killed_card").replace("{region}", region),
+			var killed_body: String = tr("stranger.killed_card").replace("{region}", region)
+			# 第一次打贏就咬死牠：成長接在這張卡片裡
+			if event.has("first_win"):
+				killed_body += _first_win_growth_text(event["first_win"])
+			_show_card(tr("stranger.killed_card.title"), killed_body,
 				ArtLibrary.region_background(str(event.get("region", GameState.current_region)), GameTime.current_season()))
 			return
-		"bear_first_win":
-			_show_bear_first_win(event)
+		"first_win":
+			_show_first_win(event)
 			return
 		"injury_notice":
 			_show_injury_notice(event)
@@ -3578,8 +3582,6 @@ func _finish_combat_ui() -> void:
 		_log_result(result_text)
 		if str(r.get("grow", "")) != "":
 			_log_result(tr("combat.grow." + str(r["grow"])))
-		if float(r.get("first_win_skill", 0.0)) > 0.0:
-			_log_result(tr("stranger.first_win_growth"))
 		# 咬死時後面有「那隻黑狼」卡片，不另外寫地盤（QA-67）
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.outcome == "drove_off":
 			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
@@ -3710,20 +3712,25 @@ func _show_season_card(event: Dictionary) -> void:
 	_play_pending_level_up() # 換季的那一覺沒有睡醒卡片，成長併在換季卡片
 
 # 第一次獨自擊退成年灰熊的卡片：當下的成長與提高的上限（SPEC「灰熊：血量與耐力」）。
-func _show_bear_first_win(event: Dictionary) -> void:
-	var body: String = tr("bear.first_win.body")
+# 第一次打贏危險的對手（灰熊、美洲獅、黑熊、黑狼）：乾淨的勝利寫學到什麼，受重傷才打贏寫代價（2026-10-15 試玩回報 13）。
+func _show_first_win(event: Dictionary) -> void:
+	var animal: String = str(event.get("animal", ""))
+	var clean: bool = bool(event.get("clean", true))
+	var body: String = tr("first_win.%s.body%s" % [animal, "" if clean else ".heavy"])
 	_log(body)
-	for pair in [["gains", "bear.first_win.gains"], ["caps", "bear.first_win.caps"]]:
+	_show_card(tr("first_win.%s.title" % animal), body + _first_win_growth_text(event))
+
+func _first_win_growth_text(event: Dictionary) -> String:
+	var text: String = ""
+	var clean: bool = bool(event.get("clean", true))
+	for pair in [["gains", "first_win.gains" + ("" if clean else ".heavy")], ["caps", "first_win.caps"]]:
 		var parts: Array[String] = []
 		for stat in Growth.ALL_STATS:
 			if event.get(pair[0], {}).has(stat):
 				parts.append(_icon_bb("stat." + stat) + tr("stat." + stat) + " ▲" + str(maxi(1, int(round(float(event[pair[0]][stat]))))))
 		if not parts.is_empty():
-			body += "
-
-" + tr(pair[1]) + "
-" + "　".join(parts)
-	_show_card(tr("bear.first_win.title"), body)
+			text += "\n\n" + tr(pair[1]) + "\n" + "　".join(parts)
+	return text
 
 # 換季字卡的成長回顧：這一季各能力的變化（含換季成長），挨餓的一季另外說明；老年有衰退時一起列出。
 func _season_review_text(review: Dictionary) -> String:
