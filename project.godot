@@ -25,10 +25,6 @@ SaveSystem="*res://scripts/core/SaveSystem.gd"
 GameState="*res://scripts/core/GameState.gd"
 Audio="*res://scripts/core/Audio.gd"
 
-[gui]
-
-theme/custom="res://assets/ui/theme.tres"
-
 [display]
 
 window/size/viewport_width=640
@@ -36,6 +32,10 @@ window/size/viewport_height=360
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
+
+[gui]
+
+theme/custom="res://assets/ui/theme.tres"
 
 [rendering]
 
