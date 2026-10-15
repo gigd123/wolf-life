@@ -2020,9 +2020,15 @@ func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 	state_changed.emit()
 	return {"alive": wolf.alive, "interrupted": interrupted}
 
+# 巢穴有多隱蔽：地圖的 den_hidden（山地的巢穴藏在岩縫、峽谷裡，夜裡最不容易被找上；SPEC Phase 2「山地」）。不在巢穴時是 1。
+func den_hidden_mult() -> float:
+	if sleep_quality() != "den":
+		return 1.0
+	return float(GameData.maps().get(current_map(), {}).get("den_hidden", 1.0))
+
 # 快轉每經過一個時段：獵物靠近、灰熊路過（在巢穴休息比在野外安全）。
 func _rest_period_events(cfg: Dictionary, gained_stamina: float) -> void:
-	var loc_mult: float = float(cfg.get("location_mult", {}).get(sleep_quality(), 1.0))
+	var loc_mult: float = float(cfg.get("location_mult", {}).get(sleep_quality(), 1.0)) * den_hidden_mult()
 	if _can_trigger_event() and RNGService.chance(float(cfg.get("prey_nearby_per_period", 0.06))):
 		var pn: Dictionary = _events_cfg().get("prey_nearby", {})
 		var animal: String = _nearby_prey_pick(pn)
@@ -2586,7 +2592,7 @@ func _maybe_bear_passing(gained_health: float, gained_stamina: float, quality: S
 	var cfg: Dictionary = _events_cfg().get("bear_passing", {})
 	var chance: float = float(cfg.get("sleep_chance", 0.04)) * min(1.0, weight / float(cfg.get("ref_weight", 7.0)))
 	if quality == "den":
-		chance *= float(cfg.get("den_mult", 0.5))
+		chance *= float(cfg.get("den_mult", 0.5)) * den_hidden_mult()
 	if RNGService.chance(chance * threat_mult()):
 		_queue_event({"type": "bear_passing", "health": gained_health, "stamina": gained_stamina})
 

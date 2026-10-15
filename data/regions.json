@@ -17,7 +17,7 @@
       "cold": { "winter": { "hunger": 2, "stamina": 2 }, "spring": { "hunger": 0, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
     },
     "mountain": {
-      "name_key": "map.mountain", "layout": ["mountain_meadow", "mountain_canyon", "mountain_foothills", "mountain_headwaters"], "fire": false,
+      "den_hidden": 0.3, "_den_hidden_comment": "山地的巢穴藏在岩縫、峽谷裡：在巢穴睡覺、休息時，灰熊路過的機率 × den_hidden（SPEC Phase 2「山地」：夜裡被找上的機率最低；2026-10-15 補上）。", "name_key": "map.mountain", "layout": ["mountain_meadow", "mountain_canyon", "mountain_foothills", "mountain_headwaters"], "fire": false,
       "cold": { "winter": { "hunger": 2, "stamina": 2 }, "spring": { "hunger": 1, "stamina": 1 }, "summer": { "hunger": 0, "stamina": 0 }, "autumn": { "hunger": 1, "stamina": 1 } }
     }
   },
