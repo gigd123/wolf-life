@@ -4430,7 +4430,8 @@ func watch_tundra_hunt() -> Dictionary:
 	return {"result": "killed" if killed else "missed", "leftover": leftover}
 
 # --- 苔原狼繁殖（1.8 第 10 步）---
-# life_log["tundra_young"]：{"pups": 今年的幼狼隻數, "young": 年輕的成狼隻數, "born": [出生時你的年齡…], "knows_you": 生下時關係熟悉以上}
+# life_log["tundra_young"]：{"pups": 今年的幼狼隻數, "young": 年輕的成狼隻數（= young_ages 的隻數 + settled）,
+# "young_ages": [還沒定下來的年輕成狼的年齡…], "settled": 決定留下來當幫手的隻數, "born": [出生時你的年齡…], "knows_you": 生下時關係熟悉以上}
 func _breeding_cfg() -> Dictionary:
 	return _tundra_cfg().get("breeding", {})
 
@@ -4472,8 +4473,31 @@ func _tundra_breeding_season() -> void:
 		return
 	match GameTime.current_season():
 		"spring":
-			# 活過冬天的幼狼算年輕的成狼；兩隻都活著才生
-			y["young"] = int(y.get("young", 0)) + int(y.get("pups", 0))
+			# 年輕的成狼：2～3 歲才可能離群，也可能一直留下來當幫手（2026-10-15 試玩回報 18，使用者決定）
+			var ages: Array = y.get("young_ages", [])
+			if ages.is_empty() and int(y.get("young", 0)) > int(y.get("settled", 0)):
+				for i in int(y["young"]) - int(y.get("settled", 0)): # 舊紀錄沒有年齡：當成 1 歲
+					ages.append(1)
+			# 留下來的幫手也會老、會死（每年 settled_death），不然十幾年後會塞滿整群
+			var settled: int = int(y.get("settled", 0))
+			for i in settled:
+				if RNGService.chance(float(cfg.get("settled_death", 0.15))):
+					y["settled"] = int(y["settled"]) - 1
+			var leave_chance: Dictionary = cfg.get("leave_chance", {"2": 0.5, "3": 0.7})
+			var kept: Array = []
+			var left: int = 0
+			for a in ages:
+				var age: int = int(a) + 1
+				var c: float = float(leave_chance.get(str(mini(age, 3)), 0.0))
+				if c > 0.0 and RNGService.chance(c):
+					left += 1
+				elif age >= 3:
+					y["settled"] = int(y.get("settled", 0)) + 1 # 3 歲還沒走：長期留下
+				else:
+					kept.append(age)
+			# 活過冬天的幼狼算 1 歲的年輕成狼；兩隻都活著才生
+			for i in int(y.get("pups", 0)):
+				kept.append(1)
 			y["pups"] = 0
 			var chance: float = float(cfg.get("birth_chance", 0.8)) * (float(cfg.get("harsh_mult", 0.5)) if _harsh_year() else 1.0)
 			if tundra_pair().size() >= 2 and RNGService.chance(chance):
@@ -4484,13 +4508,17 @@ func _tundra_breeding_season() -> void:
 				born.append(snapped(wolf.age_years, 0.1))
 				y["born"] = born
 				life_log["tundra_litters"] = int(life_log.get("tundra_litters", 0)) + 1
-			# 整群最多 max_pack 隻：超過時年輕的離開
-			var over: int = tundra_pair().size() + int(y["young"]) + int(y["pups"]) - int(cfg.get("max_pack", 6))
+			# 整群最多 max_pack 隻：超過時年紀最大、還沒定下來的先走
+			var over: int = tundra_pair().size() + kept.size() + int(y.get("settled", 0)) + int(y["pups"]) - int(cfg.get("max_pack", 10))
 			if over > 0:
-				var leave: int = min(over, int(y["young"]))
-				y["young"] = int(y["young"]) - leave
-				if leave > 0 and is_identified("tundra_wolf"):
-					log_message.emit(tr("tundra.young_left").replace("{n}", str(leave)))
+				kept.sort()
+				var leave: int = mini(over, kept.size())
+				kept = kept.slice(0, kept.size() - leave)
+				left += leave
+			y["young_ages"] = kept
+			y["young"] = kept.size() + int(y.get("settled", 0))
+			if left > 0 and is_identified("tundra_wolf"):
+				log_message.emit(tr("tundra.young_left" + (".many" if left > 1 else "")).replace("{n}", str(left)))
 		"autumn", "winter":
 			var p: float = float(cfg.get("pup_death", 0.3)) * (float(cfg.get("harsh_death_mult", 1.4)) if _harsh_year() else 1.0)
 			var alive: int = 0

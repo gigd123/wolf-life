@@ -1284,6 +1284,7 @@ hunt.tundra_help.other.single,那隻苔原狼在一旁一起追，替你看清�
 tundra.hunt.shared,苔原狼也圍上來吃了一部分。
 tundra.hunt.shared.single,那隻苔原狼也湊上來吃了一部分。
 tundra.young_left,一隻年輕的苔原狼離開了這一群，往遠方去找自己的地方。
+tundra.young_left.many,{n} 隻年輕的苔原狼離開了這一群，往遠方去找自己的地方。
 tundra.pack.extra,牠們身後還跟著 {n} 隻年輕的狼。
 tundra.den.clue,坡下的土堆裡傳出細細的嗚咽聲，洞口滿是新鮮的足跡。那對苔原狼的巢穴就在這裡。
 tundra.den.clue.single,坡下的土堆裡傳出細細的嗚咽聲，洞口滿是新鮮的足跡。那隻苔原狼的巢穴就在這裡。
