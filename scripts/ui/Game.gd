@@ -4069,11 +4069,45 @@ func _process(delta: float) -> void:
 
 # --- Lifecycle ---
 
-func _on_wolf_died(_cause: String) -> void:
-	# wolf_died 訊號已經切換過場景時，這個畫面會立刻離開場景樹；之後主動呼叫的就略過。
-	if not is_inside_tree():
+var death_card_shown: bool = false
+
+# 死去時先用一張字卡交代這一生怎麼結束（2026-10-15 試玩：原本直接跳到一生回顧），按「繼續」才到一生回顧。
+# wolf_died 訊號和各處主動呼叫都會進來，只顯示一次；延到這一格最後，讓正在進行的畫面先處理完。
+func _on_wolf_died(cause: String) -> void:
+	if not is_inside_tree() or death_card_shown:
 		return
-	get_tree().change_scene_to_file("res://scenes/LifeSummary.tscn")
+	death_card_shown = true
+	_show_death_card.call_deferred(cause)
+
+func _show_death_card(cause: String) -> void:
+	for o in [encounter_overlay, hunt_overlay, rest_overlay, region_info_overlay, debug_overlay]:
+		o.visible = false
+	current_hunt = null
+	current_combat = null
+	var bg: Texture2D = ArtLibrary.region_background(GameState.current_region, "burned") if cause == "fire" else null
+	_show_card(tr("death.card.title"), _death_text(cause), bg)
+	_clear_children(card_buttons_box)
+	var btn := Button.new()
+	btn.text = tr("ui.continue")
+	btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/LifeSummary.tscn"))
+	card_buttons_box.add_child(btn)
+	card_overlay.move_to_front()
+	btn.grab_focus.call_deferred()
+
+# 死因的字卡：老死依所在的地圖寫景；戰死寫出對手（認得才寫名字）。
+func _death_text(cause: String) -> String:
+	match cause:
+		"old_age":
+			var key: String = "death.card.old_age." + GameState.current_map()
+			return tr(key) if tr(key) != key else tr("death.card.old_age.forest")
+		"combat", "bear":
+			var d: Dictionary = GameState.life_log.get("death_detail", {})
+			var animal: String = str(d.get("animal", "grizzly_bear" if cause == "bear" else ""))
+			if animal != "":
+				return tr("death.card.combat").replace("{animal}", TextFormat.source_name(animal))
+			return tr("death.card.combat.generic")
+	var k: String = "death.card." + cause
+	return tr(k) if tr(k) != k else tr("death.card.unknown")
 
 func _on_save_and_exit() -> void:
 	SaveSystem.save_game()
