@@ -38,7 +38,8 @@
     "npc_death_chance": 0.3
   },
   "_snow_comment": "雪況（1.8 第 2 步）：每天換日時依地圖、季節、早段（第 early_days 天以前）或晚段決定，權重如下。none 無雪、light 淺雪、deep 深雪、crust 硬雪殼（晝融夜凍）。苔原風大，硬雪殼比較多。效果依獵物各自計算（animals.json 的 snow），狼自己在深雪裡移動、探索較累（deep_move_stamina、deep_explore_stamina）。",
-  "snow": { "early_days": 4, "deep_move_stamina": 2, "deep_explore_stamina": 1,
+  "_snow_comment": "雪況逐日延續（2026-10-16 使用者選方案 A）：每天有 stay_chance 維持前一天；否則依這一段的權重擲一個目標，往目標走一級（無雪－淺雪－深雪，硬雪殼和淺雪、深雪相鄰）。這一段不可能出現的雪況（權重 0）每天一定往目標走（例如春末一定融）。冬季第一天至少淺雪（暖冬也是）。",
+  "snow": { "early_days": 4, "deep_move_stamina": 2, "deep_explore_stamina": 1, "stay_chance": 0.4,
     "maps": {
       "forest": { "autumn_early": { "none": 1 }, "autumn_late": { "none": 8, "light": 2 }, "winter_early": { "light": 6, "deep": 3, "none": 1 }, "winter_late": { "deep": 6, "crust": 3, "light": 1 }, "spring_early": { "crust": 3, "light": 3, "none": 4 }, "spring_late": { "none": 1 }, "summer": { "none": 1 } },
       "tundra": { "autumn_early": { "none": 8, "light": 2 }, "autumn_late": { "light": 6, "none": 2, "crust": 2 }, "winter_early": { "light": 3, "deep": 3, "crust": 4 }, "winter_late": { "crust": 5, "deep": 4, "light": 1 }, "spring_early": { "crust": 5, "deep": 2, "light": 3 }, "spring_late": { "light": 3, "none": 7 }, "summer": { "none": 1 } },

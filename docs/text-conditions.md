@@ -22,6 +22,7 @@
 | `tundra.relation_change.*` | 關係改變 | `tundra_relation_key` 改變的那一刻 | — |
 | `tundra.howl.familiar*` | 那對苔原狼又在嚎叫 | 認得苔原狼、關係友好 | — |
 | `event.howl.2、event.howl.3` | 又聽到狼嚎 | `knowledge_level`（聽過的次數）≥ 2 | 第一次聽到時用 |
+| `season_card.winter.full、season_card.winter.short` | 第一場雪落下、雪又來了 | 冬季第一天至少淺雪（換季時結算雪況，暖冬也一樣；`snow_sim` 檢查） | 冬季第一天沒雪 |
 | `season_card.*.short` | 季節的「又」 | 第一次以後的換季（`seasons_seen`）；第一次用 full | 第一次就用短版 |
 | `season_card.spring.bear_sensed` | 入冬前聞到的氣味又會回來 | `sensed:grizzly_bear` 且還沒辨識 | — |
 | `season_card.review.grew` | 這一季又成長了一些 | 這一季有能力 ▲ ≥ 0.5、沒有 ▼、沒有挨餓 | 只長感知或技巧時說「強壯」（已改成「成長」） |

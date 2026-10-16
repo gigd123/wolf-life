@@ -233,6 +233,7 @@ func _on_season_changed(_season_index: int) -> void:
 			_new_year()
 		_tundra_breeding_season()
 		_roam_tundra_wolves(true)
+		_update_snow() # 換季時日期直接歸 1、不經過換日：雪況在這裡結算，冬季第一天不會沿用秋末的
 		life_log["region_periods"] = {}
 		if GameTime.current_season() == "spring":
 			var years: int = GameData.balance.get("hare_cycle", {}).get("mult", [1.0]).size()
@@ -1308,14 +1309,47 @@ func action_explore(mode: String = "trail") -> Dictionary:
 # --- 雪況（1.8 第 2 步）---
 # 依 events.json 的 snow：每張地圖、每個季節的「早段／晚段」各有雪況的權重；苔原風大，硬雪殼比較多。
 # 年況（第 11 步）可以再乘倍率（snow_year_mult）。
+# 雪況逐日延續（2026-10-16 使用者選方案 A）：大多維持前一天，否則往這一段的權重擲出的目標走一級；
+# 這一段不會有的雪況（權重 0）每天一定往目標走。冬季第一天至少淺雪（換季時也結算一次，不沿用秋末的雪況）。
+const SNOW_NEXT := {"none": ["light"], "light": ["none", "deep", "crust"], "deep": ["light", "crust"], "crust": ["light", "deep"]}
+
 func _update_snow() -> void:
 	var cfg: Dictionary = GameData.events.get("snow", {})
 	var season: String = GameTime.current_season()
 	var phase: String = "early" if GameTime.day <= int(cfg.get("early_days", 4)) else "late"
 	for map_id in GameData.maps().keys():
 		var table: Dictionary = cfg.get("maps", {}).get(map_id, cfg.get("maps", {}).get("forest", {}))
-		var w: Dictionary = table.get(season + "_" + phase, table.get(season, {"none": 1}))
-		snow[map_id] = str(RNGService.weighted_pick(_snow_year_weights(w, season)))
+		var w: Dictionary = _snow_year_weights(table.get(season + "_" + phase, table.get(season, {"none": 1})), season)
+		var cur: String = str(snow.get(map_id, ""))
+		var next: String
+		if cur == "" or not SNOW_NEXT.has(cur):
+			next = str(RNGService.weighted_pick(w))
+		elif float(w.get(cur, 0.0)) > 0.0 and RNGService.chance(float(cfg.get("stay_chance", 0.7))):
+			next = cur
+		else:
+			next = _snow_step(cur, str(RNGService.weighted_pick(w)))
+		if season == "winter" and GameTime.day == 1 and next == "none":
+			next = "light"
+		snow[map_id] = next
+
+# 往目標雪況走一級（最短的路的第一步）。
+func _snow_step(cur: String, target: String) -> String:
+	if cur == target:
+		return cur
+	var prev := {cur: ""}
+	var queue: Array = [cur]
+	while not queue.is_empty():
+		var s: String = queue.pop_front()
+		for n in SNOW_NEXT.get(s, []):
+			if not prev.has(n):
+				prev[n] = s
+				queue.append(n)
+	if not prev.has(target):
+		return cur
+	var step: String = target
+	while str(prev[step]) != cur:
+		step = str(prev[step])
+	return step
 
 # 年況（1.8 第 11 步）：冬季、秋末、春初的雪況依這一年的冬季
 func _snow_year_weights(w: Dictionary, season: String) -> Dictionary:
