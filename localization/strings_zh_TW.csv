@@ -490,6 +490,8 @@ ui.day_toast,{season}・第 {n} 天
 ui.season_end,{season}末
 ui.day_summary.title,第 {n} 天
 sleep_summary.today,今天：
+sleep_summary.toast,睡了一覺：{list}
+sleep_summary.log,睡了一覺：{list}
 season_card.title,{season}天
 season_card.review.grew,這一季，你又變得比以前強壯一些：
 season_card.review.starved_some,這一季你常常挨餓，身體沒什麼長進：

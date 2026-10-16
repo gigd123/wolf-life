@@ -446,7 +446,12 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 			reason = str(none.get("peak", ""))
 		else:
 			reason = str(none.get("small", ""))
-	return {"gains": gains, "amounts": amounts, "reason": reason}
+	# 呈現方式由這裡決定（字卡分級 2026-10-16）：一般是淡出提示＋紀錄；
+	# 挨餓長不起來只在連續挨餓的第一晚出卡片，之後幾晚只寫紀錄，等不再挨餓後才重新計算。
+	var starved: bool = reason != "" and reason == str(cfg.get("reasons", {}).get("starved", ""))
+	var card: bool = starved and not bool(life_log.get("sleep_starved", false))
+	life_log["sleep_starved"] = starved
+	return {"gains": gains, "amounts": amounts, "reason": reason, "card": card}
 
 func _apply_elder_decay() -> void:
 	Growth.apply_elder_decay(wolf)

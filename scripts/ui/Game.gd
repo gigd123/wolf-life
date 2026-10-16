@@ -1524,7 +1524,9 @@ func _on_action_button(action_id: String) -> void:
 					for i in GameState.pending_events.size():
 						if GameState.pending_events[i].get("type", "") in ["day_summary", "season_card"]:
 							at = i + 1
-					GameState.pending_events.insert(at, {"type": "sleep_summary", "summary": res.get("summary", {})})
+					# 一般的成長用淡出提示（sleep_growth），挨餓長不起來的第一晚才出卡片（GameState.sleep_summary 決定）
+					var summary: Dictionary = res.get("summary", {})
+					GameState.pending_events.insert(at, {"type": "sleep_summary" if summary.get("card", false) else "sleep_growth", "summary": summary})
 
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
@@ -2228,6 +2230,8 @@ func _process_events() -> void:
 		"sleep_summary":
 			_show_sleep_summary(event.get("summary", {}))
 			return
+		"sleep_growth":
+			_show_sleep_growth(event.get("summary", {}))
 		"day_summary":
 			_show_day_summary(event)
 			return
@@ -3985,8 +3989,24 @@ func _build_toast() -> void:
 	toast.theme_type_variation = &"Toast"
 	add_child(toast)
 
-# 不擋操作的短暫提示：淡入、停留、淡出。
+# 不擋操作的短暫提示：淡入、停留、淡出。正在顯示時新的提示排在後面，不互相蓋掉（最多留 TOAST_QUEUE_MAX 條）。
+const TOAST_QUEUE_MAX := 3
+var toast_queue: Array = []
+
 func _show_toast(text: String, hold: float = 1.6) -> void:
+	if toast_tween != null and toast_tween.is_running():
+		toast_queue.append([text, hold])
+		while toast_queue.size() > TOAST_QUEUE_MAX:
+			toast_queue.pop_front()
+		return
+	_play_toast(text, hold)
+
+func _next_toast() -> void:
+	if not toast_queue.is_empty():
+		var next: Array = toast_queue.pop_front()
+		_play_toast(str(next[0]), float(next[1]))
+
+func _play_toast(text: String, hold: float) -> void:
 	toast.text = "[center]" + text + "[/center]"
 	move_child(toast, get_child_count() - 1)
 	if toast_tween != null:
@@ -3996,6 +4016,7 @@ func _show_toast(text: String, hold: float = 1.6) -> void:
 	toast_tween.tween_property(toast, "modulate:a", 1.0, 0.4)
 	toast_tween.tween_interval(hold)
 	toast_tween.tween_property(toast, "modulate:a", 0.0, 0.6)
+	toast_tween.finished.connect(_next_toast)
 
 func _show_day_toast() -> void:
 	if GameState.wolf == null or not GameState.wolf.alive or GameState.auto_playing:
@@ -4029,6 +4050,23 @@ func _show_sleep_summary(summary: Dictionary) -> void:
 	if lines.is_empty():
 		return
 	_show_card(tr("sleep_summary.title"), "\n".join(lines))
+	_play_pending_level_up()
+
+# 一般的睡醒成長（字卡分級 2026-10-16）：不出卡片，寫進紀錄，有能力提升時淡出提示一次（同一晚合併成一條）。
+func _show_sleep_growth(summary: Dictionary) -> void:
+	var gains: Array = summary.get("gains", [])
+	var amounts: Dictionary = summary.get("amounts", {})
+	var reason: String = tr(str(summary.get("reason", ""))) if str(summary.get("reason", "")) != "" else ""
+	if not gains.is_empty():
+		var plain: Array[String] = []
+		var rich: Array[String] = []
+		for stat in gains:
+			var amount: String = "▲%.1f" % float(amounts.get(stat, 0.0))
+			plain.append(tr("stat." + str(stat)) + " " + amount)
+			rich.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)) + " [color=%s]%s[/color]" % [UiTheme.html("stat_gain"), amount])
+		_log(tr("sleep_summary.log").replace("{list}", "　".join(plain)))
+		_show_toast(tr("sleep_summary.toast").replace("{list}", "　".join(rich)) + ("\n" + reason if reason != "" else ""), 2.6)
+	_log(reason)
 	_play_pending_level_up()
 
 # 能力提升的音效跟著卡片出現（被驚醒時卡片排在遭遇之後，音效不先播，試玩回報 14）
