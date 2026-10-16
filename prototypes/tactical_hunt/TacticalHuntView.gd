@@ -16,7 +16,7 @@ const COLORS := {
 	"target": Color("#ff4040"), "goal": Color(0.7, 0.9, 1.0, 0.5),
 	"fawn": Color("#d9a76a"), "picked": Color("#ffe060"), "bond": Color(1, 1, 1, 0.35),
 }
-const SCENARIOS := ["A", "B", "C", "D", "E", "F", "G", "H"]
+const SCENARIOS := ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 const WOLVES := {"slow": "慢（速度 40）", "normal": "普通（60）", "fast": "快（85）"}
 
 var h = TH.new()
@@ -165,8 +165,8 @@ func _after_action() -> void:
 	if h.done:
 		var color := "#9fe08a" if h.result == "caught" else "#e0a08a"
 		var what: String = {"caught": "獵到", "escaped": "逃脫，留下一條新鮮足跡", "lost": "跟丟，留下一條新鮮足跡", "gave_up": "放棄", "timeout": "拖太久"}.get(h.result, h.result)
-		if h.result == "caught" and h.herd.size() > 1:
-			what += "%s（%d 段肉）" % ["幼鹿" if h.caught_kind == "fawn" else "成鹿", h.meat]
+		if h.result == "caught" and (h.herd.size() > 1 or not h.sp(h.target).is_empty()):
+			what += "%s（%d 段肉）" % ["幼鹿" if h.caught_kind == "fawn" else str(h.sp(h.target).get("name", "成鹿")), h.meat]
 		lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d、受傷 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color, what,
 			h.rounds, roundi(h.breath_used), roundi(h.damage_taken), h.game_turns(), roundi(h.stamina_cost())])
 	log_box.text = "\n".join(lines.slice(maxi(0, lines.size() - 30)))
@@ -276,6 +276,8 @@ func _hover_text() -> String:
 		return s
 	var r: Dictionary = h.reachable()
 	if r.has(hover):
+		if r[hover] == "trot" and h.tired():
+			return "小跑（喘不夠：少一格，不扣喘也不回喘）"
 		return {"creep": "潛行（回喘）", "trot": "小跑（−4 喘）", "sprint": "衝刺（−22 喘）"}[r[hover]]
 	return ""
 

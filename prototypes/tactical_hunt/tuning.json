@@ -32,6 +32,8 @@
         7.0
       ]
     ],
+    "tired_trot_less": 1.0,
+    "_tired_comment": "喘不夠小跑（< 4）時仍可小跑，範圍少 tired_trot_less 格、不扣喘也不回喘；衝刺與撲咬仍要喘（2026-10-16 使用者選 A）。",
     "breath_creep": 5.0,
     "breath_trot": -4.0,
     "breath_sprint": -22.0,
@@ -386,6 +388,22 @@
       "deer_list": [ { "pos": [17, 8], "kind": "adult" }, { "pos": [18, 10], "kind": "adult" }, { "pos": [17, 9], "kind": "fawn", "mother": 0 } ],
       "goals": [[22, 7], [17, 3]],
       "map_from": "D"
+    },
+    "I": {
+      "name": "母馬鹿、開闊地",
+      "wind": [-1, 0],
+      "wolf": [1, 8],
+      "deer_list": [ { "pos": [10, 8], "kind": "adult", "species": "elk" } ],
+      "goals": [[20, 5], [12, 11]],
+      "map_from": "A"
+    },
+    "J": {
+      "name": "母馬鹿、林緣",
+      "wind": [0, -1],
+      "wolf": [7, 7],
+      "deer_list": [ { "pos": [13, 7], "kind": "adult", "species": "elk" } ],
+      "goals": [[11, 13], [11, 2]],
+      "map_from": "C"
     }
   },
   "_size_comment": "2026-10-15：22×12 時鹿 2 回合就跑出場地 → 32×16；使用者要普通的狼靠耐力追上約 50%，鹿要跑 5～6 回合才出得去 → 40×16（畫面一格 14 像素，560×224）。",
@@ -407,6 +425,18 @@
     "meat": { "adult": 3, "fawn": 2 }
   },
   "_special_comment": "特殊招式（2026-10-16 使用者：全遊戲 3～5 招，要在特殊情況下才學得到；原型先做「前截鎖喉」，參考黃石的母狼 06）。front_lock：目標是逃跑中的成鹿、你這一回合能小跑或衝刺到牠正前方相鄰的格子時可用；成功直接咬死，失敗容易被正面撞踢、用掉很多喘。需要速度與技巧門檻。數值為初始值。",
+  "_species_comment": "其他獵物（2026-10-16，驗證特殊招式「前截鎖喉」對大型獵物的價值）：沒寫的物種就是白尾鹿。馬鹿：體型大、耐跑，比較難壓倒、咬住後更常被甩開或踢傷，肉多（主遊戲 4 段）。數值為初始值【假設】。",
+  "species": {
+    "elk": {
+      "name": "母馬鹿",
+      "flee_profile": { "healthy": [3, 5, 6, 4, 3], "average": [3, 5, 5, 3, 2], "weak": [3, 5, 5, 2, 2] },
+      "pounce": -0.05,
+      "kick_mult": 1.5,
+      "kick_damage": [8, 18],
+      "hold": { "takedown": -0.25, "throat": -0.1, "break": 0.1, "kick": 0.18 },
+      "meat": 4
+    }
+  },
   "special": {
     "front_lock": { "min_speed": 70, "min_skill": 60, "base": 0.3, "ability_divisor": 100.0, "tired": 0.25, "condition": { "healthy": -0.1, "average": 0.0, "weak": 0.1 }, "breath": 30.0, "fail_hit": 0.35, "fail_damage": [10, 20] }
   },

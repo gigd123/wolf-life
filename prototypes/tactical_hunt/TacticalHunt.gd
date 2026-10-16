@@ -130,7 +130,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 		herd.append({"pos": Vector2i(int(d["pos"][0]), int(d["pos"][1])), "facing": DIRS[rng.randi_range(0, 7)], "state": "unaware", "alert": 0.0,
 			"flee_round": 0, "condition": str(_weighted(t["deer"]["condition_weights"])), "condition_known": false, "held": false, "wounds": 0,
 			"lost_turns": 0, "goal_index": 0, "last_cells": [], "kind": str(d.get("kind", "adult")), "mother": int(d.get("mother", -1)),
-			"gone": false, "defend_rounds": 0, "separated": false})
+			"gone": false, "defend_rounds": 0, "separated": false, "species": str(d.get("species", "deer"))})
 	wi = 0
 	di = 0
 	target = 0
@@ -154,6 +154,10 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	stats = {"stuck": 0, "toward_wolf": 0}
 
 # --- 鹿群（鹿群版） ---
+
+# 物種的設定（tuning.json species；沒寫的物種是白尾鹿，回傳空的）
+func sp(i: int = -1) -> Dictionary:
+	return t.get("species", {}).get(str(herd[di if i < 0 else i].get("species", "deer")), {})
 
 func is_fawn(i: int = -1) -> bool:
 	return str(herd[di if i < 0 else i].get("kind", "adult")) == "fawn"
@@ -186,7 +190,7 @@ func label(i: int = -1) -> String:
 	var k: int = di if i < 0 else i
 	if herd.size() <= 1:
 		return "牠"
-	return "幼鹿" if is_fawn(k) else "母鹿"
+	return "幼鹿" if is_fawn(k) else str(sp(k).get("name", "母鹿"))
 
 func set_target(i: int) -> void:
 	if i >= 0 and i < herd.size() and not bool(herd[i]["gone"]) and not held:
@@ -255,7 +259,12 @@ func max_move() -> float:
 		return sprint_range()
 	if breath >= -float(m["breath_trot"]):
 		return trot_range()
-	return float(m["creep_range"])
+	# 喘不夠時還能小跑，但少一格、不扣喘也不回喘（小跑是狼的耐力步伐；2026-10-16 使用者選 A）
+	return max(float(m["creep_range"]), trot_range() - float(m.get("tired_trot_less", 1.0)))
+
+# 喘不夠小跑：這時的小跑不扣喘
+func tired() -> bool:
+	return breath < -float(t["move"]["breath_trot"])
 
 # 依花費決定方式：潛行（≤1）、小跑、衝刺。
 func mode_for_cost(cost: float) -> String:
@@ -308,6 +317,8 @@ func give_up() -> void:
 	_finish("gave_up", "你放棄了。")
 
 func _spend(key: String) -> void:
+	if key == "breath_trot" and tired():
+		return # 累了的小跑：不扣喘也不回喘
 	var v: float = float(t["move"][key])
 	if v < 0.0:
 		breath_used += -v
@@ -386,6 +397,9 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		var fb: float = float(t["herd"]["fawn"]["pounce"])
 		v += fb
 		factors.append(["幼鹿", fb])
+	if sp().has("pounce"):
+		v += float(sp()["pounce"])
+		factors.append([str(sp().get("name", "")), float(sp()["pounce"])])
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
 		v += float(p["unaware"])
@@ -403,11 +417,12 @@ func kick_chance() -> float:
 		return 0.0 # 幼鹿不會踢狼
 	var side := angle_side()
 	var k: Dictionary = t["pounce"]["kick"]
+	var m: float = float(sp().get("kick_mult", 1.0))
 	if side == "rear":
-		return float(k["rear"]) if deer_state == "flee" else 0.0
+		return float(k["rear"]) * m if deer_state == "flee" else 0.0
 	if side == "front":
-		return float(k["front"]) if deer_state != "flee" else 0.0
-	return float(k["side"])
+		return float(k["front"]) * m if deer_state != "flee" else 0.0
+	return float(k["side"]) * m
 
 func pounce() -> void:
 	pounce_at(wolf_pos)
@@ -424,7 +439,7 @@ func pounce_at(cell: Vector2i) -> void:
 	last_mode = str(info["mode"])
 	var side: String = info["side"]
 	if rng.randf() < float(info["kick"]):
-		var k: Array = t["pounce"]["kick_damage"]
+		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
@@ -534,7 +549,7 @@ func hold_options() -> Dictionary:
 	var h: Dictionary = t["hold"]
 	var fat: float = deer_fatigue_any()
 	var out := {}
-	var fb: Dictionary = t["herd"]["fawn"] if is_fawn() else {}
+	var fb: Dictionary = t["herd"]["fawn"] if is_fawn() else sp().get("hold", {})
 	var td: float = float(h["takedown_base"]) + (float(wolf["strength"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) \
 		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0))
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]),
@@ -555,6 +570,7 @@ func break_chance(after_throat_miss: bool = false) -> float:
 	var v: float = float(h["break_base"]) - deer_fatigue_any() * float(h["break_tired"]) + (float(h["throat_miss_break"]) if after_throat_miss else 0.0)
 	if is_fawn():
 		v += float(t["herd"]["fawn"]["break"])
+	v += float(sp().get("hold", {}).get("break", 0.0))
 	if mother_hit_fawn_held:
 		v += float(t["herd"]["defend"]["break_bonus"]) # 被母鹿踢得鬆口
 	return clamp(v, 0.05, 0.95)
@@ -597,8 +613,8 @@ func _let_go(text: String) -> void:
 func _deer_struggle(after_throat_miss: bool) -> void:
 	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
 	var h: Dictionary = t["hold"]
-	if not is_fawn() and rng.randf() < float(h["kick"]):
-		var k: Array = t["pounce"]["kick_damage"]
+	if not is_fawn() and rng.randf() < float(sp().get("hold", {}).get("kick", h["kick"])):
+		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		kicks += 1
@@ -958,7 +974,7 @@ func deer_intent() -> Array:
 func _flee_budget(i: int = -1) -> float:
 	var k: int = di if i < 0 else i
 	var h: Dictionary = herd[k]
-	var prof: Array = t["herd"]["fawn_flee"] if is_fawn(k) else t["deer"]["flee_profile"][h["condition"]]
+	var prof: Array = t["herd"]["fawn_flee"] if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
 	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]))
 	# 生母放慢等幼鹿：最多比幼鹿多跑 mother_slack 格（幼鹿還在附近、沒跑散時）
@@ -1095,7 +1111,7 @@ func _finish(p_result: String, text: String) -> void:
 	reason = text
 	if p_result == "caught":
 		caught_kind = "fawn" if is_fawn(target) else "adult"
-		meat = int(t["herd"]["meat"][caught_kind])
+		meat = int(sp(target).get("meat", t["herd"]["meat"][caught_kind]))
 	events.append(text)
 
 # --- 結算（接進主遊戲時用）---

@@ -15,7 +15,7 @@ func _process(_d) -> bool:
 	var min_chance: float = float(OS.get_environment("MIN")) if OS.get_environment("MIN") != "" else 0.3
 	var h = TH.new()
 	print("== 前截鎖喉：快的狼（速度 85、技巧 60），每格 %d 場；學會的狼在成功率 ≥ %d%% 時出手" % [runs, roundi(min_chance * 100)])
-	for sc in ["A", "C", "D", "E", "G"]:
+	for sc in ["A", "C", "D", "E", "G", "I", "J"]:
 		var line := "%s %-10s" % [sc, h.t["scenarios"][sc]["name"]]
 		for knows in [false, true]:
 			var ok := 0; var used := 0; var lock_kills := 0; var hurt := 0; var rounds := 0
