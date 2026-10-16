@@ -102,6 +102,8 @@ debug.skip_season,跳到下一季
 debug.challenger,年輕的狼現身
 debug.challenger.not_elder,年輕的狼只在老年出現（先跳到老年）。
 debug.end_life,結束這一生（老死）
+debug.text_issue,⚠ 畫面上有沒翻成文字的「{token}」（已記進試玩紀錄）
+stats.text_issue,⚠ 文字問題：{issue}
 debug.toggle_time_mode,切換時間倍率（正常／測試）
 debug.add_year,年齡 +1 歲
 debug.jump_stage,跳到{stage}

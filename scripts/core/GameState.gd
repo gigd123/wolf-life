@@ -2371,6 +2371,16 @@ func metric_card(seconds: float) -> void:
 	if seconds < 1.0:
 		m["quick_cards"] = int(m.get("quick_cards", 0)) + 1
 
+# 文字問題（TextWatch）：原始翻譯鍵、沒替換的佔位。同一個片段只記一次，最多 TEXT_ISSUE_MAX 筆。
+const TEXT_ISSUE_MAX := 50
+
+func metric_text_issue(kind: String, token: String, where: String, text: String) -> void:
+	var issues: Dictionary = metrics().get_or_add("text_issues", {})
+	if issues.has(token) or issues.size() >= TEXT_ISSUE_MAX:
+		return
+	issues[token] = {"kind": kind, "where": where, "text": text, "age": snapped(wolf.age_years, 0.01) if wolf != null else 0.0,
+		"region": current_region, "routine": routine_running, "auto": auto_playing}
+
 # 給除錯選單與試玩紀錄看的摘要。
 func metrics_summary() -> Dictionary:
 	var m := metrics()
@@ -2384,7 +2394,9 @@ func metrics_summary() -> Dictionary:
 		# 各狀況下：選擇次數、選最高成功率的比例、刻意冒險的比例
 		"best_choice_by_context": (m.get("by_context", {}) as Dictionary).keys().map(func(k): return "%s %d次 最高%.2f 冒險%.2f" % [k, int(m["by_context"][k][0]),
 			float(m["by_context"][k][1]) / max(1, int(m["by_context"][k][0])), float(m["by_context"][k][2]) / max(1, int(m["by_context"][k][0]))]),
-		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0])}
+		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0]),
+		"text_issues": (m.get("text_issues", {}) as Dictionary).keys().map(func(k): return "%s %s @ %s「%s」" % [m["text_issues"][k]["kind"], k,
+			m["text_issues"][k]["where"], m["text_issues"][k]["text"]])}
 
 func _stat_total(stat_key: String) -> int:
 	var total := 0

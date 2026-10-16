@@ -1129,6 +1129,8 @@ func _stage_key(stage: int) -> String:
 		_: return "elder"
 
 func _log(text: String) -> void:
+	# 照常過日子、自動遊玩時紀錄不顯示，但一樣檢查有沒有原始翻譯鍵
+	_report_text_issues(text_watch.check(text, "log"))
 	if text == "" or GameState.auto_playing:
 		return
 	if session_active:
@@ -2364,6 +2366,18 @@ func _show_bear_passing(event: Dictionary) -> void:
 
 # --- 試玩紀錄（SPEC「遊戲內自動紀錄」）---
 
+# 文字檢查（文案一致性 A）：畫面或紀錄出現原始翻譯鍵、沒替換的 {佔位} 時，記進試玩紀錄；
+# 在編輯器裡遊玩時另外淡出提示一次，方便當下截圖。
+const TEXT_WATCH_INTERVAL := 0.5
+var text_watch := TextWatch.new()
+var text_watch_timer: float = 0.0
+
+func _report_text_issues(found: Array) -> void:
+	if found.is_empty() or not OS.has_feature("editor"):
+		return
+	for item in found:
+		_show_toast(tr("debug.text_issue").replace("{token}", str(item[1])), 3.0)
+
 func _show_playtest_stats() -> void:
 	var stats: Dictionary = GameState.life_log.get("stats", {})
 	var counts: Dictionary = stats.get("option_counts", {})
@@ -2373,6 +2387,8 @@ func _show_playtest_stats() -> void:
 	lines.append(tr("stats.metrics").replace("{minutes}", str(ms["play_minutes"])).replace("{decisions}", str(ms["decisions_per_day"])) \
 		.replace("{events}", str(ms["events_per_day"])).replace("{quiet}", str(ms["longest_quiet_days"])) \
 		.replace("{best}", str(int(round(float(ms["best_choice_ratio"]) * 100.0)))).replace("{quick}", str(int(round(float(ms["quick_card_ratio"]) * 100.0)))))
+	for issue in ms.get("text_issues", []):
+		lines.append(tr("stats.text_issue").replace("{issue}", str(issue)))
 	# 每個階段內各選項的選擇率；超過 80% 代表可能是最佳解
 	var by_stage: Dictionary = {}
 	for key in counts.keys():
@@ -4103,6 +4119,10 @@ func _start_auto_to_adult(prey: String, style: String) -> void:
 func _process(delta: float) -> void:
 	if auto_player == null:
 		GameState.metric_play_time(delta)
+		text_watch_timer -= delta
+		if text_watch_timer <= 0.0 and not GameState.auto_playing:
+			text_watch_timer = TEXT_WATCH_INTERVAL
+			_report_text_issues(text_watch.scan(self, debug_overlay))
 		return
 	auto_player.step(AUTO_DAYS_PER_FRAME)
 	if GameState.wolf != null:
