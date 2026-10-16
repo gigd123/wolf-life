@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # 文案的靜態檢查（2026-10-13，pre-2.0-plan 的「文案檢查工具」）：依 docs/writing-guide.md 找出明顯的問題。
 # 錯誤（回傳 1）：重複的鍵、半形標點、「我／玩家」、文字裡的 {佔位} 在程式裡沒有被替換。
-# 提醒（只列出，要人看）：敘事文字裡出現遊戲用語、苔原狼的「牠們」沒有單數版本、可能在苔原出現的文字用了森林字眼、單一文案超過 90 字。
+# 提醒（只列出，要人看）：敘事文字裡出現遊戲用語、苔原狼的「牠們」沒有單數版本、可能在苔原出現的文字用了森林字眼、單一文案超過 90 字、
+# 有斷言字眼卻不在 docs/text-conditions.md 的文字。
 # 用法：python3 tools/check_text.py [--notes]（加 --notes 才列出提醒的細節）
 import csv, glob, re, sys
 
@@ -74,6 +75,22 @@ for k, v in texts.items():
     plain = re.sub(r'\[/?[a-z]+[^\]]*\]|\{[a-z_]+\}', '', v).replace('\\n', '')
     if len(plain) > 90:
         notes.append(f'太長（{len(plain)} 字，單一文案 90 字以內）：{k}')
+
+# 文案斷言（文案一致性 C）：有比較、時間、數量、因果字眼的文字，要列在 docs/text-conditions.md（寫出依據的狀態，或標成純描述）
+CLAIM = r'比上次|比以前|比當時|比去年|比昨天|遠比|越來越|不如以往|不如從前|又|終於|再次|今年|去年|第一次|從此|已經|這次|上次|少了很多|多了很多|因為|所以'
+try:
+    doc = open('docs/text-conditions.md', encoding='utf-8').read()
+except OSError:
+    doc = ''
+listed = []
+for cell in re.findall(r'`([^`]+)`', doc):
+    for part in cell.split('、'):
+        listed.append(re.compile('^' + re.escape(part.strip()).replace(r'\*', '.*') + '$'))
+for k, v in texts.items():
+    if k.startswith(('debug.', 'ui.')) or not re.search(CLAIM, v):
+        continue
+    if not any(p.match(k) for p in listed):
+        notes.append(f'斷言字眼，對照表沒有（docs/text-conditions.md）：{k}  {v}')
 
 for e in errors:
     print('錯誤：' + e)

@@ -3114,13 +3114,15 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	# 敵視：牠們一看到你就撲上來
 	if d.get("charge", false):
 		_log(tr("tundra.charge." + _pair_key()))
+		GameState.note_tundra_seen()
 		_begin_combat(GameState.start_tundra_combat("meet", true), "attack")
 		return
 	var lines: Array[String] = []
 	if d.get("came", false): # 回應嚎叫後牠們循聲找來：開頭就是「找來了」，不再接「又出現在你面前」
 		lines.append(_tt("tundra.come"))
+		GameState.note_tundra_seen()
 	else:
-		lines.append(tr("tundra.meet.%s.%s" % ["first" if d.get("first", false) else "again", _pair_key()]))
+		lines.append(tr(GameState.tundra_meet_key(d.get("first", false))))
 	# 體型和你現在相比（1.8 第 8 步）
 	lines.append(_tt("tundra.size." + GameState.tundra_size_key()))
 	# 牠們的孩子（1.8 第 10 步）：秋冬幼狼跟著行動，年輕的成狼一直都在
@@ -3392,6 +3394,9 @@ func _show_lie_down() -> void:
 func _show_challenger(d: Dictionary, carcass: bool) -> void:
 	var key: String = "challenger." + ("first" if d.get("first", false) else "again") + ("." + ("carcass" if carcass else ("territory" if d.get("territory", false) else "meet")))
 	var text: String = tr(key)
+	# 「牠比上次更壯」只在牠真的變強時才說（只有你上次打贏時，文案稽核 2026-10-16）
+	if not d.get("first", false) and GameState.challenger_grew():
+		text += tr("challenger.again.grew")
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""

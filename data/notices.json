@@ -75,7 +75,9 @@
     "peak_margin": 2.0,
     "_none_comment": "沒有任何能力提升時的原因（QA-47）：老年身體不再成長、白天幾乎沒活動（鍛鍊點 < idle_points）、身體已到巔峰上限附近（差距 < peak_margin），其他是變化太小。",
     "none_reasons": { "elder": "sleep_reason.none_elder", "idle": "sleep_reason.none_idle", "peak": "sleep_reason.none_peak", "small": "sleep_reason.none_small" },
-    "reasons": {
+    "_roam_comment": "roam：上次睡覺後沒有追獵也沒有打鬥（成長來自探索、採集），不寫追逐或纏鬥（文案稽核 2026-10-16）。",
+  "reasons": {
+  "roam": "sleep_reason.roam",
       "starved": "sleep_reason.starved",
       "full.chase": "sleep_reason.full_chase",
       "full.fight": "sleep_reason.full_fight",

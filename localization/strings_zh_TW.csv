@@ -495,8 +495,8 @@ sleep_summary.today,今天：
 sleep_summary.toast,睡了一覺：{list}
 sleep_summary.log,睡了一覺：{list}
 season_card.title,{season}天
-season_card.review.grew,這一季，你又變得比以前強壯一些：
-season_card.review.starved_some,這一季你常常挨餓，身體沒什麼長進：
+season_card.review.grew,這一季，你又成長了一些：
+season_card.review.starved_some,這一季你常常挨餓，長得比較慢：
 season_card.review.starved,這一季你瘦了，身體沒什麼長進。
 season_card.review.declined,這一季，你的身體有些地方不如從前了：
 season_card.spring.full,積雪一塊塊融化，溪水漲了起來，帶著泥土的氣味。在北方雲杉林避寒的鹿群散開了，回到各處的林地。
@@ -523,6 +523,7 @@ sleep_reason.full_chase,這幾天吃得很飽，追擊又多，你的腿更有�
 sleep_reason.full_fight,這幾天吃得很飽，又幾番撲咬纏鬥，你的頸背更結實了。
 sleep_reason.ok_chase,這幾天的追逐，讓你的腿更有力了。
 sleep_reason.ok_fight,幾番撲咬纏鬥，讓你的頸背更結實了。
+sleep_reason.roam,這幾天四處走動，身體慢慢結實了一些。
 sleep_reason.hungry_chase,雖然常常餓著肚子，這幾天的追逐還是讓你的腿更有力了。
 sleep_reason.hungry_fight,雖然常常餓著肚子，幾番纏鬥還是讓你更結實了。
 ui.tendency.title,狩獵傾向
@@ -652,6 +653,7 @@ combat.result.grab,你叼走一大塊肉，迅速退開。
 combat.result.ignore,{animal}叼走了一塊肉。
 combat.result.submit,你活了下來，但這一帶不再是你能久留的地方。
 combat.grow.clean,這一仗幾乎沒受傷，你打得越來越熟練。
+combat.grow.clean_elder,這一仗幾乎沒受傷。你的老經驗還管用。
 combat.grow.costly,這一仗贏得辛苦，你記住了牠的每一個動作。
 factor.combat.next_bonus,抓到破綻
 factor.combat.initiative,先手
@@ -724,7 +726,7 @@ first_win.grizzly_bear.title,那頭灰熊
 first_win.grizzly_bear.body,你獨自和一頭成年灰熊周旋，閃過一掌又一掌，直到牠喘著粗氣轉身離開。很少有狼做得到。
 first_win.grizzly_bear.body.heavy,你和一頭成年灰熊纏鬥到最後，牠終於轉身離開。你也被撕得遍體鱗傷，這一戰留下的多半是傷。
 first_win.cougar.title,那頭美洲獅
-first_win.cougar.body,你一次又一次躲過牠的撲擊，最後牠竄上岩壁，再也沒有回頭。牠的快，你記住了。
+first_win.cougar.body,你一次又一次躲過牠的撲擊，最後牠躍上高處，頭也不回的逃走了。牠的快，你記住了。
 first_win.cougar.body.heavy,牠的爪子在你身上留下好幾道深深的傷，但最後退走的是牠。你活了下來，學到的卻不多。
 first_win.black_bear.title,那頭黑熊
 first_win.black_bear.body,你繞著牠周旋，咬得牠連連後退，最後牠笨重地鑽回林子裡。你的力氣不輸給牠。
@@ -965,6 +967,7 @@ tundra.meet.first.pair,兩隻毛色偏淺的狼從遠處的雪坡上看著你。
 tundra.meet.first.single,一隻毛色偏淺的狼從遠處的雪坡上看著你。牠腿很長，是住在苔原的灰狼，跟著馴鹿群四處遷徙。
 tundra.meet.again.pair,那對苔原狼又出現在你面前。
 tundra.meet.again.single,那隻苔原狼又出現了，這次只有牠一隻。
+tundra.meet.again.single_same,那隻苔原狼又出現了。
 tundra.attitude.hostile,牠們一看到你就壓低了頭，頸毛豎起，喉嚨裡滾著低吼。
 tundra.attitude.wary,牠們遠遠看著你，耳朵豎得直直的。
 tundra.attitude.familiar,牠們認得你的氣味，沒有走開，也沒有靠近。
@@ -1365,6 +1368,7 @@ year.hint.summer.dry,這個夏天幾乎沒有下雨，草地乾得發黃。
 year.hint.summer.wet,這個夏天雨下個不停，溪水漲得很高。
 year.hint.spring.hare_high,灌木叢裡到處是雪兔的足跡，多得數不清。
 year.hint.spring.hare_low,灌木叢裡難得看到雪兔的足跡，牠們好像少了很多。
+year.hint.spring.hare_low_rising,灌木叢裡的雪兔足跡還是很少，不過比去年多了一點。
 summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。
 combat.anim.normal,動畫：一般（按一下切換；播放中按一下略過）
 combat.anim.fast,動畫：快（按一下切換；播放中按一下略過）
@@ -1398,9 +1402,10 @@ factor.worn_teeth,牙齒磨鈍了
 challenger.first.meet,一隻年輕的狼站在不遠處盯著你。牠毛色偏紅，肩膀還很瘦，眼神卻一點也不怕你。
 challenger.first.territory,你留下記號的地方，一隻年輕的狼正抬起後腿，把自己的氣味蓋上去。牠回頭看著你，沒有要走的意思。
 challenger.first.carcass,一隻年輕的狼從旁邊走過來，低著頭、壓著耳朵，一步步逼近你的獵物。
-challenger.again.meet,那隻年輕的狼又來了。牠比上次更壯了一些。
-challenger.again.territory,那隻年輕的狼又在你的地盤上留下氣味。牠比上次更壯了一些。
-challenger.again.carcass,那隻年輕的狼又來搶你的獵物了。牠比上次更壯了一些。
+challenger.again.meet,那隻年輕的狼又來了。
+challenger.again.territory,那隻年輕的狼又在你的地盤上留下氣味。
+challenger.again.carcass,那隻年輕的狼又來搶你的獵物了。
+challenger.again.grew,牠比上次更壯了一些。
 challenger.confront,和牠對峙
 challenger.yield.meet,讓開
 challenger.yield.carcass,把獵物讓給牠

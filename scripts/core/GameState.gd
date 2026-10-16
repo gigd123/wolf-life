@@ -321,6 +321,9 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 			hint = str(year_state().get("summer", "normal"))
 		"spring":
 			hint = "hare_high" if hare_mult(false) >= 1.6 else ("hare_low" if hare_mult(false) <= 0.3 else "normal")
+			# 從谷底回升的那年不說「少了很多」（文案稽核 2026-10-16）
+			if hint == "hare_low" and hare_mult(false) > hare_mult_last_year():
+				hint = "hare_low_rising"
 	if hint != "normal":
 		lines.append({"key": "year.hint.%s.%s" % [season, hint]})
 	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
@@ -420,6 +423,9 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 		reason = str(cfg.get("reasons", {}).get("starved", ""))
 		# 太餓時身體只長了一點點，不標 ▲，免得和原因句矛盾。
 		gains = gains.filter(func(stat): return not Growth.BODY_STATS.has(stat))
+	elif (gains.has("speed") or gains.has("strength")) and int(life_log.get("since_sleep", {}).get("chase", 0)) == 0 \
+			and int(life_log.get("since_sleep", {}).get("fight", 0)) == 0:
+		reason = str(cfg.get("reasons", {}).get("roam", ""))
 	elif gains.has("speed") or gains.has("strength"):
 		var since: Dictionary = life_log.get("since_sleep", {})
 		var fed: String = "hungry" if hunger_tier() > 0 else ("full" if wolf.hunger >= float(cfg.get("full_hunger", 70)) else "ok")
@@ -919,6 +925,11 @@ func challenger_yield() -> void:
 	state_changed.emit()
 
 # 每次牠來過：打贏了牠走，過一陣子再來而且更強；讓了或輸了，牠下次來得更快
+# 年輕的狼上次之後有沒有變強（只有你上次打贏牠時才會，_after_challenger）。
+func challenger_grew() -> bool:
+	var list: Array = life_log.get("challenger_meetings", [])
+	return not list.is_empty() and bool(list.back().get("won", false))
+
 func _after_challenger(won: bool) -> void:
 	var cfg: Dictionary = _elder_cfg().get("challenger", {})
 	var npc := _ensure_challenger()
@@ -3057,7 +3068,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		if taken <= float(w.get("clean_ratio", 0.15)):
 			Growth.train_activity(wolf, "guard", "strength", float(w.get("clean_mult", 1.5)))
 			Growth.learn(wolf, "skill", float(w.get("clean_mult", 1.5)))
-			result["grow"] = "clean"
+			# 老年技巧不再長，不說「越來越熟練」（文案稽核 2026-10-16）
+			result["grow"] = "clean_elder" if wolf.life_stage() == Wolf.LifeStage.ELDER else "clean"
 		else:
 			Growth.train_activity(wolf, "guard", "strength")
 			Growth.learn(wolf, "skill", 1.0)
@@ -3243,6 +3255,11 @@ func year_weak_mult(animal_id: String) -> float:
 	return 1.0
 
 # 雪兔週期這一年的倍率（夏末秋初再乘 late_summer_mult）。
+# 去年的雪兔倍率（週期的前一年），用來說「比去年多／少」。
+func hare_mult_last_year() -> float:
+	var table: Array = GameData.balance.get("hare_cycle", {}).get("mult", [1.0])
+	return float(table[posmod(int(life_log.get("hare_year", 0)) - 1, table.size())])
+
 func hare_mult(with_season: bool = true) -> float:
 	var cfg: Dictionary = GameData.balance.get("hare_cycle", {})
 	var table: Array = cfg.get("mult", [1.0])
@@ -4284,6 +4301,23 @@ func tundra_pair() -> Array:
 		if npc != null and npc.alive:
 			list.append(npc)
 	return list
+
+# 苔原狼現身的開頭句：上次見到的也只有一隻時，不說「這次只有牠一隻」（文案稽核 2026-10-16）。
+# 每次看到牠們都記下這次有幾隻（note_tundra_seen）。
+func tundra_meet_key(first: bool) -> String:
+	var n: int = tundra_pair().size()
+	var key: String = "tundra.meet.first." if first else "tundra.meet.again."
+	if n > 1:
+		key += "pair"
+	elif not first and int(life_log.get("tundra_seen_size", 2)) <= 1:
+		key += "single_same"
+	else:
+		key += "single"
+	note_tundra_seen()
+	return key
+
+func note_tundra_seen() -> void:
+	life_log["tundra_seen_size"] = tundra_pair().size()
 
 func tundra_leader() -> NpcWolf:
 	var pair := tundra_pair()
