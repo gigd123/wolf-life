@@ -97,6 +97,9 @@ var damage_by: Dictionary = {} # 受傷來源：prey（獵物本身踢）、moth
 var scattered: bool = false # 這一回合狼衝進鹿群
 var last_mode: String = "still" # 狼這一回合怎麼動（生母踢中的機率看這個）
 var mother_hit_fawn_held: bool = false # 這一回合生母踢中了咬著幼鹿的狼
+# 特殊招式（2026-10-16）：會不會前截鎖喉（原型裡由畫面的開關決定）；用了幾次
+var knows_front_lock: bool = false
+var front_locks: int = 0
 var stats := {"stuck": 0, "toward_wolf": 0}
 
 func _init() -> void:
@@ -139,6 +142,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	scattered = false
 	last_mode = "still"
 	mother_hit_fawn_held = false
+	front_locks = 0
 	observed = 0
 	rounds = 0
 	done = false
@@ -441,6 +445,83 @@ func pounce_at(cell: Vector2i) -> void:
 	flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
 	rounds += 1
 	_herd_alarm()
+	_deer_turn()
+	if not done and rounds >= int(t["max_rounds"]):
+		_finish("timeout", "拖太久了，牠走遠了。")
+
+# --- 特殊招式：前截鎖喉（2026-10-16 使用者同意先在原型試做；參考黃石的母狼 06）---
+# 目標是逃跑中的成鹿，這一回合小跑或衝刺得到牠正前方相鄰的格子：衝到牠前面回身鎖喉。
+# 成功直接咬死（不用壓倒、咬喉、被甩開）；失敗容易被正面撞踢，用掉很多喘，鹿繼續逃。
+
+func front_lock_ready() -> bool:
+	var fl: Dictionary = t["special"]["front_lock"]
+	return knows_front_lock and float(wolf["speed"]) >= float(fl["min_speed"]) and float(wolf["skill"]) >= float(fl["min_skill"])
+
+# {格子: {"chance", "factors", "mode"}}
+func front_lock_targets() -> Dictionary:
+	var out := {}
+	if done or held or not front_lock_ready() or deer_state != "flee" or is_fawn():
+		return out
+	var fl: Dictionary = t["special"]["front_lock"]
+	var reach := reachable()
+	var keep := wolf_pos
+	for c in reach.keys():
+		var mode: String = reach[c]
+		if not mode in ["trot", "sprint"] or _cheb(c, deer_pos) > 1:
+			continue
+		if breath < -float(t["move"]["breath_" + mode]) + float(fl["breath"]):
+			continue
+		wolf_pos = c
+		if angle_side() == "front":
+			var info := front_lock_chance()
+			info["mode"] = mode
+			out[c] = info
+		wolf_pos = keep
+	return out
+
+func front_lock_chance() -> Dictionary:
+	var fl: Dictionary = t["special"]["front_lock"]
+	var factors: Array = []
+	var v: float = float(fl["base"])
+	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - 60.0) / float(fl["ability_divisor"])
+	v += ab
+	factors.append(["你的速度與技巧", ab])
+	var tired: float = deer_fatigue() * float(fl["tired"])
+	if tired > 0.0:
+		v += tired
+		factors.append(["牠累了", tired])
+	var cb: float = float(fl["condition"].get(condition, 0.0))
+	if cb != 0.0 and condition_known:
+		factors.append([{"healthy": "牠很健康", "weak": "牠很虛弱"}.get(condition, "體況"), cb])
+	v += cb
+	return {"chance": clamp(v, 0.05, 0.9), "factors": factors}
+
+func front_lock_at(cell: Vector2i) -> void:
+	var targets := front_lock_targets()
+	if not targets.has(cell):
+		return
+	var fl: Dictionary = t["special"]["front_lock"]
+	var info: Dictionary = targets[cell]
+	wolf_pos = cell
+	_spend("breath_" + str(info["mode"]))
+	breath = max(0.0, breath - float(fl["breath"]))
+	breath_used += float(fl["breath"])
+	last_mode = str(info["mode"])
+	front_locks += 1
+	rounds += 1
+	if rng.randf() < float(info["chance"]):
+		_finish("caught", "你衝到%s前面，回身一口鎖住牠的咽喉，牠倒了下去。" % label())
+		return
+	if rng.randf() < float(fl["fail_hit"]):
+		var k: Array = fl["fail_damage"]
+		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
+		wolf["health"] = float(wolf["health"]) - dmg
+		damage_taken += dmg
+		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
+		kicks += 1
+		events.append("你衝到%s前面，沒咬住咽喉，被牠正面撞開（血量 −%d）！" % [label(), dmg])
+	else:
+		events.append("你衝到%s前面，牠猛一偏頭，你咬了個空。" % label())
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
 		_finish("timeout", "拖太久了，牠走遠了。")

@@ -28,6 +28,8 @@ var buttons: HBoxContainer
 var scenario_pick: OptionButton
 var wolf_pick: OptionButton
 var stamina_pick: OptionButton
+var special_pick: OptionButton # 會不會前截鎖喉（特殊招式，2026-10-16）
+var lock_armed: bool = false # 按了「前截鎖喉」，下一次點紫框就出手
 var hover := Vector2i(-1, -1)
 var game_seed: int = 0
 var lines: Array[String] = []
@@ -61,18 +63,19 @@ func _ready() -> void:
 	wolf_pick = _option(setup_row, WOLVES.values())
 	wolf_pick.selected = 1
 	stamina_pick = _option(setup_row, ["體力滿", "體力一半"])
+	special_pick = _option(setup_row, ["沒有招式", "會前截鎖喉"])
 	var restart := Button.new()
-	restart.text = "重新開始"
+	restart.text = "新局"
 	restart.theme_type_variation = &"SmallButton"
 	restart.pressed.connect(func(): _new_hunt(true))
 	setup_row.add_child(restart)
 	var replay := Button.new()
-	replay.text = "同一局重來"
+	replay.text = "重來"
 	replay.theme_type_variation = &"SmallButton"
 	replay.pressed.connect(func(): _new_hunt(false))
 	setup_row.add_child(replay)
 	var back := Button.new()
-	back.text = "回開始畫面"
+	back.text = "返回"
 	back.theme_type_variation = &"SmallButton"
 	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	setup_row.add_child(back)
@@ -109,6 +112,8 @@ func _new_hunt(new_seed: bool) -> void:
 	if new_seed or game_seed == 0:
 		game_seed = randi() % 100000 + 1
 	h.setup(SCENARIOS[scenario_pick.selected], WOLVES.keys()[wolf_pick.selected], game_seed, 1.0 if stamina_pick.selected == 0 else 0.5)
+	h.knows_front_lock = special_pick.selected == 1
+	lock_armed = false
 	lines = ["情境 %s，種子 %d。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。" % [h.t["scenarios"][h.scenario_id]["name"], game_seed]]
 	if h.herd.size() > 1:
 		lines.append("鹿群：點一隻鹿設為目標（黃框）。小方塊是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
@@ -129,6 +134,15 @@ func _map_input(ev: InputEvent) -> void:
 		if h.done:
 			return
 		var c := _cell_at(ev.position)
+		if lock_armed:
+			lock_armed = false
+			if h.front_lock_targets().has(c):
+				h.front_lock_at(c)
+				_after_action()
+			else:
+				_build_buttons()
+				_refresh()
+			return
 		var targets: Dictionary = h.pounce_targets()
 		if targets.has(c):
 			h.pounce_at(c)
@@ -177,6 +191,17 @@ func _build_buttons() -> void:
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
 				buttons.add_child(b)
 		return
+	if h.knows_front_lock:
+		var fl := Button.new()
+		fl.theme_type_variation = &"SmallButton"
+		fl.toggle_mode = true
+		fl.button_pressed = lock_armed
+		var ready: bool = not h.front_lock_targets().is_empty()
+		fl.disabled = not ready
+		fl.text = "前截鎖喉" if h.front_lock_ready() else "前截鎖喉（能力不足）"
+		fl.tooltip_text = "衝到逃跑的成鹿正前方、回身鎖喉：成功直接咬死，失敗容易被正面撞開（用掉 30 喘）。按下後點紫框。需要速度 70、技巧 60。"
+		fl.toggled.connect(func(on): lock_armed = on; _refresh())
+		buttons.add_child(fl)
 	var obs := Button.new()
 	obs.theme_type_variation = &"SmallButton"
 	obs.text = "觀察（原地，回喘）"
@@ -228,6 +253,16 @@ func _info_text() -> String:
 func _hover_text() -> String:
 	if h.done or hover.x < 0:
 		return ""
+	if lock_armed:
+		var ft: Dictionary = h.front_lock_targets()
+		if ft.has(hover):
+			var fp: Dictionary = ft[hover]
+			var parts0: Array[String] = []
+			for f in fp["factors"]:
+				if absf(float(f[1])) >= 0.005:
+					parts0.append("%s %+d" % [f[0], roundi(float(f[1]) * 100.0)])
+			return "[color=#c080ff]前截鎖喉 %d%%[/color]（失敗 35%% 被撞）\n" % roundi(float(fp["chance"]) * 100.0) + "、".join(parts0)
+		return "點紫框出手；點別的地方取消"
 	var targets: Dictionary = h.pounce_targets()
 	if targets.has(hover):
 		var p: Dictionary = targets[hover]
@@ -262,6 +297,9 @@ func _draw_map() -> void:
 			map.draw_rect(_cell_rect(c), COLORS[reach[c]])
 		for c in h.pounce_targets().keys():
 			map.draw_rect(_cell_rect(c).grow(-1), COLORS["target"], false, 2.0)
+		if lock_armed:
+			for c in h.front_lock_targets().keys():
+				map.draw_rect(_cell_rect(c).grow(-2), Color("#c080ff"), false, 2.0)
 	# 鹿群：母子之間的細線（跑散了就不畫）、其他的鹿（幼鹿小一號）
 	for i in h.active_deer():
 		var m: int = int(h.herd[i]["mother"])

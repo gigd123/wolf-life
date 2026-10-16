@@ -406,6 +406,10 @@
     "fawn": { "pounce": 0.15, "takedown": 0.25, "throat": 0.2, "break": -0.15 },
     "meat": { "adult": 3, "fawn": 2 }
   },
+  "_special_comment": "特殊招式（2026-10-16 使用者：全遊戲 3～5 招，要在特殊情況下才學得到；原型先做「前截鎖喉」，參考黃石的母狼 06）。front_lock：目標是逃跑中的成鹿、你這一回合能小跑或衝刺到牠正前方相鄰的格子時可用；成功直接咬死，失敗容易被正面撞踢、用掉很多喘。需要速度與技巧門檻。數值為初始值。",
+  "special": {
+    "front_lock": { "min_speed": 70, "min_skill": 60, "base": 0.3, "ability_divisor": 100.0, "tired": 0.25, "condition": { "healthy": -0.1, "average": 0.0, "weak": 0.1 }, "breath": 30.0, "fail_hit": 0.35, "fail_damage": [10, 20] }
+  },
   "hold": {
     "_comment": "咬住之後（2026-10-15 使用者同意的兩步）：每回合選壓倒（看力量）、咬喉（看技巧，成功就咬死，失敗那一回合更容易被甩開）或鬆口；鹿每回合掙扎，可能踢中、可能掙脫帶傷逃跑（之後每道傷少 wound_slow 格）。數值是初始值。",
     "takedown_base": 0.35,
