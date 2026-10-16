@@ -24,7 +24,7 @@ var map: Control
 var info: RichTextLabel
 var hover_box: RichTextLabel
 var log_box: RichTextLabel
-var buttons: HBoxContainer
+var buttons: HFlowContainer
 var scenario_pick: OptionButton
 var wolf_pick: OptionButton
 var stamina_pick: OptionButton
@@ -63,7 +63,7 @@ func _ready() -> void:
 	wolf_pick = _option(setup_row, WOLVES.values())
 	wolf_pick.selected = 1
 	stamina_pick = _option(setup_row, ["體力滿", "體力一半"])
-	special_pick = _option(setup_row, ["沒有招式", "會前截鎖喉"])
+	special_pick = _option(setup_row, ["無招式", "鎖喉"])
 	var restart := Button.new()
 	restart.text = "新局"
 	restart.theme_type_variation = &"SmallButton"
@@ -86,14 +86,14 @@ func _ready() -> void:
 	log_box.scroll_following = true
 	log_box.theme_type_variation = &"SmallRichLabel"
 	add_child(log_box)
-	buttons = HBoxContainer.new()
+	buttons = HFlowContainer.new()
 	buttons.position = Vector2(410, 262)
 	buttons.size = Vector2(226, 30)
 	buttons.add_theme_constant_override("separation", 4)
 	add_child(buttons)
 	hover_box = RichTextLabel.new()
-	hover_box.position = Vector2(410, 296)
-	hover_box.size = Vector2(226, 62)
+	hover_box.position = Vector2(410, 318)
+	hover_box.size = Vector2(226, 40)
 	hover_box.bbcode_enabled = true
 	hover_box.scroll_active = false
 	hover_box.theme_type_variation = &"SmallRichLabel"
@@ -179,13 +179,15 @@ func _build_buttons() -> void:
 	if h.done:
 		return
 	if h.held:
-		var names := {"takedown": "壓倒", "throat": "咬喉", "release": "鬆口"}
+		var names := {"takedown": "壓倒", "throat": "咬喉", "hang": "死咬拖住", "hamstring": "咬後腿", "release": "鬆口"}
 		var opts: Dictionary = h.hold_options()
-		for id in ["takedown", "throat", "release"]:
+		for id in ["takedown", "throat", "hamstring", "hang", "release"]:
 			if opts.has(id):
 				var b := Button.new()
 				b.theme_type_variation = &"SmallButton"
-				b.text = names[id] + ("" if id == "release" else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
+				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
+				if id == "hang":
+					b.text += "（%d 喘）" % roundi(float(opts[id]["breath"]))
 				b.tooltip_text = "、".join((opts[id]["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
@@ -238,6 +240,10 @@ func _info_text() -> String:
 		t.append("目標 " + h.label())
 		t.append("場上 %d 隻" % h.active_deer().size())
 	t.append(("" if h.herd.size() > 1 else "鹿：") + {"unaware": "沒察覺", "suspicious": "起疑", "flee": "逃跑", "stand": "站定"}.get(h.deer_state, h.deer_state) + ("（咬住）" if h.held else ""))
+	if h.held:
+		t.append("咬在" + {"rear": "後腿", "side": "側腹", "front": "頸部"}.get(h.hold_side, "?"))
+	if int(h.herd[h.target].get("hamstrung", 0)) > 0:
+		t.append("[color=#e08a8a]後腿受傷[/color]")
 	if h.deer_state in ["unaware", "suspicious"]:
 		t.append("警覺 %d" % roundi(h.alert))
 		t.append(_bar(h.alert, 100.0, "#e0c070"))

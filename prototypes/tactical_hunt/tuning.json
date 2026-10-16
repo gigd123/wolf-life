@@ -429,16 +429,16 @@
   "species": {
     "elk": {
       "name": "母馬鹿",
-      "flee_profile": { "healthy": [3, 5, 6, 4, 3], "average": [3, 5, 5, 3, 2], "weak": [3, 5, 5, 2, 2] },
-      "pounce": -0.05,
+      "flee_profile": { "healthy": [3, 6, 6, 5, 4], "average": [3, 5, 6, 4, 3], "weak": [3, 5, 5, 3, 2] },
+      "pounce": -0.15,
       "kick_mult": 1.5,
       "kick_damage": [8, 18],
-      "hold": { "takedown": -0.25, "throat": -0.1, "break": 0.1, "kick": 0.18 },
+      "hold": { "takedown": -0.45, "throat": -0.3, "break": 0.25, "kick": 0.18, "hamstring": -0.15 },
       "meat": 4
     }
   },
   "special": {
-    "front_lock": { "min_speed": 70, "min_skill": 60, "base": 0.3, "ability_divisor": 100.0, "tired": 0.25, "condition": { "healthy": -0.1, "average": 0.0, "weak": 0.1 }, "breath": 30.0, "fail_hit": 0.35, "fail_damage": [10, 20] }
+    "front_lock": { "min_speed": 70, "min_skill": 60, "base": 0.4, "ability_divisor": 100.0, "tired": 0.25, "condition": { "healthy": -0.1, "average": 0.0, "weak": 0.1 }, "breath": 20.0, "fail_hit": 0.35, "fail_damage": [10, 20] }
   },
   "hold": {
     "_comment": "咬住之後（2026-10-15 使用者同意的兩步）：每回合選壓倒（看力量）、咬喉（看技巧，成功就咬死，失敗那一回合更容易被甩開）或鬆口；鹿每回合掙扎，可能踢中、可能掙脫帶傷逃跑（之後每道傷少 wound_slow 格）。數值是初始值。",
@@ -450,7 +450,11 @@
     "per_wound": 0.05,
     "takedown_breath": 8.0,
     "throat_breath": 5.0,
-    "hold_breath": 3.0,
+    "hold_breath": 2.0,
+    "_moves_comment": "咬住之後依咬的位置多出的招式（2026-10-16 使用者選 B）：hang 死咬拖住（每個位置都能用；用體重掛著不放、那一回合只花 breath 喘，獵物掙扎得更累、比較難甩開，側面最有效）；hamstring 咬後腿（從後方咬住才有；成功時後腿受傷：之後壓倒更容易、掙脫了也跑不快，最多 max 次）；front 從正面咬住：咬喉比較容易，但掙扎時踢得更兇。",
+    "hang": { "breath": 1.0, "struggle": { "side": 2, "rear": 1, "front": 1 }, "break": { "side": -0.15, "rear": -0.08, "front": -0.08 } },
+    "hamstring": { "breath": 4.0, "base": 0.5, "divisor": 150.0, "tired": 0.2, "takedown": 0.2, "slow": 1.0, "max": 2 },
+    "front": { "throat": 0.1, "kick_mult": 1.5 },
     "break_base": 0.35,
     "break_tired": 0.2,
     "throat_miss_break": 0.2,

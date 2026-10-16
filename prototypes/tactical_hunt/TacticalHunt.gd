@@ -550,14 +550,30 @@ func hold_options() -> Dictionary:
 	var fat: float = deer_fatigue_any()
 	var out := {}
 	var fb: Dictionary = t["herd"]["fawn"] if is_fawn() else sp().get("hold", {})
+	var hams: int = int(herd[di].get("hamstrung", 0))
 	var td: float = float(h["takedown_base"]) + (float(wolf["strength"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) \
-		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0))
-	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]),
-		"factors": [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]}
+		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0)) \
+		+ hams * float(h["hamstring"]["takedown"])
+	var tf: Array = [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	if hams > 0:
+		tf.append(["後腿受傷", hams * float(h["hamstring"]["takedown"])])
+	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
+	var front_b: float = float(h["front"]["throat"]) if hold_side == "front" else 0.0
 	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) + wounds * float(h["per_wound"]) \
-		+ float(fb.get("throat", 0.0))
-	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]),
-		"factors": [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]}
+		+ float(fb.get("throat", 0.0)) + front_b
+	var thf: Array = [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	if front_b > 0.0:
+		thf.append(["咬在頸部", front_b])
+	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]), "factors": thf}
+	# 死咬拖住：用體重掛著不放（每個位置都能用，側面最有效）
+	out["hang"] = {"chance": 1.0, "breath": float(h["hang"]["breath"]),
+		"factors": [["掙脫機率", float(h["hang"]["break"].get(hold_side, -0.08))]]}
+	# 咬後腿：從後方咬住才有
+	if hold_side == "rear" and hams < int(h["hamstring"]["max"]):
+		var hm: Dictionary = h["hamstring"]
+		var hc: float = float(hm["base"]) + (float(wolf["strength"]) - 50.0) / float(hm["divisor"]) + fat * float(hm["tired"]) + float(fb.get("hamstring", 0.0))
+		out["hamstring"] = {"chance": clamp(hc, 0.05, 0.95), "breath": float(hm["breath"]),
+			"factors": [["你的力量", (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], ["牠累了", fat * float(hm["tired"])]]}
 	for k in out.keys():
 		if breath < float(out[k]["breath"]):
 			out.erase(k)
@@ -565,9 +581,11 @@ func hold_options() -> Dictionary:
 	return out
 
 # 牠掙脫的機率（每回合）：越累越低；咬喉失敗那一回合更容易掙脫
-func break_chance(after_throat_miss: bool = false) -> float:
+func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> float:
 	var h: Dictionary = t["hold"]
 	var v: float = float(h["break_base"]) - deer_fatigue_any() * float(h["break_tired"]) + (float(h["throat_miss_break"]) if after_throat_miss else 0.0)
+	if hanging:
+		v += float(h["hang"]["break"].get(hold_side, -0.08)) # 死咬拖住：比較難甩開
 	if is_fawn():
 		v += float(t["herd"]["fawn"]["break"])
 	v += float(sp().get("hold", {}).get("break", 0.0))
@@ -592,6 +610,27 @@ func hold_action(id: String) -> void:
 		return
 	breath = max(0.0, breath - float(o["breath"]))
 	breath_used += float(o["breath"])
+	if id == "hang":
+		# 死咬拖住：那一回合只花 hang 的喘（不再扣咬著的消耗），獵物掙扎得更累
+		herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + int(t["hold"]["hang"]["struggle"].get(hold_side, 1)) - 1
+		events.append("你死死咬著，用身體的重量拖住%s。" % label())
+		rounds += 1
+		_deer_turn(false, true)
+		if not done and rounds >= int(t["max_rounds"]):
+			_finish("timeout", "拖太久了。")
+		return
+	if id == "hamstring":
+		rounds += 1
+		if rng.randf() < float(o["chance"]):
+			herd[di]["hamstrung"] = int(herd[di].get("hamstrung", 0)) + 1
+			wounds += int(t["hold"]["hamstring"]["slow"])
+			events.append("你咬斷了%s後腿的筋，牠一個踉蹌。" % label())
+		else:
+			events.append("你想咬牠的後腿，被牠一腳蹬開了口。")
+		_deer_turn()
+		if not done and rounds >= int(t["max_rounds"]):
+			_finish("timeout", "拖太久了。")
+		return
 	if rng.randf() < float(o["chance"]):
 		rounds += 1
 		_finish("caught", "你把牠壓倒在地，獵到了。" if id == "takedown" else "你咬住牠的咽喉，牠倒了下去。")
@@ -610,10 +649,11 @@ func _let_go(text: String) -> void:
 	events.append(text)
 
 # 咬住時鹿的回合：掙扎（可能踢中你），可能掙脫、帶傷逃跑
-func _deer_struggle(after_throat_miss: bool) -> void:
+func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
 	var h: Dictionary = t["hold"]
-	if not is_fawn() and rng.randf() < float(sp().get("hold", {}).get("kick", h["kick"])):
+	var kick_p: float = float(sp().get("hold", {}).get("kick", h["kick"])) * (float(h["front"]["kick_mult"]) if hold_side == "front" else 1.0)
+	if not is_fawn() and rng.randf() < kick_p:
 		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
@@ -621,7 +661,7 @@ func _deer_struggle(after_throat_miss: bool) -> void:
 		damage_taken += dmg
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		events.append("掙扎中牠踢中了你（血量 −%d）。" % dmg)
-	if rng.randf() < break_chance(after_throat_miss):
+	if rng.randf() < break_chance(after_throat_miss, hanging):
 		_let_go("%s掙脫了，帶著傷逃跑！" % label())
 		_deer_flee()
 
@@ -744,7 +784,7 @@ func _herd_alarm() -> void:
 	if joined > 0:
 		events.append("整群跟著跑了起來。")
 
-func _deer_turn(after_throat_miss: bool = false) -> void:
+func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 	if done:
 		return
 	mother_hit_fawn_held = false
@@ -762,8 +802,9 @@ func _deer_turn(after_throat_miss: bool = false) -> void:
 		_retarget()
 		return
 	if held:
-		breath = max(0.0, breath - float(t["hold"]["hold_breath"])) # 咬著不放也很累
-		_deer_struggle(after_throat_miss)
+		if not hanging:
+			breath = max(0.0, breath - float(t["hold"]["hold_breath"])) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘）
+		_deer_struggle(after_throat_miss, hanging)
 		if not bool(herd[target]["gone"]):
 			di = target
 		return

@@ -15,7 +15,8 @@ func _process(_d) -> bool:
 	var min_chance: float = float(OS.get_environment("MIN")) if OS.get_environment("MIN") != "" else 0.3
 	var h = TH.new()
 	print("== 前截鎖喉：快的狼（速度 85、技巧 60），每格 %d 場；學會的狼在成功率 ≥ %d%% 時出手" % [runs, roundi(min_chance * 100)])
-	for sc in ["A", "C", "D", "E", "G", "I", "J"]:
+	var scens: Array = OS.get_environment("SCEN").split(",") if OS.get_environment("SCEN") != "" else ["A", "C", "D", "E", "G", "I", "J"]
+	for sc in scens:
 		var line := "%s %-10s" % [sc, h.t["scenarios"][sc]["name"]]
 		for knows in [false, true]:
 			var ok := 0; var used := 0; var lock_kills := 0; var hurt := 0; var rounds := 0
@@ -53,6 +54,7 @@ func _target_adult(h) -> void:
 func _step(h, min_chance: float) -> void:
 	_target_adult(h)
 	if h.held:
+		# 咬住之後：殺的機會夠好（≥ 45%）就出手；否則從後方先咬後腿、再死咬拖住等牠累
 		var opts: Dictionary = h.hold_options()
 		var pick := "release"
 		var bc := -1.0
@@ -60,6 +62,11 @@ func _step(h, min_chance: float) -> void:
 			if opts.has(k) and float(opts[k]["chance"]) > bc:
 				bc = float(opts[k]["chance"])
 				pick = k
+		if bc < 0.45:
+			if opts.has("hamstring"):
+				pick = "hamstring"
+			elif opts.has("hang"):
+				pick = "hang"
 		h.hold_action(pick)
 		return
 	var fl: Dictionary = h.front_lock_targets()
