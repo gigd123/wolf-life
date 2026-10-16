@@ -607,7 +607,7 @@ func _raise_alert(mode: String) -> void:
 		_start_flee(cause)
 	elif alert >= float(t["deer"]["suspicious_at"]) and deer_state == "unaware":
 		deer_state = "suspicious"
-		events.append("牠抬起頭，朝你這邊張望。")
+		events.append("%s抬起頭，朝你這邊張望。" % label())
 
 func _start_flee(cause: String) -> void:
 	deer_state = "flee"

@@ -4,6 +4,7 @@ extends Control
 # 邏輯全在 TacticalHunt.gd；這裡只畫格子、處理點選、顯示資訊。原型的文字直接寫中文（和美術測試一樣，不進翻譯檔）。
 #
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
+# 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是小方塊，細線連到生母。
 
 const TH := preload("res://prototypes/tactical_hunt/TacticalHunt.gd")
 const CELL := 14
@@ -13,8 +14,9 @@ const COLORS := {
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"wolf": Color("#c9c9c9"), "deer": Color("#b07a44"), "deer_held": Color("#d04a3a"), "intent": Color(1, 1, 1, 0.75),
 	"target": Color("#ff4040"), "goal": Color(0.7, 0.9, 1.0, 0.5),
+	"fawn": Color("#d9a76a"), "picked": Color("#ffe060"), "bond": Color(1, 1, 1, 0.35),
 }
-const SCENARIOS := ["A", "B", "C", "D"]
+const SCENARIOS := ["A", "B", "C", "D", "E", "F", "G", "H"]
 const WOLVES := {"slow": "慢（速度 40）", "normal": "普通（60）", "fast": "快（85）"}
 
 var h = TH.new()
@@ -108,6 +110,8 @@ func _new_hunt(new_seed: bool) -> void:
 		game_seed = randi() % 100000 + 1
 	h.setup(SCENARIOS[scenario_pick.selected], WOLVES.keys()[wolf_pick.selected], game_seed, 1.0 if stamina_pick.selected == 0 else 0.5)
 	lines = ["情境 %s，種子 %d。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。" % [h.t["scenarios"][h.scenario_id]["name"], game_seed]]
+	if h.herd.size() > 1:
+		lines.append("鹿群：點一隻鹿設為目標（黃框）。小方塊是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
 	_after_action()
 
 # --- 輸入 ---
@@ -131,6 +135,12 @@ func _map_input(ev: InputEvent) -> void:
 		elif h.reachable().has(c):
 			h.move_to(c)
 		else:
+			# 點到鹿：換目標（不算一回合）
+			for i in h.active_deer():
+				if h.herd[i]["pos"] == c and i != h.target:
+					h.set_target(i)
+					_build_buttons()
+					_refresh()
 			return
 		_after_action()
 
@@ -140,9 +150,11 @@ func _after_action() -> void:
 	h.events = []
 	if h.done:
 		var color := "#9fe08a" if h.result == "caught" else "#e0a08a"
-		lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color,
-			{"caught": "獵到", "escaped": "逃脫，留下一條新鮮足跡", "lost": "跟丟，留下一條新鮮足跡", "gave_up": "放棄", "timeout": "拖太久"}.get(h.result, h.result),
-			h.rounds, roundi(h.breath_used), h.game_turns(), roundi(h.stamina_cost())])
+		var what: String = {"caught": "獵到", "escaped": "逃脫，留下一條新鮮足跡", "lost": "跟丟，留下一條新鮮足跡", "gave_up": "放棄", "timeout": "拖太久"}.get(h.result, h.result)
+		if h.result == "caught" and h.herd.size() > 1:
+			what += "%s（%d 段肉）" % ["幼鹿" if h.caught_kind == "fawn" else "成鹿", h.meat]
+		lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d、受傷 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color, what,
+			h.rounds, roundi(h.breath_used), roundi(h.damage_taken), h.game_turns(), roundi(h.stamina_cost())])
 	log_box.text = "\n".join(lines.slice(maxi(0, lines.size() - 30)))
 	_build_buttons()
 	_refresh()
@@ -197,7 +209,10 @@ func _info_text() -> String:
 	t.append(_bar(h.breath, h.breath_max, "#7fb3e0"))
 	t.append("血 %d" % roundi(float(h.wolf["health"])))
 	t.append("")
-	t.append("鹿：" + {"unaware": "沒察覺", "suspicious": "起疑", "flee": "逃跑", "stand": "站定"}.get(h.deer_state, h.deer_state) + ("（咬住）" if h.held else ""))
+	if h.herd.size() > 1:
+		t.append("目標 " + h.label())
+		t.append("場上 %d 隻" % h.active_deer().size())
+	t.append(("" if h.herd.size() > 1 else "鹿：") + {"unaware": "沒察覺", "suspicious": "起疑", "flee": "逃跑", "stand": "站定"}.get(h.deer_state, h.deer_state) + ("（咬住）" if h.held else ""))
 	if h.deer_state in ["unaware", "suspicious"]:
 		t.append("警覺 %d" % roundi(h.alert))
 		t.append(_bar(h.alert, 100.0, "#e0c070"))
@@ -247,9 +262,24 @@ func _draw_map() -> void:
 			map.draw_rect(_cell_rect(c), COLORS[reach[c]])
 		for c in h.pounce_targets().keys():
 			map.draw_rect(_cell_rect(c).grow(-1), COLORS["target"], false, 2.0)
-	# 鹿：方塊＋面向；逃跑時畫意圖的方向
+	# 鹿群：母子之間的細線（跑散了就不畫）、其他的鹿（幼鹿小一號）
+	for i in h.active_deer():
+		var m: int = int(h.herd[i]["mother"])
+		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]):
+			map.draw_line(Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5, Vector2(h.herd[m]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5, COLORS["bond"], 1.0)
+	for i in h.active_deer():
+		if i == h.target:
+			continue
+		var r := _cell_rect(h.herd[i]["pos"]).grow(-3 if h.is_fawn(i) else -1)
+		map.draw_rect(r, COLORS["fawn"] if h.is_fawn(i) else COLORS["deer"])
+		var oc: Vector2 = Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5
+		map.draw_line(oc, oc + Vector2(h.herd[i]["facing"]) * CELL * 0.5, Color(1, 1, 1, 0.7), 1.0)
+	# 目標：方塊＋面向；逃跑時畫意圖的方向
 	var dc: Vector2 = Vector2(h.deer_pos) * CELL + Vector2(CELL, CELL) * 0.5
-	map.draw_rect(_cell_rect(h.deer_pos).grow(-1), COLORS["deer_held"] if h.held else COLORS["deer"])
+	var fawn_t: bool = h.is_fawn(h.target)
+	map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
+	if h.herd.size() > 1:
+		map.draw_rect(_cell_rect(h.deer_pos), COLORS["picked"], false, 1.0)
 	map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
 	if not h.done and not h.held:
 		for d in h.deer_intent():
