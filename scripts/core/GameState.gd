@@ -5150,6 +5150,9 @@ func to_dict() -> Dictionary:
 		"weather": weather,
 		"weather_until": weather_until,
 		"events_today": events_today,
+		# 還沒顯示的字卡與事件、今天睡覺的傷勢好轉：存檔後離開再讀檔不會不見（文案一致性 D，2026-10-16）
+		"pending_events": pending_events,
+		"sleep_heal": _sleep_heal,
 		"life_log": life_log,
 		"time": {
 			"season_index": GameTime.season_index,
@@ -5204,7 +5207,8 @@ func load_from_dict(data: Dictionary) -> void:
 	weather = str(data.get("weather", "clear"))
 	weather_until = int(data.get("weather_until", -1))
 	events_today = int(data.get("events_today", 0))
-	pending_events = []
+	pending_events = data.get("pending_events", [])
+	_sleep_heal = int(data.get("sleep_heal", -1))
 	var t: Dictionary = data.get("time", {})
 	GameTime.time_mode = t.get("time_mode", "normal")
 	GameTime.season_index = int(t.get("season_index", 3))
