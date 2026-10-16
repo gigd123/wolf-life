@@ -353,9 +353,57 @@
         ".......................l................",
         ".......................l................"
       ]
+    },
+    "E": {
+      "name": "母子、開闊地",
+      "wind": [-1, 0],
+      "wolf": [1, 8],
+      "deer_list": [ { "pos": [11, 8], "kind": "adult" }, { "pos": [12, 9], "kind": "fawn", "mother": 0 } ],
+      "goals": [[20, 5], [12, 11]],
+      "map_from": "A"
+    },
+    "F": {
+      "name": "母子、林緣",
+      "wind": [0, 1],
+      "wolf": [12, 2],
+      "deer_list": [ { "pos": [14, 8], "kind": "adult" }, { "pos": [13, 9], "kind": "fawn", "mother": 0 } ],
+      "goals": [[11, 13], [11, 2]],
+      "map_from": "C"
+    },
+    "G": {
+      "name": "小群、開闊地",
+      "wind": [-1, 0],
+      "wolf": [1, 8],
+      "deer_list": [ { "pos": [11, 7], "kind": "adult" }, { "pos": [12, 9], "kind": "adult" }, { "pos": [13, 6], "kind": "adult" },
+        { "pos": [12, 8], "kind": "fawn", "mother": 0 }, { "pos": [13, 10], "kind": "fawn", "mother": 1 } ],
+      "goals": [[20, 5], [12, 11]],
+      "map_from": "A"
+    },
+    "H": {
+      "name": "小群、倒木旁",
+      "wind": [0, 1],
+      "wolf": [7, 3],
+      "deer_list": [ { "pos": [17, 8], "kind": "adult" }, { "pos": [18, 10], "kind": "adult" }, { "pos": [17, 9], "kind": "fawn", "mother": 0 } ],
+      "goals": [[22, 7], [17, 3]],
+      "map_from": "D"
     }
   },
   "_size_comment": "2026-10-15：22×12 時鹿 2 回合就跑出場地 → 32×16；使用者要普通的狼靠耐力追上約 50%，鹿要跑 5～6 回合才出得去 → 40×16（畫面一格 14 像素，560×224）。",
+  "_herd_comment": "鹿群版（docs/proposals/tactical-hunt-herd.md，2026-10-16 使用者確認）。fawn_flee：夏季幼鹿的逃跑格數（成鹿的六七成）；contagion：一隻驚逃時其他每隻 +多少警覺；cohesion：逃跑時往同伴中心的權重（散開時 × scatter_cohesion）；follow：幼鹿與生母互相靠攏的權重；scatter_dist：狼小跑或衝刺到鹿 N 格內就散開；separate：散開時幼鹿和生母跑散的機率（密林另計）；mother_slack：生母最多比幼鹿多跑幾格；defend：生母護幼（觸發距離、生母要在幾格內、命中率、最多幾回合、踢中時幼鹿掙脫加成）；fawn：撲幼鹿與咬住後的加減；meat：獵到的肉（段）。",
+  "herd": {
+    "fawn_flee": [3, 4, 4, 2, 2],
+    "contagion": 60.0,
+    "cohesion": 1.5,
+    "follow": 3.0,
+    "scatter_cohesion": 0.5,
+    "scatter_dist": 2,
+    "separate": 0.3,
+    "separate_forest": 0.5,
+    "mother_slack": 2.0,
+    "defend": { "trigger": 2.0, "reach": 4.0, "base": 0.25, "still_bonus": 0.1, "held_bonus": 0.15, "max_rounds": 3, "break_bonus": 0.2, "damage": [6, 14] },
+    "fawn": { "pounce": 0.15, "takedown": 0.25, "throat": 0.2, "break": -0.15 },
+    "meat": { "adult": 3, "fawn": 2 }
+  },
   "hold": {
     "_comment": "咬住之後（2026-10-15 使用者同意的兩步）：每回合選壓倒（看力量）、咬喉（看技巧，成功就咬死，失敗那一回合更容易被甩開）或鬆口；鹿每回合掙扎，可能踢中、可能掙脫帶傷逃跑（之後每道傷少 wound_slow 格）。數值是初始值。",
     "takedown_base": 0.35,
