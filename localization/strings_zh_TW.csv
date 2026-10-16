@@ -99,6 +99,9 @@ debug.section.time,時間與年齡
 debug.section.encounter,強制觸發遭遇
 debug.skip_day,跳一天
 debug.skip_season,跳到下一季
+debug.challenger,年輕的狼現身
+debug.challenger.not_elder,年輕的狼只在老年出現（先跳到老年）。
+debug.end_life,結束這一生（老死）
 debug.toggle_time_mode,切換時間倍率（正常／測試）
 debug.add_year,年齡 +1 歲
 debug.jump_stage,跳到{stage}

@@ -666,6 +666,20 @@ func _build_debug_overlay() -> void:
 		func(): GameState.debug_jump_to_stage(Wolf.LifeStage.ADULT); _sync_debug_spins())
 	_debug_button(time_grid, tr("debug.jump_elder_eve"),
 		func(): GameState.debug_jump_to_elder_eve(); _sync_debug_spins())
+	# 驗收用（2026-10-16）：年輕的狼現身（老年才有）、直接結束這一生看「最後」字卡
+	_debug_button(time_grid, tr("debug.challenger"), func():
+		if GameState.wolf.life_stage() != Wolf.LifeStage.ELDER:
+			_log(tr("debug.challenger.not_elder"))
+			return
+		debug_overlay.visible = false
+		GameState._ensure_challenger()
+		var d := {"kind": "challenger", "location": "", "first": int(GameState.life_log.get("challenger_visits", 0)) == 0,
+			"territory": GameState.is_own_territory()}
+		GameState.current_discovery = d
+		_show_challenger(d, false))
+	_debug_button(time_grid, tr("debug.end_life"), func():
+		debug_overlay.visible = false
+		GameState.debug_end_life("old_age"))
 	_debug_button(right, tr("debug.toggle_time_mode"), func():
 		GameTime.time_mode = "test" if GameTime.time_mode == "normal" else "normal"
 		_log("time_mode = " + GameTime.time_mode)
