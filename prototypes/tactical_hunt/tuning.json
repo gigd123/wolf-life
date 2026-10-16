@@ -389,7 +389,7 @@
     }
   },
   "_size_comment": "2026-10-15：22×12 時鹿 2 回合就跑出場地 → 32×16；使用者要普通的狼靠耐力追上約 50%，鹿要跑 5～6 回合才出得去 → 40×16（畫面一格 14 像素，560×224）。",
-  "_herd_comment": "鹿群版（docs/proposals/tactical-hunt-herd.md，2026-10-16 使用者確認）。fawn_flee：夏季幼鹿的逃跑格數（成鹿的六七成）；contagion：一隻驚逃時其他每隻 +多少警覺；cohesion：逃跑時往同伴中心的權重（散開時 × scatter_cohesion）；follow：幼鹿與生母互相靠攏的權重；scatter_dist：狼小跑或衝刺到鹿 N 格內就散開；separate：散開時幼鹿和生母跑散的機率（密林另計）；mother_slack：生母最多比幼鹿多跑幾格；defend：生母護幼（觸發距離、生母要在幾格內、命中率、最多幾回合、踢中時幼鹿掙脫加成）；fawn：撲幼鹿與咬住後的加減；meat：獵到的肉（段）。",
+  "_herd_comment": "鹿群版（docs/proposals/tactical-hunt-herd.md，2026-10-16 使用者確認）。fawn_flee：夏季幼鹿的逃跑格數（成鹿的六七成）；contagion：一隻驚逃時其他每隻 +多少警覺；cohesion：逃跑時往同伴中心的權重（散開時 × scatter_cohesion）；follow：幼鹿與生母互相靠攏的權重；scatter_dist：狼小跑或衝刺到鹿 N 格內就散開；separate：散開時幼鹿和生母跑散的機率（密林另計）；mother_slack：生母最多比幼鹿多跑幾格；defend：生母護幼（觸發距離、生母要在幾格內、命中率——使用者 2026-10-16：比成鹿本身反擊低、最多幾回合、踢中時幼鹿掙脫加成）；fawn：撲幼鹿與咬住後的加減；meat：獵到的肉（段）。",
   "herd": {
     "fawn_flee": [3, 4, 4, 2, 2],
     "contagion": 60.0,
@@ -400,7 +400,9 @@
     "separate": 0.3,
     "separate_forest": 0.5,
     "mother_slack": 2.0,
-    "defend": { "trigger": 2.0, "reach": 4.0, "base": 0.25, "still_bonus": 0.1, "held_bonus": 0.15, "max_rounds": 3, "break_bonus": 0.2, "damage": [6, 14] },
+    "defend": { "trigger": 2.0, "reach": 4.0, "base": 0.06, "still_bonus": 0.02, "held_bonus": 0.02, "max_rounds": 3, "break_bonus": 0.2, "damage": [6, 14] },
+    "_vigilance_comment": "鹿群越大越警覺（很多雙眼睛）：看見你的警覺增加 × (1 + per_extra × (場上的鹿 − 1))，最多 max（2026-10-16 使用者同意）。",
+    "vigilance": { "per_extra": 0.15, "max": 1.6 },
     "fawn": { "pounce": 0.15, "takedown": 0.25, "throat": 0.2, "break": -0.15 },
     "meat": { "adult": 3, "fawn": 2 }
   },

@@ -21,6 +21,7 @@ func _process(_d) -> bool:
 	var rounds_all: Array = []
 	var fawn_tries := 0; var fawn_defended := 0
 	var hurt := {"fawn": [0, 0], "adult": [0, 0]} # 撲幼鹿／撲成鹿策略：[受傷場數, 場數]
+	var dmg_src := {"fawn": {"mother": 0.0, "prey": 0.0}, "adult": {"mother": 0.0, "prey": 0.0}} # 受傷來源（血量合計）
 	var verdict: Array = []
 	for sc in SCEN:
 		print("\n-- 情境 %s %s" % [sc, h.t["scenarios"][sc]["name"]])
@@ -55,6 +56,8 @@ func _process(_d) -> bool:
 						hurt[hk][1] += 1
 						if h.damage_taken > 0.0:
 							hurt[hk][0] += 1
+						for src in h.damage_by.keys():
+							dmg_src[hk][src] += float(h.damage_by[src])
 				meats[pol] = float(meat) / runs
 				row.append("%3d%%(幼%2d) 肉%.2f 傷%2d%%" % [roundi(100.0 * ok / runs), roundi(100.0 * fawns / max(1, ok)), float(meat) / runs, roundi(100.0 * injured / runs)])
 			print("  %-6s " % profile + "  ".join(row))
@@ -72,7 +75,11 @@ func _process(_d) -> bool:
 	for v in verdict:
 		print("  " + v)
 	print("  專挑幼鹿時生母護幼的比例：%d%%（標準 ≥ 50%%）" % roundi(100.0 * fawn_defended / max(1, fawn_tries)))
-	print("  受傷比例：專挑幼鹿 %d%%、挑成鹿 %d%%（標準：幼鹿 ≥ 2 倍）" % [roundi(100.0 * hurt["fawn"][0] / max(1, hurt["fawn"][1])), roundi(100.0 * hurt["adult"][0] / max(1, hurt["adult"][1]))])
+	# 受傷來源（2026-10-16 使用者同意改的標準）：挑幼鹿時傷主要來自生母、挑成鹿時來自成鹿本身
+	for hk in ["fawn", "adult"]:
+		var tot: float = dmg_src[hk]["mother"] + dmg_src[hk]["prey"]
+		print("  %s：受傷 %d%% 的場次；傷來自生母 %d%%、獵物本身 %d%%" % ["專挑幼鹿" if hk == "fawn" else "挑成鹿", roundi(100.0 * hurt[hk][0] / max(1, hurt[hk][1])),
+			roundi(100.0 * dmg_src[hk]["mother"] / max(0.01, tot)), roundi(100.0 * dmg_src[hk]["prey"] / max(0.01, tot))])
 	print("  回合數（普通狼）：中位數 %d、90%% %d（標準中位數 8～15）" % [rounds_all[rounds_all.size() / 2], rounds_all[int(rounds_all.size() * 0.9)]])
 	return true
 

@@ -93,6 +93,7 @@ var caught_kind: String = "" # 獵到的是 adult 還是 fawn
 var meat: int = 0
 var defends: int = 0 # 生母護幼的次數
 var damage_taken: float = 0.0
+var damage_by: Dictionary = {} # 受傷來源：prey（獵物本身踢）、mother（生母護幼）
 var scattered: bool = false # 這一回合狼衝進鹿群
 var last_mode: String = "still" # 狼這一回合怎麼動（生母踢中的機率看這個）
 var mother_hit_fawn_held: bool = false # 這一回合生母踢中了咬著幼鹿的狼
@@ -134,6 +135,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	meat = 0
 	defends = 0
 	damage_taken = 0.0
+	damage_by = {}
 	scattered = false
 	last_mode = "still"
 	mother_hit_fawn_held = false
@@ -422,6 +424,7 @@ func pounce_at(cell: Vector2i) -> void:
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
+		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
 		events.append(("牠的後腿踢中了你" if side == "rear" else "牠的蹄子踢中了你") + "（血量 −%d）。" % dmg)
 	if rng.randf() < float(info["chance"]):
@@ -519,6 +522,7 @@ func _deer_struggle(after_throat_miss: bool) -> void:
 		wolf["health"] = float(wolf["health"]) - dmg
 		kicks += 1
 		damage_taken += dmg
+		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		events.append("掙扎中牠踢中了你（血量 −%d）。" % dmg)
 	if rng.randf() < break_chance(after_throat_miss):
 		_let_go("%s掙脫了，帶著傷逃跑！" % label())
@@ -577,6 +581,10 @@ func alert_gain(mode: String) -> Dictionary:
 	var sight: float = _band(al["sight_by_distance"], d) * float(al["mode"][mode])
 	if not has_sight():
 		sight *= float(al["no_sight"])
+	# 鹿群越大越警覺（鹿群版）
+	if herd.size() > 1:
+		var vg: Dictionary = t["herd"]["vigilance"]
+		sight *= min(float(vg["max"]), 1.0 + float(vg["per_extra"]) * (active_deer().size() - 1))
 	sight *= 1.0 - (float(wolf["skill"]) - 40.0) / float(al["skill_divisor"])
 	var scent: float = _band(al["scent"].get(wind_side(), []), d)
 	return {"gain": sight + scent, "scent": scent, "noise": sight}
@@ -722,6 +730,7 @@ func _mother_defend() -> bool:
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
+		damage_by["mother"] = float(damage_by.get("mother", 0.0)) + dmg
 		kicks += 1
 		if fawn_held:
 			mother_hit_fawn_held = true
