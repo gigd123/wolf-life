@@ -12,7 +12,7 @@ func _process(_d) -> bool:
 	if f != 3:
 		return f > 10
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 300
-	var min_chance: float = 0.3
+	var min_chance: float = float(OS.get_environment("MIN")) if OS.get_environment("MIN") != "" else 0.3
 	var h = TH.new()
 	print("== 前截鎖喉：快的狼（速度 85、技巧 60），每格 %d 場；學會的狼在成功率 ≥ %d%% 時出手" % [runs, roundi(min_chance * 100)])
 	for sc in ["A", "C", "D", "E", "G"]:
