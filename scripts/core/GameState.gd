@@ -2333,8 +2333,30 @@ func metric_choice(chosen: float, best: float) -> void:
 		return
 	var m := metrics()
 	m["choices"] = int(m.get("choices", 0)) + 1
-	if chosen >= best - 0.001:
+	var is_best: bool = chosen >= best - 0.001
+	if is_best:
 		m["best_choices"] = int(m.get("best_choices", 0)) + 1
+	# 做選擇時的狀況（2026-10-16，ChatGPT 建議、使用者同意）：看玩家會不會因為飽食度、傷勢、體力、時段、年紀而選不同的選項。
+	# by_context[標籤] = [選擇次數, 選了最高成功率的次數, 刻意冒險（比最高低 15% 以上）的次數]
+	var ctx: Dictionary = m.get("by_context", {})
+	for tag in _choice_context():
+		var row: Array = ctx.get(tag, [0, 0, 0])
+		row[0] = int(row[0]) + 1
+		if is_best:
+			row[1] = int(row[1]) + 1
+		if best - chosen >= 0.15:
+			row[2] = int(row[2]) + 1
+		ctx[tag] = row
+	m["by_context"] = ctx
+
+func _choice_context() -> Array:
+	var tags: Array = []
+	tags.append("hunger." + ("starving" if wolf.hunger < 30.0 else ("hungry" if wolf.hunger < 60.0 else ("ok" if wolf.hunger < 100.0 else "full"))))
+	tags.append("injury." + ("heavy" if wolf.injury == Wolf.Injury.HEAVY else ("light" if wolf.injury != Wolf.Injury.NONE else "none")))
+	tags.append("stamina." + ("low" if wolf.stamina < 30.0 else ("mid" if wolf.stamina < 70.0 else "high")))
+	tags.append("period." + GameTime.current_period())
+	tags.append("stage." + ["subadult", "adult", "elder"][wolf.life_stage()])
+	return tags
 
 func metric_card(seconds: float) -> void:
 	if auto_playing:
@@ -2354,6 +2376,9 @@ func metrics_summary() -> Dictionary:
 		"longest_quiet_days": int(m.get("longest_quiet", 0)),
 		"best_choice_ratio": snapped(float(m.get("best_choices", 0)) / max(1, int(m.get("choices", 0))), 0.01),
 		"quick_card_ratio": snapped(float(m.get("quick_cards", 0)) / max(1, int(m.get("cards", 0))), 0.01),
+		# 各狀況下：選擇次數、選最高成功率的比例、刻意冒險的比例
+		"best_choice_by_context": (m.get("by_context", {}) as Dictionary).keys().map(func(k): return "%s %d次 最高%.2f 冒險%.2f" % [k, int(m["by_context"][k][0]),
+			float(m["by_context"][k][1]) / max(1, int(m["by_context"][k][0])), float(m["by_context"][k][2]) / max(1, int(m["by_context"][k][0]))]),
 		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0])}
 
 func _stat_total(stat_key: String) -> int:
