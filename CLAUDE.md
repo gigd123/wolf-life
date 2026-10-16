@@ -21,6 +21,7 @@
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
+| `docs/text-conditions.md` | 文案條件對照表：有「又、終於、比上次、從此……」等斷言的文字，依據是哪個遊戲狀態 | 撰寫或修改有斷言的文案時；`check_text.py --notes` 提醒時 |
 | `docs/progress.md` | 進度紀錄（由你維護） | 每次開始與結束時 |
 | `docs/progress-archive.md` | 從 progress.md 移出的已完成步驟細節、模擬結果、已解決的待確認 | 需要查過去的實作細節或決定時 |
 | `docs/testing-guide.md` | 遇過的 bug 歸類、每次改動要跑的檢查、回歸測試案例、headless 測試寫法、模擬基準值 | 修 bug、做完一個步驟要測試時；修完新的 QA 時更新 |
