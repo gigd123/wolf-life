@@ -1478,6 +1478,7 @@ func eat_remains() -> Dictionary:
 	var cfg: Dictionary = GameData.discovery.get("remains_tiers", {}).get(tier, {})
 	var range_: Array = cfg.get("hunger", [6, 6])
 	var gain: int = RNGService.randi_range(int(range_[0]), int(range_[1]))
+	_note_food("remains", gain)
 	wolf.hunger += gain
 	wolf.clamp_stats()
 	record_decision("explore.remains")
@@ -1726,6 +1727,7 @@ func resolve_bear_steal(kind: String) -> Dictionary:
 		else:
 			res["outcome"] = "bite.ok"
 		var gain: float = float(current_feeding.get("segment_value", 0)) * segs
+		_note_food("bear_steal:" + str(current_feeding.get("animal_id", "")), gain)
 		wolf.hunger += gain
 		res["gain"] = gain
 		current_feeding["segments_left"] = int(current_feeding.get("segments_left", 0)) - segs
@@ -1957,6 +1959,7 @@ func _practice_gather() -> void:
 
 func _apply_gather_effect(item_id: String) -> void:
 	var effects: Dictionary = GameData.balance.get("gather_effects", {}).get(item_id, {})
+	_note_food("gather", float(effects.get("hunger", 0)))
 	wolf.hunger += float(effects.get("hunger", 0))
 	wolf.stamina += float(effects.get("stamina", 0))
 	wolf.health += float(effects.get("health", 0))
@@ -2721,6 +2724,19 @@ func _record_hunt(hunt: HuntSystem) -> void:
 		if GameData.knowledge.get("weakness_options", []).has(option):
 			learn({"type": "weakness", "animal": hunt.animal_id, "life_stage": hunt.life_stage, "option": option})
 	life_log["hunt_attempts"] = int(life_log.get("hunt_attempts", 0)) + 1
+	# 每種獵物的試獵、成功、放棄次數（2026-10-17 狩獵難度分析；試玩紀錄也看得到）
+	var by: Dictionary = life_log.get_or_add("hunt_by_animal", {})
+	var key: String = hunt.animal_id + "." + hunt.life_stage
+	var row: Array = by.get(key, [0, 0, 0])
+	row[0] = int(row[0]) + 1
+	if hunt.result == HuntSystem.Result.SUCCESS:
+		row[1] = int(row[1]) + 1
+		# 小型獵物當場吃完（HuntSystem._kill），不經過分段進食
+		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) <= 1:
+			_note_food("kill:" + hunt.animal_id, float(hunt.prey_hunger_value))
+	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP:
+		row[2] = int(row[2]) + 1
+	by[key] = row
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		life_log["hunt_successes"] = int(life_log.get("hunt_successes", 0)) + 1
 	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP and hunt.gave_up_stage == HuntSystem.Stage.CHASE:
@@ -2735,7 +2751,15 @@ func start_feeding(animal_id: String, life_stage: String, terrain: String) -> vo
 	var segments: int = HuntSystem.feeding_segments(animal_id, life_stage)
 	var total: float = float(GameData.animals.get(animal_id, {}).get(life_stage, {}).get("hunger_value", 0))
 	current_feeding = {"animal_id": animal_id, "life_stage": life_stage, "segments_left": segments,
-		"segment_value": total / max(1, segments), "turns_stayed": 0, "terrain": terrain}
+		"segment_value": total / max(1, segments), "turns_stayed": 0, "terrain": terrain, "src": "kill"}
+
+# 吃到的飽食度依來源累計（life_log.food_by；2026-10-17 狩獵難度分析）。來源：kill:<動物> 自己獵的、carcass:<動物> 回到或找到的殘骸、
+# remains 別人吃剩的、gather 採集、bear_steal 從熊口搶的、lynx_steal 搶猞猁的雪兔。
+func _note_food(source: String, gain: float) -> void:
+	if gain <= 0.0:
+		return
+	var by: Dictionary = life_log.get_or_add("food_by", {})
+	by[source] = snapped(float(by.get(source, 0.0)) + gain, 0.1)
 
 func is_feeding() -> bool:
 	return not current_feeding.is_empty()
@@ -2781,6 +2805,7 @@ func feed_once() -> Dictionary:
 		current_feeding = {}
 		return {}
 	var gain: float = float(current_feeding["segment_value"])
+	_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), gain)
 	wolf.hunger += gain
 	wolf.clamp_stats()
 	current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
@@ -2842,6 +2867,7 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 		return result
 	match choice:
 		"grab":
+			_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), float(current_feeding.get("segment_value", 0)))
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
 			current_feeding = {}
 		_:
@@ -3128,6 +3154,7 @@ func finish_combat(c: Combat) -> Dictionary:
 		_after_den_combat(c)
 	# 趕走剛抓到雪兔的猞猁，雪兔歸你（Phase 2 第 6 步）
 	if c.animal_id == "lynx" and c.won() and bool(c.get_meta("lynx_kill", false)):
+		_note_food("lynx_steal", float(_lynx_cfg().get("hare_value", 12)))
 		wolf.hunger += float(_lynx_cfg().get("hare_value", 12))
 		wolf.clamp_stats()
 		result["lynx_hare"] = true
@@ -3185,6 +3212,7 @@ func _carcass_after_combat(c: Combat) -> void:
 					current_feeding["with_tundra"] = true
 			return
 		"grab":
+			_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), float(current_feeding.get("segment_value", 0)))
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
 			current_feeding = {}
 		"ignore":
