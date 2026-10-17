@@ -80,7 +80,7 @@
 依各步驟需要，把它們加進 data/art.json，並更新 assets/README.md 的目錄表。
 ```
 
-建議把這份清單也放進 repo 的 `docs/art_phase1.6.md`，Claude Code 才找得到。
+建議把這份清單也放進 repo 的 `docs/archive/art_phase1.6.md`，Claude Code 才找得到。
 
 ## 三、仍需要正式美術的素材
 
