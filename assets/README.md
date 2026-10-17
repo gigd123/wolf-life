@@ -36,7 +36,7 @@
 
 ## Phase 1.6 佔位素材
 
-2026-10-02 加入 45 個 1.6 佔位素材，原始壓縮檔在 `arts/phase1.6_art.zip`，預覽圖 `arts/phase1.6_art_preview.png`，清單與用途見 `docs/art_phase1.6.md`。依 1.6 各步驟需要再寫進 `data/art.json`。第 1 步的項目已接上（`art.json` 的 `icons` 鍵 `stat.*`、`cost.*`、`tendency.*`，與 `season_backgrounds`）。
+2026-10-02 加入 45 個 1.6 佔位素材，原始壓縮檔 `arts/phase1.6_art.zip`（2026-10-17 清理時移除，內容都已在 `assets/art/`，要找回用 git 歷史），預覽圖 `arts/phase1.6_art_preview.png`，清單與用途見 `docs/archive/art_phase1.6.md`。依 1.6 各步驟需要再寫進 `data/art.json`。第 1 步的項目已接上（`art.json` 的 `icons` 鍵 `stat.*`、`cost.*`、`tendency.*`，與 `season_backgrounds`）。
 
 | 路徑 | 內容 | 1.6 步驟 |
 | --- | --- | --- |
@@ -50,7 +50,7 @@
 | `backgrounds/regions/forest_*_burned.png` | 燒毀後的區域背景，640×360（`art.json` 的 `forest_east@burned`） | 5 **已接上** |
 | `icons/clue_smoke.png`、`icons/status_burn.png` | 煙味線索、燒傷狀態 | 5（燒傷狀態已接上；煙味線索目前沒有用到，大火徵兆是事件畫面） |
 
-2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`，預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/art_phase1.6.md`。6a 已接上：苔原四區的區域背景（夏、冬）、五種地形背景（夏、冬，`terrain@winter`）、八張地圖按鈕的區域小圖（`region_tile.<id>`，森林四區也一起換掉程式生成的小圖）、嚴寒圖示。動物與線索圖示在 6b、6c 接上。
+2026-10-02 再加入 41 個苔原佔位素材（第 6 步，含 1.5 遺留的獵物屍體與區域小圖），原始壓縮檔 `arts/tundra.zip`（2026-10-17 移除，同上），預覽圖 `arts/tundra_preview.png`，清單同樣在 `docs/archive/art_phase1.6.md`。6a 已接上：苔原四區的區域背景（夏、冬）、五種地形背景（夏、冬，`terrain@winter`）、八張地圖按鈕的區域小圖（`region_tile.<id>`，森林四區也一起換掉程式生成的小圖）、嚴寒圖示。動物與線索圖示在 6b、6c 接上。
 
 | 路徑 | 內容 | 步驟 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@
 | `sprites/animals/carcass_{deer,caribou,moose}.png` | 獵物屍體（進食畫面） | 白尾鹿可隨時接上；其他 6 |
 | `icons/region_tile_{forest_*,tundra_*}.png` | 地圖按鈕的區域小圖，18×18（取代程式生成的小圖） | 森林可隨時接上；苔原 6 |
 
-2026-10-02 再加入 24 個 1.6 追加佔位素材（原始壓縮檔 `arts/1.6-new-animal.zip`，預覽圖 `arts/art_phase1.6_additions_preview.png`，清單在 `docs/art_phase1.6.md` 第五節），都已接上 `data/art.json`。
+2026-10-02 再加入 24 個 1.6 追加佔位素材（原始壓縮檔 `arts/1.6-new-animal.zip`（2026-10-17 移除，同上），預覽圖 `arts/art_phase1.6_additions_preview.png`，清單在 `docs/archive/art_phase1.6.md` 第五節），都已接上 `data/art.json`。
 
 | 路徑 | 內容 |
 | --- | --- |
@@ -97,3 +97,5 @@
 - 全部小寫英文，單字以底線分隔。
 - 動畫 spritesheet 以 `_sheet` 結尾，每格 48×32，第一列是待機。
 - 換正式素材時沿用 `assets/art/` 的檔名；要改名或新增時，同步修改 `data/art.json`。
+
+2026-10-17：`arts/` 加了 `.gdignore`，Godot 不再匯入原始交付檔（遊戲只讀 `assets/art/`）；在 Godot 編輯器的檔案面板看不到 `arts/`，用一般看圖軟體開。

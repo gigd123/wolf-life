@@ -1,4 +1,4 @@
-<img width="950" height="658" alt="image" src="https://github.com/user-attachments/assets/69af7098-5be6-4fc8-8814-0eb05a50c829" /># 試玩驗證清單
+# 試玩驗證清單
 
 2026-10-04 整理（2026-10-05 起：已勾選的項目會移到 `progress-archive.md`「試玩清單已通過的項目」，這份只留還沒測的），對應 `progress.md` 的「1.5／1.6 驗收」與「待使用者目視確認」。測到的項目直接在這份檔案打勾（`- [x]`），有問題的在項目下面寫一行說明（截圖放 `bug 截圖/`），下次開工時 Claude Code 會讀這份檔案，把結果整理回 `progress.md`。
 
