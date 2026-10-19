@@ -145,8 +145,23 @@ func _play_day() -> void:
 		if GameTime.current_period() == "predawn":
 			GameState.action_sleep()
 			continue
-		if GameState.wolf.hunger > 110 or GameState.wolf.stamina < 35:
+		# 吃撐、太累、或守著殘骸還不餓：休息（Phase 2b 第 1 步：吃一頓大型獵物撐好幾天）
+		if GameState.wolf.hunger > 110 or GameState.wolf.stamina < 35 \
+				or (GameState.carcass_index_here() >= 0 and GameState.wolf.hunger >= 95.0):
 			GameState.action_short_rest()
+			continue
+		# 殘骸還在這一區、肚子空出來了：回去吃（Phase 2b 第 1 步）
+		if GameState.carcass_index_here() >= 0 and GameState.wolf.hunger < 95.0:
+			var rc: Dictionary = GameState.action_return_to_carcass()
+			if str(rc.get("event", "")) != "" and routine:
+				# 照常過日子：搶食交給玩家（同 _feed_loop）
+				stop_reason = "scavenger"
+				stop_scavenger = str(rc["event"])
+				_finished = true
+				return
+			if str(rc.get("event", "")) != "":
+				_scavenger(str(rc["event"]))
+			_feed_loop()
 			continue
 		if _go_home():
 			continue
@@ -308,8 +323,8 @@ func _explore_once() -> void:
 	if prey == "deer_focus" and not big and GameState.wolf.hunger > 40:
 		GameState.clear_discovery()
 		return
-	# 太累不能開始狩獵（1.7 QA-55）
-	if GameState.too_tired_to_hunt():
+	# 太累不能開始狩獵（1.7 QA-55）；還飽的時候不出獵（Phase 2b 第 1 步）
+	if GameState.too_tired_to_hunt() or GameState.wolf.hunger >= 90.0:
 		GameState.clear_discovery()
 		return
 	var hunt: HuntSystem = null
@@ -355,6 +370,11 @@ func _play_hunt(hunt: HuntSystem) -> void:
 
 func _feed_loop() -> void:
 	while GameState.is_feeding() and not done():
+		# 吃到快撐滿（再吃一段會浪費一半以上）就先離開，剩下的留成殘骸，在旁邊休息，餓了再回來吃（Phase 2b 第 1 步）
+		var seg_value: float = float(GameState.current_feeding.get("segment_value", 0.0))
+		if GameState.wolf.hunger + seg_value * 0.5 > float(GameData.balance.get("hunger_max", 150)):
+			GameState.leave_feeding()
+			return
 		var fr: Dictionary = GameState.feed_once()
 		var ev: String = str(fr.get("event", ""))
 		# 照常過日子：搶食要不要守、怎麼守是玩家的決定，停下交給玩家（試玩回報 23）

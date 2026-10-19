@@ -4,7 +4,7 @@ const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_sou
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
 const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den", "mark", "lie_down"]
-const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold"]
+const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
 var stats_bars: Dictionary = {}
@@ -1029,6 +1029,9 @@ func _refresh() -> void:
 	var hunger_threshold: float = float(GameData.balance.get("hunger_low_threshold", 20))
 	status_icons["hunger"].visible = w.hunger <= hunger_threshold
 	status_icons["cold"].visible = GameState.is_freezing()
+	# 吃撐（Phase 2b 第 1 步）：滑鼠移上去寫效果
+	status_icons["gorged"].visible = w.is_overfed()
+	status_icons["gorged"].tooltip_text = tr("status.gorged.tip")
 	var snow_state: String = GameState.snow_state()
 	var snow_tex: Texture2D = ArtLibrary.icon("snow." + snow_state) if snow_state != "none" else null
 	snow_icon.visible = snow_tex != null
@@ -1107,6 +1110,11 @@ func _refresh() -> void:
 	explore_hint_label.visible = available.has("explore") and explore_hint_label.text != ""
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
+	# 回到殘骸：寫出剩幾段（Phase 2b 第 1 步）；滑鼠移上去寫不在時一天大約少多少
+	var carcass: Dictionary = GameState.carcass_here()
+	if not carcass.is_empty():
+		action_buttons["return_to_carcass"].text = tr("action.return_to_carcass.n").replace("{n}", str(int(carcass["segments_left"])))
+		action_buttons["return_to_carcass"].tooltip_text = tr("carcass.loss_tip").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent(carcass))
 
 # 顯示用的血量：無條件進位（還活著就不會顯示 0），但不超過顯示的上限
 # （血量 107.3／107.3 不會顯示成 108／107）。除錯選單也用這個值。
@@ -1958,6 +1966,9 @@ func _show_feeding(intro: String = "") -> void:
 	var chances := GameState.scavenge_chances()
 	encounter_detail.text = tr("feeding.risk").replace("{bear}", str(int(round(float(chances["bear"]) * 100.0)))) \
 		.replace("{fox}", str(int(round(float(chances["fox"]) * 100.0))))
+	# 離開的話：不在時一天大約少幾段（Phase 2b 第 1 步）
+	if int(f["segments_left"]) > 0:
+		encounter_detail.text += "\n" + tr("feeding.leave_loss").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent({"region_id": GameState.current_region, "segments_left": f["segments_left"]}))
 	if float(chances.get("wolverine", 0.0)) > 0.0 and GameState.is_identified("wolverine"):
 		encounter_detail.text += tr("feeding.risk.wolverine").replace("{n}", str(int(round(float(chances["wolverine"]) * 100.0))))
 	elif float(chances.get("wolverine", 0.0)) > 0.0:

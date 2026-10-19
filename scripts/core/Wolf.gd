@@ -86,6 +86,9 @@ func begin_burst() -> void:
 	if health < health_max * 0.5:
 		m *= float(b.get("low_health_mult", 0.8))
 	breath_max = clamp(m, float(b.get("min", 30)), float(b.get("max", 100)))
+	# 吃撐時一下子就喘不過氣（Phase 2b 第 1 步）
+	if is_overfed():
+		breath_max *= float(GameData.balance.get("gorged", {}).get("breath_mult", 1.0))
 	breath = breath_max
 	breath_spent = 0.0
 	in_burst = true
@@ -152,7 +155,7 @@ func clear_injury() -> void:
 func effective_speed() -> float:
 	var b: Dictionary = GameData.balance
 	var mult := _hunger_stat_mult() * _injury_mult("speed")
-	if hunger > float(b.get("overfed_threshold", 120)):
+	if is_overfed():
 		mult *= float(b.get("overfed_speed_mult", 0.9))
 	return speed * mult
 
@@ -173,6 +176,7 @@ func injury_stamina_mult() -> float:
 		m *= float(GameData.balance.get("elder", {}).get("stamina_mult", 1.0))
 	return m
 
+# 吃太飽＝吃撐（Phase 2b 第 1 步：喘的上限變低、不能短衝、移動探索較累；速度 ×0.9 是原本的規則）。
 func is_overfed() -> bool:
 	return hunger > float(GameData.balance.get("overfed_threshold", 120))
 

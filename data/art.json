@@ -302,6 +302,7 @@
     "status.cold": "res://assets/art/icons/status_cold.png",
     "status.frostbite": "res://assets/art/icons/status_frostbite.png",
     "status.exhausted": "res://assets/art/icons/status_exhausted.png",
+    "status.gorged": "res://assets/art/icons/status_gorged.png",
     "snow.light": "res://assets/art/icons/snow_light.png",
     "snow.deep": "res://assets/art/icons/snow_deep.png",
     "snow.crust": "res://assets/art/icons/snow_crust.png",

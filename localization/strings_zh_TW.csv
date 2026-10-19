@@ -226,6 +226,8 @@ factor.storm_cover,雨聲掩護
 factor.storm_scent,雨水沖散氣味
 reason.storm_scent,雨水沖散了氣味，你跟丟了。
 action.return_to_carcass,回到獵物殘骸
+action.return_to_carcass.n,回到獵物殘骸（剩 {n} 段）
+carcass.loss_tip,渡鴉、狐狸會一點一點吃掉殘骸：你不在這裡時，一天大約少 {n} 段；放太久也會腐壞。
 ui.knowledge,知識
 ui.log_history,紀錄
 ui.log_history.title,最近的紀錄
@@ -292,6 +294,8 @@ feeding.status,{animal}還剩 {n} 段（每段飽食度 +{v}）
 feeding.risk,吃完這段後被搶食的機率：灰熊 {bear}%　狐狸 {fox}%
 feeding.eat,吃一段（+{v}）
 feeding.leave,離開（留下殘骸）
+feeding.leave_loss,離開的話，渡鴉、狐狸一天大約會吃掉 {n} 段。
+status.gorged.tip,吃撐了：一下子就喘不過氣、不能短衝，走動也比較累。在巢穴、睡處或殘骸旁休息，消化得比較快。
 log.feeding_ate,你吃了一段，飽食度 +{v}。
 log.feeding_done,你把獵物吃完了
 log.feeding_left,你離開了，剩下的殘骸還留在原地。

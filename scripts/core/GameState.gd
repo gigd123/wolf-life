@@ -164,6 +164,9 @@ func _on_period_changed(_period_index: int) -> void:
 	rp[current_region] = int(rp.get(current_region, 0)) + 1
 	life_log["region_periods"] = rp
 	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
+	_digest_while_resting(float(balance.get("hunger_decay_per_period", 4)))
+	if not wolf.is_overfed():
+		metrics()["gorged_now"] = false
 	var cold := cold_cost()
 	wolf.hunger -= float(cold["hunger"])
 	wolf.stamina -= float(cold["stamina"])
@@ -542,6 +545,23 @@ func _process_daily_recovery() -> void:
 
 # 這一天睡覺時的傷勢好轉天數（-1 = 還沒睡）；換日時結算。
 var _sleep_heal: int = -1
+
+# 正在休息或睡覺（短暫休息、休息到…、睡覺推進時間時為 true）：吃撐時消化較快（Phase 2b 第 1 步）。
+var _resting: bool = false
+
+# 吃撐時在巢穴、睡處或自己的殘骸旁休息，超過門檻的部分消化較快（不會消化到門檻以下）；並記下吃撐的時段數（試玩指標）。
+func _digest_while_resting(base_decay: float) -> void:
+	if wolf == null or not wolf.is_overfed():
+		return
+	var g: Dictionary = GameData.balance.get("gorged", {})
+	var m := metrics()
+	m["gorged_periods"] = int(m.get("gorged_periods", 0)) + 1
+	if not bool(m.get("gorged_now", false)):
+		m["gorged_spells"] = int(m.get("gorged_spells", 0)) + 1
+	m["gorged_now"] = true
+	if _resting and (sleep_quality() != "rough" or carcass_index_here() >= 0):
+		var extra: float = base_decay * (float(g.get("rest_digest_mult", 1.0)) - 1.0)
+		wolf.hunger = max(float(GameData.balance.get("overfed_threshold", 120)), wolf.hunger - extra)
 
 func _heal_progress(quality: String) -> int:
 	var h: Dictionary = GameData.balance.get("sleep", {}).get("heal", {})
@@ -2010,7 +2030,9 @@ func sleep_quality() -> String:
 func action_short_rest() -> void:
 	_record_action("short_rest")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	_resting = true
 	GameTime.advance_turns(int(costs.get("short_rest", 2)))
+	_resting = false
 	var bonus: float = 0.0
 	for f in known_features(current_region):
 		bonus += float(GameData.region_features().get(f, {}).get("short_rest_stamina_bonus", 0))
@@ -2061,7 +2083,9 @@ func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 		if not wolf.alive or stop.call():
 			break
 		var period_before: int = GameTime.period_index
+		_resting = true
 		GameTime.advance_turns(1)
+		_resting = false
 		if not wolf.alive:
 			break
 		var before: float = wolf.stamina
@@ -2117,7 +2141,9 @@ func action_sleep() -> Dictionary:
 	var season_sleep: bool = GameTime.season_due_after(turns) and not season_change_blocked()
 	_sleep_heal = max(_sleep_heal, _heal_progress(quality))
 	quiet_sleep = season_sleep
+	_resting = true
 	GameTime.advance_turns(turns)
+	_resting = false
 	quiet_sleep = false
 	if not wolf.alive:
 		return {}
@@ -2317,6 +2343,9 @@ func _spend_action_stamina(action: String) -> void:
 			cost += float(sc.get("deep_move_stamina", 2))
 		elif action == "explore":
 			cost += float(sc.get("deep_explore_stamina", 1))
+	# 吃撐時移動、探索比較累（Phase 2b 第 1 步）
+	if wolf != null and wolf.is_overfed() and action in ["move_region", "explore"]:
+		cost *= float(GameData.balance.get("gorged", {}).get("move_stamina_mult", 1.0))
 	if cost > 0.0 and wolf != null:
 		wolf.stamina = max(0.0, wolf.stamina - cost * wolf.injury_stamina_mult())
 
@@ -2442,6 +2471,8 @@ func metrics_summary() -> Dictionary:
 		# 各狀況下：選擇次數、選最高成功率的比例、刻意冒險的比例
 		"best_choice_by_context": (m.get("by_context", {}) as Dictionary).keys().map(func(k): return "%s %d次 最高%.2f 冒險%.2f" % [k, int(m["by_context"][k][0]),
 			float(m["by_context"][k][1]) / max(1, int(m["by_context"][k][0])), float(m["by_context"][k][2]) / max(1, int(m["by_context"][k][0]))]),
+		# 吃撐：一次平均幾個時段（Phase 2b 第 1 步，目標約 5～10 個時段＝1～2 天）
+		"gorged_avg_periods": snapped(float(m.get("gorged_periods", 0)) / max(1, int(m.get("gorged_spells", 0))), 0.1),
 		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0]),
 		"text_issues": (m.get("text_issues", {}) as Dictionary).keys().map(func(k): return "%s %s @ %s「%s」" % [m["text_issues"][k]["kind"], k,
 			m["text_issues"][k]["where"], m["text_issues"][k]["text"]])}
@@ -2911,7 +2942,7 @@ func action_return_to_carcass() -> Dictionary:
 	var own: bool = bool(c.get("own", true))
 	carcasses.remove_at(idx)
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
-		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"]}
+		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"], "src": "kill" if own else "carcass"}
 	var event: String = ""
 	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult() * float(_bear_phase_cfg().get("scavenge_mult", 1.0))):
 		event = "bear"
@@ -2929,24 +2960,50 @@ func action_return_to_carcass() -> Dictionary:
 	state_changed.emit()
 	return {"event": event, "own": own}
 
-# 每個時段：殘骸有 15% 機率被搶走或腐壞，超過 2 天一定消失。
+# 殘骸逐段被渡鴉、狐狸吃掉（Phase 2b 第 1 步，取代每個時段 15% 整個不見）：你在同一區時少、不在時多，每天有上限；
+# 放太久就腐壞。凍住的吃得慢；苔原的狼獾照舊加乘。
 func _decay_carcasses() -> void:
 	var cfg := _feeding_cfg()
 	var today: int = int(life_log.get("days_lived", 1))
+	var days_limit: int = int(cfg.get("carcass_days_winter" if GameTime.current_season() == "winter" else "carcass_days", 4))
 	var kept: Array = []
 	for c in carcasses:
-		if today - int(c["day"]) > int(cfg.get("carcass_days", 2)):
+		if today - int(c["day"]) > days_limit:
 			continue
-		var loss: float = float(cfg.get("carcass_loss_per_period", 0.15))
-		if bool(c.get("frozen", false)):
-			loss *= float(_blizzard_cfg().get("winter_kill", {}).get("loss_mult", 0.3))
-		# 苔原的殘骸還會被狼獾偷吃
-		if _wolverine_alive() and GameData.map_of(str(c["region_id"])) == str(_wolverine_cfg().get("map", "tundra")):
-			loss *= float(_wolverine_cfg().get("carcass_loss_mult", 1.0)) * (float(_wolverine_cfg().get("winter_loss_mult", 1.0)) if GameTime.current_season() == "winter" else 1.0)
-		if RNGService.chance(loss):
+		var loss: float = carcass_loss_per_period(c)
+		if int(c.get("loss_day", -1)) != today:
+			c["loss_day"] = today
+			c["loss_today"] = 0.0
+		loss = min(loss, max(0.0, float(cfg.get("carcass_loss", {}).get("max_per_day", 1.0)) - float(c["loss_today"])))
+		c["loss_today"] = float(c["loss_today"]) + loss
+		c["eaten"] = float(c.get("eaten", 0.0)) + loss
+		while float(c["eaten"]) >= 1.0 and int(c["segments_left"]) > 0:
+			c["eaten"] = float(c["eaten"]) - 1.0
+			c["segments_left"] = int(c["segments_left"]) - 1
+		if int(c["segments_left"]) <= 0:
 			continue
 		kept.append(c)
 	carcasses = kept
+
+# 這具殘骸每個時段大約被吃掉幾段（畫面上「離開時大約會少多少」也用這個）。
+func carcass_loss_per_period(c: Dictionary, present: Variant = null) -> float:
+	var lc: Dictionary = _feeding_cfg().get("carcass_loss", {})
+	var here: bool = (str(c.get("region_id", "")) == current_region) if present == null else bool(present)
+	var loss: float = float(lc.get("present" if here else "absent", 0.2))
+	if bool(c.get("frozen", false)):
+		loss *= float(_blizzard_cfg().get("winter_kill", {}).get("loss_mult", 0.3))
+	# 苔原的殘骸還會被狼獾偷吃
+	if _wolverine_alive() and GameData.map_of(str(c.get("region_id", ""))) == str(_wolverine_cfg().get("map", "tundra")):
+		loss *= float(_wolverine_cfg().get("carcass_loss_mult", 1.0)) * (float(_wolverine_cfg().get("winter_loss_mult", 1.0)) if GameTime.current_season() == "winter" else 1.0)
+	return loss
+
+# 你不在時，這具殘骸一天大約少幾段（有每天的上限）。
+func carcass_loss_per_day_absent(c: Dictionary) -> float:
+	return min(carcass_loss_per_period(c, false) * GameTime.PERIODS.size(), float(_feeding_cfg().get("carcass_loss", {}).get("max_per_day", 1.0)))
+
+func carcass_here() -> Dictionary:
+	var idx := carcass_index_here()
+	return carcasses[idx] if idx >= 0 else {}
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})

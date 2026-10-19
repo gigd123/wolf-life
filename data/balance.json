@@ -25,6 +25,8 @@
   "heavy_injury_days_max": 5,
   "heavy_injury_stat_mult": 0.8,
   "injury_stamina_mult": 1.15,
+  "_gorged_comment": "Phase 2b 第 1 步「吃撐」：飽食度超過 overfed_threshold（和原本「吃太飽速度 ×0.9」同一個門檻）時，喘的上限 × breath_mult、不能短衝、移動與探索的體力 × move_stamina_mult；在巢穴、睡處（不是勉強過夜）或自己的殘骸所在的區域休息、睡覺時，超過門檻的部分消化 × rest_digest_mult。",
+  "gorged": { "breath_mult": 0.6, "move_stamina_mult": 1.5, "rest_digest_mult": 1.5 },
   "rest_stamina_cap": 80,
   "night_prey_detection_mod": -10,
   "wind_change_chance_per_period": 0.15,
@@ -421,7 +423,7 @@
     "fox_chance": 0.12,
     "_fox_comment": "1.8 第 6 步：狐狸來偷殘骸的機率倍率。winter_mult 冬季、hare_low_mult 雪兔低谷年（週期倍率 < hare_low）更常來、更大膽；frequent_mult 你常待的區域（這一季待過 frequent_periods 個時段以上）狐狸較少。咬死狐狸通常不吃，飽食度低於 eat_hunger 時才吃（eat_value）。",
     "fox": { "winter_mult": 1.5, "hare_low_mult": 1.5, "hare_low": 0.5, "frequent_mult": 0.6, "frequent_periods": 12, "eat_hunger": 20, "eat_value": 15 },
-    "carcass_days": 2, "carcass_loss_per_period": 0.15,
+    "carcass_days": 4, "carcass_days_winter": 6, "_carcass_loss_comment": "Phase 2b 第 1 步：殘骸逐段被渡鴉、狐狸吃掉（取代原本每個時段 15% 整個不見）。present 你在同一區時每個時段吃掉的段數，absent 不在時；每天最多 max_per_day 段。凍住的乘 blizzard.winter_kill.loss_mult，苔原的狼獾照舊加乘。超過 carcass_days（冬季 carcass_days_winter）天就腐壞。", "carcass_loss": { "present": 0.1, "absent": 0.2, "max_per_day": 1.0 },
     "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2
   },
   "start_health_max": 80,

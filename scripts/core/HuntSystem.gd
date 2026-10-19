@@ -296,7 +296,8 @@ func options() -> Array:
 						"prey_drain": float(pc.get("prey_drain", 5)),
 						"factors": [{"key": "factor.probe_info", "good": true, "weight": 0.0, "info": true}]})
 				for id in opts.keys():
-					if _option_available(opts[id]):
+					# 吃撐時不能短衝（Phase 2b 第 1 步）
+					if _option_available(opts[id]) and not (id == "sprint" and wolf.is_overfed()):
 						list.append(_chase_option(id))
 				# 喘不過氣時可以停下喘口氣（1.8 第 1 步）：喘回來一半，獵物也喘口氣，可能就此跑掉
 				if wolf.in_burst and wolf.breath < wolf.breath_max * 0.5 and chase_round > 0:
