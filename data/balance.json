@@ -59,10 +59,10 @@
   "_power_label_comment": "搏鬥與戰鬥的「力量佔優／勢均力敵／牠很難纏」標籤：力量差（換算後的 diff）≥ stronger 才顯示佔優，≤ weaker 顯示難纏，中間是勢均力敵。只影響顯示，不影響成功率（2026-10-02 使用者同意）。",
   "power_label": { "stronger": 0.15, "weaker": -0.05 },
   "npc_wolves": {
-    "_comment": "具名 NPC 狼（SPEC 1.6「陌生灰狼」，NpcWolf.gd）。能力值的尺度同玩家；開局約 3～4 歲、正值壯年。",
+    "_comment": "具名 NPC 狼（SPEC 1.6「陌生灰狼」，NpcWolf.gd）。能力值的尺度同玩家；開局約 2.5～3 歲、正值壯年（Phase 3a 第 1 步，原本 3～4 歲）。",
     "stranger_wolf": {
       "sex": "male",
-      "start_age": [3.0, 4.0],
+      "start_age": [2.5, 3.0],
       "start_stats": { "speed": [64, 72], "strength": [66, 74], "skill": [60, 68], "perception": [58, 66], "health_max": [105, 115] },
       "ages": { "peak_end": 5.0, "elder": 6.5 },
       "elder_decay_per_season": { "speed": 1.5, "strength": 1.0, "skill": 0.3, "perception": 0.5, "health_max": 1.5 },
@@ -73,6 +73,8 @@
       "_interaction_comment": "unlock_subadult_chance：第一次可以直接互動的時機，這個機率在次成年期，否則在成年後（都要先遠距觀察過）。follow：跟蹤成功率 = base + (感知 − 牠的感知) / divisor。drive_off_dominance_bonus：每輸給牠或示弱一次，被驅趕的機率再加多少。",
       "interaction": { "unlock_subadult_chance": 0.5, "follow_base": 0.45, "follow_divisor": 150, "drive_off_dominance_bonus": 0.15, "howl_mult_after_yield": 0.5, "submit_damage_mult": 0.6 }
     },
+    "_black_heir_comment": "Phase 3a：黑狼死後接手牠狼群的兒子（換代）。設定沿用黑狼，年齡由 GameState 依接手時的年齡設定。",
+    "black_heir": { "base": "stranger_wolf", "start_stats": { "speed": [62, 70], "strength": [62, 70], "skill": [56, 64], "perception": [56, 64], "health_max": [100, 110] } },
     "wolverine": {
       "_comment": "狼獾（1.6 第 6d 步）：苔原的搶屍者。體型小但極兇猛：力量值約 110，很少放棄（耐力低於 15% 才退），不會示弱，也不會想殺狼。interaction：map 牠活動的地圖；feed_chance 在苔原分段進食時每一段吃完後找上門的機率（渡鴉的 feeding_bonus_per_turn 會再往上加）；return_chance 回到苔原的殘骸時撞見牠的機率；carcass_loss_mult 苔原的殘骸被偷吃（消失）的倍率；replace_chance_per_season 牠死後每一季有新的狼獾遷進來的機率。",
       "sex": "unknown",
@@ -433,6 +435,14 @@
     "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2
   },
   "start_health_max": 80,
+  "_black_pack_comment": "Phase 3a 黑狼的一生（WolfPack.gd）：每次換季更新。成家：你打贏牠之後或你滿 pair_min_player_age 歲之後，每季 pair_chance × pair_season_mult，牠還沒老才會。伴侶的年齡 mate_age，每季死亡 mate_death_per_season（mate_old_age 歲起 mate_old_death_per_season）。春季 pup_chance 生 litter 隻，幼狼每季存活 pup_survival_per_season（第一年約一半）；disperse_per_season：1 歲以上的子女每季離群的機會。數量 ≥ expand_min_size 時秋季 expand_chance 擴張一區，最多 max_regions 區；數量上限 max_size。帶頭的死了，有伴侶和 heir_min_age 歲以上的子女就由最年長的接手（換代），否則解散。黑狼的開局年齡 2.5～3 歲（原本 3～4，讓牠的家族撐過你的壯年）。",
+  "black_pack": {
+    "pair_min_player_age": 2.5, "pair_chance": 0.3, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 },
+    "mate_age": [2.0, 3.0], "mate_death_per_season": 0.02, "mate_old_age": 8.0, "mate_old_death_per_season": 0.15,
+    "pup_chance": 0.8, "litter": [3, 5], "pup_survival_per_season": 0.84,
+    "disperse_per_season": { "autumn": 0.15, "winter": 0.15 }, "heir_min_age": 1.5,
+    "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10
+  },
   "growth": {
     "_comment": "SPEC 1.6「成長系統」，規則在 scripts/core/Growth.gd。learn_per_unit：技巧、感知每次成功的當下成長（失敗 × fail_mult，同一場狩獵連續失敗再 × fail_streak_decay 的次方）。training_points：鍛鍊點，action = 狩獵中練到速度或力量的一步（追擊一回合、撲抓、搏鬥一回合），takedown = 制伏獵物，guard = 守住獵物或打贏灰熊，另外 health_share 比例記到血量上限；gather、explore 三項平均。stat_per_point × 飽食倍率 × 生命階段倍率 = 睡覺時每點鍛鍊點的成長量。",
     "learn_per_unit": { "skill": 0.25, "perception": 0.25 },

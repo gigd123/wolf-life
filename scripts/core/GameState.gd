@@ -50,6 +50,8 @@ var routine_running: bool = false # 「照常過日子」代為行動中：知�
 var territory_periods: int = 0
 # 具名 NPC 狼（SPEC 1.6「陌生灰狼」）：{id: NpcWolf}。陌生灰狼的範圍同步在 stranger_territory（牠死了就是空字串）。
 var npcs: Dictionary = {}
+# 黑狼家族（Phase 3a）：一對、狼群、領域、換代；帶頭的是 pack_leader()。存檔。
+var black_pack: WolfPack = WolfPack.new()
 # 森林大火（SPEC 1.6「森林大火」）：fire 是進行中的大火 {origin, phase: "warning"|"burning", ignite_at, noticed,
 # regions: {region_id: 起火的絕對時段}, burned: [燒完的區域], alerted: 已經提示過「火燒到這裡」的區域, sheltered: 躲在溪邊或巢穴的區域}。
 # region_burn：燒過的區域 {region_id: 燒完那天的 days_lived}，決定焦黑與草木新生。fire_at：排定的起火時段（-1 = 沒有）。
@@ -107,6 +109,8 @@ func new_game(start_den: String) -> void:
 	var territory_weights: Dictionary = GameData.discovery.get("threat_sources", {}).get("stranger_wolf", {}).get("region_weights", {})
 	stranger_territory = RNGService.weighted_pick(territory_weights) if not territory_weights.is_empty() else ""
 	npcs = {"stranger_wolf": NpcWolf.create("stranger_wolf", stranger_territory)}
+	black_pack = WolfPack.new()
+	black_pack.regions = [stranger_territory] if stranger_territory != "" else []
 	fire = {}
 	region_burn = {}
 	fire_at = -1
@@ -231,6 +235,7 @@ func _on_season_changed(_season_index: int) -> void:
 		var prev_stage: int = wolf.life_stage()
 		wolf.age_years += 0.25
 		_age_npcs()
+		_update_black_pack()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
 		if GameTime.current_season() == "spring":
@@ -3856,6 +3861,32 @@ func _age_npcs() -> void:
 			_on_npc_died(npc)
 	_maybe_new_wolverine()
 
+# 黑狼家族的換季更新（Phase 3a 第 1 步）。換代時建立新的帶頭的（黑狼的兒子），領域照舊。
+func _update_black_pack() -> void:
+	var leader := pack_leader()
+	var beaten: bool = stranger() != null and (stranger().yielded_to_player or stranger().death_cause == "killed_by_player")
+	var adjacent: Dictionary = {}
+	for r in GameData.map_regions("forest"):
+		adjacent[r] = EncounterSystem.region_data(r).get("adjacent", [])
+	var events: Array = black_pack.on_season_passed({"season": GameTime.current_season(), "leader": leader,
+		"player_age": wolf.age_years, "beaten": beaten, "den": den_region, "own": own_territories(), "adjacent": adjacent})
+	if events.has("succession"):
+		var core: String = str(black_pack.regions[0]) if not black_pack.regions.is_empty() else ""
+		var heir := NpcWolf.create("black_heir", core)
+		heir.age_years = snapped(max(2.0, black_pack.heir_age), 0.25)
+		npcs["black_heir"] = heir
+	if not events.is_empty():
+		var log_list: Array = life_log.get("black_pack_events", [])
+		for e in events:
+			log_list.append({"event": e, "age": snapped(wolf.age_years, 0.25)})
+		life_log["black_pack_events"] = log_list
+
+# 黑狼家族帶頭的：第一代是黑狼，換代後是接手的兒子（black_heir）。
+func pack_leader() -> NpcWolf:
+	if black_pack.generation > 1:
+		return npcs.get("black_heir", null)
+	return stranger()
+
 # 狼獾死後，每一季有機會從別處遷進一隻新的（第幾隻記在 life_log.wolverine_gen）。
 func _maybe_new_wolverine() -> void:
 	var npc := wolverine()
@@ -5307,6 +5338,7 @@ func to_dict() -> Dictionary:
 		"stranger_territory": stranger_territory,
 		"territory_periods": territory_periods,
 		"npcs": _npcs_to_dict(),
+		"black_pack": black_pack.to_dict(),
 		"fire": fire,
 		"region_burn": region_burn,
 		"fire_at": fire_at,
@@ -5364,6 +5396,7 @@ func load_from_dict(data: Dictionary) -> void:
 		npcs[npc_id] = NpcWolf.from_dict(data["npcs"][npc_id])
 	if not npcs.has("stranger_wolf"):
 		npcs["stranger_wolf"] = NpcWolf.create("stranger_wolf", stranger_territory)
+	black_pack = WolfPack.from_dict(data.get("black_pack", {"regions": [stranger_territory] if stranger_territory != "" else []}))
 	if not npcs.has("wolverine"):
 		npcs["wolverine"] = NpcWolf.create("wolverine", "")
 	for id in TUNDRA_WOLF_IDS:
