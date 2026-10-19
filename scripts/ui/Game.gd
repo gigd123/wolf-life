@@ -3994,8 +3994,9 @@ func _show_elder_transition() -> void:
 	var text: String = tr(str(cfg.get("body", "")))
 	_log(text)
 	var decline: Array[String] = []
-	for stat in Growth.cfg().get("elder_decay_per_season", {}).keys():
-		if float(Growth.cfg()["elder_decay_per_season"][stat]) > 0.0:
+	var decay: Dictionary = Growth.age_decay(GameState.wolf.age_years)
+	for stat in decay.keys():
+		if float(decay[stat]) > 0.0:
 			decline.append(_icon_bb("stat." + str(stat)) + tr("stat." + str(stat)))
 	var growing: Array[String] = []
 	for stat in cfg.get("growing", []):

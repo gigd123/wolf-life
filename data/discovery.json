@@ -1,7 +1,7 @@
 {
   "_comment": "探索系統（SPEC「探索系統」）：發現 = 地點特徵 × 線索類型 × 來源 × 新鮮度。數值為 Phase 1.5 初始值。",
   "nothing_chance_min": 0.08,
-  "nothing_chance_max": 0.15,
+  "nothing_chance_max": 0.3,
   "feature_chance": 0.12,
   "gather_source_weight_mult": 0.5,
   "fresh_chance_base": 0.55,

@@ -5,7 +5,7 @@ extends RefCounted
 # - 技巧、感知靠「學」：做了就當下成長（learn），失敗約為成功的 1/4。
 # - 速度、力量、血量上限靠「練＋吃＋睡」：白天累積鍛鍊點（train），睡覺時依飽食度結算（settle_sleep）。
 # - 進入成年時結算潛力（settle_potential）：巔峰上限 = 基礎上限 + 次成年期累積成長 × 1.5。
-# 成年期朝自己的上限成長，越接近上限越慢；老年期速度、力量、血量上限不再成長，逐季衰退。
+# 成年期朝自己的上限成長，越接近上限越慢；3 歲起逐季衰退（age_decay），老年期速度、力量、血量上限不再成長。
 
 const BODY_STATS := ["speed", "strength", "health_max"]
 const MIND_STATS := ["skill", "perception"]
@@ -202,11 +202,19 @@ static func subadult_growth(wolf: Wolf) -> Dictionary:
 			g[stat] = max(0.0, ref - float(wolf.start_stats.get(stat, ref)))
 	return g
 
-# 老年每季衰退。
-static func apply_elder_decay(wolf: Wolf) -> void:
-	if wolf.life_stage() != Wolf.LifeStage.ELDER:
-		return
-	var decay: Dictionary = cfg().get("elder_decay_per_season", {})
+# 隨年齡每季衰退（Phase 2b 第 5 步）：growth.age_decay 依年齡分段（3～5 歲小幅、5 歲後大幅），
+# 能力值與潛力上限一起降，成年期的鍛鍊也長不回來。
+static func age_decay(age_years: float) -> Dictionary:
+	var result: Dictionary = {}
+	for band in cfg().get("age_decay", []):
+		if age_years >= float(band.get("from", 99.0)):
+			result = band.get("per_season", {})
+	return result
+
+static func apply_age_decay(wolf: Wolf) -> void:
+	var decay: Dictionary = age_decay(wolf.age_years)
 	for stat in decay.keys():
 		wolf.set(stat, get_stat(wolf, stat) - float(decay[stat]))
+		if wolf.potential.has(stat):
+			wolf.potential[stat] = float(wolf.potential[stat]) - float(decay[stat])
 	wolf.clamp_stats()

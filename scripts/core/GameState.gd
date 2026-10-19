@@ -163,8 +163,9 @@ func _on_period_changed(_period_index: int) -> void:
 	var rp: Dictionary = life_log.get("region_periods", {})
 	rp[current_region] = int(rp.get(current_region, 0)) + 1
 	life_log["region_periods"] = rp
-	wolf.hunger -= float(balance.get("hunger_decay_per_period", 4))
-	_digest_while_resting(float(balance.get("hunger_decay_per_period", 4)))
+	var decay: float = hunger_decay()
+	wolf.hunger -= decay
+	_digest_while_resting(decay)
 	if not wolf.is_overfed():
 		metrics()["gorged_now"] = false
 	var cold := cold_cost()
@@ -243,7 +244,7 @@ func _on_season_changed(_season_index: int) -> void:
 			life_log["hare_year"] = (int(life_log.get("hare_year", 0)) + 1) % max(1, years)
 		var fed_ratio: float = _season_fed_ratio()
 		Growth.settle_season(wolf, fed_ratio)
-		_apply_elder_decay()
+		_apply_age_decay()
 		_check_life_stage_transition(prev_stage)
 		var review: Dictionary = _season_review(fed_ratio)
 		_start_season_review()
@@ -463,8 +464,15 @@ func sleep_summary(settle: Dictionary = {}) -> Dictionary:
 	life_log["sleep_starved"] = starved
 	return {"gains": gains, "amounts": amounts, "reason": reason, "card": card}
 
-func _apply_elder_decay() -> void:
-	Growth.apply_elder_decay(wolf)
+# 每個時段飽食度下降多少：次成年期另有數值（Phase 2b 第 5 步）。
+func hunger_decay() -> float:
+	var b: Dictionary = GameData.balance
+	if wolf != null and wolf.life_stage() == Wolf.LifeStage.SUBADULT and b.has("hunger_decay_subadult"):
+		return float(b["hunger_decay_subadult"])
+	return float(b.get("hunger_decay_per_period", 4))
+
+func _apply_age_decay() -> void:
+	Growth.apply_age_decay(wolf)
 
 # 生命階段轉變（SPEC 1.6「潛力與生命階段轉變」）：年齡改變後呼叫。
 # 進入成年時結算潛力並顯示成年卡片；進入老年時顯示老年卡片。
@@ -5128,7 +5136,7 @@ func debug_add_age(years: float) -> void:
 	for i in range(steps):
 		var prev_stage: int = wolf.life_stage()
 		wolf.age_years += 0.25
-		_apply_elder_decay()
+		_apply_age_decay()
 		_check_life_stage_transition(prev_stage)
 	log_message.emit(tr("log.debug.age").replace("{age}", "%.2f" % wolf.age_years))
 	state_changed.emit()

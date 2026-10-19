@@ -5,11 +5,13 @@
   "start_age_years": 0.6667,
   "season_day_count": { "normal": 10, "test": 3 },
   "hunger_max": 150,
-  "hunger_decay_per_period": 4,
+  "hunger_decay_per_period": 6,
+  "_hunger_decay_comment": "Phase 2b 第 5 步：成年、老年每個時段 −6（一天 −30），次成年 −5（使用者 2026-10-19）。",
+  "hunger_decay_subadult": 5,
   "hunger_low_threshold": 30,
   "stamina_low_threshold": 10,
   "_stamina_rules_comment": "1.7 第 1 步（QA-48、55）。action_stamina_costs：一般行動的體力消耗（有傷時再乘傷勢的體力倍率）；移動是每次的基本消耗，再加區域的地形消耗；跨地圖的連結另見 regions.json links.stamina。low_stamina：體力低於 hunt_min 不能開始狩獵；低於 growth_threshold 時行動帶來的成長 × growth_mult；體力 0 時戰鬥的攻擊命中 − combat_hit_penalty。設 hunt_min 0、growth_mult 1、combat_hit_penalty 0 就等於沒有這些規則。",
-  "action_stamina_costs": { "explore": 3, "gather": 2, "find_sleep_spot": 2, "track": 3, "return_to_carcass": 1, "move_region": 3 },
+  "action_stamina_costs": { "explore": 6, "gather": 3, "find_sleep_spot": 2, "track": 5, "return_to_carcass": 1, "move_region": 4 },
   "low_stamina": { "hunt_min": 10, "growth_threshold": 10, "growth_mult": 0.5, "combat_hit_penalty": 0.15 },
   "hunger_penalties": {
     "low_threshold": 30,
@@ -31,7 +33,7 @@
   "night_prey_detection_mod": -10,
   "wind_change_chance_per_period": 0.15,
   "factor_display": { "base_count": 2, "extra_count_perception": 55 },
-  "region_depletion": { "per_hunt": 0.2, "recovery_per_day": 0.05, "min_mult": 0.2 },
+  "region_depletion": { "per_hunt": 0.3, "recovery_per_day": 0.04, "min_mult": 0.2 },
   "bear_encounter": {
     "_comment": "灰熊遭遇（DESIGN.md「灰熊行為」）：辨識前一律遠距目擊；辨識後進入戰鬥模式（combat）。direct：次成年與老年的狼、或護幼的母熊，可能不示威直接攻擊（戰鬥從交鋒開始）。",
     "direct_attack_chance": 0.25, "direct_damage_min": 10, "direct_damage_max": 25,
@@ -222,7 +224,7 @@
   "poison_health_value_loss_per_day": 1,
   "_burst_comment": "喘（1.8 第 1 步「狩獵的時間與體力」）：狩獵、戰鬥中的爆發。上限 = base + 體力 × per_stamina + (速度 − 50) × per_speed（血量一半以下 × low_health_mult），夾在 min～max。選項的「體力」改扣喘，結束時喘回滿，只扣一次體力 = end_stamina_base + 用掉的喘 × end_stamina_per_breath（最多 end_stamina_max）。catch_breath：追擊中停下喘口氣，喘回上限的這個比例，獵物恢復 catch_breath_prey 的耐力、有 catch_breath_escape 的機率跑掉。extra_turns_max：狩獵中跟隨、等待等累積的時間，結束時最多多花幾回合；combat_free_rounds：戰鬥超過這麼多回合才多花 1 回合。",
   "burst": { "base": 50, "per_stamina": 0.4, "per_speed": 0.3, "low_health_mult": 0.8, "min": 30, "max": 100,
-    "end_stamina_base": 4, "end_stamina_per_breath": 0.12, "end_stamina_max": 15,
+    "end_stamina_base": 8, "end_stamina_per_breath": 0.2, "end_stamina_max": 25,
     "catch_breath": 0.5, "catch_breath_prey": 20, "catch_breath_escape": 0.25, "extra_turns_max": 2, "combat_free_rounds": 3 },
   "_youth_comment": "次成年與成年的差異（Phase 1.7b，提案之七）。big_prey_power 以上的成年獵物（白尾鹿成鹿、馴鹿、駝鹿…）搏鬥時，次成年第一年扣 big_prey_penalty_young、第二年扣 big_prey_penalty_old。fuzzy：次成年期成功率只顯示模糊說法；同一種獵物狩獵過 known_hunts 次、或第二年感知 ≥ perception 時，那種獵物顯示數字；對手打過 known_fights 次後顯示數字；labels 是模糊說法的分界。submit_damage_mult：次成年時對黑狼、苔原狼示弱，牠們放你走時咬的那一口再乘這個倍率；tundra_relation_mult：次成年時和苔原狼的關係值增加再乘這個倍率。",
   "youth": { "big_prey_power": 50, "big_prey_penalty_young": 0.15, "big_prey_penalty_old": 0.07,
@@ -334,8 +336,8 @@
     "_herd_comment": "1.8 第 5 步：成群的獵物。stalk_penalty：潛近時很多雙眼睛；weakest_rolls：觀察鹿群成功時多擲幾次體況、挑最弱的；spooked：對鹿群失手後，這一區這種獵物 spooked_days 天內警覺 + detection。",
     "_period_comment": "Phase 2b 第 4 步「活動時段」：stalk 依時段加在潛近（晨昏 +5%）；end_stamina_mult「季節.時段」狩獵結束扣的體力倍率（夏季白天 ×1.3）；rest_stamina_mult 依時段乘在短暫休息、休息到…回的體力（白天 ×1.2）。睡覺不受影響。",
     "period": { "stalk": { "dawn": 0.05, "dusk": 0.05 }, "end_stamina_mult": { "summer.day": 1.3 }, "rest_stamina_mult": { "day": 1.2 } },
-    "_age_comment": "Phase 2b 第 3 步：老年的狩獵表現逐年下降（追擊與制伏），decline_start 歲起每年 − per_year，最多 − max；挑選、試探的準度不受影響。",
-    "age": { "decline_start": 6.0, "per_year": 0.04, "max": 0.2 },
+    "_age_comment": "Phase 2b 第 3 步：老年的狩獵表現逐年下降（追擊與制伏），decline_start 歲起每年 − per_year，最多 − max；挑選、試探的準度不受影響。第 5 步改成 5 歲起、每年 0.06、最多 0.3（能力值本身另有 growth.age_decay）。",
+    "age": { "decline_start": 5.0, "per_year": 0.06, "max": 0.3 },
     "herd": { "stalk_penalty": 0.08, "weakest_rolls": 1, "spooked_detection": 10, "spooked_days": 1 },
     "fight": {
       "base": 0.6, "power_divisor": 130, "wounds_to_kill": 2, "throat_tired_bonus": 0.3,
@@ -455,7 +457,7 @@
     "gather_perception": 0.01,
     "training_points": { "action": 3, "takedown": 3, "guard": 4, "gather": 2, "explore": 1, "health_share": 0.3 },
     "immediate_body_per_point": 0.003,
-    "stat_per_point": { "speed": 0.078, "strength": 0.078, "health_max": 0.104 },
+    "stat_per_point": { "speed": 0.086, "strength": 0.086, "health_max": 0.114 },
     "_season_comment": "換季成長（SPEC 1.6「成長系統」）：每晚的身體成長保留 season_reserve 比例，換季時 × 這一季吃飽的天數比例發放；換日時飽食度 ≥ season_fed_hunger 算吃飽的一天。換季字卡列出變化 ≥ season_review_min 的能力，吃飽比例低於 season_starved_ratio 寫挨餓。",
     "season_reserve": 0.2,
     "season_fed_hunger": 60,
@@ -479,7 +481,11 @@
       "reference_growth": { "speed": 8, "strength": 10, "skill": 7, "perception": 6, "health_max": 8 },
       "max": { "speed": 100, "strength": 100, "skill": 100, "perception": 100, "health_max": 120 }
     },
-    "elder_decay_per_season": { "speed": 1.0, "strength": 0.5, "skill": 0.0, "perception": 0.5, "health_max": 1.0 }
+    "_age_decay_comment": "隨年齡每季衰退（Phase 2b 第 5 步，使用者 2026-10-19：3～5 歲小幅、5 歲後大幅）。from 歲起套用該段（取最後一個符合的），能力值與潛力上限一起降。",
+    "age_decay": [
+      { "from": 3.0, "per_season": { "speed": 0.5, "strength": 0.25, "health_max": 0.5 } },
+      { "from": 5.0, "per_season": { "speed": 2.0, "strength": 1.5, "perception": 0.5, "health_max": 2.0 } }
+    ]
   },
   "_pending_review": "數值為 Phase 1 起點，待試玩後依 DESIGN.md 待討論事項調整"
 }
