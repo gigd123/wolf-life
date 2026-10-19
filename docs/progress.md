@@ -3,7 +3,7 @@
 最後更新：2026-10-19
 
 ## 目前階段
-（2026-10-19）Phase 2b「狩獵的節奏與難度」5 步完成，待試玩；第二階段（藏食物、一季天數）等試玩與戰術狩獵。（2026-10-17）Phase 1.5～2 全部實作完成，待試玩驗收（`docs/playtest-checklist.md` 最上面「本輪驗收重點」）。文案一致性 A～D、雪況延續已完成。下一步：使用者測「本輪驗收重點」第一節；Claude Code 整理驗收清單的舊項目、寫 Phase 3 最小可玩版本「黑狼的一生」的提案（方向見 `docs/proposals/wolf-society-direction.md`，使用者選 A：先做別的狼會自己發展）。Phase 3 草稿 `docs/spec-phase3-draft.md` 待確認。
+（2026-10-19）Phase 2b「狩獵的節奏與難度」5 步完成，待試玩；第二階段（藏食物、一季天數）等試玩與戰術狩獵。（2026-10-19）Phase 3 最小可玩版本提案「黑狼的一生」：`docs/proposals/black-wolf-life.md`，4 個決定待使用者選。（2026-10-17）Phase 1.5～2 全部實作完成，待試玩驗收（`docs/playtest-checklist.md` 最上面「本輪驗收重點」）。文案一致性 A～D、雪況延續已完成。下一步：使用者測「本輪驗收重點」第一節；Claude Code 整理驗收清單的舊項目、寫 Phase 3 最小可玩版本「黑狼的一生」的提案（方向見 `docs/proposals/wolf-society-direction.md`，使用者選 A：先做別的狼會自己發展）。Phase 3 草稿 `docs/spec-phase3-draft.md` 待確認。
 
 ## 各階段狀態
 已完成步驟的細節在 `docs/progress-archive.md`「2026-10-17 從 progress.md 移出」。
