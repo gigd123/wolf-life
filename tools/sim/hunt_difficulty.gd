@@ -24,6 +24,7 @@ func _run(prey: String, runs: int) -> void:
 	var GS = root.get_node("GameState")
 	var AP = load("res://scripts/core/AutoPlayer.gd")
 	var hunts := {}   # stage -> key -> [試, 成, 放棄]
+	var conds := {}   # "stage.tier" -> condition -> [試, 成, 放棄]；tier 依當下 (速度+力量+技巧)/3：一般 < 80 ≤ 強
 	var food := {}    # stage -> 來源類別 -> 飽食度
 	var days := {}; var hungry := {}
 	for s in STAGES:
@@ -38,6 +39,9 @@ func _run(prey: String, runs: int) -> void:
 			var stage: String = STAGES[GS.wolf.life_stage()]
 			var h0: Dictionary = (GS.life_log.get("hunt_by_animal", {}) as Dictionary).duplicate(true)
 			var f0: Dictionary = (GS.life_log.get("food_by", {}) as Dictionary).duplicate()
+			var c0: Dictionary = (GS.life_log.get("hunt_by_condition", {}) as Dictionary).duplicate(true)
+			var avg_stat: float = (GS.wolf.speed + GS.wolf.strength + GS.wolf.skill) / 3.0
+			var ck: String = stage + ("." + ("strong" if avg_stat >= 80.0 else "average") if stage != "subadult" else "")
 			ap.step(1)
 			var h1: Dictionary = GS.life_log.get("hunt_by_animal", {})
 			for k in h1.keys():
@@ -46,6 +50,15 @@ func _run(prey: String, runs: int) -> void:
 				for i in 3:
 					row[i] = int(row[i]) + int(a[i]) - int(b[i])
 				hunts[stage][k] = row
+			var c1: Dictionary = GS.life_log.get("hunt_by_condition", {})
+			for k in c1.keys():
+				var a2: Array = c1[k]; var b2: Array = c0.get(k, [0, 0, 0])
+				if not conds.has(ck):
+					conds[ck] = {}
+				var row2: Array = conds[ck].get(k, [0, 0, 0])
+				for i in 3:
+					row2[i] = int(row2[i]) + int(a2[i]) - int(b2[i])
+				conds[ck][k] = row2
 			var f1: Dictionary = GS.life_log.get("food_by", {})
 			for k in f1.keys():
 				var d: float = float(f1[k]) - float(f0.get(k, 0.0))
@@ -70,6 +83,15 @@ func _run(prey: String, runs: int) -> void:
 	var avg := 0.0
 	for a in ages:
 		avg += a
+	var ckeys: Array = conds.keys()
+	ckeys.sort()
+	for ck in ckeys:
+		var parts2: Array = []
+		for cond in ["healthy", "average", "weak"]:
+			var r2: Array = conds[ck].get(cond, [0, 0, 0])
+			parts2.append("%s 試 %d 次 成 %d%%（出手後 %d%%）" % [{"healthy": "健康", "average": "普通", "weak": "虛弱"}[cond], int(r2[0]),
+				roundi(100.0 * int(r2[1]) / max(1, int(r2[0]))), roundi(100.0 * int(r2[1]) / max(1, int(r2[0]) - int(r2[2])))])
+		print("   體況 %-16s %s" % [ck, "；".join(parts2)])
 	print("\n== 打法 %s：%d 隻狼；壽命平均 %.1f、中位數 %.1f；死因 %s" % [prey, runs, avg / max(1, ages.size()), ages[ages.size() / 2], deaths])
 	for s in STAGES:
 		if days[s] == 0:

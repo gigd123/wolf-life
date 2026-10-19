@@ -2792,6 +2792,16 @@ func _record_hunt(hunt: HuntSystem) -> void:
 	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP:
 		row[2] = int(row[2]) + 1
 	by[key] = row
+	# 依獵物體況（健康、普通、虛弱；沒有體況的小獵物不記）：試、成、放棄（Phase 2b 第 3 步）
+	if hunt.condition != "":
+		var bc: Dictionary = life_log.get_or_add("hunt_by_condition", {})
+		var crow: Array = bc.get(hunt.condition, [0, 0, 0])
+		crow[0] = int(crow[0]) + 1
+		if hunt.result == HuntSystem.Result.SUCCESS:
+			crow[1] = int(crow[1]) + 1
+		elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP:
+			crow[2] = int(crow[2]) + 1
+		bc[hunt.condition] = crow
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		life_log["hunt_successes"] = int(life_log.get("hunt_successes", 0)) + 1
 	elif hunt.result == HuntSystem.Result.PLAYER_GAVE_UP and hunt.gave_up_stage == HuntSystem.Stage.CHASE:

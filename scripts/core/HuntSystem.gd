@@ -530,7 +530,11 @@ func _chase_option(id: String) -> Dictionary:
 	elif style < 0.0:
 		factors.append({"key": "factor.style_misfit." + id, "good": false, "weight": -style})
 	t += style
-	var value: float = base + diff + t + chase_bonus + known + float(opt.get("bonus", 0.0)) - exhausted
+	# 老了，腿腳不如從前（Phase 2b 第 3 步）
+	var age_pen: float = age_penalty()
+	if age_pen > 0.0:
+		factors.append({"key": "factor.old_age", "good": false, "weight": age_pen})
+	var value: float = base + diff + t + chase_bonus + known + float(opt.get("bonus", 0.0)) - exhausted - age_pen
 	return {"id": id, "label_key": "hunt.option." + id, "chance": clamp_chance(value), "factors": factors,
 		"turns": int(opt.get("turns", 0)), "stamina": cost, "fight_bonus": float(opt.get("fight_bonus", 0.0)),
 		"prey_drain": float(opt.get("prey_drain", 15))}
@@ -623,6 +627,15 @@ func _add_terrain_factor(factors: Array, bonus: float) -> void:
 	factors.append({"key": "factor.terrain." + terrain, "good": bonus > 0.0, "weight": absf(bonus)})
 
 # 飢餓、吃太撐、重傷：只在有影響時列出。
+# 老年的狩獵表現（Phase 2b 第 3 步，生態：MacNulty 等 2009 黃石，狩獵能力 2～3 歲最好，之後下降）：
+# 從 balance.hunt.age.decline_start 歲起，追擊與制伏每年 − per_year，最多 − max。
+func age_penalty() -> float:
+	var a: Dictionary = _tuning().get("age", {})
+	var years: float = wolf.age_years - float(a.get("decline_start", 99.0))
+	if years <= 0.0:
+		return 0.0
+	return min(float(a.get("max", 0.0)), years * float(a.get("per_year", 0.0)))
+
 func _add_common_factors(factors: Array) -> void:
 	var p: Dictionary = GameData.balance.get("hunger_penalties", {})
 	if wolf.hunger < float(p.get("severe_threshold", 10)):
@@ -673,7 +686,8 @@ func prey_state_keys() -> Array:
 	# 體況：觀察成功且感知夠高時看得出來
 	if condition != "" and (condition_known or wolf.effective_perception() >= float(_tuning().get("condition", {}).get("see_perception", 50))):
 		condition_known = true
-		keys.append("prey_state.condition." + condition)
+		# 體況放在最前面（Phase 2b 第 3 步：判斷要不要出手的依據要顯眼）
+		keys.push_front("prey_state.condition." + condition)
 	# 危險的描述依動物與年齡（母馬鹿沒有鹿角，2026-10-15 試玩回報 3）；沒有專屬句子時用通用的
 	if prey_counter_attack >= 20.0:
 		keys.append(_variant_key("prey_state.dangerous"))
@@ -844,6 +858,7 @@ func _roll_condition(p_injured: bool) -> void:
 	var cfg: Dictionary = _tuning().get("condition", {})
 	condition = "weak" if p_injured else _pick_condition()
 	fight_state["condition_bonus"] = float(cfg.get("fight", {}).get(condition, 0.0))
+	fight_state["age_penalty"] = age_penalty()
 	# 老狼看得最準：體況一眼就看出來（1.9b 第 2 步）
 	if wolf.life_stage() == Wolf.LifeStage.ELDER:
 		condition_known = true
@@ -1064,6 +1079,12 @@ func _flee(text_key: String, factors: Array, wind_shifted: bool) -> Dictionary:
 	else:
 		reason_key = reason_from_factor(main_negative_factor(factors))
 	return {"success": false, "text_key": text_key, "reason_key": reason_key, "wind_shifted": wind_shifted}
+
+# 放棄時的說明（Phase 2b 第 3 步：讓放棄成為有依據的判斷）：看得出體況時寫依據，看不出來寫一般的句子。
+func give_up_text_key() -> String:
+	if condition != "" and condition_known:
+		return "hunt.give_up." + condition
+	return "hunt.give_up.unknown"
 
 func give_up() -> void:
 	gave_up_stage = stage

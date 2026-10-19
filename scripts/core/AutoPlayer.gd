@@ -19,6 +19,9 @@ const MAX_ACTIONS_PER_DAY := 80
 
 var prey: String
 var style: String
+# 會判斷獵物（Phase 2b 第 3 步，模擬「理性選擇」）：先試探，健康的中大型獵物不太餓時就放棄。照常過日子也用。
+var judge: bool = true
+const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 「照常過日子」（Phase 1.7b，提案之十 E）：代為行動 routine_days 天，遇到值得注意的事就停下、交還給玩家。
 # routine_style："small" 在附近獵小獵物、"big" 找大型獵物、"heal" 養傷（待在巢穴休息）。
@@ -520,6 +523,13 @@ func _pick_option(hunt: HuntSystem) -> Dictionary:
 		best = _best(opts.filter(func(o): return not avoid.has(o["id"])))
 	if best.is_empty():
 		return opts[0] if not opts.is_empty() else {}
+	# 會判斷的狼（Phase 2b 第 3 步）：追擊前先試探；看得出是健康的中大型獵物、又還不太餓（飽食度 ≥ JUDGE_HUNGER），就放棄
+	if judge and hunt.stage == HuntSystem.Stage.CHASE and hunt.condition != "":
+		if hunt.condition_known and hunt.condition == "healthy" and GameState.wolf.hunger >= JUDGE_HUNGER:
+			return {}
+		for o in opts:
+			if o["id"] == "probe":
+				return o
 	# 謹慎：追擊勝算太低或體力見底就放棄。
 	if style == "cautious" and hunt.stage == HuntSystem.Stage.CHASE and best.has("chance") \
 			and (float(best["chance"]) < 0.3 or GameState.wolf.stamina < 25.0):

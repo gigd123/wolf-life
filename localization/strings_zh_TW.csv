@@ -54,6 +54,10 @@ ui.ignore,不理會
 ui.fight,戰鬥
 ui.retreat,撤退
 ui.give_up,放棄
+hunt.give_up.healthy,{animal}步伐穩健，看不出一點破綻。你判斷牠不是理想的目標，停了下來，省下力氣。
+hunt.give_up.average,{animal}沒有明顯的弱點。你決定不冒這個險，停了下來。
+hunt.give_up.weak,{animal}明明露出了弱點，你還是停了下來，放牠走了。
+hunt.give_up.unknown,你停了下來，放牠走了。
 action.gather,採集
 action.find_sleep_spot,找尋睡覺的地方
 action.short_rest,短暫休息
@@ -355,6 +359,7 @@ factor.long_chase,追太久了
 factor.prey_tiring,牠開始累了
 factor.standing_danger,牠站定迎戰
 factor.too_young,你的身體還沒長成，扳不倒這麼大的獵物
+factor.old_age,你老了，腿腳和力氣不如從前
 fuzzy.none,幾乎不可能
 fuzzy.low,機會不大
 fuzzy.some,有機會
@@ -1599,6 +1604,7 @@ reason.prey_terrain_bad,這裡的地形對牠有利。
 reason.style_misfit_follow,跟得太遠，你跟丟了。
 reason.style_misfit_sprint,短衝追不上牠。
 reason.too_young,你的身體還沒長成，扳不倒這麼大的獵物。
+reason.old_age,你老了，腿腳和力氣不如從前。
 reason.cornered,{animal}回身反擊，你只好退開。
 reason.counter_risk,{animal}回身反擊，你只好退開。
 reason.wounded,傷勢拖累了你。

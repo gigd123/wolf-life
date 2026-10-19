@@ -116,6 +116,11 @@ static func chance(wolf: Wolf, prey_counter: float, move: String, state: Diction
 	if snow_bonus != 0.0:
 		factors.append({"key": "factor.snow_fight." + ("good" if snow_bonus > 0.0 else "bad"), "good": snow_bonus > 0.0, "weight": abs(snow_bonus)})
 		penalty -= snow_bonus
+	# 老了，制伏獵物不如從前（Phase 2b 第 3 步：老年逐年下降；挑選、試探的經驗不受影響）
+	var age_penalty: float = float(state.get("age_penalty", 0.0))
+	if age_penalty > 0.0:
+		factors.append({"key": "factor.old_age", "good": false, "weight": age_penalty})
+		penalty += age_penalty
 	var youth_penalty: float = float(state.get("youth_penalty", 0.0))
 	if youth_penalty > 0.0:
 		factors.append({"key": "factor.too_young", "good": false, "weight": youth_penalty})

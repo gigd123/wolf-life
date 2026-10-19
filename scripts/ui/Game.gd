@@ -2669,6 +2669,7 @@ func _render_hunt_stage() -> void:
 			_resolve_stage(current_hunt.choose(id))
 		)
 	_add_hunt_choice(tr("ui.give_up"), {}, func():
+		_log(tr(current_hunt.give_up_text_key()).replace("{animal}", _hunt_prey_name()))
 		current_hunt.give_up()
 		_finish_hunt()
 	)
