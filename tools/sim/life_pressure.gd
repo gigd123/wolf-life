@@ -90,8 +90,8 @@ func _process(_d):
 	for s in STAGES:
 		var yrs: float = max(0.01, days[s] / dpy)
 		var k: Dictionary = kills[s]
-		print("  %-8s %5.1f 狼年：每年挨餓 %4.1f 天、吃不飽(<60) %5.1f 天；狩獵成功 %3d%%；每年獵到 大 %4.1f 中 %4.1f 小 %4.1f" % [
-			s, yrs, hungry[s] / yrs, underfed[s] / yrs, roundi(100.0 * wins[s] / max(1, tries[s])),
+		print("  %-8s %5.1f 狼年：每年挨餓 %4.1f 天、吃不飽(<60) %5.1f 天；狩獵成功 %3d%%（每天出獵 %.1f 次）；每年獵到 大 %4.1f 中 %4.1f 小 %4.1f" % [
+			s, yrs, hungry[s] / yrs, underfed[s] / yrs, roundi(100.0 * wins[s] / max(1, tries[s])), float(tries[s]) / max(1, days[s]),
 			k["large"] / yrs, k["medium"] / yrs, k["small"] / yrs])
 	for yk in ["normal", "lean"]:
 		print("  %-6s年：每年挨餓 %4.1f 天（共 %d 天）" % [yk, year_hungry[yk] / max(0.01, year_days[yk] / dpy), year_days[yk]])
