@@ -2071,6 +2071,30 @@ func action_rest_out_blizzard() -> Dictionary:
 		res["interrupted"] = "hungry"
 	return res
 
+# 休息到消化完（Phase 2b 第 2 步）：吃撐時才能選，休息到不再吃撐（最多 REST_DIGEST_MAX_DAYS 天）。
+const REST_DIGEST_MAX_DAYS := 3
+
+func action_rest_digest() -> Dictionary:
+	_record_action("rest_until")
+	if wolf == null or not wolf.is_overfed():
+		return {"alive": wolf != null and wolf.alive, "interrupted": ""}
+	return _rest_loop(func(): return not wolf.is_overfed(), REST_DIGEST_MAX_DAYS * GameTime.PERIODS.size() * GameTime.TURNS_PER_PERIOD)
+
+# 「休息到…」的選項（Phase 2b 第 2 步）：依目的列出，不再列出每個時段。
+# 回傳 [{"id", "period"}]：dusk、dawn（好的狩獵時段，現在就是那個時段時不列）、digest（吃撐時）、blizzard（暴風雪中待在巢穴或好睡處）。
+const REST_TARGET_PERIODS := ["dusk", "dawn"]
+
+func rest_options() -> Array:
+	var out: Array = []
+	if can_rest_out_blizzard():
+		out.append({"id": "blizzard"})
+	if wolf != null and wolf.is_overfed():
+		out.append({"id": "digest"})
+	for p in REST_TARGET_PERIODS:
+		if GameTime.current_period() != p:
+			out.append({"id": "period", "period": p})
+	return out
+
 # 快轉的共用迴圈：每回合休息回體力，每過一個時段判定快轉中的事件；stop 成立或被事件打斷就停。
 func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 	var cfg: Dictionary = _events_cfg().get("rest", {})

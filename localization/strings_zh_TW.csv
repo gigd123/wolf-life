@@ -44,6 +44,10 @@ ui.cancel,取消
 ui.rest_until.title,要休息到什麼時候？
 ui.rest_until.option,休息到{period}
 ui.rest_until.blizzard,休息到風雪結束
+ui.rest_until.digest,休息到消化完
+ui.rest_until.digest.tip,躺著消化，等肚子不再那麼撐。途中遇到事情會被打斷。
+ui.rest_until.tip.dusk,黃昏時獵物出來活動，是出獵的好時候。
+ui.rest_until.tip.dawn,清晨時獵物出來活動，是出獵的好時候。
 ui.here,目前位置
 ui.hunt,狩獵
 ui.ignore,不理會
@@ -79,6 +83,8 @@ log.sleep_spot.good,你找到了一處好睡處，之後在這裡不用再找。
 log.sleep_spot.fail,沒有找到適合睡覺的地方
 log.short_rest,你稍作休息，恢復了一些體力。
 log.rest_until,你休息到了{period}
+log.rest_digest,你躺著消化了一陣子，肚子不再那麼撐了。
+log.rest_digest.long,你躺了很久，肚子還是很撐。
 log.rest_blizzard.done,你蜷著身子熬過了整場風雪，等外面安靜下來才鑽出去。
 log.rest_blizzard.hungry,肚子餓得受不了，風雪還沒停，你就鑽了出去。
 log.slept.den,你在巢穴裡安穩地睡了一覺

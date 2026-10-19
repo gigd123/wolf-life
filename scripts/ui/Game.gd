@@ -1249,7 +1249,12 @@ func _strip_height(strip: RichTextLabel, lines: int) -> float:
 
 # 狩獵、戰鬥畫面要放進 640×360：先用一般大小，畫好後量內容高度，超過畫面才依序縮小
 # （紀錄 3 → 2 行、角色圖 40 → 32、紀錄 → 1 行、角色圖 → 24、狩獵時拿掉角色圖）。2026-10-13 xvfb 量到選項 6 個時底部紀錄被擠出畫面。
+# 選項很多時（試探＋四種追法＋放棄），最後一步把下方紀錄收起來（2026-10-19 ui_check：紀錄被擠出畫面）；
+# 紀錄內容不會丟，遭遇結束後照常寫進主畫面。
+var hunt_strip_hidden: bool = false
+
 func _fit_hunt_layout(_option_count: int) -> void:
+	hunt_strip_hidden = false
 	hunt_strip.custom_minimum_size.y = _strip_height(hunt_strip, STRIP_LINES)
 	_set_hunt_sprite_height(40.0)
 	hunt_wolf_sprite.get_parent().get_parent().visible = true
@@ -1283,6 +1288,9 @@ func _shrink_hunt_layout() -> void:
 		func(): _set_hunt_sprite_height(24.0),
 		# 最後：狩獵（不是戰鬥，沒有動畫）時拿掉角色圖
 		func(): hunt_wolf_sprite.get_parent().get_parent().visible = current_combat != null,
+		func():
+			hunt_strip_hidden = true
+			hunt_strip.visible = false,
 	]
 	for tier in tiers:
 		if box.get_combined_minimum_size().y <= limit:
@@ -1382,7 +1390,7 @@ func _render_strips() -> void:
 	var text: String = "\n".join(parts)
 	for strip in [encounter_strip, hunt_strip]:
 		strip.text = text
-		strip.visible = session_active and not parts.is_empty()
+		strip.visible = session_active and not parts.is_empty() and not (strip == hunt_strip and hunt_strip_hidden)
 		strip.scroll_to_line.call_deferred(max(0, strip.get_line_count() - 1))
 
 func _circled(n: int) -> String:
@@ -1541,20 +1549,37 @@ func _on_action_button(action_id: String) -> void:
 # 依接下來的時段順序列出選項（不含目前時段）。
 func _show_rest_overlay() -> void:
 	_clear_children(rest_buttons_box)
-	# 暴風雪中待在巢穴或好睡處：可以一路休息到風雪結束
-	if GameState.can_rest_out_blizzard():
-		var blizzard_btn := Button.new()
-		blizzard_btn.text = tr("ui.rest_until.blizzard")
-		blizzard_btn.pressed.connect(_on_rest_out_blizzard)
-		rest_buttons_box.add_child(blizzard_btn)
-	var count := GameTime.PERIODS.size()
-	for offset in range(1, count):
-		var period: String = GameTime.PERIODS[(GameTime.period_index + offset) % count]
+	# 依目的列出（Phase 2b 第 2 步）：暴風雪結束、消化完、黃昏、清晨；選項由 GameState.rest_options() 決定
+	for opt in GameState.rest_options():
 		var btn := Button.new()
-		btn.text = tr("ui.rest_until.option").replace("{period}", tr("period." + period))
-		btn.pressed.connect(_on_rest_until.bind(period))
+		match str(opt["id"]):
+			"blizzard":
+				btn.text = tr("ui.rest_until.blizzard")
+				btn.pressed.connect(_on_rest_out_blizzard)
+			"digest":
+				btn.text = tr("ui.rest_until.digest")
+				btn.tooltip_text = tr("ui.rest_until.digest.tip")
+				btn.pressed.connect(_on_rest_digest)
+			_:
+				var period: String = str(opt["period"])
+				btn.text = tr("ui.rest_until.option").replace("{period}", tr("period." + period))
+				btn.tooltip_text = tr("ui.rest_until.tip." + period)
+				btn.pressed.connect(_on_rest_until.bind(period))
 		rest_buttons_box.add_child(btn)
 	rest_overlay.visible = true
+
+func _on_rest_digest() -> void:
+	_new_main_entry()
+	rest_overlay.visible = false
+	var res := GameState.action_rest_digest()
+	if not res.get("alive", false):
+		return
+	if str(res.get("interrupted", "")) != "":
+		_log(tr("log.rest_interrupted"))
+	elif GameState.wolf.is_overfed():
+		_log(tr("log.rest_digest.long"))
+	else:
+		_log(tr("log.rest_digest"))
 
 func _on_rest_until(period: String) -> void:
 	_new_main_entry()
