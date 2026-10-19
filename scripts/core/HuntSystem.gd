@@ -456,6 +456,11 @@ func _stalk_option(id: String) -> Dictionary:
 		if condition_known:
 			factors.append({"key": "factor.condition." + condition, "good": cs > 0.0, "weight": abs(cs)})
 		t += cs
+	# 晨昏光線暗、獵物在進食，潛近較容易（Phase 2b 第 4 步）
+	var twilight: float = float(_tuning().get("period", {}).get("stalk", {}).get(GameTime.current_period(), 0.0))
+	if twilight != 0.0:
+		factors.append({"key": "factor.period." + GameTime.current_period(), "good": twilight > 0.0, "weight": abs(twilight)})
+		t += twilight
 	_add_common_factors(factors)
 	var turns: int = int(opt.get("turns", 0)) + (downwind_turns() if opt.get("as_headwind", false) else 0)
 	var value: float = float(cfg.get("base", 0.58)) + diff + w + t + stalk_bonus + float(opt.get("bonus", 0.0))

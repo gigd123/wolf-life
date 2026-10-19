@@ -360,6 +360,8 @@ factor.prey_tiring,牠開始累了
 factor.standing_danger,牠站定迎戰
 factor.too_young,你的身體還沒長成，扳不倒這麼大的獵物
 factor.old_age,你老了，腿腳和力氣不如從前
+factor.period.dawn,清晨光線暗，獵物低頭吃草
+factor.period.dusk,黃昏光線暗，獵物低頭吃草
 fuzzy.none,幾乎不可能
 fuzzy.low,機會不大
 fuzzy.some,有機會

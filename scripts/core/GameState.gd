@@ -656,6 +656,8 @@ func _deplete_region(region_id: String, animal_id: String) -> void:
 # 短暫休息與快轉只能把體力回到上限 rest_stamina_cap，只有睡覺能回滿；已經超過上限就不變。
 func _rest_stamina(amount: float) -> void:
 	var cap: float = float(GameData.balance.get("rest_stamina_cap", 80))
+	# 白天休息的效果好（Phase 2b 第 4 步）
+	amount *= float(GameData.balance.get("hunt", {}).get("period", {}).get("rest_stamina_mult", {}).get(GameTime.current_period(), 1.0))
 	if wolf.stamina < cap:
 		wolf.stamina = min(cap, wolf.stamina + amount)
 
@@ -2297,6 +2299,11 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	# 長距離跟隨、多次試探：結束時多花 1～2 回合；喘回滿，依用掉的喘扣一次體力（1.8 第 1 步）
 	var extra: int = min(hunt.pending_turns, int(GameData.balance.get("burst", {}).get("extra_turns_max", 2)))
 	hunt.end_stamina = wolf.end_burst()
+	# 夏季白天出獵較累（Phase 2b 第 4 步）：結束時扣的體力再乘倍率
+	var heat: float = float(GameData.balance.get("hunt", {}).get("period", {}).get("end_stamina_mult", {}).get(GameTime.current_season() + "." + GameTime.current_period(), 1.0))
+	if heat > 1.0 and wolf.alive:
+		wolf.stamina = max(0.0, wolf.stamina - hunt.end_stamina * (heat - 1.0))
+		hunt.end_stamina *= heat
 	if extra > 0 and wolf.alive:
 		GameTime.advance_turns(extra)
 	if hunt.decisions.any(func(d): return str(d).begins_with("fight.")):
