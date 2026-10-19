@@ -1718,7 +1718,7 @@ func _add_threat_options(d: Dictionary) -> void:
 				var e := GameState.prepare_threat_sighting(source, str(d.get("location", "")))
 				GameState.clear_discovery()
 				GameState.action_observe_distant(e)
-				_log(tr("encounter.observed." + source))
+				_log(_observed_text(source))
 				encounter_overlay.visible = false
 				_refresh()
 			)
@@ -1896,8 +1896,11 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("explore.remains." + str(d.get("tier", "some"))).replace("{location}", location).replace("{animal}", tr("animal." + str(d["animal_id"])))
 		"mark":
 			var who_key: String = "explore.mark." + str(d.get("who", ""))
-			return tr(who_key + (".here" if str(d.get("region", "")) == GameState.current_region else ".near")) \
+			var mark_text: String = tr(who_key + (".here" if str(d.get("region", "")) == GameState.current_region else ".near")) \
 				.replace("{location}", location).replace("{region}", tr("region." + str(d.get("region", ""))))
+			if str(d.get("who", "")) == "stranger_wolf" and GameState.pack_sign_key("mark") != "":
+				mark_text += tr(GameState.pack_sign_key("mark"))
+			return mark_text
 		"feature":
 			return tr("explore.feature").replace("{location}", location) \
 				.replace("{feature}", tr("feature." + str(d["feature_id"])))
@@ -1905,6 +1908,8 @@ func _discovery_text(d: Dictionary) -> String:
 		var source: String = str(d["source"])
 		var state: String = "known" if GameState.is_identified(source) else "unknown"
 		var clue_text: String = tr("clue.%s.%s.%s" % [source, d.get("clue", "sight"), state])
+		if source == "stranger_wolf" and GameState.pack_sign_key(str(d.get("clue", "sight"))) != "":
+			clue_text += tr(GameState.pack_sign_key(str(d.get("clue", "sight"))))
 		var fresh_text: String = ""
 		if d.get("clue", "") != "sight":
 			fresh_text = tr("explore.threat_fresh") if d.get("fresh", false) else tr("explore.threat_stale")
@@ -2213,7 +2218,13 @@ func _process_events() -> void:
 			_log(tr("event.rain_stopped"))
 		"howl":
 			var entry := {"type": "territory", "animal": "stranger_wolf", "region": event["region"]}
-			_log(tr("event.howl.%d" % max(1, GameState.knowledge_level(entry))).replace("{region}", tr("region." + str(event["region"]))))
+			var howl_text: String = tr("event.howl.%d" % max(1, GameState.knowledge_level(entry))).replace("{region}", tr("region." + str(event["region"])))
+			# 黑狼成家後：兩個聲音、好幾個聲音，夏季有幼狼的尖嚎（Phase 3a 第 2 步）
+			if str(event.get("pack", "solo")) in ["pair", "pack"]:
+				howl_text += tr("pack.sign.howl." + str(event["pack"]))
+				if event.get("pups", false):
+					howl_text += tr("pack.sign.howl.pups")
+			_log(howl_text)
 		"driven_off":
 			var to: String = GameState.apply_drive_off()
 			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "stranger_wolf")
@@ -2911,7 +2922,7 @@ func _show_distant(encounter: Dictionary) -> void:
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("encounter.observe"), func():
 		GameState.action_observe_distant(encounter)
-		_log(tr("encounter.observed." + animal_id))
+		_log(_observed_text(animal_id))
 		encounter_overlay.visible = false
 		_refresh()
 	)
@@ -3987,6 +3998,12 @@ func _show_adult_transition() -> void:
 	body += "\n\n" + tr("adult_transition.caps") + "\n" + "　".join(caps)
 	_show_card(tr("adult_transition.title"), body)
 	_set_card_wolf("adult")
+
+# 遠遠觀察的描述：黑狼依家族的階段換句子（Phase 3a 第 2 步），其他動物照舊。
+func _observed_text(animal_id: String) -> String:
+	if animal_id != "stranger_wolf":
+		return tr("encounter.observed." + animal_id)
+	return "".join(GameState.pack_observed_text_keys().map(func(k): return tr(k)))
 
 # 老年卡片：老年外貌、身體描述、之後每季會衰退的能力，以及仍會微幅成長的技巧。
 func _show_elder_transition() -> void:

@@ -336,6 +336,12 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 				hint = "hare_low_rising"
 	if hint != "normal":
 		lines.append({"key": "year.hint.%s.%s" % [season, hint]})
+	# 黑狼家族的變化（Phase 3a 第 2 步）：人在森林才寫，不在就留到回森林的那一季
+	if current_map() == "forest" and life_log.has("pack_news"):
+		var known: String = "known" if is_identified("stranger_wolf") else "unknown"
+		for n in life_log["pack_news"]:
+			lines.append({"key": "pack.news.%s.%s" % [n["event"], known], "region": str(n.get("region", ""))})
+		life_log.erase("pack_news")
 	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
 
 # 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
@@ -2668,10 +2674,10 @@ func start_storm() -> void:
 
 # 遠方狼嚎：深夜隨機。逐步累積成「這一帶是其他狼的範圍」。
 func _maybe_howl() -> void:
-	if GameTime.current_period() != "night" or stranger_territory == "" or not _can_trigger_event():
+	if GameTime.current_period() != "night" or howl_region() == "" or not _can_trigger_event():
 		return
 	# 只在同一張地圖聽得到（人在苔原聽不到森林那隻狼）
-	if GameData.map_of(stranger_territory) != current_map():
+	if GameData.map_of(howl_region()) != current_map():
 		return
 	var chance_value: float = float(_events_cfg().get("howl", {}).get("night_chance", 0.35))
 	# 輸給你之後，遠方的狼嚎減少
@@ -2681,8 +2687,8 @@ func _maybe_howl() -> void:
 		trigger_howl()
 
 func trigger_howl() -> void:
-	learn({"type": "territory", "animal": "stranger_wolf", "region": stranger_territory})
-	_queue_event({"type": "howl", "region": stranger_territory})
+	learn({"type": "territory", "animal": "stranger_wolf", "region": howl_region()})
+	_queue_event({"type": "howl", "region": howl_region(), "pack": black_pack.stage, "pups": black_pack.pups() > 0})
 
 # 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
 func _update_territory() -> void:
@@ -3864,6 +3870,7 @@ func _age_npcs() -> void:
 # 黑狼家族的換季更新（Phase 3a 第 1 步）。換代時建立新的帶頭的（黑狼的兒子），領域照舊。
 func _update_black_pack() -> void:
 	var leader := pack_leader()
+	var core_before: String = str(black_pack.regions[0]) if not black_pack.regions.is_empty() else stranger_territory
 	var beaten: bool = stranger() != null and (stranger().yielded_to_player or stranger().death_cause == "killed_by_player")
 	var adjacent: Dictionary = {}
 	for r in GameData.map_regions("forest"):
@@ -3880,6 +3887,36 @@ func _update_black_pack() -> void:
 		for e in events:
 			log_list.append({"event": e, "age": snapped(wolf.age_years, 0.25)})
 		life_log["black_pack_events"] = log_list
+	# 徵兆（第 2 步）：記下來，下一張森林的季節卡片寫出來（人不在森林時等回到森林）
+	var news: Array = life_log.get("pack_news", [])
+	for e in events:
+		if e in PACK_NEWS:
+			var region: String = str(black_pack.regions.back()) if e == "expanded" else (str(black_pack.regions[0]) if not black_pack.regions.is_empty() else core_before)
+			news.append({"event": e, "region": region})
+	if not news.is_empty():
+		life_log["pack_news"] = news
+
+const PACK_NEWS := ["paired", "pups", "expanded", "succession", "dissolved"]
+
+# 徵兆的文字（第 2 步）：一對、狼群時，足跡、氣味、遠觀、標記、狼嚎多一句；獨居照舊（回傳空字串）。
+func pack_sign_key(kind: String) -> String:
+	if black_pack.stage in ["pair", "pack"]:
+		return "pack.sign.%s.%s" % [kind, black_pack.stage]
+	return ""
+
+# 遠遠觀察黑狼：獨居照舊，一對、狼群換成描述牠們的句子；帶頭的老了再加一句。
+func pack_observed_text_keys() -> Array:
+	var keys: Array = ["encounter.observed.stranger_wolf" + ("." + black_pack.stage if black_pack.stage in ["pair", "pack"] else "")]
+	var leader := pack_leader()
+	if black_pack.stage in ["pair", "pack"] and leader != null and leader.alive and leader.life_stage_key() == "elder":
+		keys.append("pack.sign.observed.old")
+	return keys
+
+# 狼嚎從哪一區傳來：成家後是牠們的核心領域（帶頭的換代後也一樣），獨居時是黑狼的範圍。
+func howl_region() -> String:
+	if black_pack.stage in ["pair", "pack"] and not black_pack.regions.is_empty():
+		return str(black_pack.regions[0])
+	return stranger_territory
 
 # 黑狼家族帶頭的：第一代是黑狼，換代後是接手的兒子（black_heir）。
 func pack_leader() -> NpcWolf:

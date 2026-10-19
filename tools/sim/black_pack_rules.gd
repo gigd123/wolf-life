@@ -108,6 +108,32 @@ func _process(_d) -> bool:
 	var saved = JSON.parse_string(JSON.stringify(gs.to_dict()))
 	gs.load_from_dict(saved)
 	_check(gs.black_pack.generation == 2 and gs.pack_leader() != null and gs.pack_leader().id == "black_heir", "讀檔後換代還在")
+	# 7. 徵兆（第 2 步）
+	gs.new_game("forest_east")
+	_check(gs.pack_sign_key("wolf_track") == "" and gs.pack_observed_text_keys() == ["encounter.observed.stranger_wolf"], "獨居：徵兆照舊")
+	gs.black_pack.stage = "pair"
+	gs.black_pack.mate_age = 3.0
+	_check(gs.pack_sign_key("wolf_track") == "pack.sign.wolf_track.pair" and gs.pack_observed_text_keys()[0] == "encounter.observed.stranger_wolf.pair", "一對：足跡、遠觀換句子")
+	for k in ["wolf_track", "similar_scent", "sight", "mark", "howl"]:
+		for st in ["pair", "pack"]:
+			var key := "pack.sign.%s.%s" % [k, st]
+			_check(tr(key) != key, "有文字：" + key)
+	gs.black_pack.regions = ["forest_west"]
+	_check(gs.howl_region() == "forest_west", "成家後狼嚎從牠們的核心領域傳來")
+	# 換季時發生的事寫進森林的季節卡片；人不在森林時留著
+	gs.life_log["pack_news"] = [{"event": "paired", "region": "forest_west"}]
+	gs.current_region = "tundra_south"
+	gs.pending_events.clear()
+	gs._queue_season_card()
+	_check(gs.life_log.has("pack_news"), "人在苔原：家族的消息留到回森林")
+	gs.current_region = "forest_east"
+	gs.pending_events.clear()
+	gs._queue_season_card()
+	var lines: Array = []
+	for e in gs.pending_events:
+		if e.get("type", "") == "season_card":
+			lines = e["lines"]
+	_check(lines.any(func(l): return str(l.get("key", "")).begins_with("pack.news.paired.")) and not gs.life_log.has("pack_news"), "人在森林：季節卡片寫出家族的消息（%s）" % [lines])
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
