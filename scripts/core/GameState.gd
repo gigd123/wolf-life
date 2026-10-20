@@ -3034,10 +3034,14 @@ func _after_pack_young_combat(c: Combat) -> void:
 # （headwind 你在下風、tailwind 你在上風、crosswind 側風）；condition：獵物的體況。
 const TACTICAL_TERRAIN_MAP := {"dense_forest": "C", "forest_edge": "C", "treeline": "C", "river_willow": "C",
 	"fallen_logs": "D", "rocky": "D", "scree": "D", "cliff": "D"}
+# 第 4 步：每種地形的地圖族（data/tactical_hunt.json 的 maps；沒列的是開闊地）
+const TACTICAL_TERRAIN_FAMILY := {"dense_forest": "dense", "forest_edge": "edge", "treeline": "edge",
+	"stream": "stream", "river": "stream", "river_willow": "stream",
+	"fallen_logs": "logs", "rocky": "logs", "scree": "logs", "cliff": "logs"}
 
 func tactical_context(terrain: String, wind: String, condition: String) -> Dictionary:
 	var map_id: String = str(TACTICAL_TERRAIN_MAP.get(terrain, "A"))
-	var ctx := {"map": map_id, "seed": RNGService.randi_range(1, 1 << 30), "condition": condition,
+	var ctx := {"map": map_id, "family": str(TACTICAL_TERRAIN_FAMILY.get(terrain, "open")), "seed": RNGService.randi_range(1, 1 << 30), "condition": condition,
 		"wolf": {"speed": wolf.effective_speed(), "skill": wolf.effective_skill(), "strength": wolf.effective_strength(),
 			"perception": wolf.effective_perception(), "stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max},
 		"gorged": wolf.is_overfed(), "age_penalty": _tactical_age_penalty(),
@@ -3051,13 +3055,11 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 	var t: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH))
 	return hunt != null and (t.get("game", {}).get("animals", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.hiding
 
-# 開一場戰術狩獵：地圖依地形（幼鹿用母子的地圖，目標是幼鹿），風向、體況照這一場的 HuntSystem。
-const TACTICAL_FAWN_MAP := {"A": "E", "C": "F", "D": "H"}
+# 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
 func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var ctx := tactical_context(hunt.terrain, hunt.wind_state(), hunt.condition)
-	if hunt.life_stage == "juvenile":
-		ctx["map"] = TACTICAL_FAWN_MAP.get(str(ctx["map"]), "E")
+	ctx["fawn"] = hunt.life_stage == "juvenile"
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if hunt.life_stage == "juvenile":

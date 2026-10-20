@@ -72,6 +72,18 @@ func _process(_d) -> bool:
 	gs.new_game("forest_east")
 	_check(gs.tactical_context("dense_forest", "headwind", "weak")["map"] == "C" and gs.tactical_context("fallen_logs", "headwind", "weak")["map"] == "D" \
 		and gs.tactical_context("clearing", "headwind", "weak")["map"] == "A", "地形 → 地圖")
+	_check(gs.tactical_context("dense_forest", "headwind", "weak")["family"] == "dense" and gs.tactical_context("stream", "headwind", "weak")["family"] == "stream" \
+		and gs.tactical_context("prairie", "headwind", "weak")["family"] == "open", "地形 → 地圖族（第 4 步）")
+	# 第 4 步：每種地圖族都開得起來、狼與鹿不在倒木上、鹿在開闊處、目的地在 5～9 格外
+	for fam in ["open", "edge", "dense", "stream", "logs"]:
+		for sd in 10:
+			var fh = TH.new()
+			fh.setup_from_game({"family": fam, "seed": sd * 31 + 7, "condition": "healthy", "fawn": sd % 3 == 0, "wolf": base["wolf"], "wind_relation": "headwind"})
+			_check(fh.terrain(fh.deer_pos) == "." and fh.terrain(fh.wolf_pos) != "l", "%s：鹿在開闊處、狼不在倒木上" % fam)
+			_check(fh.dist(fh.wolf_pos, fh.deer_pos) >= 6.0, "%s：狼離鹿夠遠（%.1f）" % [fam, fh.dist(fh.wolf_pos, fh.deer_pos)])
+			_check(fh.wind_side() == "downwind", "%s：下風（%s）" % [fam, fh.wind_side()])
+			if sd % 3 == 0:
+				_check(fh.herd.size() == 2 and fh.is_fawn(1), "%s：幼鹿跟在母鹿旁邊" % fam)
 	var ctx: Dictionary = gs.tactical_context("clearing", "headwind", "weak")
 	var m = TH.new()
 	m.setup_from_game(ctx)

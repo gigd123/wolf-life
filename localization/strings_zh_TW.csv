@@ -1678,3 +1678,122 @@ reason.old_age,你老了，腿腳和力氣不如從前。
 reason.cornered,{animal}回身反擊，你只好退開。
 reason.counter_risk,{animal}回身反擊，你只好退開。
 reason.wounded,傷勢拖累了你。
+tactical.factor.old_age,你老了
+tactical.factor.instinct,交給本能
+tactical.label.it,牠
+tactical.label.fawn,幼鹿
+tactical.label.doe,母鹿
+tactical.label.elk_doe,母馬鹿
+tactical.observe,你停下來觀察。牠的體況：{condition}。
+tactical.condition.healthy,健康
+tactical.condition.average,普通
+tactical.condition.weak,虛弱
+tactical.gave_up,你放棄了。
+tactical.factor.cond.healthy,牠很健康
+tactical.factor.cond.average,牠體況普通
+tactical.factor.cond.weak,牠很虛弱
+tactical.factor.side.rear,從後方
+tactical.factor.side.side,從側面
+tactical.factor.side.front,從正面
+tactical.factor.tired,牠累了
+tactical.factor.ability,你的速度與技巧
+tactical.factor.in_logs,牠在倒木裡
+tactical.factor.fawn,幼鹿
+tactical.factor.unaware,牠還沒發現你
+tactical.factor.rush_bolt,衝過去，牠先跳開
+tactical.factor.rush,衝過去，牠先驚覺
+tactical.factor.strength,你的力量
+tactical.factor.skill,你的技巧
+tactical.factor.hamstrung,後腿受傷
+tactical.factor.neck,咬在頸部
+tactical.factor.break,牠掙脫的機會
+tactical.kick.rear,牠的後腿踢中了你（血量 −{n}）。
+tactical.kick.hoof,牠的蹄子踢中了你（血量 −{n}）。
+tactical.bite.rear,你從後方咬住了{animal}的後腿！
+tactical.bite.side,你從側面咬住了{animal}！
+tactical.bite.front,你正面咬住了{animal}的脖子！
+tactical.miss,撲空了！
+tactical.timeout,拖太久了。
+tactical.timeout.far,拖太久了，牠走遠了。
+tactical.lock.caught,你衝到{animal}前面，回身一口鎖住牠的咽喉，牠倒了下去。
+tactical.lock.hit,你衝到{animal}前面，沒咬住咽喉，被牠正面撞開（血量 −{n}）！
+tactical.lock.miss,你衝到{animal}前面，牠猛一偏頭，你咬了個空。
+tactical.release,你鬆開了口，{animal}一跛一跛地跑開。
+tactical.hang,你死死咬著，用身體的重量拖住{animal}。
+tactical.hamstring.hit,你咬斷了{animal}後腿的筋，牠一個踉蹌。
+tactical.hamstring.miss,你想咬牠的後腿，被牠一腳蹬開了口。
+tactical.caught.takedown,你把牠壓倒在地，獵到了。
+tactical.caught.throat,你咬住牠的咽喉，牠倒了下去。
+tactical.struggle.takedown,牠還在掙扎。
+tactical.struggle.throat,沒咬到要害，牠猛力一甩。
+tactical.struggle_kick,掙扎中牠踢中了你（血量 −{n}）。
+tactical.broke_free,{animal}掙脫了，帶著傷逃跑！
+tactical.scatter,你衝進鹿群，牠們四散奔逃！
+tactical.look,{animal}抬起頭，朝你這邊張望。
+tactical.flee.scent,風把你的氣味送了過去，牠猛地跳開！
+tactical.flee.noise,牠聽到動靜，拔腿就跑！
+tactical.flee.close,牠發現你了，拔腿就跑！
+tactical.flee.missed,牠受驚，拔腿就跑！
+tactical.flee.other,牠跑了！
+tactical.herd_runs,整群跟著跑了起來。
+tactical.defend.hit,母鹿轉身朝你衝過來，前蹄踢中了你（血量 −{n}）！
+tactical.defend.miss,母鹿轉身朝你衝過來，你閃開了牠的前蹄。
+tactical.separated,幼鹿和母鹿跑散了！
+tactical.cornered,牠被逼到角落，轉身站定。
+tactical.lost,{animal}鑽進密林，不見了。
+tactical.escape.scent,牠從上風聞到你，早早就跑了。
+tactical.escape.missed,撲空之後，牠跑掉了。
+tactical.escape.breath,你喘不過氣，追不上了。
+tactical.escape.open,開闊地上，你追不上牠。
+tactical.ran_far,{animal}跑遠了。
+tactical.herd_gone,鹿群全都跑掉了。
+tactical.ui.intro,你壓低身子，看著牠。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。
+tactical.ui.result.caught,獵到了
+tactical.ui.result.escaped,牠逃掉了，留下一條新鮮的足跡
+tactical.ui.result.lost,跟丟了，留下一條新鮮的足跡
+tactical.ui.result.gave_up,你放棄了
+tactical.ui.result.timeout,拖太久，牠走遠了
+tactical.ui.result_line,{result}（{n} 個回合）。
+tactical.ui.takedown,壓倒
+tactical.ui.throat,咬喉
+tactical.ui.hang,死咬拖住
+tactical.ui.hamstring,咬後腿
+tactical.ui.release,鬆口
+tactical.ui.breath_cost,（{n} 喘）
+tactical.ui.instinct,交給本能
+tactical.ui.instinct_tip,依風向挑一種打法（潛近或耐力追），一路打完這一場。出手比自己打莽撞一些。
+tactical.ui.front_lock,前截鎖喉
+tactical.ui.front_lock_weak,前截鎖喉（能力不足）
+tactical.ui.front_lock_tip,衝到逃跑的成鹿正前方、回身鎖喉：成功直接咬死，失敗容易被正面撞開（用掉 30 喘）。按下後點紫框。需要速度 70、技巧 60。
+tactical.ui.front_lock_hover,前截鎖喉 {p}%（失敗時 35% 被撞）
+tactical.ui.front_lock_pick,點紫框出手；點別的地方取消
+tactical.ui.observe,觀察（原地，回喘）
+tactical.ui.give_up,放棄
+tactical.ui.round,回合 {n}
+tactical.ui.wind,風 {dir}
+tactical.ui.wind_side.upwind,你在上風
+tactical.ui.wind_side.downwind,你在下風
+tactical.ui.wind_side.crosswind,側風
+tactical.ui.breath,喘 {n}/{max}
+tactical.ui.health,血 {n}
+tactical.ui.target,目標 {animal}
+tactical.ui.herd_count,場上 {n} 隻
+tactical.ui.deer_prefix,鹿：
+tactical.ui.state.unaware,沒察覺
+tactical.ui.state.suspicious,起疑
+tactical.ui.state.flee,逃跑
+tactical.ui.state.stand,站定
+tactical.ui.held,（咬住）
+tactical.ui.hold_at.rear,咬在後腿
+tactical.ui.hold_at.side,咬在側腹
+tactical.ui.hold_at.front,咬在頸部
+tactical.ui.alert,警覺 {n}
+tactical.ui.fatigue,累 {n}%
+tactical.ui.wounds,帶傷 {n}
+tactical.ui.condition,體況：{condition}
+tactical.ui.pounce,撲咬 {p}%
+tactical.ui.kick_risk,　被踢 {p}%
+tactical.ui.move.creep,潛行（回喘）
+tactical.ui.move.trot,小跑（−4 喘）
+tactical.ui.move.sprint,衝刺（−22 喘）
+tactical.ui.move.tired_trot,小跑（喘不夠：少一格，不扣喘也不回喘）

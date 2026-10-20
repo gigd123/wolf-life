@@ -14,7 +14,13 @@ func _process(_d) -> bool:
 		game = load("res://scenes/Game.tscn").instantiate()
 		root.add_child(game)
 	if f == 6:
-		game._begin_hunt("white_tailed_deer", "adult")
+		# 地形可以用 TERRAIN 指定（例如 dense_forest、stream、fallen_logs）
+		var terrain: String = OS.get_environment("TERRAIN")
+		if terrain != "":
+			game.current_hunt = gs.start_hunt("white_tailed_deer", "adult", -1, false, terrain)
+			game._open_tactical()
+		else:
+			game._begin_hunt("white_tailed_deer", "adult")
 		for c in game.get_children():
 			if c.has_method("start_from_game"):
 				view = c

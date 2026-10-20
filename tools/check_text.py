@@ -19,7 +19,7 @@ for r in rows:
 
 CJK = r'[一-鿿]'
 # 介面文字（數字、說明）不算敘事
-UI_PREFIX = ('ui.', 'factor.', 'stats.', 'debug.', 'cost.', 'chance_label.', 'stat.', 'action.', 'summary.', 'reason.',
+UI_PREFIX = ('ui.', 'tactical.ui.', 'factor.', 'stats.', 'debug.', 'cost.', 'chance_label.', 'stat.', 'action.', 'summary.', 'reason.',
              'metrics.', 'tooltip.', 'combat.option.', 'hunt.option.', 'routine.option', 'explore.mode', 'prey_state.',
              'routine.', 'snow.tip.', 'combat.anim.', 'season.', 'period.', 'region', 'animal.', 'prey_name.', 'item.',
              'feature.', 'death.', 'injury_source.', 'year.kills', 'year.biggest', 'year.heavy', 'year.changes', 'year.title',

@@ -1,7 +1,8 @@
 extends Control
 
 # 戰術狩獵原型的畫面（docs/proposals/tactical-hunt-prototype.md 第九節，畫面甲：整張地圖）。
-# 邏輯全在 TacticalHunt.gd；這裡只畫格子、處理點選、顯示資訊。原型的文字直接寫中文（和美術測試一樣，不進翻譯檔）。
+# 邏輯全在 TacticalHunt.gd；這裡只畫格子、處理點選、顯示資訊。主遊戲看得到的文字用翻譯鍵（tactical.*，Phase 2c 第 4 步）；
+# 只有原型的設定列（情境、狼、體力、招式、新局、重來、返回）與給開發看的數字直接寫中文。
 #
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
 # 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是有白點的小鹿，細線連到生母。
@@ -124,7 +125,7 @@ func start_from_game(th, done_cb: Callable) -> void:
 	h = th
 	last_wolf_pos = Vector2i(-99, -99)
 	lock_armed = false
-	lines = ["你壓低身子，看著牠。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。"]
+	lines = [tr("tactical.ui.intro")]
 	_after_action()
 
 func _option(parent: Node, items: Array) -> OptionButton:
@@ -192,11 +193,16 @@ func _after_action() -> void:
 	h.events = []
 	if h.done:
 		var color := "#9fe08a" if h.result == "caught" else "#e0a08a"
-		var what: String = {"caught": "獵到", "escaped": "逃脫，留下一條新鮮足跡", "lost": "跟丟，留下一條新鮮足跡", "gave_up": "放棄", "timeout": "拖太久"}.get(h.result, h.result)
-		if h.result == "caught" and (h.herd.size() > 1 or not h.sp(h.target).is_empty()):
-			what += "%s（%d 段肉）" % ["幼鹿" if h.caught_kind == "fawn" else str(h.sp(h.target).get("name", "成鹿")), h.meat]
-		lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d、受傷 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color, what,
-			h.rounds, roundi(h.breath_used), roundi(h.damage_taken), h.game_turns(), roundi(h.stamina_cost())])
+		var what: String = tr("tactical.ui.result." + h.result)
+		if game_mode:
+			# 主遊戲：時間、體力、殘骸由主遊戲結算，這裡只交代結果
+			lines.append("[color=%s]%s[/color]" % [color, tr("tactical.ui.result_line").replace("{result}", what).replace("{n}", str(h.rounds))])
+		else:
+			# 原型：多列給開發看的數字
+			if h.result == "caught" and (h.herd.size() > 1 or not h.sp(h.target).is_empty()):
+				what += "%s（%d 段肉）" % [tr("tactical.label.fawn") if h.caught_kind == "fawn" else tr(str(h.sp(h.target).get("name_key", "tactical.label.doe"))), h.meat]
+			lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d、受傷 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color, what,
+				h.rounds, roundi(h.breath_used), roundi(h.damage_taken), h.game_turns(), roundi(h.stamina_cost())])
 	log_box.text = "\n".join(lines.slice(maxi(0, lines.size() - 30)))
 	_build_buttons()
 	_refresh()
@@ -208,7 +214,7 @@ func _build_buttons() -> void:
 		if game_mode:
 			var cont := Button.new()
 			cont.theme_type_variation = &"SmallButton"
-			cont.text = "繼續"
+			cont.text = tr("ui.continue")
 			cont.pressed.connect(func():
 				var cb := on_done
 				queue_free()
@@ -216,7 +222,7 @@ func _build_buttons() -> void:
 			buttons.add_child(cont)
 		return
 	if h.held:
-		var names := {"takedown": "壓倒", "throat": "咬喉", "hang": "死咬拖住", "hamstring": "咬後腿", "release": "鬆口"}
+		var names := {"takedown": tr("tactical.ui.takedown"), "throat": tr("tactical.ui.throat"), "hang": tr("tactical.ui.hang"), "hamstring": tr("tactical.ui.hamstring"), "release": tr("tactical.ui.release")}
 		var opts: Dictionary = h.hold_options()
 		for id in ["takedown", "throat", "hamstring", "hang", "release"]:
 			if opts.has(id):
@@ -224,14 +230,14 @@ func _build_buttons() -> void:
 				b.theme_type_variation = &"SmallButton"
 				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
 				if id == "hang":
-					b.text += "（%d 喘）" % roundi(float(opts[id]["breath"]))
+					b.text += tr("tactical.ui.breath_cost").replace("{n}", str(roundi(float(opts[id]["breath"]))))
 				b.tooltip_text = "、".join((opts[id]["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
 				buttons.add_child(b)
 		var auto_h := Button.new()
 		auto_h.theme_type_variation = &"SmallButton"
-		auto_h.text = "交給本能"
+		auto_h.text = tr("tactical.ui.instinct")
 		auto_h.pressed.connect(func(): TacticalInstinct.play(h); _after_action())
 		buttons.add_child(auto_h)
 		return
@@ -242,25 +248,25 @@ func _build_buttons() -> void:
 		fl.button_pressed = lock_armed
 		var ready: bool = not h.front_lock_targets().is_empty()
 		fl.disabled = not ready
-		fl.text = "前截鎖喉" if h.front_lock_ready() else "前截鎖喉（能力不足）"
-		fl.tooltip_text = "衝到逃跑的成鹿正前方、回身鎖喉：成功直接咬死，失敗容易被正面撞開（用掉 30 喘）。按下後點紫框。需要速度 70、技巧 60。"
+		fl.text = tr("tactical.ui.front_lock") if h.front_lock_ready() else tr("tactical.ui.front_lock_weak")
+		fl.tooltip_text = tr("tactical.ui.front_lock_tip")
 		fl.toggled.connect(func(on): lock_armed = on; _refresh())
 		buttons.add_child(fl)
 	var obs := Button.new()
 	obs.theme_type_variation = &"SmallButton"
-	obs.text = "觀察（原地，回喘）"
+	obs.text = tr("tactical.ui.observe")
 	obs.pressed.connect(func(): h.observe(); _after_action())
 	buttons.add_child(obs)
 	# 交給本能（Phase 2c 第 3 步）：照同一套規則，依局面挑一種打法打完這一場
 	var auto := Button.new()
 	auto.theme_type_variation = &"SmallButton"
-	auto.text = "交給本能"
-	auto.tooltip_text = "依風向與地形挑一種打法（潛近、伏擊或耐力追），一路打完這一場。比自己打保守一些。"
+	auto.text = tr("tactical.ui.instinct")
+	auto.tooltip_text = tr("tactical.ui.instinct_tip")
 	auto.pressed.connect(func(): TacticalInstinct.play(h); _after_action())
 	buttons.add_child(auto)
 	var quit := Button.new()
 	quit.theme_type_variation = &"SmallButton"
-	quit.text = "放棄"
+	quit.text = tr("tactical.ui.give_up")
 	quit.pressed.connect(func(): h.give_up(); _after_action())
 	buttons.add_child(quit)
 
@@ -277,31 +283,31 @@ func _bar(v: float, mx: float, color: String) -> String:
 
 func _info_text() -> String:
 	var t: Array[String] = []
-	t.append("回合 %d" % h.rounds)
-	t.append("風 %s" % {Vector2i(1, 0): "→", Vector2i(-1, 0): "←", Vector2i(0, 1): "↓", Vector2i(0, -1): "↑"}.get(h.wind, "?"))
-	t.append({"upwind": "[color=#e08a8a]你在上風[/color]", "downwind": "[color=#9fe08a]你在下風[/color]", "crosswind": "側風"}[h.wind_side()])
+	t.append(tr("tactical.ui.round").replace("{n}", str(h.rounds)))
+	t.append(tr("tactical.ui.wind").replace("{dir}", {Vector2i(1, 0): "→", Vector2i(-1, 0): "←", Vector2i(0, 1): "↓", Vector2i(0, -1): "↑"}.get(h.wind, "?")))
+	t.append({"upwind": "[color=#e08a8a]%s[/color]", "downwind": "[color=#9fe08a]%s[/color]", "crosswind": "%s"}[h.wind_side()] % tr("tactical.ui.wind_side." + h.wind_side()))
 	t.append("")
-	t.append("喘 %d/%d" % [roundi(h.breath), roundi(h.breath_max)])
+	t.append(tr("tactical.ui.breath").replace("{n}", str(roundi(h.breath))).replace("{max}", str(roundi(h.breath_max))))
 	t.append(_bar(h.breath, h.breath_max, "#7fb3e0"))
-	t.append("血 %d" % roundi(float(h.wolf["health"])))
+	t.append(tr("tactical.ui.health").replace("{n}", str(roundi(float(h.wolf["health"])))))
 	t.append("")
 	if h.herd.size() > 1:
-		t.append("目標 " + h.label())
-		t.append("場上 %d 隻" % h.active_deer().size())
-	t.append(("" if h.herd.size() > 1 else "鹿：") + {"unaware": "沒察覺", "suspicious": "起疑", "flee": "逃跑", "stand": "站定"}.get(h.deer_state, h.deer_state) + ("（咬住）" if h.held else ""))
+		t.append(tr("tactical.ui.target").replace("{animal}", h.label()))
+		t.append(tr("tactical.ui.herd_count").replace("{n}", str(h.active_deer().size())))
+	t.append(("" if h.herd.size() > 1 else tr("tactical.ui.deer_prefix")) + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else ""))
 	if h.held:
-		t.append("咬在" + {"rear": "後腿", "side": "側腹", "front": "頸部"}.get(h.hold_side, "?"))
+		t.append(tr("tactical.ui.hold_at." + h.hold_side))
 	if int(h.herd[h.target].get("hamstrung", 0)) > 0:
-		t.append("[color=#e08a8a]後腿受傷[/color]")
+		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.factor.hamstrung"))
 	if h.deer_state in ["unaware", "suspicious"]:
-		t.append("警覺 %d" % roundi(h.alert))
+		t.append(tr("tactical.ui.alert").replace("{n}", str(roundi(h.alert))))
 		t.append(_bar(h.alert, 100.0, "#e0c070"))
 	else:
-		t.append("累 %d%%" % roundi(h.deer_fatigue_any() * 100.0))
+		t.append(tr("tactical.ui.fatigue").replace("{n}", str(roundi(h.deer_fatigue_any() * 100.0))))
 	if h.wounds > 0:
-		t.append("[color=#e08a8a]帶傷 %d[/color]" % h.wounds)
+		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.ui.wounds").replace("{n}", str(h.wounds)))
 	if h.condition_known:
-		t.append("體況：" + {"healthy": "健康", "average": "普通", "weak": "虛弱"}[h.condition])
+		t.append(tr("tactical.ui.condition").replace("{condition}", tr("tactical.condition." + h.condition)))
 	return "\n".join(t)
 
 # 滑鼠所在的格子：移動方式，或撲咬的命中率與因素
@@ -316,24 +322,24 @@ func _hover_text() -> String:
 			for f in fp["factors"]:
 				if absf(float(f[1])) >= 0.005:
 					parts0.append("%s %+d" % [f[0], roundi(float(f[1]) * 100.0)])
-			return "[color=#c080ff]前截鎖喉 %d%%[/color]（失敗 35%% 被撞）\n" % roundi(float(fp["chance"]) * 100.0) + "、".join(parts0)
-		return "點紫框出手；點別的地方取消"
+			return "[color=#c080ff]%s[/color]\n" % tr("tactical.ui.front_lock_hover").replace("{p}", str(roundi(float(fp["chance"]) * 100.0))) + "、".join(parts0)
+		return tr("tactical.ui.front_lock_pick")
 	var targets: Dictionary = h.pounce_targets()
 	if targets.has(hover):
 		var p: Dictionary = targets[hover]
-		var s := "[color=#ff8080]撲咬 %d%%[/color]" % roundi(float(p["chance"]) * 100.0)
+		var s := "[color=#ff8080]%s[/color]" % tr("tactical.ui.pounce").replace("{p}", str(roundi(float(p["chance"]) * 100.0)))
 		var parts: Array[String] = []
 		for f in p["factors"]:
 			if absf(float(f[1])) >= 0.005:
 				parts.append("%s %+d" % [f[0], roundi(float(f[1]) * 100.0)])
-		s += "　被踢 %d%%" % roundi(float(p["kick"]) * 100.0) if float(p["kick"]) > 0.0 else ""
+		s += tr("tactical.ui.kick_risk").replace("{p}", str(roundi(float(p["kick"]) * 100.0))) if float(p["kick"]) > 0.0 else ""
 		s += "\n" + "、".join(parts)
 		return s
 	var r: Dictionary = h.reachable()
 	if r.has(hover):
 		if r[hover] == "trot" and h.tired():
-			return "小跑（喘不夠：少一格，不扣喘也不回喘）"
-		return {"creep": "潛行（回喘）", "trot": "小跑（−4 喘）", "sprint": "衝刺（−22 喘）"}[r[hover]]
+			return tr("tactical.ui.move.tired_trot")
+		return tr("tactical.ui.move." + str(r[hover]))
 	return ""
 
 # --- 地圖 ---

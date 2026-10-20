@@ -168,7 +168,10 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 # 主遊戲開局（Phase 2c）：ctx = {map（情境或地圖 id）, seed, wolf（{speed, skill, strength, perception, stamina, health, health_max}）,
 # condition（主遊戲擲出的體況）, gorged, age_penalty, twilight, deep_snow, wind（Vector2i，可省略）}
 func setup_from_game(ctx: Dictionary) -> void:
-	setup(str(ctx.get("map", "A")), "normal", int(ctx.get("seed", 1)))
+	var scenario: String = str(ctx.get("map", "A"))
+	if ctx.has("family"):
+		scenario = _build_game_scenario(str(ctx["family"]), bool(ctx.get("fawn", false)), int(ctx.get("seed", 1)))
+	setup(scenario, "normal", int(ctx.get("seed", 1)))
 	var w: Dictionary = ctx.get("wolf", {})
 	for k in ["speed", "skill", "strength", "perception", "health", "health_max"]:
 		if w.has(k):
@@ -214,14 +217,71 @@ func wind_for(relation: String) -> Vector2i:
 			return d
 	return Vector2i(-d.y, d.x)
 
+# 每種地形的地圖（Phase 2c 第 4 步，data/tactical_hunt.json 的 maps）：同一族挑一張，鹿在中間一帶的開闊處，
+# 狼在 game.start_dist 格外（可以在林子裡），鹿的兩個目的地在 5～9 格外的開闊處；幼鹿跟在母鹿旁邊。結果存成臨時情境 "_game"。
+func _build_game_scenario(family: String, fawn: bool, seed: int) -> String:
+	var pick := RandomNumberGenerator.new()
+	pick.seed = seed + 99991
+	var ids: Array = (t.get("maps", {}) as Dictionary).keys().filter(func(k): return str(t["maps"][k].get("family", "")) == family)
+	if ids.is_empty():
+		ids = (t.get("maps", {}) as Dictionary).keys()
+	if ids.is_empty():
+		return "A"
+	var m: Dictionary = t["maps"][ids[pick.randi_range(0, ids.size() - 1)]]
+	var rows: Array = m["map"]
+	var open_at := func(c: Vector2i) -> bool:
+		return c.x >= 0 and c.y >= 0 and c.y < rows.size() and c.x < String(rows[0]).length() and String(rows[c.y])[c.x] == "."
+	var w: int = String(rows[0]).length()
+	var h: int = rows.size()
+	var deer := Vector2i(w / 2, h / 2)
+	for i in 200:
+		var c := Vector2i(pick.randi_range(w * 3 / 10, w * 7 / 10), pick.randi_range(3, h - 4))
+		if open_at.call(c):
+			deer = c
+			break
+	var wolf := deer - Vector2i(9, 0)
+	for i in 200:
+		var ang: float = pick.randf() * TAU
+		var r: float = pick.randf_range(float(t.get("game", {}).get("start_dist", [8.0, 11.0])[0]), float(t.get("game", {}).get("start_dist", [8.0, 11.0])[1]))
+		var c := deer + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r * 0.6))
+		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and String(rows[c.y])[c.x] != "l":
+			wolf = c
+			break
+	var goals: Array = []
+	for i in 300:
+		if goals.size() >= 2:
+			break
+		var c := Vector2i(pick.randi_range(1, w - 2), pick.randi_range(1, h - 2))
+		var d: float = Vector2(c - deer).length()
+		if open_at.call(c) and d >= 5.0 and d <= 9.0:
+			goals.append([c.x, c.y])
+	if goals.is_empty():
+		goals = [[deer.x, deer.y]]
+	var sc := {"name": str(m.get("name", "")), "wind": [-1, 0], "wolf": [wolf.x, wolf.y], "goals": goals, "map": rows}
+	if fawn:
+		var f := deer + Vector2i(1, 1)
+		for d in DIRS:
+			if open_at.call(deer + d):
+				f = deer + d
+				break
+		sc["deer_list"] = [{"pos": [deer.x, deer.y], "kind": "adult"}, {"pos": [f.x, f.y], "kind": "fawn", "mother": 0}]
+	else:
+		sc["deer"] = [deer.x, deer.y]
+	t["scenarios"]["_game"] = sc
+	return "_game"
+
+# 文字一律用翻譯鍵（Phase 2c 第 4 步）
+static func _tx(key: String) -> String:
+	return TranslationServer.translate(key)
+
 func _age_factor(factors: Array) -> float:
 	var a: float = float(game_mods.get("age_penalty", 0.0))
 	if a > 0.0:
-		factors.append(["你老了", -a])
+		factors.append([_tx("tactical.factor.old_age"), -a])
 	# 交給本能（Phase 2c 第 3 步）：出手比較莽撞
 	var ip: float = float(game_mods.get("instinct_penalty", 0.0))
 	if ip > 0.0:
-		factors.append(["交給本能", -ip])
+		factors.append([_tx("tactical.factor.instinct"), -ip])
 	return -a - ip
 
 # --- 鹿群（鹿群版） ---
@@ -260,8 +320,8 @@ func fawn_of(i: int) -> int:
 func label(i: int = -1) -> String:
 	var k: int = di if i < 0 else i
 	if herd.size() <= 1:
-		return "牠"
-	return "幼鹿" if is_fawn(k) else str(sp(k).get("name", "母鹿"))
+		return _tx("tactical.label.it")
+	return _tx("tactical.label.fawn") if is_fawn(k) else _tx(str(sp(k).get("name_key", "tactical.label.doe")))
 
 func set_target(i: int) -> void:
 	if i >= 0 and i < herd.size() and not bool(herd[i]["gone"]) and not held:
@@ -386,13 +446,13 @@ func observe() -> void:
 	_spend("breath_observe")
 	condition_known = true
 	observed += 1
-	events.append("你停下來觀察。牠的體況：%s。" % {"healthy": "健康", "average": "普通", "weak": "虛弱"}[condition])
+	events.append(_tx("tactical.observe").replace("{condition}", _tx("tactical.condition." + condition)))
 	_end_wolf_turn("still")
 
 func give_up() -> void:
 	if done:
 		return
-	_finish("gave_up", "你放棄了。")
+	_finish("gave_up", _tx("tactical.gave_up"))
 
 func _spend(key: String) -> void:
 	if key == "breath_trot" and tired():
@@ -465,7 +525,7 @@ func _fatigue_rounds() -> float:
 func _cond_factor(factors: Array, key: String) -> float:
 	var v: float = cond_mod(key)
 	if v != 0.0 and condition_known:
-		factors.append([{"healthy": "牠很健康", "average": "牠體況普通", "weak": "牠很虛弱"}.get(condition, "體況"), v])
+		factors.append([_tx("tactical.factor.cond." + condition), v])
 	return v
 
 # 撲咬命中率與因素（狼在 wolf_pos）：{"chance", "factors": [[文字, 加減]], "side", "kick"}
@@ -476,36 +536,36 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	var v: float = float(p["base"])
 	var a: float = float(p["angle"][side])
 	v += a
-	factors.append([{"rear": "從後方", "side": "從側面", "front": "從正面"}[side], a])
+	factors.append([_tx("tactical.factor.side." + side), a])
 	var tired: float = deer_fatigue() * float(p["tired_max"])
 	if tired > 0.0:
 		v += tired
-		factors.append(["牠累了", tired])
+		factors.append([_tx("tactical.factor.tired"), tired])
 	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - float(t["deer"]["speed"])) / float(p["ability_divisor"])
 	v += ab
-	factors.append(["你的速度與技巧", ab])
+	factors.append([_tx("tactical.factor.ability"), ab])
 	if terrain(deer_pos) == "l":
 		v += float(p["in_logs"])
-		factors.append(["牠在倒木裡", float(p["in_logs"])])
+		factors.append([_tx("tactical.factor.in_logs"), float(p["in_logs"])])
 	if is_fawn():
 		var fb: float = float(t["herd"]["fawn"]["pounce"])
 		v += fb
-		factors.append(["幼鹿", fb])
+		factors.append([_tx("tactical.factor.fawn"), fb])
 	if sp().has("pounce"):
 		v += float(sp()["pounce"])
-		factors.append([str(sp().get("name", "")), float(sp()["pounce"])])
+		factors.append([_tx(str(sp().get("name_key", ""))), float(sp()["pounce"])])
 	v += _cond_factor(factors, "pounce")
 	v += _age_factor(factors)
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
 		v += float(p["unaware"])
-		factors.append(["牠還沒發現你", float(p["unaware"])])
+		factors.append([_tx("tactical.factor.unaware"), float(p["unaware"])])
 	# 鹿還沒逃、你用小跑或衝刺衝過去：這一步的動靜會讓牠警覺；會讓牠跳開的話命中大降
 	if deer_state != "flee" and mode in ["trot", "sprint"]:
 		var bolt: bool = alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])
 		var r: float = float(p["rush_bolt"]) if bolt else float(p["rush"])
 		v -= r
-		factors.append(["衝過去，牠先跳開" if bolt else "衝過去，牠先驚覺", -r])
+		factors.append([_tx("tactical.factor.rush_bolt" if bolt else "tactical.factor.rush"), -r])
 	return {"chance": clamp(v, 0.05, 0.95), "factors": factors, "side": side, "kick": kick_chance()}
 
 func kick_chance() -> float:
@@ -542,18 +602,18 @@ func pounce_at(cell: Vector2i) -> void:
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
-		events.append(("牠的後腿踢中了你" if side == "rear" else "牠的蹄子踢中了你") + "（血量 −%d）。" % dmg)
+		events.append(_tx("tactical.kick.rear" if side == "rear" else "tactical.kick.hoof").replace("{n}", str(dmg)))
 	var hit: bool = rng.randf() < float(info["chance"])
 	_practice("skill", hit)
 	if hit:
 		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
 		held = true
 		hold_side = side
-		events.append({"rear": "你從後方咬住了%s的後腿！", "side": "你從側面咬住了%s！", "front": "你正面咬住了%s的脖子！"}[side] % label())
+		events.append(_tx("tactical.bite." + side).replace("{animal}", label()))
 		rounds += 1
 		_deer_turn()
 		return
-	events.append("撲空了！")
+	events.append(_tx("tactical.miss"))
 	if deer_state != "flee":
 		_start_flee("missed")
 	flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
@@ -561,7 +621,7 @@ func pounce_at(cell: Vector2i) -> void:
 	_herd_alarm()
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
-		_finish("timeout", "拖太久了，牠走遠了。")
+		_finish("timeout", _tx("tactical.timeout.far"))
 
 # --- 特殊招式：前截鎖喉（2026-10-16 使用者同意先在原型試做；參考黃石的母狼 06）---
 # 目標是逃跑中的成鹿，這一回合小跑或衝刺得到牠正前方相鄰的格子：衝到牠前面回身鎖喉。
@@ -599,14 +659,14 @@ func front_lock_chance() -> Dictionary:
 	var v: float = float(fl["base"])
 	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - 60.0) / float(fl["ability_divisor"])
 	v += ab
-	factors.append(["你的速度與技巧", ab])
+	factors.append([_tx("tactical.factor.ability"), ab])
 	var tired: float = deer_fatigue() * float(fl["tired"])
 	if tired > 0.0:
 		v += tired
-		factors.append(["牠累了", tired])
+		factors.append([_tx("tactical.factor.tired"), tired])
 	var cb: float = float(fl["condition"].get(condition, 0.0))
 	if cb != 0.0 and condition_known:
-		factors.append([{"healthy": "牠很健康", "weak": "牠很虛弱"}.get(condition, "體況"), cb])
+		factors.append([_tx("tactical.factor.cond." + condition), cb])
 	v += cb
 	return {"chance": clamp(v, 0.05, 0.9), "factors": factors}
 
@@ -624,7 +684,7 @@ func front_lock_at(cell: Vector2i) -> void:
 	front_locks += 1
 	rounds += 1
 	if rng.randf() < float(info["chance"]):
-		_finish("caught", "你衝到%s前面，回身一口鎖住牠的咽喉，牠倒了下去。" % label())
+		_finish("caught", _tx("tactical.lock.caught").replace("{animal}", label()))
 		return
 	if rng.randf() < float(fl["fail_hit"]):
 		var k: Array = fl["fail_damage"]
@@ -634,12 +694,12 @@ func front_lock_at(cell: Vector2i) -> void:
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
-		events.append("你衝到%s前面，沒咬住咽喉，被牠正面撞開（血量 −%d）！" % [label(), dmg])
+		events.append(_tx("tactical.lock.hit").replace("{animal}", label()).replace("{n}", str(dmg)))
 	else:
-		events.append("你衝到%s前面，牠猛一偏頭，你咬了個空。" % label())
+		events.append(_tx("tactical.lock.miss").replace("{animal}", label()))
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
-		_finish("timeout", "拖太久了，牠走遠了。")
+		_finish("timeout", _tx("tactical.timeout.far"))
 
 # --- 咬住之後：壓倒（力量）、咬喉（技巧，成功就咬死）、鬆口 ---
 
@@ -654,30 +714,30 @@ func hold_options() -> Dictionary:
 	var td: float = float(h["takedown_base"]) + (float(wolf["strength"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) \
 		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0)) \
 		+ hams * float(h["hamstring"]["takedown"])
-	var tf: Array = [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
 	td += _age_factor(tf)
 	if hams > 0:
-		tf.append(["後腿受傷", hams * float(h["hamstring"]["takedown"])])
+		tf.append([_tx("tactical.factor.hamstrung"), hams * float(h["hamstring"]["takedown"])])
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
 	var front_b: float = float(h["front"]["throat"]) if hold_side == "front" else 0.0
 	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) + wounds * float(h["per_wound"]) \
 		+ float(fb.get("throat", 0.0)) + front_b
-	var thf: Array = [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	var thf: Array = [[_tx("tactical.factor.skill"), (float(wolf["skill"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	th += _cond_factor(thf, "throat")
 	th += _age_factor(thf)
 	if front_b > 0.0:
-		thf.append(["咬在頸部", front_b])
+		thf.append([_tx("tactical.factor.neck"), front_b])
 	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]), "factors": thf}
 	# 死咬拖住：用體重掛著不放（每個位置都能用，側面最有效）
 	out["hang"] = {"chance": 1.0, "breath": float(h["hang"]["breath"]),
-		"factors": [["掙脫機率", float(h["hang"]["break"].get(hold_side, -0.08))]]}
+		"factors": [[_tx("tactical.factor.break"), float(h["hang"]["break"].get(hold_side, -0.08))]]}
 	# 咬後腿：從後方咬住才有
 	if hold_side == "rear" and hams < int(h["hamstring"]["max"]):
 		var hm: Dictionary = h["hamstring"]
 		var hc: float = float(hm["base"]) + (float(wolf["strength"]) - 50.0) / float(hm["divisor"]) + fat * float(hm["tired"]) + float(fb.get("hamstring", 0.0))
 		out["hamstring"] = {"chance": clamp(hc, 0.05, 0.95), "breath": float(hm["breath"]),
-			"factors": [["你的力量", (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], ["牠累了", fat * float(hm["tired"])]]}
+			"factors": [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], [_tx("tactical.factor.tired"), fat * float(hm["tired"])]]}
 	for k in out.keys():
 		if breath < float(out[k]["breath"]):
 			out.erase(k)
@@ -709,7 +769,7 @@ func hold_action(id: String) -> void:
 	var o: Dictionary = opts[id]
 	last_mode = "still"
 	if id == "release":
-		_let_go("你鬆開了口，%s一跛一跛地跑開。" % label())
+		_let_go(_tx("tactical.release").replace("{animal}", label()))
 		rounds += 1
 		_deer_turn()
 		return
@@ -718,36 +778,36 @@ func hold_action(id: String) -> void:
 	if id == "hang":
 		# 死咬拖住：那一回合只花 hang 的喘（不再扣咬著的消耗），獵物掙扎得更累
 		herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + int(t["hold"]["hang"]["struggle"].get(hold_side, 1)) - 1
-		events.append("你死死咬著，用身體的重量拖住%s。" % label())
+		events.append(_tx("tactical.hang").replace("{animal}", label()))
 		rounds += 1
 		_deer_turn(false, true)
 		if not done and rounds >= int(t["max_rounds"]):
-			_finish("timeout", "拖太久了。")
+			_finish("timeout", _tx("tactical.timeout"))
 		return
 	if id == "hamstring":
 		rounds += 1
 		if rng.randf() < float(o["chance"]):
 			herd[di]["hamstrung"] = int(herd[di].get("hamstrung", 0)) + 1
 			wounds += int(t["hold"]["hamstring"]["slow"])
-			events.append("你咬斷了%s後腿的筋，牠一個踉蹌。" % label())
+			events.append(_tx("tactical.hamstring.hit").replace("{animal}", label()))
 		else:
-			events.append("你想咬牠的後腿，被牠一腳蹬開了口。")
+			events.append(_tx("tactical.hamstring.miss"))
 		_deer_turn()
 		if not done and rounds >= int(t["max_rounds"]):
-			_finish("timeout", "拖太久了。")
+			_finish("timeout", _tx("tactical.timeout"))
 		return
 	var ok: bool = rng.randf() < float(o["chance"])
 	_practice("strength" if id == "takedown" else "skill", ok)
 	if ok:
 		rounds += 1
 		_practice("strength", true, "takedown")
-		_finish("caught", "你把牠壓倒在地，獵到了。" if id == "takedown" else "你咬住牠的咽喉，牠倒了下去。")
+		_finish("caught", _tx("tactical.caught." + id))
 		return
-	events.append("牠還在掙扎。" if id == "takedown" else "沒咬到要害，牠猛力一甩。")
+	events.append(_tx("tactical.struggle." + id))
 	rounds += 1
 	_deer_turn(id == "throat")
 	if not done and rounds >= int(t["max_rounds"]):
-		_finish("timeout", "拖太久了。")
+		_finish("timeout", _tx("tactical.timeout"))
 
 func _let_go(text: String) -> void:
 	held = false
@@ -769,9 +829,9 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 		damage_taken += dmg
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
-		events.append("掙扎中牠踢中了你（血量 −%d）。" % dmg)
+		events.append(_tx("tactical.struggle_kick").replace("{n}", str(dmg)))
 	if rng.randf() < break_chance(after_throat_miss, hanging):
-		_let_go("%s掙脫了，帶著傷逃跑！" % label())
+		_let_go(_tx("tactical.broke_free").replace("{animal}", label()))
 		_deer_flee()
 
 # --- 回合結束：警覺值、鹿行動 ---
@@ -791,11 +851,11 @@ func _end_wolf_turn(mode: String) -> void:
 		for i in active_deer():
 			if _cheb(herd[i]["pos"], wolf_pos) <= int(t["herd"]["scatter_dist"]):
 				scattered = true
-				events.append("你衝進鹿群，牠們四散奔逃！")
+				events.append(_tx("tactical.scatter"))
 				break
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
-		_finish("timeout", "拖太久了，牠走遠了。")
+		_finish("timeout", _tx("tactical.timeout.far"))
 
 func wind_side() -> String:
 	var v := Vector2(deer_pos - wolf_pos)
@@ -855,7 +915,7 @@ func _raise_alert(mode: String) -> void:
 		_start_flee(cause)
 	elif alert >= float(t["deer"]["suspicious_at"]) and deer_state == "unaware":
 		deer_state = "suspicious"
-		events.append("%s抬起頭，朝你這邊張望。" % label())
+		events.append(_tx("tactical.look").replace("{animal}", label()))
 
 func _start_flee(cause: String) -> void:
 	deer_state = "flee"
@@ -864,7 +924,7 @@ func _start_flee(cause: String) -> void:
 		detect_cause = cause
 	if cause == "herd":
 		return # 跟著同伴跑，紀錄寫在 _herd_alarm
-	var text: String = {"scent": "風把你的氣味送了過去，牠猛地跳開！", "noise": "牠聽到動靜，拔腿就跑！", "close": "牠發現你了，拔腿就跑！", "missed": "牠受驚，拔腿就跑！"}.get(cause, "牠跑了！")
+	var text: String = _tx("tactical.flee." + (cause if cause in ["scent", "noise", "close", "missed"] else "other"))
 	if herd.size() > 1:
 		text = label() + text.substr(1) # 這幾句都以「牠」開頭
 	events.append(text)
@@ -893,7 +953,7 @@ func _herd_alarm() -> void:
 				deer_state = "suspicious"
 	di = keep
 	if joined > 0:
-		events.append("整群跟著跑了起來。")
+		events.append(_tx("tactical.herd_runs"))
 
 func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 	if done:
@@ -984,9 +1044,9 @@ func _mother_defend() -> bool:
 		kicks += 1
 		if fawn_held:
 			mother_hit_fawn_held = true
-		events.append("母鹿轉身朝你衝過來，前蹄踢中了你（血量 −%d）！" % dmg)
+		events.append(_tx("tactical.defend.hit").replace("{n}", str(dmg)))
 	else:
-		events.append("母鹿轉身朝你衝過來，你閃開了她的前蹄。")
+		events.append(_tx("tactical.defend.miss"))
 	return true
 
 func _dir_toward(from: Vector2i, to: Vector2i) -> Vector2i:
@@ -1178,12 +1238,12 @@ func _deer_flee() -> void:
 				herd[di]["separated"] = false
 		elif scattered and rng.randf() < float(t["herd"]["separate_forest" if terrain(deer_pos) == "f" else "separate"]):
 			herd[di]["separated"] = true
-			events.append("幼鹿和母鹿跑散了！")
+			events.append(_tx("tactical.separated"))
 	var opts := flee_options()
 	if opts.is_empty() or float(opts[0]["score"]) < -10.0:
 		deer_state = "stand"
 		deer_facing = _dir_toward(deer_pos, wolf_pos)
-		events.append("牠被逼到角落，轉身站定。")
+		events.append(_tx("tactical.cornered"))
 		return
 	# 從最好的二到三個方向隨機選一個；在密林裡有機會急轉成第二好的
 	var weights: Array = t["deer"]["pick_weights"]
@@ -1233,19 +1293,19 @@ func _check_lost() -> void:
 	if terrain(deer_pos) == "f" and not has_sight():
 		lost_turns += 1
 		if lost_turns >= int(t["deer"]["lost_sight_turns"]):
-			_deer_gone("lost", "%s鑽進密林，不見了。" % label())
+			_deer_gone("lost", _tx("tactical.lost").replace("{animal}", label()))
 	else:
 		lost_turns = 0
 
 func _escape_reason() -> String:
 	match detect_cause:
 		"scent":
-			return "牠從上風聞到你，早早就跑了。"
+			return _tx("tactical.escape.scent")
 		"missed":
-			return "撲空之後，牠跑掉了。"
+			return _tx("tactical.escape.missed")
 	if breath < -float(t["move"]["breath_sprint"]):
-		return "你喘不過氣，追不上了。"
-	return "開闊地上，你追不上牠。"
+		return _tx("tactical.escape.breath")
+	return _tx("tactical.escape.open")
 
 # 一隻鹿逃掉了：只有一隻時整場結束；鹿群裡就是這一隻離場，全部離場才結束
 func _deer_gone(kind: String, text: String) -> void:
@@ -1254,9 +1314,9 @@ func _deer_gone(kind: String, text: String) -> void:
 		return
 	herd[di]["gone"] = true
 	herd[di]["held"] = false
-	events.append(("%s跑遠了。" % label()) if kind == "escaped" else text)
+	events.append(_tx("tactical.ran_far").replace("{animal}", label()) if kind == "escaped" else text)
 	if active_deer().is_empty():
-		_finish(kind, "鹿群全都跑掉了。")
+		_finish(kind, _tx("tactical.herd_gone"))
 
 func _finish(p_result: String, text: String) -> void:
 	done = true
