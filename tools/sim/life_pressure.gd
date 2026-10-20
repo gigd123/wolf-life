@@ -9,7 +9,8 @@ extends SceneTree
 # 餓死約 15～30%、平均壽命 9～11 歲。
 # 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
 # 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
-# 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時白尾鹿用選單式狩獵（對照 Phase 2b）
+# 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時鹿類都用選單式狩獵（對照 Phase 2b）；
+# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）
 
 const STAGES := ["subadult", "adult", "elder"]
 const SNAP_AGES := [1.0, 1.5, 2.0, 3.0, 5.0]
@@ -53,12 +54,16 @@ func _process(_d):
 	var sub_days := {} # 次成年分成未滿 1 歲、1～2 歲：天數、挨餓天數
 	var sub_hungry := {}
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
+	var tac_sp := {} # 物種.結果 -> 次數（Phase 2d）
+	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
 	var tac_st := {}
 	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
 	var meet_lives := 0
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
+		if OS.get_environment("TACTICAL_ONLY") != "":
+			ap.tactical_only = OS.get_environment("TACTICAL_ONLY").split(",")
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
 		var dueled := {}
@@ -128,6 +133,10 @@ func _process(_d):
 		var tstats: Dictionary = GS.life_log.get("stats", {})
 		for k in tstats.get("tactical_by_stage", {}).keys():
 			tac[k] = int(tac.get(k, 0)) + int(tstats["tactical_by_stage"][k])
+		for k in tstats.get("tactical_species_cost", {}).keys():
+			tac_spx[k] = int(tac_spx.get(k, 0)) + int(tstats["tactical_species_cost"][k])
+		for k in tstats.get("tactical_by_species", {}).keys():
+			tac_sp[k] = int(tac_sp.get(k, 0)) + int(tstats["tactical_by_species"][k])
 		for k in tstats.get("tactical_stamina", {}).keys():
 			tac_st[k] = int(tac_st.get(k, 0)) + int(tstats["tactical_stamina"][k])
 		var meets: Array = GS.life_log.get("pack_meetings", [])
@@ -198,8 +207,22 @@ func _process(_d):
 				elif str(k).ends_with(".gave_up"):
 					gave += int(tac[k])
 		if n > 0:
-			print("  戰術狩獵（白尾鹿、馬鹿）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
+			print("  戰術狩獵（鹿類）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
 				roundi(100.0 * ok / max(1, n - gave)), float(tac_st.get(st, 0)) / n])
+	for sp in ["white_tailed_deer", "elk", "mule_deer", "caribou"]:
+		var n := 0
+		var ok := 0
+		var gave := 0
+		for k in tac_sp.keys():
+			if str(k).begins_with(sp + "."):
+				n += int(tac_sp[k])
+				if str(k).ends_with(".caught"):
+					ok += int(tac_sp[k])
+				elif str(k).ends_with(".gave_up"):
+					gave += int(tac_sp[k])
+		if n > 0:
+			print("  戰術狩獵 %-18s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f、遊戲回合 %.1f" % [sp, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n), roundi(100.0 * ok / max(1, n - gave)),
+				float(tac_spx.get(sp + ".stamina", 0)) / n, float(tac_spx.get(sp + ".turns", 0)) / n])
 	quit()
 	return true
 

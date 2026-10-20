@@ -3094,7 +3094,8 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	if turns > free:
 		GameTime.advance_turns(turns - free)
 	hunt.pending_turns = turns
-	wolf.breath_spent = th.breath_used
+	# 大型鹿的狩獵代價倍率（game.cost_mult，Phase 2d 第 5 步的調整選項；沒寫 = 1）
+	wolf.breath_spent = th.breath_used * float(g.get("cost_mult", {}).get(hunt.animal_id, 1.0))
 	for dmg in th.hits_taken:
 		FightRules.hurt_wolf(wolf, float(dmg), {"leg": 0.5, "shoulder": 0.3, "face": 0.2}, hunt.animal_id + ".hunt", false)
 	hunt.practice.append_array(th.practice)
@@ -3123,9 +3124,12 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	if stage_key == "subadult":
 		stage_key = "young" if wolf.age_years < float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)) else "yearling"
 	_stat_inc("tactical_by_stage", stage_key + "." + th.result)
+	_stat_inc("tactical_by_species", hunt.animal_id + "." + th.result)
 	var st0: float = wolf.stamina
 	finish_hunt(hunt)
 	_stat_inc("tactical_stamina", stage_key, roundi(max(0.0, st0 - wolf.stamina)))
+	_stat_inc("tactical_species_cost", hunt.animal_id + ".stamina", roundi(max(0.0, st0 - wolf.stamina)))
+	_stat_inc("tactical_species_cost", hunt.animal_id + ".turns", turns)
 
 # 年齡減成：同選單式狩獵（hunt.age，Phase 2b）
 func _tactical_age_penalty() -> float:

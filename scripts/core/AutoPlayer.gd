@@ -23,6 +23,8 @@ var style: String
 var judge: bool = true
 # 模擬用：false 時白尾鹿也用選單式狩獵（和 Phase 2b 比較）
 var tactical: bool = true
+# 模擬用：不是空的時候，只有這些動物走戰術地圖（Phase 2d 第 5 步對照）
+var tactical_only: Array = []
 const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
@@ -391,7 +393,7 @@ func _routine_notable(d: Dictionary) -> bool:
 
 func _play_hunt(hunt: HuntSystem) -> void:
 	# 白尾鹿用戰術地圖（Phase 2c 第 3 步）：交給本能打；會判斷的狼先觀察，看出是健康的成鹿又還不太餓就放棄（同 Phase 2b）
-	if tactical and GameState.tactical_eligible(hunt):
+	if tactical and GameState.tactical_eligible(hunt) and (tactical_only.is_empty() or tactical_only.has(hunt.animal_id)):
 		var th := GameState.start_tactical(hunt)
 		if judge and not th.is_fawn(th.target):
 			th.observe()

@@ -521,6 +521,14 @@ func _mark_weakest() -> void:
 	var adults: Array = active_deer().filter(func(i): return not is_fawn(i))
 	if adults.size() < 2:
 		return
+	# 一次只看得清楚幾隻（game.herd_observe_sample：目標＋其他隨機幾隻；0 = 整群都看得到）
+	var sample: int = int(t.get("game", {}).get("herd_observe_sample", 0))
+	if sample > 0 and adults.size() > sample:
+		var others: Array = adults.filter(func(i): return i != target)
+		var seen: Array = [target] if not is_fawn(target) else []
+		while seen.size() < sample and not others.is_empty():
+			seen.append(others.pop_at(rng.randi_range(0, others.size() - 1)))
+		adults = seen
 	var rank := {"weak": 0, "average": 1, "healthy": 2}
 	var best := -1
 	for i in adults:
