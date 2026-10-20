@@ -6,6 +6,23 @@ extends "res://tools/sim/tactical_hunt_sim.gd"
 # 用法：bash tools/run_sim.sh tactical_calibrate 0 150
 
 const CAL_POLICIES := ["chase", "pace", "stalk", "ambush"]
+var tally := {}
+
+# 分階段記錄：撲咬時鹿的狀態、撲中沒、咬住後的結果
+func _step(h, pol: String) -> void:
+	var was_held: bool = h.held
+	var state: String = h.deer_state
+	var e0: int = h.events.size()
+	super._step(h, pol)
+	if not was_held and h.held:
+		tally["hit_" + state] = int(tally.get("hit_" + state, 0)) + 1
+	elif not was_held and not h.held and h.events.slice(e0).any(func(e): return str(e).contains("撲空")):
+		tally["miss_" + state] = int(tally.get("miss_" + state, 0)) + 1
+	if was_held and h.done:
+		tally["hold_" + str(h.result)] = int(tally.get("hold_" + str(h.result), 0)) + 1
+	elif was_held and not h.held and not h.done:
+		tally["hold_broke"] = int(tally.get("hold_broke", 0)) + 1
+
 const TARGETS := {"normal.healthy": [0.25, 0.35], "fast.healthy": [0.45, 0.55], "normal.weak": [0.5, 0.8], "fast.weak": [0.5, 0.8]}
 
 func _process(_d) -> bool:
@@ -42,4 +59,6 @@ func _process(_d) -> bool:
 			if TARGETS.has(key):
 				target = "目標 %d～%d%%" % [roundi(TARGETS[key][0] * 100.0), roundi(TARGETS[key][1] * 100.0)]
 			print(line + "  → 四情境最好策略平均 %d%% %s" % [roundi(avg_best * 100.0), target])
+			print("        分階段（所有情境與策略）：", tally)
+			tally = {}
 	return true
