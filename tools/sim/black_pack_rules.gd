@@ -189,6 +189,57 @@ func _process(_d) -> bool:
 	cb.outcome = "killed"
 	gs._after_pack_young_combat(cb)
 	_check(gs.black_pack.young.size() == n_young - 1 and not gs.npcs.has("pack_young"), "打死落單的年輕狼：少一隻")
+	# 9. 對生存的影響（第 4 步）
+	gs.new_game("forest_east")
+	gs.debug_force_transition("adult")
+	gs.black_pack.stage = "pack"
+	gs.black_pack.mate_age = 3.0
+	gs.black_pack.young = [1.5, 0.5]
+	gs.black_pack.regions = ["forest_north"]
+	var deer_core: float = float(gs.prey_mults("forest_north").get("white_tailed_deer", 1.0))
+	var deer_border: float = float(gs.prey_mults("forest_east").get("white_tailed_deer", 1.0))
+	var hare_core: float = float(gs.prey_mults("forest_north").get("snowshoe_hare", 1.0))
+	gs.black_pack.stage = "solo"
+	var deer_none: float = float(gs.prey_mults("forest_north").get("white_tailed_deer", 1.0))
+	var hare_none: float = float(gs.prey_mults("forest_north").get("snowshoe_hare", 1.0))
+	gs.black_pack.stage = "pack"
+	_check(absf(deer_core / deer_none - 0.7) < 0.01 and absf(deer_border / deer_none - 1.1) < 0.01 and absf(hare_core - hare_none) < 0.001,
+		"獵物：牠們的領域鹿 ×0.7、相鄰區 ×1.1、雪兔不變（%.2f %.2f）" % [deer_core / deer_none, deer_border / deer_none])
+	# 殘骸：一段一段吃，被發現時排撞上的事件
+	gs.current_region = "forest_north"
+	var caught_any := false
+	var ate_all := false
+	for i in 40:
+		rng.set_seed(100 + i)
+		gs.pending_events.clear()
+		gs.current_discovery = {"kind": "pack_remains", "location": "dense_forest", "segments": 3, "zone": "core"}
+		var h0: float = gs.wolf.hunger
+		gs.wolf.hunger = 20.0
+		var res: Dictionary = gs.eat_pack_remains()
+		_check(gs.wolf.hunger > 20.0, "吃一段有飽食度")
+		if res["caught"]:
+			caught_any = true
+			_check(gs.pending_events.any(func(e): return e.get("type", "") == "pack_meet") and gs.current_discovery.is_empty(), "被發現：撞上狼群、殘骸沒了")
+		elif res["left"] == 2:
+			ate_all = true
+			_check(int(gs.current_discovery.get("segments", 0)) == 2, "沒被發現：剩 2 段")
+	_check(caught_any and ate_all, "被發現與沒被發現都會發生")
+	# 試探地盤：淡掉的標記被試探，換季時沒補就被佔走；補了就不會
+	data.balance["black_pack"]["probe"]["faded_chance"] = 10.0
+	gs.life_log["days_lived"] = 30
+	gs.life_log["marks"] = {"forest_west": 10, "forest_east": 30}
+	gs.life_log.erase("pack_probe")
+	gs._pack_probe()
+	_check(gs.life_log.get("pack_probe", {}).has("forest_west") and not gs.life_log.get("pack_probe", {}).has("forest_east"), "淡掉、相鄰的地盤被試探（巢穴不會）：%s" % [gs.life_log.get("pack_probe", {})])
+	var taken: Array = gs._pack_take_probed()
+	_check(taken == ["forest_west"] and gs.black_pack.regions.has("forest_west"), "換季時沒補：被佔走（%s）" % [taken])
+	gs.black_pack.regions = ["forest_north"]
+	gs.life_log["marks"] = {"forest_west": 10}
+	gs._pack_probe()
+	gs.current_region = "forest_west"
+	gs.action_mark()
+	taken = gs._pack_take_probed()
+	_check(taken.is_empty() and not gs.black_pack.regions.has("forest_west"), "補上標記：不會被佔走")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 

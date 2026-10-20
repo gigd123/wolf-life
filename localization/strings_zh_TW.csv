@@ -201,6 +201,7 @@ debug.event.storm,暴雨
 debug.event.howl,狼嚎
 debug.event.pack_meet,撞上黑狼一家
 debug.event.pack_young,落單的年輕狼
+debug.event.pack_remains,黑狼一家的殘骸
 debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
@@ -783,6 +784,16 @@ pack.flee.caught,你轉身就跑，還是被追上咬了幾口，好不容易才
 pack.meet.young,{location}，一隻年輕的狼獨自在林間嗅聞。牠的毛色偏黑，是那隻黑狼的孩子，身邊沒有別的狼。
 pack.young.avoided,你沒有驚動牠，悄悄繞開了。
 injury_source.pack.bite,被黑狼一家追咬
+pack.remains.found,{location}，一具被啃開的鹿屍倒在地上，四周滿是狼的腳印和新鮮的氣味。是那群狼吃剩的，還剩 {n} 段肉。
+pack.remains.left,還剩 {n} 段肉。牠們隨時可能回來。
+pack.remains.risk.core,這裡是牠們的地盤，待得越久越危險。
+pack.remains.risk.border,這裡在牠們地盤的邊上，牠們不一定會回來。
+pack.remains.eat,撕一段來吃（被發現 {p}%）
+log.pack_remains.ate,你飛快地撕下一段肉吞下去（飽食度 +{n}）。
+pack.remains.caught,林子裡傳來腳步聲，牠們回來了。
+pack.remains.done,殘骸只剩骨頭了，你舔舔嘴離開。
+pack.news.took.known,那隻黑狼一家的標記佔滿了{region}。你沒有回去補上，那裡已經是牠們的了。
+pack.news.took.unknown,{region}那一帶滿是別的狼的標記，你的氣味已經被蓋過了。
 stranger.won_territory,{region}原本是牠的地盤，從此是你的了。
 stranger.killed_card.title,那隻黑狼
 first_win.grizzly_bear.title,那頭灰熊

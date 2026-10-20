@@ -26,7 +26,7 @@ UI_PREFIX = ('ui.', 'factor.', 'stats.', 'debug.', 'cost.', 'chance_label.', 'st
              'game.', 'menu.', 'settings.', 'tendency.', 'tendency_desc.', 'knowledge.', 'weather.', 'bear_steal.danger',
              # 按鈕與狀態列上的數字說明（刻意保留的介面文字）
              'feeding.', 'tendency_effect.', 'ice.option.', 'ice.prompt.', 'stranger.follow', 'tundra.follow', 'hunt.chase.round',
-             'encounter.observe', 'log.feeding_ate', 'log.eat_remains')
+             'encounter.observe', 'log.feeding_ate', 'log.eat_remains', 'log.pack_remains')
 GAME_TERMS = ['成功率', '回合', '加成', '經驗值', '飽食度', '能力值', '機率']
 
 for k, v in texts.items():

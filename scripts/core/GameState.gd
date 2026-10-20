@@ -1055,12 +1055,18 @@ func action_mark() -> String:
 		marks.erase(oldest)
 	marks[current_region] = int(life_log.get("days_lived", 1))
 	life_log["marks"] = marks
+	# 補上標記：黑狼一家的試探落空（Phase 3a 第 4 步）
+	if life_log.get("pack_probe", {}).has(current_region):
+		life_log["pack_probe"].erase(current_region)
 	life_log["marks_made"] = int(life_log.get("marks_made", 0)) + 1
 	state_changed.emit()
 	return result
 
 # 每天：黑狼可能把牠的標記蓋在你的地盤上（牠的範圍在你的地盤或相鄰時）
 func _update_marks() -> void:
+	if pack_active():
+		_pack_probe()
+		return
 	var npc := stranger()
 	if npc == null or not npc.alive or npc.yielded_to_player or stranger_territory == "":
 		return
@@ -1070,6 +1076,45 @@ func _update_marks() -> void:
 			var over: Dictionary = life_log.get("overmarked", {})
 			over[r] = true
 			life_log["overmarked"] = over
+
+# 黑狼一家試探你的地盤（Phase 3a 第 4 步）：和牠們的領域相鄰（或在裡面）的地盤，
+# 標記還在時可能被蓋過（同黑狼的 overmarked），淡掉了就記為被試探（pack_probe）；下一次換季時你還沒補，那一區變成牠們的。
+func _pack_probe() -> void:
+	var cfg: Dictionary = WolfPack.cfg().get("probe", {})
+	var mult: float = _pack_attitude_value("probe_mult", 1.0)
+	var own := own_territories()
+	var probe: Dictionary = life_log.get("pack_probe", {})
+	for r in life_log.get("marks", {}).keys():
+		if r == den_region or pack_zone(r) == "":
+			continue
+		if own.has(r):
+			if RNGService.chance(float(cfg.get("overmark_chance", 0.15)) * mult):
+				var over: Dictionary = life_log.get("overmarked", {})
+				over[r] = true
+				life_log["overmarked"] = over
+		elif not probe.has(r) and RNGService.chance(float(cfg.get("faded_chance", 0.3)) * mult):
+			probe[r] = int(life_log.get("days_lived", 1))
+	if not probe.is_empty():
+		life_log["pack_probe"] = probe
+
+# 換季：被試探、你還沒補標記的區域，變成牠們的領域（最多 probe.max_regions 區），你的標記清掉。回傳佔走的區域。
+func _pack_take_probed() -> Array:
+	var taken: Array = []
+	var probe: Dictionary = life_log.get("pack_probe", {})
+	if probe.is_empty() or not pack_active():
+		life_log.erase("pack_probe")
+		return taken
+	var max_regions: int = int(WolfPack.cfg().get("probe", {}).get("max_regions", 3))
+	for r in probe.keys():
+		if is_own_territory(r) or r == den_region or black_pack.regions.has(r) or black_pack.regions.size() >= max_regions:
+			continue
+		black_pack.regions.append(r)
+		taken.append(r)
+		var marks: Dictionary = life_log.get("marks", {})
+		marks.erase(r)
+		life_log["marks"] = marks
+	life_log.erase("pack_probe")
+	return taken
 
 func is_overmarked(region_id: String = "") -> bool:
 	return bool(life_log.get("overmarked", {}).get(current_region if region_id == "" else region_id, false)) and is_own_territory(region_id)
@@ -1296,6 +1341,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	if _maybe_challenger_explore():
 		state_changed.emit()
 		return current_discovery
+	# 黑狼一家吃剩的殘骸（Phase 3a 第 4 步）
+	if _maybe_pack_remains():
+		state_changed.emit()
+		return current_discovery
 	# 黑狼的標記蓋在你的地盤上：在那一區探索時發現（1.9b 第 1 步）
 	if is_overmarked() and RNGService.chance(0.6):
 		current_discovery = {"kind": "overmarked", "location": _random_terrain(current_region)}
@@ -1509,6 +1558,49 @@ func _add_notable(d: Dictionary) -> void:
 		"trait": str(d.get("trait", "lame")), "until": int(life_log.get("days_lived", 1)) + int(GameData.discovery.get("notable", {}).get("days", 5))}
 	notables.append(entry)
 	current_discovery["notable_id"] = id
+
+# 黑狼一家吃剩的殘骸（Phase 3a 第 4 步）：在牠們的領域或相鄰區探索時發現，有 2～3 段；每吃一段都可能被牠們發現。
+func _pack_remains_cfg() -> Dictionary:
+	return WolfPack.cfg().get("remains", {})
+
+func _maybe_pack_remains() -> bool:
+	var zone: String = pack_zone(current_region)
+	if zone == "" or not RNGService.chance(float(_pack_remains_cfg().get(zone + "_chance", 0.0))):
+		return false
+	var seg: Array = _pack_remains_cfg().get("segments", [2, 3])
+	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": RNGService.randi_range(int(seg[0]), int(seg[1])), "zone": zone}
+	return true
+
+func pack_remains_risk() -> float:
+	var zone: String = str(current_discovery.get("zone", pack_zone(current_region)))
+	return clamp(float(_pack_remains_cfg().get(zone + "_risk", 0.2)) * _pack_attitude_value("meet_mult", 1.0), 0.0, 0.9)
+
+# 吃一段：回傳 {gain, left, caught}；被發現時排一個撞上狼群的事件（不受每天的事件上限）。
+func eat_pack_remains() -> Dictionary:
+	record_decision("explore.pack_remains")
+	var risk: float = pack_remains_risk()
+	GameTime.advance_turns(1)
+	var r: Array = _pack_remains_cfg().get("hunger", [15, 22])
+	var gain: int = RNGService.randi_range(int(r[0]), int(r[1]))
+	_note_food("pack_remains", gain)
+	wolf.hunger += gain
+	wolf.clamp_stats()
+	var left: int = int(current_discovery.get("segments", 1)) - 1
+	var caught: bool = RNGService.chance(risk)
+	_pack_record("remains", "caught" if caught else "ate")
+	if caught or left <= 0:
+		current_discovery = {}
+	else:
+		current_discovery["segments"] = left
+	if caught:
+		var e := _pack_meet_event()
+		if str(e.get("type", "")) != "pack_meet" or str(e.get("lone", "")) != "":
+			e = {"type": "pack_meet", "lone": "", "attitude": pack_attitude(), "charge": _pack_attitude_value("charge", 0.0) >= 0.5,
+				"size": pack_size_now(), "stage": black_pack.stage, "location": _random_terrain(current_region)}
+		e["at_remains"] = true
+		pending_events.append(e)
+	state_changed.emit()
+	return {"gain": gain, "left": left, "caught": caught}
 
 # 啃別人吃剩的殘骸（提案之十 B）：一點點飽食度、1 回合。
 # 回傳 {"gain": 飽食度, "encounter": 撞見回來的灰熊（空的就是沒有）}；遭遇交給呼叫端，先寫完吃了多少再進遭遇。
@@ -2878,12 +2970,21 @@ func start_pack_young_combat() -> Combat:
 	return c
 
 # 除錯：黑狼還獨居時直接給牠一個狼群（伴侶、一隻年輕的、兩隻幼狼），再排一個撞上的事件。
-func debug_pack_meet(lone: String = "") -> void:
+func _debug_ensure_pack() -> void:
 	if not pack_active():
 		black_pack.stage = "pack"
 		black_pack.mate_age = 3.0
 		black_pack.young = [1.5, 0.5, 0.5]
 		black_pack.regions = [stranger_territory if stranger_territory != "" else current_region]
+
+# 除錯：在這裡發現黑狼一家吃剩的殘骸（這一區不是牠們的地方時當成相鄰區）。
+func debug_pack_remains() -> void:
+	_debug_ensure_pack()
+	var zone: String = pack_zone(current_region)
+	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": 3, "zone": zone if zone != "" else "border"}
+
+func debug_pack_meet(lone: String = "") -> void:
+	_debug_ensure_pack()
 	if lone == "young":
 		pending_events.append({"type": "pack_meet", "lone": "young", "location": _random_terrain(current_region)})
 		return
@@ -3660,6 +3761,13 @@ func prey_mults(region_id: String) -> Dictionary:
 		for animal_id in GameData.animals.keys():
 			if HuntSystem.size_of(animal_id) in ["medium", "large"]:
 				result[animal_id] = float(result.get(animal_id, 1.0)) * lean_prey
+	# 黑狼一家（Phase 3a 第 4 步）：牠們的領域中、大型獵物被吃掉一部分；相鄰的邊界反而多一點
+	var zone: String = pack_zone(region_id)
+	if zone != "":
+		var pm: float = float(WolfPack.cfg().get("prey", {}).get(zone, 1.0))
+		for animal_id in GameData.animals.keys():
+			if HuntSystem.size_of(animal_id) in ["medium", "large"]:
+				result[animal_id] = float(result.get(animal_id, 1.0)) * pm
 	var after: Dictionary = _fire_cfg().get("after", {})
 	match burn_state(region_id):
 		"burning", "ash":
@@ -4051,6 +4159,11 @@ func _update_black_pack() -> void:
 		adjacent[r] = EncounterSystem.region_data(r).get("adjacent", [])
 	var events: Array = black_pack.on_season_passed({"season": GameTime.current_season(), "leader": leader,
 		"player_age": wolf.age_years, "beaten": beaten, "den": den_region, "own": own_territories(), "adjacent": adjacent})
+	for r in _pack_take_probed():
+		events.append("took")
+		var tl: Array = life_log.get("pack_news", [])
+		tl.append({"event": "took", "region": r})
+		life_log["pack_news"] = tl
 	if events.has("succession"):
 		var core: String = str(black_pack.regions[0]) if not black_pack.regions.is_empty() else ""
 		var heir := NpcWolf.create("black_heir", core)

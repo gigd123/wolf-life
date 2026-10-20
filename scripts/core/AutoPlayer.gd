@@ -267,6 +267,14 @@ func _explore_once() -> void:
 			_:
 				GameState.watch_tundra_mob()
 		return
+	if d.get("kind", "") == "pack_remains":
+		# 黑狼一家吃剩的殘骸（Phase 3a 第 4 步）：餓了才撿，謹慎型在牠們的領域不撿；一段一段吃，被發現就停
+		if GameState.wolf.hunger < 80 and not (style == "cautious" and str(d.get("zone", "")) == "core"):
+			while GameState.current_discovery.get("kind", "") == "pack_remains" and GameState.wolf.hunger < 120:
+				if GameState.eat_pack_remains()["caught"]:
+					break
+		GameState.clear_discovery()
+		return
 	if d.get("kind", "") == "lynx":
 		if d.get("has_kill", false) and style != "cautious":
 			play_combat(GameState.start_lynx_combat())
@@ -365,7 +373,7 @@ func _routine_notable(d: Dictionary) -> bool:
 			_encounter = res["encounter"]
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache"]:
+	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 

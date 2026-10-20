@@ -445,6 +445,10 @@
     "disperse_per_season": { "autumn": 0.15, "winter": 0.15 }, "heir_min_age": 1.5,
     "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10,
     "_meet_comment": "第 3 步「撞上狼群」：在牠們的領域每個時段 core_chance、相鄰區 border_chance；先擲落單的黑狼（第一代、可以互動時 lone_leader_chance，走現有的單挑）、落單的年輕狼（lone_young_chance）。對峙勝算 = base ÷ 數量 + (你的力量值 − 帶頭的) ÷ power_divisor + 態度加減，限制在 min～max；輸了 standoff_damage 並離開。逃：caught 被追上（吃撐或有傷 + slow_bonus），flee_damage。attitude：wary（打贏過牠）、scorn（向牠示弱、被趕過）、neutral；換代後效果減半。charge ≥ 0.5：牠們直接逼過來，不能從容退開。",
+    "_survival_comment": "第 4 步「對生存的影響」：prey 牠們的領域（core）、相鄰區（border）的中、大型獵物倍率。remains：在 core／border 探索時發現牠們吃剩的殘骸（segments 段，每段 hunger 飽食度），每吃一段被發現的機會 *_risk（× 態度的 meet_mult）。probe：和牠們相鄰的你的地盤，標記還在時每天 overmark_chance 被蓋過，淡掉時 faded_chance 被試探（× 態度的 probe_mult）；下一次換季時你還沒補，變成牠們的（最多 max_regions 區）。",
+    "prey": { "core": 0.7, "border": 1.1 },
+    "remains": { "core_chance": 0.12, "border_chance": 0.06, "segments": [2, 3], "hunger": [15, 22], "core_risk": 0.3, "border_risk": 0.15 },
+    "probe": { "overmark_chance": 0.15, "faded_chance": 0.3, "max_regions": 3 },
     "meet": {
       "core_chance": 0.04, "border_chance": 0.015, "lone_leader_chance": 0.25, "lone_young_chance": 0.15,
       "standoff": { "base": 0.7, "power_divisor": 200, "min": 0.03, "max": 0.6, "leaderless_power": 120 },
@@ -452,8 +456,8 @@
       "flee": { "caught": 0.35, "slow_bonus": 0.2 },
       "flee_damage": [8, 16],
       "attitude": {
-        "wary": { "meet_mult": 0.7, "standoff_bonus": 0.15, "chase_mult": 0.4, "charge": 0.0 },
-        "scorn": { "meet_mult": 1.5, "standoff_bonus": -0.1, "chase_mult": 1.3, "charge": 1.0 },
+        "wary": { "meet_mult": 0.7, "standoff_bonus": 0.15, "chase_mult": 0.4, "charge": 0.0, "probe_mult": 1.3 },
+        "scorn": { "meet_mult": 1.5, "standoff_bonus": -0.1, "chase_mult": 1.3, "charge": 1.0, "probe_mult": 1.5 },
         "neutral": {}
       }
     }

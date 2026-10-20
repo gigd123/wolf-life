@@ -736,6 +736,12 @@ func _build_debug_overlay() -> void:
 		GameState.debug_pack_meet()
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.pack_remains"), func():
+		debug_overlay.visible = false
+		GameState.debug_pack_remains()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.pack_young"), func():
 		debug_overlay.visible = false
 		GameState.debug_pack_meet("young")
@@ -1652,6 +1658,9 @@ func _show_discovery(d: Dictionary) -> void:
 		return
 	if d.get("kind", "") == "migration":
 		_show_migration(d)
+		return
+	if d.get("kind", "") == "pack_remains":
+		_show_pack_remains(d, true)
 		return
 	var text := _discovery_text(d)
 	_log(text)
@@ -3607,6 +3616,42 @@ func _show_stranger_confront() -> void:
 	)
 	_add_encounter_button(tr("stranger.stand"), func():
 		_begin_combat(GameState.start_stranger_combat("territory"))
+	)
+	encounter_overlay.visible = true
+
+# 黑狼一家吃剩的殘骸（Phase 3a 第 4 步）：一段一段吃，每吃一段都可能被牠們發現；也可以離開。
+func _show_pack_remains(d: Dictionary, first: bool) -> void:
+	var location: String = tr("explore.location." + str(d.get("location", "")))
+	var text: String = tr("pack.remains." + ("found" if first else "left")).replace("{location}", location).replace("{n}", str(int(d.get("segments", 1))))
+	if first:
+		_log(text)
+	encounter_message.text = text
+	encounter_detail.text = tr("pack.remains.risk." + str(d.get("zone", "core")))
+	var remains_tex: Texture2D = ArtLibrary.carcass("white_tailed_deer")
+	if remains_tex != null:
+		encounter_sprite.show_static(remains_tex)
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("pack.remains.eat").replace("{p}", str(roundi(GameState.pack_remains_risk() * 100.0))), func():
+		var res: Dictionary = GameState.eat_pack_remains()
+		_log(tr("log.pack_remains.ate").replace("{n}", str(int(res["gain"]))))
+		if res["caught"]:
+			_log(tr("pack.remains.caught"))
+			encounter_overlay.visible = false
+			_refresh()
+			return
+		if int(res["left"]) <= 0:
+			_log(tr("pack.remains.done"))
+			encounter_overlay.visible = false
+			_refresh()
+			return
+		_refresh()
+		_show_pack_remains(GameState.current_discovery, false)
+	)
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.clear_discovery()
+		encounter_overlay.visible = false
+		_refresh()
 	)
 	encounter_overlay.visible = true
 
