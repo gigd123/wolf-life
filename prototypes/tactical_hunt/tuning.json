@@ -76,27 +76,15 @@
   "deer": {
     "speed": 60,
     "flee_profile": {
-      "healthy": [
-        3,
-        6,
-        6,
-        3,
-        2
-      ],
-      "average": [
-        3,
-        6,
-        6,
-        2,
-        2
-      ],
-      "weak": [
-        3,
-        5,
-        5,
-        2,
-        2
-      ]
+      "healthy": [3, 6, 6, 5, 4, 3],
+      "average": [3, 6, 6, 4, 3, 2],
+      "weak": [3, 5, 5, 3, 3]
+    },
+    "_condition_comment": "2026-10-20 對齊 Phase 2b 成功率（tools/sim/tactical_calibrate.gd）：健康的成鹿跑得久（flee_profile）、更晚累（fatigue_rounds：逃跑幾回合後累到底）、更難撲中、壓倒、咬喉，更容易掙脫；虛弱的相反。幼鹿不套用。",
+    "condition_mods": {
+      "healthy": { "pounce": -0.15, "takedown": -0.15, "throat": -0.08, "break": 0.25, "fatigue_rounds": 5 },
+      "average": { "pounce": -0.05, "break": 0.08, "fatigue_rounds": 4 },
+      "weak": { "fatigue_rounds": 4 }
     },
     "condition_weights": {
       "healthy": 5,

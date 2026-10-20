@@ -372,7 +372,23 @@ func angle_side() -> String:
 func deer_fatigue() -> float:
 	if deer_state != "flee":
 		return 0.0
-	return clamp(float(flee_round - 2) / 3.0, 0.0, 1.0)
+	return clamp(float(flee_round - 2) / _fatigue_rounds(), 0.0, 1.0)
+
+# 體況的加減（2026-10-20 對齊 Phase 2b：健康的成鹿更難撲中、壓倒、咬喉，更容易掙脫，也更晚累；虛弱的相反）。幼鹿不套用。
+func cond_mod(key: String) -> float:
+	if is_fawn():
+		return 0.0
+	return float(t["deer"].get("condition_mods", {}).get(condition, {}).get(key, 0.0))
+
+func _fatigue_rounds() -> float:
+	var r: float = float(t["deer"].get("condition_mods", {}).get(condition, {}).get("fatigue_rounds", 3.0)) if not is_fawn() else 3.0
+	return max(1.0, r)
+
+func _cond_factor(factors: Array, key: String) -> float:
+	var v: float = cond_mod(key)
+	if v != 0.0 and condition_known:
+		factors.append([{"healthy": "牠很健康", "average": "牠體況普通", "weak": "牠很虛弱"}.get(condition, "體況"), v])
+	return v
 
 # 撲咬命中率與因素（狼在 wolf_pos）：{"chance", "factors": [[文字, 加減]], "side", "kick"}
 func pounce_chance(mode: String = "still") -> Dictionary:
@@ -400,6 +416,7 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	if sp().has("pounce"):
 		v += float(sp()["pounce"])
 		factors.append([str(sp().get("name", "")), float(sp()["pounce"])])
+	v += _cond_factor(factors, "pounce")
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
 		v += float(p["unaware"])
@@ -555,6 +572,7 @@ func hold_options() -> Dictionary:
 		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0)) \
 		+ hams * float(h["hamstring"]["takedown"])
 	var tf: Array = [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	td += _cond_factor(tf, "takedown")
 	if hams > 0:
 		tf.append(["後腿受傷", hams * float(h["hamstring"]["takedown"])])
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
@@ -562,6 +580,7 @@ func hold_options() -> Dictionary:
 	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) + wounds * float(h["per_wound"]) \
 		+ float(fb.get("throat", 0.0)) + front_b
 	var thf: Array = [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
+	th += _cond_factor(thf, "throat")
 	if front_b > 0.0:
 		thf.append(["咬在頸部", front_b])
 	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]), "factors": thf}
@@ -589,13 +608,14 @@ func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> flo
 	if is_fawn():
 		v += float(t["herd"]["fawn"]["break"])
 	v += float(sp().get("hold", {}).get("break", 0.0))
+	v += cond_mod("break")
 	if mother_hit_fawn_held:
 		v += float(t["herd"]["defend"]["break_bonus"]) # 被母鹿踢得鬆口
 	return clamp(v, 0.05, 0.95)
 
 # 疲勞：逃跑的回合數，或咬住時掙扎的消耗（沒在逃也算）
 func deer_fatigue_any() -> float:
-	return clamp(float(flee_round - 2) / 3.0 + float(herd[di].get("struggle", 0)) * 0.15, 0.0, 1.0)
+	return clamp(float(flee_round - 2) / _fatigue_rounds() + float(herd[di].get("struggle", 0)) * 0.15, 0.0, 1.0)
 
 func hold_action(id: String) -> void:
 	var opts := hold_options()
