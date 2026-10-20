@@ -55,7 +55,7 @@
 - [ ] Phase 2c 戰術狩獵接進主遊戲（白尾鹿）（2026-10-20 寫入 SPEC，使用者同意；提案 `docs/proposals/tactical-hunt-integration.md`）
   - [x] 1. 原型邏輯搬進主遊戲（2026-10-20）：`prototypes/tactical_hunt/TacticalHunt.gd` → `scripts/core/TacticalHunt.gd`（`class_name TacticalHunt`），`tuning.json` → `data/tactical_hunt.json`；原型畫面與模擬改讀新路徑，照樣能用。新增 `setup_from_game(ctx)`：狼的能力值、體力（喘的上限照原型的公式，用主遊戲現在的體力與速度，血量低於一半 ×0.8）、獵物體況、吃撐（喘 ×0.6、不能衝刺）、年齡減成（撲咬、壓倒、咬喉扣，因素「你老了」）、晨昏（看見你的警覺 ×0.85）、深雪（鹿每回合少跑 1 格）、相對風向（下風／上風／側風 → 地圖上的風）；數值在 `tactical_hunt.json` 的 `game`。`GameState.tactical_context(地形, 相對風向, 體況)`：密林、林緣、樹線、柳叢 → 地圖 C；倒木、岩石、碎石、崖邊 → D；其他 → A（第 4 步換成每種地形的地圖）。回歸測試 `tactical_game_ctx`。
   - [x] 美術（第 2 步之前，2026-10-20 使用者選 B＋1）：戰術地圖的動物改成俯視的小圖（灰狼、褐色白臀的鹿、有白點的幼鹿、深色脖子的馬鹿，8 個方向、1 像素深色外框），地形改成地塊（草地三種、密林兩種、倒木）；程式畫的佔位圖（`tools/make_tactical_art.py`），對應在 `data/art.json` 的 `tactical`，說明在 `assets/README.md`。原型畫面改用這些圖（沒有圖時退回色塊），鹿的意圖線改成先畫、動物畫在上面；狼的面向是上一步移動的方向。截圖工具 `tools/tactical_shot.gd`。
-  - [ ] 2. 遇到白尾鹿時進戰術地圖，結果接回主遊戲
+  - [x] 2. 遇到白尾鹿時進戰術地圖，結果接回主遊戲（2026-10-20）：對白尾鹿（成鹿、雄鹿、幼鹿）選「狩獵」時開戰術地圖（`GameState.tactical_eligible`：`tactical_hunt.json` 的 `game.animals`；受傷的個體、躲在草裡的幼鹿照舊走選單）。`GameState.start_tactical`：地圖依地形，幼鹿用母子的地圖（開闊 E、林緣 F、倒木 H），目標是幼鹿；風向、體況照這一場的 HuntSystem。畫面沿用原型（`TacticalHuntView.start_from_game`：沒有設定列，結束時按「繼續」回主遊戲）。`GameState.finish_tactical_hunt`：結果寫回 HuntSystem 再走一般的 `finish_hunt`（獵到 → 進食；逃走 → 留下足跡；放棄 → 紀錄與 Phase 2b 的放棄依據）；時間 = 戰術回合 ÷ 5（進位，1～3 個遊戲回合）；被踢的每一下各算一次傷（不會直接致死）；體力照主遊戲的 `end_burst`（用掉的喘）；鍛鍊照這一場的動作（衝刺 → 速度、撲咬與咬喉 → 技巧、壓倒 → 力量、獵到 → 制伏）。從遭遇畫面按「狩獵」進來的，結束時交代結果再回主畫面。事件結局矩陣與 UI 檢查把戰術地圖當成一個畫面（按觀察、放棄、繼續）。回歸測試 `tactical_game_ctx` 加 40 場的結果接回檢查；截圖工具 `tools/tactical_game_shot.gd`。自動玩家、照常過日子仍走選單式狩獵（第 3 步）。
   - [ ] 3. 「交給本能」與自動玩家
   - [ ] 4. 每種地形的地圖
   - [ ] 5. 一生模擬與試玩
@@ -198,6 +198,7 @@
 - 都在 `docs/playtest-checklist.md`：最上面「本輪驗收重點」，新素材與版面在「L」。（2026-10-17 整併，原本這裡的清單移到 `progress-archive.md`）
 
 ## 待確認
+- Phase 2c 戰術地圖的文字：原型的畫面（`TacticalHuntView.gd`）與邏輯（`TacticalHunt.gd` 的事件、因素說明）都直接寫中文，還沒有換成翻譯鍵（DESIGN「介面文字使用翻譯鍵」）。打算在第 4 步做地圖時一起換，先記著。
 - Phase 2c 戰術狩獵結束時扣的體力：SPEC 2c 寫「2 ＋ 用掉的喘 × 0.08，上限 18」（原型規格），但 Phase 2b 第 5 步已把主遊戲改成「8 ＋ 喘 × 0.2，上限 25」。照 SPEC 2c 做，戰術狩獵會比選單式狩獵省體力。第 2 步接結果時先用主遊戲現在的公式（和選單式一致），要不要改等試玩。
 - Phase 3a 驗證的壽命：住在森林、四處走動的自動玩家平均 8.4～8.5 歲（有沒有黑狼一家都差不多），低於 9～11；`life_pressure`（四張地圖、待在巢穴）是 9.4。差距來自「只在森林、到處走」這個玩法本身，不是黑狼一家造成的，先不調。試玩時看真人玩家的壽命。
 ### 需要使用者決定

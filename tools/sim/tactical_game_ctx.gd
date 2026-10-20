@@ -76,6 +76,47 @@ func _process(_d) -> bool:
 	var m = TH.new()
 	m.setup_from_game(ctx)
 	_check(absf(float(m.wolf["speed"]) - gs.wolf.effective_speed()) < 0.001 and m.condition == "weak", "GameState 的狼帶進戰術地圖")
+	# 8. 第 2 步：主遊戲開一場、打完、結果接回（獵到 → 進食；放棄 → 紀錄；時間、體力、受傷）
+	var AP = load("res://tools/sim/tactical_hunt_sim.gd")
+	var pol = AP.new()
+	var outcomes := {}
+	for i in 40:
+		root.get_node("RNGService").set_seed(300 + i)
+		gs.new_game("forest_east")
+		gs.debug_force_transition("adult")
+		gs.wolf.stamina = 80.0
+		var hunt = gs.start_hunt("white_tailed_deer", "juvenile" if i % 5 == 0 else "adult")
+		if not gs.tactical_eligible(hunt):
+			_check(false, "白尾鹿應該用戰術地圖")
+			break
+		var th = gs.start_tactical(hunt)
+		if hunt.life_stage == "juvenile":
+			_check(th.is_fawn(th.target), "幼鹿：目標是幼鹿")
+		var t0: int = root.get_node("GameTime").day * 100 + root.get_node("GameTime").period_index * 10 + root.get_node("GameTime").turn_in_period
+		var st0: float = gs.wolf.stamina
+		var hp0: float = gs.wolf.health
+		var tries0: int = int(gs.life_log.get("hunt_attempts", 0))
+		if i % 7 == 3:
+			th.give_up()
+		else:
+			pol._play(th, "stalk")
+		var dmg: float = th.damage_taken
+		gs.finish_tactical_hunt(hunt, th)
+		outcomes[th.result] = int(outcomes.get(th.result, 0)) + 1
+		var t1: int = root.get_node("GameTime").day * 100 + root.get_node("GameTime").period_index * 10 + root.get_node("GameTime").turn_in_period
+		_check(t1 > t0, "時間有前進（%s）" % th.result)
+		_check(gs.wolf.stamina < st0, "體力有扣（%.1f → %.1f）" % [st0, gs.wolf.stamina])
+		_check(dmg <= 0.0 or gs.wolf.health < hp0, "被踢：血量有扣")
+		_check(int(gs.life_log.get("hunt_attempts", 0)) == tries0 + 1, "狩獵紀錄 +1")
+		match th.result:
+			"caught":
+				_check(gs.is_feeding() and hunt.result == 1, "獵到：進入進食")
+			"gave_up":
+				_check(hunt.result == 3, "放棄：記為放棄")
+			_:
+				_check(hunt.result == 2 and gs.current_discovery.get("fled", false), "逃走：留下足跡（%s）" % th.result)
+	print("結果：", outcomes)
+	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 

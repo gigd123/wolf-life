@@ -104,6 +104,10 @@ func _play(den: String) -> void:
 		_scan(current_scene, den + ".last")
 
 func _overlay_kind(game) -> String:
+	# 戰術狩獵（Phase 2c）：蓋在整個畫面上，按它自己的按鈕（觀察、放棄、繼續）
+	var tv = game.get("tactical_view")
+	if tv != null and is_instance_valid(tv) and tv.is_inside_tree():
+		return "tactical"
 	for k in ["card_overlay", "hunt_overlay", "encounter_overlay", "rest_overlay", "region_info_overlay"]:
 		var o = game.get(k)
 		if o != null and o.visible:
@@ -125,7 +129,7 @@ func _skip_button(b: Button, game) -> bool:
 
 func _top_buttons(game) -> Array:
 	var kind := _overlay_kind(game)
-	var scope: Node = game if kind == "main" else game.get(kind + "_overlay")
+	var scope: Node = game if kind == "main" else (game.tactical_view.buttons if kind == "tactical" else game.get(kind + "_overlay"))
 	var out: Array = []
 	for n in scope.find_children("*", "Button", true, false):
 		var b := n as Button

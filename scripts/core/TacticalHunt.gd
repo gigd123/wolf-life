@@ -107,6 +107,9 @@ var stats := {"stuck": 0, "toward_wolf": 0}
 # 主遊戲帶進來的狀態（Phase 2c 第 1 步，setup_from_game）：age_penalty（撲咬、壓倒、咬喉的年齡減成）、
 # no_sprint（吃撐不能衝刺）、alert_mult（晨昏時鹿的警覺值漲得慢）、snow_slow（深雪時鹿每回合少跑幾格）
 var game_mods := {}
+# 接回主遊戲用（Phase 2c 第 2 步）：每一下受到的傷害、這一場的鍛鍊（同 HuntSystem.practice 的格式，Growth.apply_practice）
+var hits_taken: Array = []
+var practice: Array = []
 
 func _init() -> void:
 	t = JSON.parse_string(FileAccess.get_file_as_string(TUNING_PATH))
@@ -116,6 +119,8 @@ func _init() -> void:
 func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: float = 1.0) -> void:
 	rng.seed = seed
 	game_mods = {}
+	hits_taken = []
+	practice = []
 	scenario_id = p_scenario
 	var sc: Dictionary = t["scenarios"][p_scenario]
 	var map_src: Dictionary = t["scenarios"][sc["map_from"]] if sc.has("map_from") else sc
@@ -181,7 +186,7 @@ func setup_from_game(ctx: Dictionary) -> void:
 		game_mods["no_sprint"] = true
 	wolves[0]["breath"] = bmax
 	wolves[0]["breath_max"] = bmax
-	if ctx.has("condition"):
+	if str(ctx.get("condition", "")) in ["healthy", "average", "weak"]:
 		for d in herd:
 			if str(d.get("kind", "adult")) != "fawn":
 				d["condition"] = str(ctx["condition"])
@@ -362,7 +367,14 @@ func move_to(cell: Vector2i) -> void:
 	var mode: String = r[cell]
 	wolf_pos = cell
 	_spend("breath_" + mode)
+	if mode == "sprint":
+		_practice("speed", true)
 	_end_wolf_turn(mode)
+
+# 鍛鍊：repeat = 這一場同一項能力練過幾次（Growth 的遞減）
+func _practice(stat: String, success: bool, kind: String = "action") -> void:
+	var n: int = practice.filter(func(p): return str(p["stat"]) == stat).size()
+	practice.append({"stat": stat, "success": success, "repeat": n, "kind": kind})
 
 func observe() -> void:
 	if done:
@@ -523,10 +535,13 @@ func pounce_at(cell: Vector2i) -> void:
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
+		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
 		events.append(("牠的後腿踢中了你" if side == "rear" else "牠的蹄子踢中了你") + "（血量 −%d）。" % dmg)
-	if rng.randf() < float(info["chance"]):
+	var hit: bool = rng.randf() < float(info["chance"])
+	_practice("skill", hit)
+	if hit:
 		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
 		held = true
 		hold_side = side
@@ -612,6 +627,7 @@ func front_lock_at(cell: Vector2i) -> void:
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
+		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
 		events.append("你衝到%s前面，沒咬住咽喉，被牠正面撞開（血量 −%d）！" % [label(), dmg])
@@ -716,8 +732,11 @@ func hold_action(id: String) -> void:
 		if not done and rounds >= int(t["max_rounds"]):
 			_finish("timeout", "拖太久了。")
 		return
-	if rng.randf() < float(o["chance"]):
+	var ok: bool = rng.randf() < float(o["chance"])
+	_practice("strength" if id == "takedown" else "skill", ok)
+	if ok:
 		rounds += 1
+		_practice("strength", true, "takedown")
 		_finish("caught", "你把牠壓倒在地，獵到了。" if id == "takedown" else "你咬住牠的咽喉，牠倒了下去。")
 		return
 	events.append("牠還在掙扎。" if id == "takedown" else "沒咬到要害，牠猛力一甩。")
@@ -744,6 +763,7 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 		wolf["health"] = float(wolf["health"]) - dmg
 		kicks += 1
 		damage_taken += dmg
+		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		events.append("掙扎中牠踢中了你（血量 −%d）。" % dmg)
 	if rng.randf() < break_chance(after_throat_miss, hanging):
@@ -955,6 +975,7 @@ func _mother_defend() -> bool:
 		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
+		hits_taken.append(dmg)
 		damage_by["mother"] = float(damage_by.get("mother", 0.0)) + dmg
 		kicks += 1
 		if fawn_held:

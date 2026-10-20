@@ -38,6 +38,10 @@ var lines: Array[String] = []
 var art_sprites := {}
 var art_tiles := {}
 var wolf_facing := Vector2i(1, 0)
+# 從主遊戲開的戰術狩獵（Phase 2c 第 2 步）：沒有設定列，結束時按「繼續」交回主遊戲
+var game_mode: bool = false
+var on_done: Callable
+var setup_row: HBoxContainer
 var last_wolf_pos := Vector2i(-99, -99)
 
 func _ready() -> void:
@@ -67,7 +71,7 @@ func _ready() -> void:
 	info.theme_type_variation = &"SmallRichLabel"
 	add_child(info)
 	# 下方：設定列、紀錄、按鈕
-	var setup_row := HBoxContainer.new()
+	setup_row = HBoxContainer.new()
 	setup_row.position = Vector2(4, 232)
 	setup_row.add_theme_constant_override("separation", 4)
 	add_child(setup_row)
@@ -111,6 +115,17 @@ func _ready() -> void:
 	hover_box.theme_type_variation = &"SmallRichLabel"
 	add_child(hover_box)
 	_new_hunt(true)
+
+# 主遊戲用：換成主遊戲開好的這一場（GameState.start_tactical），結束時呼叫 done_cb(th)
+func start_from_game(th, done_cb: Callable) -> void:
+	game_mode = true
+	on_done = done_cb
+	setup_row.visible = false
+	h = th
+	last_wolf_pos = Vector2i(-99, -99)
+	lock_armed = false
+	lines = ["你壓低身子，看著牠。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。"]
+	_after_action()
 
 func _option(parent: Node, items: Array) -> OptionButton:
 	var o := OptionButton.new()
@@ -190,6 +205,15 @@ func _build_buttons() -> void:
 	for c in buttons.get_children():
 		c.queue_free()
 	if h.done:
+		if game_mode:
+			var cont := Button.new()
+			cont.theme_type_variation = &"SmallButton"
+			cont.text = "繼續"
+			cont.pressed.connect(func():
+				var cb := on_done
+				queue_free()
+				cb.call(h))
+			buttons.add_child(cont)
 		return
 	if h.held:
 		var names := {"takedown": "壓倒", "throat": "咬喉", "hang": "死咬拖住", "hamstring": "咬後腿", "release": "鬆口"}

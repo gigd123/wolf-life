@@ -2604,7 +2604,32 @@ func _show_find_result(result: Dictionary) -> void:
 
 func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> void:
 	current_hunt = GameState.start_hunt(animal_id, life_stage, prey_dir)
+	if GameState.tactical_eligible(current_hunt):
+		_open_tactical()
+		return
 	_render_hunt_stage()
+
+# 戰術狩獵（Phase 2c 第 2 步）：白尾鹿改在戰術地圖上狩獵，結束後照一般的狩獵結算
+const TACTICAL_SCENE := "res://prototypes/tactical_hunt/TacticalHunt.tscn"
+var tactical_view: Control = null
+
+func _open_tactical() -> void:
+	var view: Control = load(TACTICAL_SCENE).instantiate()
+	add_child(view)
+	tactical_view = view
+	view.start_from_game(GameState.start_tactical(current_hunt), func(th):
+		tactical_view = null
+		var ok: bool = th.result == "caught"
+		if th.result == "gave_up":
+			current_hunt.condition_known = current_hunt.condition_known or th.condition_known
+			current_hunt.condition = th.condition if current_hunt.condition == "" else current_hunt.condition
+			_log(tr(current_hunt.give_up_text_key()).replace("{animal}", _hunt_prey_name()))
+		GameState.finish_tactical_hunt(current_hunt, th)
+		_after_hunt(ok)
+		# 從遭遇畫面按「狩獵」進來的：這一段遭遇在這裡結束（交代結果、按「繼續」回主畫面）
+		if session_active and not session_check_pending:
+			session_check_pending = true
+			_check_session_end.call_deferred())
 
 # 依 HuntSystem.options() 畫出目前階段的選項；階段說明下方是觀察到的獵物狀態與搏鬥進度。
 var hunt_notes: Array[String] = []
@@ -2862,6 +2887,9 @@ func _resolve_stage(stage_result: Dictionary) -> void:
 func _finish_hunt() -> void:
 	var succeeded: bool = current_hunt.result == HuntSystem.Result.SUCCESS
 	GameState.finish_hunt(current_hunt)
+	_after_hunt(succeeded)
+
+func _after_hunt(succeeded: bool) -> void:
 	if succeeded:
 		_log_result(tr("hunt.result.success").replace("{animal}", _hunt_prey_name()))
 	else:

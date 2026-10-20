@@ -3045,6 +3045,58 @@ func tactical_context(terrain: String, wind: String, condition: String) -> Dicti
 	ctx["wind_relation"] = wind
 	return ctx
 
+# 這一場狩獵用不用戰術地圖（Phase 2c 第 2 步）：先接白尾鹿（tactical_hunt.json 的 game.animals）；
+# 受傷的個體（簡易流程）、躲在草裡的幼鹿（要先搜尋）照舊走選單。
+func tactical_eligible(hunt: HuntSystem) -> bool:
+	var t: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH))
+	return hunt != null and (t.get("game", {}).get("animals", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.hiding
+
+# 開一場戰術狩獵：地圖依地形（幼鹿用母子的地圖，目標是幼鹿），風向、體況照這一場的 HuntSystem。
+const TACTICAL_FAWN_MAP := {"A": "E", "C": "F", "D": "H"}
+
+func start_tactical(hunt: HuntSystem) -> TacticalHunt:
+	var ctx := tactical_context(hunt.terrain, hunt.wind_state(), hunt.condition)
+	if hunt.life_stage == "juvenile":
+		ctx["map"] = TACTICAL_FAWN_MAP.get(str(ctx["map"]), "E")
+	var th := TacticalHunt.new()
+	th.setup_from_game(ctx)
+	if hunt.life_stage == "juvenile":
+		for i in th.herd.size():
+			if th.is_fawn(i):
+				th.target = i
+				th.di = i
+				break
+	_stat_inc("tactical", "started")
+	return th
+
+# 戰術狩獵結束：結果寫回 HuntSystem，再走一般的 finish_hunt（殘骸、紀錄、喘與體力、成長）。
+# 時間：戰術回合 ÷ round_div，進位，1～max_turns 個遊戲回合；被踢的每一下各算一次傷（不會直接致死）；鍛鍊照這一場的動作。
+func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
+	var g: Dictionary = th.t.get("game", {})
+	var turns: int = clampi(ceili(float(th.rounds) / float(g.get("round_div", 5))), 1, int(g.get("max_turns", 3)))
+	var free: int = int(GameData.balance.get("burst", {}).get("extra_turns_max", 2))
+	if turns > free:
+		GameTime.advance_turns(turns - free)
+	hunt.pending_turns = turns
+	wolf.breath_spent = th.breath_used
+	for dmg in th.hits_taken:
+		FightRules.hurt_wolf(wolf, float(dmg), {"leg": 0.5, "shoulder": 0.3, "face": 0.2}, hunt.animal_id + ".hunt", false)
+	hunt.practice.append_array(th.practice)
+	hunt.condition_known = hunt.condition_known or th.condition_known
+	hunt.decisions.append("tactical." + th.result)
+	match th.result:
+		"caught":
+			hunt.result = HuntSystem.Result.SUCCESS
+		"gave_up":
+			hunt.result = HuntSystem.Result.PLAYER_GAVE_UP
+			hunt.gave_up_stage = HuntSystem.Stage.CHASE if th.deer_state == "flee" else HuntSystem.Stage.STALK
+		_:
+			hunt.result = HuntSystem.Result.PREY_FLED
+			hunt.fled = true
+	hunt.stage = HuntSystem.Stage.DONE
+	_stat_inc("tactical", th.result)
+	finish_hunt(hunt)
+
 # 年齡減成：同選單式狩獵（hunt.age，Phase 2b）
 func _tactical_age_penalty() -> float:
 	var a: Dictionary = GameData.balance.get("hunt", {}).get("age", {})
