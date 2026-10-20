@@ -266,7 +266,7 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		var ang: float = pick.randf() * TAU
 		var r: float = pick.randf_range(float(t.get("game", {}).get("start_dist", [8.0, 11.0])[0]), float(t.get("game", {}).get("start_dist", [8.0, 11.0])[1]))
 		var c := deer + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r * 0.6))
-		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and String(rows[c.y])[c.x] != "l":
+		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w"]:
 			wolf = c
 			break
 	var goals: Array = []
@@ -411,9 +411,9 @@ func deer_extra(c: Vector2i) -> float:
 	var k := terrain(c)
 	return float(tc[k]) if tc.has(k) else float(t["move"]["terrain_extra"].get(k, 0.0))
 
-# 擋路的地形（倒木、岩坡）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
+# 擋路的地形（倒木、岩坡、河）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
 func deer_rough(c: Vector2i) -> bool:
-	return terrain(c) in ["l", "r"] and deer_extra(c) > 0.0
+	return terrain(c) in ["l", "r", "w"] and deer_extra(c) > 0.0
 
 func deer_step_cost(from: Vector2i, to: Vector2i) -> float:
 	var d := to - from
@@ -990,6 +990,8 @@ func alert_gain(mode: String) -> Dictionary:
 	var scent: float = _band(al["scent"].get(wind_side(), []), d)
 	# 晨昏光線暗、鹿低頭吃草：看見你的警覺漲得慢（Phase 2c，對應 Phase 2b 的潛近 +5%）
 	sight *= float(game_mods.get("alert_mult", 1.0))
+	# 物種的警覺（馴鹿在開闊的苔原上看得遠，Phase 2d 第 4 步）
+	sight *= float(sp().get("alert_mult", 1.0))
 	return {"gain": sight + scent, "scent": scent, "noise": sight}
 
 func _band(table: Array, d: float) -> float:
@@ -1100,7 +1102,8 @@ func _mother_defend() -> bool:
 	if is_fawn() or bool(herd[di]["gone"]):
 		return false
 	var f: int = fawn_of(di)
-	if f < 0:
+	# 有些物種的母鹿不護幼（馴鹿，Phase 2d 第 4 步）
+	if f < 0 or bool(sp(di).get("no_defend", false)):
 		return false
 	var cfg: Dictionary = t["herd"]["defend"]
 	var fawn_held: bool = bool(herd[f]["held"])

@@ -9,7 +9,8 @@
       ".": 0.0,
       "f": 1.0,
       "l": 2.0,
-      "r": 2.0
+      "r": 2.0,
+      "w": 2.0
     },
     "creep_range": 1.0,
     "trot_range_slow": 3.0,
@@ -450,6 +451,24 @@
       "terrain_pounce": { "r": -0.25 },
       "meat": 3
     },
+    "_caribou_comment": "馴鹿（Phase 2d 第 4 步）：比狼快、耐跑（逃跑格數高、後段才掉），開闊苔原上看得遠（alert_mult）；涉水不減速、往河逃（seek）、在水裡難撲；岩坡比狼好走一點；母鹿不護幼（no_defend，ecology-reference：馴鹿母鹿沒有有效救援）。數值為初始值，tactical_caribou_sim 校準。",
+    "caribou": {
+      "name": "馴鹿",
+      "name_key": "tactical.label.caribou",
+      "flee_profile": { "healthy": [4, 5, 5, 5, 4, 3], "average": [4, 5, 5, 4, 3, 3], "weak": [3, 5, 4, 3, 3, 2] },
+      "terrain_cost": { "w": 0.0, "r": 1.0 },
+      "seek": { "terrain": "w", "per_cell": 1.0, "max_cells": 3, "end": 2.0 },
+      "terrain_pounce": { "w": -0.15 },
+      "alert_mult": 1.0,
+      "no_defend": true,
+      "meat": 3
+    },
+    "caribou_calf": {
+      "name": "小馴鹿",
+      "name_key": "tactical.label.caribou_calf",
+      "terrain_cost": { "w": 0.0, "r": 1.0 },
+      "meat": 2
+    },
     "mule_deer_calf": {
       "name": "騾鹿幼鹿",
       "name_key": "tactical.label.mule_deer_fawn",
@@ -483,8 +502,8 @@
   },
   "_game_comment": "Phase 2c 接進主遊戲（setup_from_game、GameState.finish_tactical_hunt）：animals 用戰術地圖的獵物；時間 = 戰術回合 ÷ round_div（進位，最多 max_turns 個遊戲回合）；交給本能之後撲咬、壓倒、咬喉 − instinct_penalty（比自己打約低一成）；age_scope = pounce：年齡減成只扣撲咬（咬住後交給已經隨年齡下降的力量、技巧，避免重複計算；使用者 2026-10-20 同意）；吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
   "_game_herd_comment": "Phase 2d 第 2 步：exclude_stages：這些生命階段照舊走選單（公馬鹿會站定，之後和駝鹿、野牛一起做）；species：主遊戲的動物 → 戰術的物種；herd_size：主遊戲遇到鹿群時，地圖上放幾隻成鹿；herd_calves：各季鹿群裡跟著幾隻小鹿。",
-  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer"], "exclude_stages": { "elk": ["buck"] }, "species": { "elk": "elk", "mule_deer": "mule_deer" }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
-  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
+  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou"], "exclude_stages": { "elk": ["buck"] }, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou" }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
+  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
   "maps": {
     "open_1": {
       "name": "空地、兩叢灌木",
@@ -836,6 +855,116 @@
         "rrrrrrrr................................",
         "rrrrrrrrrrr.............................",
         "rrrrrrrrrrr............................."
+      ]
+    },
+    "tundra_1": {
+      "name": "開闊苔原（零星矮灌叢）",
+      "family": "tundra",
+      "map": [
+        "........................................",
+        "........................................",
+        "........................................",
+        "................................fff.....",
+        "........fff.............................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "..................r.....................",
+        ".................rrr....................",
+        "..................r.......fff...........",
+        "........................................",
+        "........................................",
+        "........................................"
+      ]
+    },
+    "tundra_2": {
+      "name": "苔原與冰磧丘",
+      "family": "tundra",
+      "map": [
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "......fff...........................rrrr",
+        "..............................rrrrrr....",
+        "........................rrrrrr..........",
+        ".....................rrr................",
+        "................rrrrr...................",
+        "............rrrr........................",
+        ".......rrrrr............................",
+        "...rrrr.................................",
+        "rrr...........................fff.......",
+        "........................................",
+        "........................................",
+        "........................................"
+      ]
+    },
+    "river_1": {
+      "name": "河谷（河橫過中間）",
+      "family": "river",
+      "map": [
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "............................fff.........",
+        "....fff...............wwwwwwwwww........",
+        "wwwwwww........wwwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwww.wwwwwwww.wwwww.wwwwwwwwwwwwwwwwww",
+        "wwwwwwwwwwwwwwwwwwwwww..........wwwwwwww",
+        ".......wwwwwwww...................fff...",
+        "...............fff......................",
+        "........................................",
+        "........................................",
+        "........................................"
+      ]
+    },
+    "river_2": {
+      "name": "河彎（斜穿過河谷）",
+      "family": "river",
+      "map": [
+        "........................................",
+        "www.....................................",
+        "wwwwwwww................................",
+        "wwwwwww.wwww............................",
+        "...wwwwwwwwwwww.........................",
+        "........wwwwwwww........................",
+        "............wwwwww......................",
+        ".......fff.....w.ww.....................",
+        "................wwwww....fff............",
+        "..................ww.w..................",
+        "...................wwwwww...............",
+        ".....................wwwwwwwwww.........",
+        "......................wwwwwwwwwwwwwww...",
+        ".........................wwwwwfffwwwwwww",
+        "...............................wwwwwwwww",
+        ".....................................www"
+      ]
+    },
+    "river_3": {
+      "name": "河在一側（岸邊柳叢）",
+      "family": "river",
+      "map": [
+        "........................................",
+        "........................................",
+        "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "ffff...fff.ff..ff.ff.f.ffffff...fffff.f.",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "...................fff..................",
+        "..................fffff.................",
+        "...................fff..................",
+        "........................................",
+        "........................................"
       ]
     }
   }

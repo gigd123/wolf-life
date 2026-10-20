@@ -2,9 +2,9 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,mule_deer}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,mule_deer,caribou}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
-- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1}.png：地塊（14×14；rock 是岩坡，Phase 2d）。
+- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
 
 用法：python3 tools/make_tactical_art.py
@@ -58,6 +58,14 @@ MULE_DEER = [  # 騾鹿（Phase 2d 第 3 步）：灰褐色、大耳朵、白臀
     ("ellipse", "#958571", (12.0, 7, 1.3, 1.0)),          # 頭
     ("poly", "#5c4e40", [(11.2, 5.9), (10.4, 3.6), (12.2, 5.5)]),  # 大耳朵
     ("poly", "#5c4e40", [(11.2, 8.1), (10.4, 10.4), (12.2, 8.5)]),
+]
+CARIBOU = [  # 馴鹿（Phase 2d 第 4 步）：褐色身體、淺色脖子與臀部、往前彎的角
+    ("ellipse", "#7a5a3c", (6.4, 7, 4.3, 2.2)),           # 身體
+    ("ellipse", "#e8e0cc", (2.3, 7, 1.0, 1.2)),           # 淺色臀部
+    ("ellipse", "#ddd3bc", (10.4, 7, 1.5, 1.2)),          # 淺色脖子
+    ("ellipse", "#8e7050", (12.1, 7, 1.2, 0.95)),         # 頭
+    ("poly", "#cbb894", [(11.4, 6.2), (10.6, 3.6), (12.6, 4.4), (11.8, 5.0), (12.2, 6.0)]),   # 角
+    ("poly", "#cbb894", [(11.4, 7.8), (10.6, 10.4), (12.6, 9.6), (11.8, 9.0), (12.2, 8.0)]),
 ]
 ELK = [
     ("ellipse", "#c39a62", (6.2, 7, 4.8, 2.5)),           # 淺色的身體
@@ -166,6 +174,19 @@ def tile_rock(seed):
     return img
 
 
+def tile_water(seed):
+    """河（Phase 2d 第 4 步）：藍灰的水面加幾道波紋"""
+    rnd = random.Random(seed + 500)
+    img = Image.new("RGBA", (CELL, CELL), "#3f6478")
+    d = ImageDraw.Draw(img)
+    for _ in range(3):
+        x, y = rnd.randrange(0, CELL - 4), rnd.randrange(1, CELL - 1)
+        d.line([(x, y), (x + 3, y)], fill="#6f95a8")
+    for _ in range(8):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), rnd.choice(["#36586b", "#4a7186"]))
+    return img
+
+
 def _save(name, img):
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(OUT_4X, exist_ok=True)
@@ -179,6 +200,7 @@ def main():
     make_sprite("fawn", FAWN, "#2e1a0c")
     make_sprite("elk", ELK, "#2e1a0c")
     make_sprite("mule_deer", MULE_DEER, "#2a221a")
+    make_sprite("caribou", CARIBOU, "#2a1c10")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):
@@ -186,6 +208,8 @@ def main():
     _save("tile_logs_0", tile_logs(0))
     for i in range(2):
         _save("tile_rock_%d" % i, tile_rock(i))
+    for i in range(2):
+        _save("tile_water_%d" % i, tile_water(i))
     print("完成：", sorted(os.listdir(OUT)))
 
 

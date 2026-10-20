@@ -75,7 +75,7 @@ func _process(_d) -> bool:
 	_check(gs.tactical_context("dense_forest", "headwind", "weak")["family"] == "dense" and gs.tactical_context("stream", "headwind", "weak")["family"] == "stream" \
 		and gs.tactical_context("prairie", "headwind", "weak")["family"] == "open", "地形 → 地圖族（第 4 步）")
 	# 第 4 步：每種地圖族都開得起來、狼與鹿不在倒木上、鹿在開闊處、目的地在 5～9 格外
-	for fam in ["open", "edge", "dense", "stream", "logs", "slope"]:
+	for fam in ["open", "edge", "dense", "stream", "logs", "slope", "tundra", "river"]:
 		for sd in 10:
 			var fh = TH.new()
 			fh.setup_from_game({"family": fam, "seed": sd * 31 + 7, "condition": "healthy", "fawn": sd % 3 == 0, "wolf": base["wolf"], "wind_relation": "headwind"})
@@ -186,6 +186,35 @@ func _process(_d) -> bool:
 	mfh.hiding = false
 	var mfth = gs.start_tactical(mfh)
 	_check(mfth.label(mfth.target) == "騾鹿幼鹿", "騾鹿幼鹿：稱呼（%s）" % mfth.label(mfth.target))
+	# 11. Phase 2d 第 4 步：馴鹿（苔原、河谷、水格；一律成群；母鹿不護幼）
+	_check(gs.tactical_context("open_tundra", "headwind", "weak")["family"] == "tundra" and gs.tactical_context("river_willow", "headwind", "weak")["family"] == "river", "苔原 → 苔原地圖、柳叢河谷 → 河谷地圖")
+	_check(gs.tactical_context("river", "headwind", "weak")["family"] == "stream", "森林的河照舊是溪邊地圖")
+	var cb = gs.start_hunt("caribou", "adult")
+	cb.terrain = "river_willow"
+	var cbth = gs.start_tactical(cb)
+	var cb_adults: int = cbth.herd.filter(func(d): return str(d["kind"]) == "adult").size()
+	_check(cb.in_herd and cb_adults >= 5 and cb_adults <= 8, "馴鹿：一律成群、5～8 隻（%d）" % cb_adults)
+	var water := Vector2i(-1, -1)
+	var bank := Vector2i(-1, -1)
+	for wy in range(1, cbth.height):
+		for wx in cbth.width:
+			if cbth.terrain(Vector2i(wx, wy)) == "w" and cbth.terrain(Vector2i(wx, wy - 1)) == ".":
+				water = Vector2i(wx, wy)
+				bank = Vector2i(wx, wy - 1)
+	_check(water.x >= 0, "河谷地圖上有河")
+	if water.x >= 0:
+		cbth.di = cbth.target
+		_check(cbth.deer_extra(water) == 0.0 and cbth.step_cost(bank, water) >= 3.0, "河：馴鹿涉水不減速、狼 +2")
+	_check(cbth.wolf_pos != Vector2i(-1, -1) and cbth.terrain(cbth.wolf_pos) != "w", "狼不會開局在水裡")
+	var cc = gs.start_hunt("caribou", "juvenile")
+	var ccth = gs.start_tactical(cc)
+	_check(ccth.label(ccth.target) == "小馴鹿", "小馴鹿：稱呼（%s）" % ccth.label(ccth.target))
+	# 母鹿不護幼：狼咬住小馴鹿時，母鹿照常逃、不回頭
+	var mo: int = int(ccth.herd[ccth.target]["mother"])
+	ccth.herd[ccth.target]["held"] = true
+	ccth.herd[ccth.target]["state"] = "flee"
+	ccth.di = mo
+	_check(not ccth._mother_defend(), "馴鹿母鹿不護幼")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

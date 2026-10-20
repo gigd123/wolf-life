@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """戰術地圖：每種地形 2～3 張（Phase 2c 第 4 步，SPEC「每種地形手工做 2～3 張」）。
 
-每張 40×16 格，字元：. 開闊、f 密林（樹叢、柳叢、林子）、l 倒木（或岩堆）、r 岩坡（碎石坡、岩壁；騾鹿在上面不減速，Phase 2d）。
+每張 40×16 格，字元：. 開闊、f 密林（樹叢、柳叢、林子）、l 倒木（或岩堆）、r 岩坡（碎石坡、岩壁；騾鹿在上面不減速，Phase 2d）、
+w 河（馴鹿涉水不減速，Phase 2d 第 4 步）。
 用簡單的形狀「畫」出來，寫進 data/tactical_hunt.json 的 maps（{id: {name, family, map}}）；
 狼與鹿的起始位置、鹿的目的地由 TacticalHunt.setup_from_game 每場隨機挑。
 
 地形 → 地圖族（GameState.TACTICAL_TERRAIN_FAMILY）：
   open（空地、草原、高山草甸、苔原、丘陵）、edge（林緣、樹線）、dense（密林）、stream（溪、河、柳叢）、logs（倒木）、
-  slope（岩石、碎石、崖邊；Phase 2d 第 3 步）。
+  slope（岩石、碎石、崖邊；Phase 2d 第 3 步）、tundra（開闊苔原、冰磧丘）、river（柳叢河谷，有河；Phase 2d 第 4 步）。
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
 """
@@ -156,6 +157,35 @@ def maps():
     blob(g, 34, 9, 4, 3, "f", rough=0.5, seed=58)
     blob(g, 24, 2, 2, 1.5, "r", seed=59)
     out["slope_3"] = {"name": "一側岩坡、一側林子", "family": "slope", "map": g}
+    # --- 苔原（Phase 2d 第 4 步）：幾乎沒有掩蔽 ---
+    g = blank()
+    for x, y in [(9, 4), (27, 12), (33, 3)]:
+        blob(g, x, y, 1.0, 0.8, seed=x * 3 + y)
+    blob(g, 18, 11, 1.2, 1.0, "r", seed=61)
+    out["tundra_1"] = {"name": "開闊苔原（零星矮灌叢）", "family": "tundra", "map": g}
+    g = blank()
+    band(g, [(0, 12), (14, 9), (26, 6), (39, 4)], 0, "r")  # 冰磧丘（一道礫石的長丘）
+    blob(g, 7, 4, 1.0, 0.8, seed=62)
+    blob(g, 31, 12, 1.2, 0.8, seed=63)
+    out["tundra_2"] = {"name": "苔原與冰磧丘", "family": "tundra", "map": g}
+    # --- 河谷（Phase 2d 第 4 步）：一條河、兩岸零星柳叢 ---
+    g = blank()
+    band(g, [(0, 9), (12, 10), (24, 8), (39, 9)], 1, "w")
+    for x, y in [(5, 7), (16, 12), (29, 6), (35, 11)]:
+        blob(g, x, y, 1.3, 0.8, seed=x + y * 5)
+    out["river_1"] = {"name": "河谷（河橫過中間）", "family": "river", "map": g}
+    g = blank()
+    band(g, [(0, 2), (14, 5), (22, 11), (39, 14)], 1, "w")
+    for x, y in [(8, 7), (26, 8), (31, 13)]:
+        blob(g, x, y, 1.4, 0.9, seed=x * 7 + y)
+    out["river_2"] = {"name": "河彎（斜穿過河谷）", "family": "river", "map": g}
+    g = blank()
+    band(g, [(0, 3), (39, 3)], 1, "w")
+    for x in range(W):  # 一側的柳叢
+        if random.Random(64 + x).random() < 0.5:
+            g[5][x] = "f"
+    blob(g, 20, 12, 2, 1.2, seed=65)
+    out["river_3"] = {"name": "河在一側（岸邊柳叢）", "family": "river", "map": g}
     for k in out:
         out[k]["map"] = ["".join(r) for r in out[k]["map"]]
     return out
@@ -166,7 +196,7 @@ def main():
     s = open(p, encoding="utf-8").read()
     m = maps()
     body = json.dumps(m, ensure_ascii=False, indent=2).replace("\n", "\n  ")
-    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
+    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
     if '"maps":' in s:
         s = re.sub(r'"_maps_comment": ".*?",\n  "maps": \{.*?\n  \}', lambda _: block, s, count=1, flags=re.S)
     else:

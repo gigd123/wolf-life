@@ -3036,8 +3036,9 @@ const TACTICAL_TERRAIN_MAP := {"dense_forest": "C", "forest_edge": "C", "treelin
 	"fallen_logs": "D", "rocky": "D", "scree": "D", "cliff": "D"}
 # 第 4 步：每種地形的地圖族（data/tactical_hunt.json 的 maps；沒列的是開闊地）
 const TACTICAL_TERRAIN_FAMILY := {"dense_forest": "dense", "forest_edge": "edge", "treeline": "edge",
-	"stream": "stream", "river": "stream", "river_willow": "stream",
-	"fallen_logs": "logs", "rocky": "slope", "scree": "slope", "cliff": "slope"}
+	"stream": "stream", "river": "stream", "river_willow": "river",
+	"fallen_logs": "logs", "rocky": "slope", "scree": "slope", "cliff": "slope",
+	"open_tundra": "tundra", "esker": "tundra"}
 
 func tactical_context(terrain: String, wind: String, condition: String) -> Dictionary:
 	var map_id: String = str(TACTICAL_TERRAIN_MAP.get(terrain, "A"))

@@ -1746,6 +1746,9 @@ tactical.label.elk_calf,小馬鹿
 tactical.label.mule_deer,騾鹿
 tactical.label.mule_deer_fawn,騾鹿幼鹿
 tactical.factor.terrain_r,牠在岩坡上，你站不穩
+tactical.label.caribou,馴鹿
+tactical.label.caribou_calf,小馴鹿
+tactical.factor.terrain_w,牠在水裡，你使不上力
 tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。

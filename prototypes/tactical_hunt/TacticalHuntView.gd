@@ -12,7 +12,7 @@ const TH := preload("res://scripts/core/TacticalHunt.gd")
 const CELL := 14
 const MAP_ORIGIN := Vector2(4, 4)
 const COLORS := {
-	".": Color("#5f7a3a"), "f": Color("#2d4a2a"), "l": Color("#6b4f33"), "r": Color("#8a877e"),
+	".": Color("#5f7a3a"), "f": Color("#2d4a2a"), "l": Color("#6b4f33"), "r": Color("#8a877e"), "w": Color("#3f6478"),
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"wolf": Color("#c9c9c9"), "deer": Color("#b07a44"), "deer_held": Color("#d04a3a"), "intent": Color(1, 1, 1, 0.75),
 	"target": Color("#ff4040"), "goal": Color(0.7, 0.9, 1.0, 0.5),
