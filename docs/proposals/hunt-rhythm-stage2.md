@@ -1,6 +1,6 @@
 # 提案：狩獵節奏的第二階段（藏食物、一季的天數）
 
-2026-10-20 Claude Code 整理，使用者還沒選。Phase 2b 的提案（`docs/proposals/hunt-rhythm-difficulty.md` 第十一、十二節）把這兩項延後到「戰術狩獵定案後的第二階段」；Phase 2c、2d 做完了，這份把當時的草案依現在的數據重寫一次。
+2026-10-20 Claude Code 整理。**使用者決定（2026-10-20）：藏食物選 A（照原本的草案完整做）；一季的天數選甲（維持 10 天，等試玩數據）。**Phase 2b 的提案（`docs/proposals/hunt-rhythm-difficulty.md` 第十一、十二節）把這兩項延後到「戰術狩獵定案後的第二階段」；Phase 2c、2d 做完了，這份把當時的草案依現在的數據重寫一次。
 
 ## 現在的數據（2026-10-20，`life_pressure` 30 隻）
 
