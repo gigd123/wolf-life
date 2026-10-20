@@ -3029,6 +3029,28 @@ func _after_pack_young_combat(c: Combat) -> void:
 				break
 	npcs.erase("pack_young")
 
+# --- 戰術狩獵（Phase 2c）---
+# 主遊戲的狀態 → 戰術地圖的開局（TacticalHunt.setup_from_game）。terrain：遇到獵物的地形；wind：主遊戲的相對風向
+# （headwind 你在下風、tailwind 你在上風、crosswind 側風）；condition：獵物的體況。
+const TACTICAL_TERRAIN_MAP := {"dense_forest": "C", "forest_edge": "C", "treeline": "C", "river_willow": "C",
+	"fallen_logs": "D", "rocky": "D", "scree": "D", "cliff": "D"}
+
+func tactical_context(terrain: String, wind: String, condition: String) -> Dictionary:
+	var map_id: String = str(TACTICAL_TERRAIN_MAP.get(terrain, "A"))
+	var ctx := {"map": map_id, "seed": RNGService.randi_range(1, 1 << 30), "condition": condition,
+		"wolf": {"speed": wolf.effective_speed(), "skill": wolf.effective_skill(), "strength": wolf.effective_strength(),
+			"perception": wolf.effective_perception(), "stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max},
+		"gorged": wolf.is_overfed(), "age_penalty": _tactical_age_penalty(),
+		"twilight": GameTime.current_period() in ["dawn", "dusk"], "deep_snow": snow_state() in ["deep"]}
+	ctx["wind_relation"] = wind
+	return ctx
+
+# 年齡減成：同選單式狩獵（hunt.age，Phase 2b）
+func _tactical_age_penalty() -> float:
+	var a: Dictionary = GameData.balance.get("hunt", {}).get("age", {})
+	var years: float = wolf.age_years - float(a.get("decline_start", 99.0))
+	return 0.0 if years <= 0.0 else min(float(a.get("max", 0.0)), years * float(a.get("per_year", 0.0)))
+
 # 獵物靠近：短暫休息或伏低（快轉）時，野兔或幼鹿走近，可以直接撲抓（簡易狩獵）。
 func _maybe_prey_nearby() -> void:
 	var cfg: Dictionary = _events_cfg().get("prey_nearby", {})

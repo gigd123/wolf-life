@@ -6,7 +6,7 @@ extends Control
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
 # 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是小方塊，細線連到生母。
 
-const TH := preload("res://prototypes/tactical_hunt/TacticalHunt.gd")
+const TH := preload("res://scripts/core/TacticalHunt.gd")
 const CELL := 14
 const MAP_ORIGIN := Vector2(4, 4)
 const COLORS := {

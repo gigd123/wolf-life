@@ -195,7 +195,7 @@
 
 ## 十一、實作步驟（確認後）
 
-1. 邏輯：`prototypes/tactical_hunt/TacticalHunt.gd`（純邏輯，可以 headless 測試），數值放在 `prototypes/tactical_hunt/tuning.json`。
+1. 邏輯：`prototypes/tactical_hunt/TacticalHunt.gd`（純邏輯，可以 headless 測試），數值放在 `prototypes/tactical_hunt/tuning.json`。（2026-10-20 Phase 2c 搬到 `scripts/core/TacticalHunt.gd`、`data/tactical_hunt.json`。）
 2. 模擬：`tools/sim/tactical_hunt_sim.gd` 跑第十節的 1～5、7、8、10；不通過就先調數值。模擬結果寫給使用者看。
 3. 畫面：`prototypes/tactical_hunt/TacticalHunt.tscn`，開始畫面加按鈕。
 4. 使用者試玩，驗證 6、7、9。

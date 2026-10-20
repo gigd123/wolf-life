@@ -2,7 +2,7 @@ extends SceneTree
 # 戰術狩獵原型・鹿群版的模擬（docs/proposals/tactical-hunt-herd.md 第六節）。
 # 五種打法 × 情境 E～H × 三種狼，各 RUNS 場；統計成功率、獵到幼鹿／成鹿、期望肉量、生母護幼、受傷、回合數，並對照通過標準。
 # 用法：bash tools/run_sim.sh tactical_herd_sim 0 150
-const TH := preload("res://prototypes/tactical_hunt/TacticalHunt.gd")
+const TH := preload("res://scripts/core/TacticalHunt.gd")
 const POLICIES := ["fawn", "fawn_back", "adult", "scatter", "pace"]
 const NAMES := {"fawn": "專挑幼鹿", "fawn_back": "幼鹿・母鹿來就退", "adult": "挑成鹿", "scatter": "衝散再挑", "pace": "耐力追"}
 const SCEN := ["E", "F", "G", "H"]

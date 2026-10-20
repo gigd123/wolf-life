@@ -3,7 +3,7 @@ extends SceneTree
 # 打法：沒察覺時潛近、鹿跑了就耐力追（先小跑、鹿跑 3 回合後衝刺）；學會的狼只要有前截的格子、成功率 ≥ MIN 就出手。
 # 鹿群情境（E、G）的目標固定是成鹿。統計成功率、用了幾次招式、受傷、回合數。
 # 用法：bash tools/run_sim.sh front_lock_sim 0 300
-const TH := preload("res://prototypes/tactical_hunt/TacticalHunt.gd")
+const TH := preload("res://scripts/core/TacticalHunt.gd")
 
 var f := 0
 

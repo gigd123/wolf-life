@@ -1,12 +1,15 @@
+class_name TacticalHunt
 extends RefCounted
 
-# 戰術狩獵原型的邏輯（docs/proposals/tactical-hunt-prototype.md）。純邏輯、不碰 GameState，可以 headless 測試；
-# 畫面層與模擬都只呼叫這裡的公開函式。數值在 tuning.json。
+# 戰術狩獵的邏輯（原型規格 docs/proposals/tactical-hunt-prototype.md、tactical-hunt-herd.md；
+# Phase 2c 接進主遊戲，2026-10-20 從 prototypes/ 搬來）。純邏輯、不碰 GameState，可以 headless 測試；
+# 畫面層與模擬都只呼叫這裡的公開函式。數值在 data/tactical_hunt.json。
+# 主遊戲用 setup_from_game() 開局（狼的能力、喘、體況、吃撐、年齡、晨昏、雪況），原型畫面與模擬照舊用 setup()。
 #
 # 一回合：狼行動（移動／觀察／撲咬／放棄）→ 鹿行動 → 更新。座標是格子（Vector2i），x 往右、y 往下。
 # 風向 wind 是風吹「往」的方向：狼在上風＝氣味從狼吹向鹿。
 
-const TUNING_PATH := "res://prototypes/tactical_hunt/tuning.json"
+const TUNING_PATH := "res://data/tactical_hunt.json"
 const DIRS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 	Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
 
@@ -101,6 +104,9 @@ var mother_hit_fawn_held: bool = false # 這一回合生母踢中了咬著幼鹿
 var knows_front_lock: bool = false
 var front_locks: int = 0
 var stats := {"stuck": 0, "toward_wolf": 0}
+# 主遊戲帶進來的狀態（Phase 2c 第 1 步，setup_from_game）：age_penalty（撲咬、壓倒、咬喉的年齡減成）、
+# no_sprint（吃撐不能衝刺）、alert_mult（晨昏時鹿的警覺值漲得慢）、snow_slow（深雪時鹿每回合少跑幾格）
+var game_mods := {}
 
 func _init() -> void:
 	t = JSON.parse_string(FileAccess.get_file_as_string(TUNING_PATH))
@@ -109,6 +115,7 @@ func _init() -> void:
 
 func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: float = 1.0) -> void:
 	rng.seed = seed
+	game_mods = {}
 	scenario_id = p_scenario
 	var sc: Dictionary = t["scenarios"][p_scenario]
 	var map_src: Dictionary = t["scenarios"][sc["map_from"]] if sc.has("map_from") else sc
@@ -152,6 +159,61 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	kicks = 0
 	events = []
 	stats = {"stuck": 0, "toward_wolf": 0}
+
+# 主遊戲開局（Phase 2c）：ctx = {map（情境或地圖 id）, seed, wolf（{speed, skill, strength, perception, stamina, health, health_max}）,
+# condition（主遊戲擲出的體況）, gorged, age_penalty, twilight, deep_snow, wind（Vector2i，可省略）}
+func setup_from_game(ctx: Dictionary) -> void:
+	setup(str(ctx.get("map", "A")), "normal", int(ctx.get("seed", 1)))
+	var w: Dictionary = ctx.get("wolf", {})
+	for k in ["speed", "skill", "strength", "perception", "health", "health_max"]:
+		if w.has(k):
+			wolves[0]["stats"][k] = float(w[k])
+	var g: Dictionary = t.get("game", {})
+	# 喘的上限：照原型的公式（體力的影響比主遊戲大，校準時用的就是這個），用主遊戲現在的體力與速度；血量低於一半 × low_health_mult
+	var b: Dictionary = t["breath"]
+	var ws: Dictionary = wolves[0]["stats"]
+	var bmax: float = float(b["base"]) + float(w.get("stamina", 80.0)) * float(b["per_stamina"]) + (float(ws["speed"]) - 50.0) * float(b["per_speed"])
+	if float(ws["health"]) < float(ws["health_max"]) * 0.5:
+		bmax *= float(b.get("low_health_mult", 0.8))
+	bmax = clamp(bmax, float(b["min"]), float(b["max"]))
+	if bool(ctx.get("gorged", false)):
+		bmax *= float(g.get("gorged_breath_mult", 0.6))
+		game_mods["no_sprint"] = true
+	wolves[0]["breath"] = bmax
+	wolves[0]["breath_max"] = bmax
+	if ctx.has("condition"):
+		for d in herd:
+			if str(d.get("kind", "adult")) != "fawn":
+				d["condition"] = str(ctx["condition"])
+	if float(ctx.get("age_penalty", 0.0)) > 0.0:
+		game_mods["age_penalty"] = float(ctx["age_penalty"])
+	if bool(ctx.get("twilight", false)):
+		game_mods["alert_mult"] = float(g.get("twilight_alert_mult", 0.85))
+	if bool(ctx.get("deep_snow", false)):
+		game_mods["snow_slow"] = float(g.get("deep_snow_flee_less", 1.0))
+	if ctx.has("wind"):
+		wind = ctx["wind"]
+	elif ctx.has("wind_relation"):
+		wind = wind_for(str(ctx["wind_relation"]))
+
+# 主遊戲的相對風向 → 地圖上的風：下風（headwind，風從鹿吹向你）、上風（tailwind）、側風（crosswind）
+func wind_for(relation: String) -> Vector2i:
+	var v := Vector2(deer_pos - wolf_pos)
+	var d := Vector2i(int(sign(v.x)) if absf(v.x) >= absf(v.y) else 0, int(sign(v.y)) if absf(v.y) > absf(v.x) else 0)
+	if d == Vector2i.ZERO:
+		d = Vector2i(1, 0)
+	match relation:
+		"headwind":
+			return -d
+		"tailwind":
+			return d
+	return Vector2i(-d.y, d.x)
+
+func _age_factor(factors: Array) -> float:
+	var a: float = float(game_mods.get("age_penalty", 0.0))
+	if a > 0.0:
+		factors.append(["你老了", -a])
+	return -a
 
 # --- 鹿群（鹿群版） ---
 
@@ -255,7 +317,7 @@ func trot_range() -> float:
 
 func max_move() -> float:
 	var m: Dictionary = t["move"]
-	if breath >= -float(m["breath_sprint"]):
+	if breath >= -float(m["breath_sprint"]) and not bool(game_mods.get("no_sprint", false)):
 		return sprint_range()
 	if breath >= -float(m["breath_trot"]):
 		return trot_range()
@@ -417,6 +479,7 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		v += float(sp()["pounce"])
 		factors.append([str(sp().get("name", "")), float(sp()["pounce"])])
 	v += _cond_factor(factors, "pounce")
+	v += _age_factor(factors)
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
 		v += float(p["unaware"])
@@ -573,6 +636,7 @@ func hold_options() -> Dictionary:
 		+ hams * float(h["hamstring"]["takedown"])
 	var tf: Array = [["你的力量", (float(wolf["strength"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
+	td += _age_factor(tf)
 	if hams > 0:
 		tf.append(["後腿受傷", hams * float(h["hamstring"]["takedown"])])
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
@@ -581,6 +645,7 @@ func hold_options() -> Dictionary:
 		+ float(fb.get("throat", 0.0)) + front_b
 	var thf: Array = [["你的技巧", (float(wolf["skill"]) - 50.0) / float(h["divisor"])], ["牠累了", fat * float(h["tired"])]]
 	th += _cond_factor(thf, "throat")
+	th += _age_factor(thf)
 	if front_b > 0.0:
 		thf.append(["咬在頸部", front_b])
 	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]), "factors": thf}
@@ -744,6 +809,8 @@ func alert_gain(mode: String) -> Dictionary:
 		sight *= min(float(vg["max"]), 1.0 + float(vg["per_extra"]) * (active_deer().size() - 1))
 	sight *= 1.0 - (float(wolf["skill"]) - 40.0) / float(al["skill_divisor"])
 	var scent: float = _band(al["scent"].get(wind_side(), []), d)
+	# 晨昏光線暗、鹿低頭吃草：看見你的警覺漲得慢（Phase 2c，對應 Phase 2b 的潛近 +5%）
+	sight *= float(game_mods.get("alert_mult", 1.0))
 	return {"gain": sight + scent, "scent": scent, "noise": sight}
 
 func _band(table: Array, d: float) -> float:
@@ -1037,7 +1104,7 @@ func _flee_budget(i: int = -1) -> float:
 	var h: Dictionary = herd[k]
 	var prof: Array = t["herd"]["fawn_flee"] if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
-	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]))
+	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - float(game_mods.get("snow_slow", 0.0)))
 	# 生母放慢等幼鹿：最多比幼鹿多跑 mother_slack 格（幼鹿還在附近、沒跑散時）
 	if not is_fawn(k):
 		var f: int = fawn_of(k)

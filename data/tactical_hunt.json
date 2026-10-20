@@ -448,5 +448,7 @@
     "throat_miss_break": 0.2,
     "kick": 0.1,
     "wound_slow": 1.0
-  }
+  },
+  "_game_comment": "Phase 2c 接進主遊戲（setup_from_game）：吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
+  "game": { "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0 }
 }
