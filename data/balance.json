@@ -497,7 +497,7 @@
     "fed_streak": { "threshold": 100, "bonus_per_day": 0.05, "max_bonus": 0.3 },
     "stage_mult": {
       "subadult_young": { "body": 2.2, "mind": 0.8 },
-      "subadult": { "body": 0.8, "mind": 1.0 },
+      "subadult": { "body": 1.04, "mind": 1.3 },
       "adult": { "body": 0.7, "mind": 0.7 },
       "elder": { "body": 0.0, "skill": 0.0, "perception": 0.0 }
     },
@@ -505,7 +505,7 @@
     "_potential_comment": "潛力結算（進入成年）：上限 = base_cap + 次成年期成長 × growth_mult，最高 max。base_cap 依 tools/sim/growth_sim.gd 的模擬決定（見 progress.md）。",
     "potential": {
       "base_cap": { "speed": 55, "strength": 55, "skill": 55, "perception": 55, "health_max": 90 },
-      "growth_mult": 1.5,
+      "growth_mult": 1.3,
       "_reference_comment": "一般玩法（模擬的平均）次成年期的成長量。成年描述用「成長 ÷ 這個值」挑最突出的能力，避免總是挑到絕對值最大的力量。",
       "reference_growth": { "speed": 8, "strength": 10, "skill": 7, "perception": 6, "health_max": 8 },
       "max": { "speed": 100, "strength": 100, "skill": 100, "perception": 100, "health_max": 120 }
