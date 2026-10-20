@@ -274,8 +274,11 @@ func _build_game_scenario(family: String, fawn: bool, seed: int) -> String:
 static func _tx(key: String) -> String:
 	return TranslationServer.translate(key)
 
-func _age_factor(factors: Array) -> float:
+func _age_factor(factors: Array, hold: bool = false) -> float:
 	var a: float = float(game_mods.get("age_penalty", 0.0))
+	# 年齡減成扣在哪裡：age_scope = "pounce" 時咬住後（壓倒、咬喉）不扣（力量、技巧本身已經隨年齡下降）
+	if hold and str(game_mods.get("age_scope", t.get("game", {}).get("age_scope", "all"))) == "pounce":
+		a = 0.0
 	if a > 0.0:
 		factors.append([_tx("tactical.factor.old_age"), -a])
 	# 交給本能（Phase 2c 第 3 步）：出手比較莽撞
@@ -716,7 +719,7 @@ func hold_options() -> Dictionary:
 		+ hams * float(h["hamstring"]["takedown"])
 	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
-	td += _age_factor(tf)
+	td += _age_factor(tf, true)
 	if hams > 0:
 		tf.append([_tx("tactical.factor.hamstrung"), hams * float(h["hamstring"]["takedown"])])
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
@@ -725,7 +728,7 @@ func hold_options() -> Dictionary:
 		+ float(fb.get("throat", 0.0)) + front_b
 	var thf: Array = [[_tx("tactical.factor.skill"), (float(wolf["skill"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	th += _cond_factor(thf, "throat")
-	th += _age_factor(thf)
+	th += _age_factor(thf, true)
 	if front_b > 0.0:
 		thf.append([_tx("tactical.factor.neck"), front_b])
 	out["throat"] = {"chance": clamp(th, 0.05, 0.95), "breath": float(h["throat_breath"]), "factors": thf}
