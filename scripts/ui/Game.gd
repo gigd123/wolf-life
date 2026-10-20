@@ -1723,7 +1723,7 @@ func _show_discovery(d: Dictionary) -> void:
 			_add_hunt_button(tr("ui.hunt"), func():
 				encounter_overlay.visible = false
 				current_hunt = GameState.action_hunt_sighted()
-				_render_hunt_stage()
+				_enter_hunt()
 			)
 		elif ExploreSystem.can_track(d):
 			var info := GameState.track_chance()
@@ -1786,7 +1786,7 @@ func _on_track() -> void:
 	elif result.get("success", false):
 		_log(tr("log.track.success").replace("{animal}", animal_name))
 		current_hunt = result["hunt"]
-		_render_hunt_stage()
+		_enter_hunt()
 	else:
 		_log(tr("log.track.fail"))
 		var reason: String = result.get("reason_key", "")
@@ -2627,6 +2627,12 @@ func _show_find_result(result: Dictionary) -> void:
 
 func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> void:
 	current_hunt = GameState.start_hunt(animal_id, life_stage, prey_dir)
+	_enter_hunt()
+
+# 開始狩獵畫面：白尾鹿、馬鹿、騾鹿、馴鹿走戰術地圖，其他走選單。看到獵物、追蹤到獵物、發現足跡都經過這裡
+# （2026-10-20 試玩：看到一群白尾鹿選「狩獵」沒有進戰術地圖——目擊、追蹤原本直接走選單）。
+# 獵物靠近（撲抓）、和苔原狼一起狩獵照舊走選單。
+func _enter_hunt() -> void:
 	if GameState.tactical_eligible(current_hunt):
 		_open_tactical()
 		return
