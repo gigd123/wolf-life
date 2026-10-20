@@ -1807,3 +1807,10 @@ tactical.ui.move.creep,潛行（回喘）
 tactical.ui.move.trot,小跑（−4 喘）
 tactical.ui.move.sprint,衝刺（−22 喘）
 tactical.ui.move.tired_trot,小跑（喘不夠：少一格，不扣喘也不回喘）
+log.cache.stored,你叼起一段肉，在附近找了個地方埋起來。
+log.cache.dug_up,你挖出藏起來的肉。
+log.cache.stale,肉已經放了一陣子，聞起來有點不對勁。
+log.cache.lost.grizzly,你藏的肉被挖走了，地上全是熊的氣味。
+log.cache.lost.fox,你藏的肉被挖開了，只剩幾撮狐狸的毛。
+log.cache.lost.wolverine,你藏的肉被挖走了，地上留著狼獾寬大的腳印。
+log.cache.lost.rotten,你藏的肉已經壞了，不能吃了。

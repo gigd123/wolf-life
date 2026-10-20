@@ -59,6 +59,8 @@
 | `death.card.injury` | 傷一直沒有好 | 非戰鬥、沒有挨餓到 0 的死亡（目前只有血量極低時被螫） | —（戰死、灰熊搶食致死都另有卡片） |
 | `death.card.starvation` | 好幾天沒吃到東西 | 血量歸零時飽食度 ≤ 0 | — |
 | `routine.moved` | 這幾天你走到了 | 照常過日子期間換了區域 | 輕微：不到一天就停時仍說「這幾天」，先不改 |
+| `log.cache.stale` | 肉已經放了一陣子 | 挖出藏肉時已經過了新鮮期（`GameState.cache_state` = stale） | — |
+| `log.cache.lost.rotten` | 藏的肉已經壞了 | 回到那一區時，藏肉超過新鮮期 rot_mult 倍（`_update_caches` 記成 rotten） | — |
 
 回歸測試：`tools/sim/text_claims.gd`（雪兔、年輕的狼、睡醒原因、苔原狼）、`tools/sim/notice_triage.gd`（痊癒）。
 

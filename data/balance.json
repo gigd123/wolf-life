@@ -416,6 +416,9 @@
   },
   "_hare_cycle_comment": "1.8 第 6 步：雪兔約 10 年的族群週期。mult 是每一年雪兔出沒權重的倍率（低谷到高峰約 16 倍），每年春天往下一年；新遊戲從隨機一年開始。late_summer_mult：夏季後半、秋季前 late_autumn_days 天，雪兔是狼的重要食物（幼兔長大、到處都是）。",
   "hare_cycle": { "mult": [0.15, 0.3, 0.6, 1.0, 1.6, 2.4, 2.0, 1.0, 0.4, 0.2], "late_summer_mult": 1.4, "late_autumn_days": 7 },
+  "_cache_comment": "藏食物（Phase 2e，SPEC「Phase 2e：藏食物」）：吃殘骸時可以叼一段去藏（turns 回合、stamina 體力），每個區域一份、最多 max_segments 段；fresh_days 新鮮期（冬季或有雪＝凍住用 winter），過了新鮮期吃到有機會吃壞肚子（stale_poison：base + per_fresh × 超過的天數 ÷ 新鮮期，最多 0.9），超過新鮮期 rot_mult 倍就壞光；dig_per_day 每天被挖走的機率（灰熊 × 這一區這一季的灰熊權重、狐狸在苔原以外、狼獾在苔原）；挖出來吃花 dig_turns 回合。數值為初始值，life_pressure 校準。",
+  "cache": { "max_segments": 2, "turns": 1, "stamina": 2.0, "dig_turns": 1, "fresh_days": { "winter": 10, "spring": 4, "autumn": 4, "summer": 2 }, "rot_mult": 2.0,
+    "stale_poison": { "base": 0.15, "per_fresh": 0.35 }, "dig_per_day": { "grizzly": 0.03, "fox": 0.02, "wolverine": 0.06 } },
   "feeding": {
     "_comment": "分段進食與搶食（SPEC「狩獵後續事件」）。沒列在 segments 的獵物一次吃完。",
     "segments": {

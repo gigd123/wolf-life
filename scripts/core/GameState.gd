@@ -78,6 +78,9 @@ var weather_until: int = -1
 var avoid_bear: Dictionary = {}
 # 吃不完留下的殘骸：[{region_id, terrain, animal_id, life_stage, segments_left, segment_value, day}]，最多留 2 天。
 var carcasses: Array = []
+# 藏起來的肉（Phase 2e）：區域 -> {segments, segment_value, animal_id, life_stage, day（藏的那天；加進去時取比較早的）,
+#   dig_day（今天擲過被挖走沒）, lost（"grizzly"／"fox"／"wolverine"／"rotten"：下次回到那一區才知道）}
+var caches: Dictionary = {}
 
 var life_log: Dictionary = {}
 # 自動遊玩（除錯「模擬到死亡」）期間不產生提示卡片。
@@ -98,6 +101,7 @@ func new_game(start_den: String) -> void:
 	current_discovery = {}
 	current_feeding = {}
 	carcasses = []
+	caches = {}
 	knowledge = {}
 	identified = GameData.knowledge.get("identified_at_start", []).duplicate()
 	avoid_bear = {}
@@ -177,6 +181,7 @@ func _on_period_changed(_period_index: int) -> void:
 	wolf.stamina -= float(cold["stamina"])
 	wolf.clamp_stats()
 	_decay_carcasses()
+	_update_caches()
 	# 換季睡眠期間暫停隨機的世界事件（SPEC「季節轉換」）；大火、暴風雪進行中不會是換季睡眠
 	if not quiet_sleep:
 		_update_weather()
@@ -1263,6 +1268,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 	GameTime.advance_turns(turns)
 	if not _quiet_move_log:
 		log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
+	_cache_arrival_notice(target_region)
 	if lost_from != "":
 		log_message.emit(tr("log.whiteout_lost").replace("{target}", tr("region." + lost_from)).replace("{region}", tr("region." + target_region)))
 	if not is_region_visited(target_region):
@@ -3303,7 +3309,8 @@ func feed_once() -> Dictionary:
 	current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
 	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
 	var event: String = ""
-	if int(current_feeding["segments_left"]) > 0:
+	# 吃藏起來的肉不會引來搶食的動物（Phase 2e）
+	if int(current_feeding["segments_left"]) > 0 and not bool(current_feeding.get("no_scavenger", false)):
 		# 美洲獅回來找牠藏的獵物；黑熊被氣味引來（Phase 2 第 3 步）
 		if bool(current_feeding.get("cougar", false)) and RNGService.chance(float(_cougar_cfg().get("return_chance", 0.25))):
 			event = "cougar"
@@ -3465,6 +3472,149 @@ func carcass_loss_per_day_absent(c: Dictionary) -> float:
 func carcass_here() -> Dictionary:
 	var idx := carcass_index_here()
 	return carcasses[idx] if idx >= 0 else {}
+
+# --- 藏食物（Phase 2e 第 1 步，SPEC「Phase 2e：藏食物」）---
+
+func _cache_cfg() -> Dictionary:
+	return GameData.balance.get("cache", {})
+
+# 這一區藏的肉（還在的；被挖走、壞掉但你還不知道的也算「還在」，回來才發現）
+func cache_here(region_id: String = "") -> Dictionary:
+	return caches.get(current_region if region_id == "" else region_id, {})
+
+# 能不能叼一段去藏：正在吃殘骸（不是正在吃藏的肉）、還有剩段，這一區的那一份還沒滿
+func can_cache() -> bool:
+	if not is_feeding() or int(current_feeding.get("segments_left", 0)) <= 0 or str(current_feeding.get("src", "")) == "cache":
+		return false
+	var c: Dictionary = cache_here()
+	return c.is_empty() or (str(c.get("lost", "")) == "" and int(c.get("segments", 0)) < int(_cache_cfg().get("max_segments", 2)))
+
+# 叼一段去藏：花 cfg.turns 回合，殘骸少一段，這一區的那一份多一段（新鮮度照比較早藏的那一段）
+func action_cache_segment() -> bool:
+	if not can_cache():
+		return false
+	_record_action("cache")
+	var cfg := _cache_cfg()
+	GameTime.advance_turns(int(cfg.get("turns", 1)))
+	if not wolf.alive:
+		return false
+	wolf.stamina -= float(cfg.get("stamina", 2.0)) * wolf.injury_stamina_mult()
+	wolf.clamp_stats()
+	var today: int = int(life_log.get("days_lived", 1))
+	var c: Dictionary = cache_here()
+	if c.is_empty():
+		c = {"segments": 0, "segment_value": current_feeding["segment_value"], "animal_id": current_feeding["animal_id"],
+			"life_stage": current_feeding["life_stage"], "day": today}
+	c["segments"] = int(c["segments"]) + 1
+	c["day"] = mini(int(c["day"]), today)
+	caches[current_region] = c
+	current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+	if int(current_feeding["segments_left"]) <= 0:
+		current_feeding = {}
+	life_log["caches_made"] = int(life_log.get("caches_made", 0)) + 1
+	log_message.emit(tr("log.cache.stored"))
+	state_changed.emit()
+	return true
+
+# 新鮮期（天）：冬季或有雪（凍住）最久、春秋、夏季最短
+func cache_fresh_days(region_id: String = "") -> float:
+	var fd: Dictionary = _cache_cfg().get("fresh_days", {})
+	var season: String = GameTime.current_season()
+	var frozen: bool = season == "winter" or snow_state(current_region if region_id == "" else region_id) in ["light", "deep", "crust"]
+	return float(fd.get("winter" if frozen else season, 4))
+
+# 放了幾天；fresh（新鮮）／stale（過了新鮮期，可能吃壞肚子）／rotten（超過新鮮期 rot_mult 倍，壞光）
+func cache_age(c: Dictionary) -> int:
+	return int(life_log.get("days_lived", 1)) - int(c.get("day", 0))
+
+func cache_state(c: Dictionary, region_id: String = "") -> String:
+	var fresh: float = cache_fresh_days(region_id)
+	var age: float = float(cache_age(c))
+	if age > fresh * float(_cache_cfg().get("rot_mult", 2.0)):
+		return "rotten"
+	return "stale" if age > fresh else "fresh"
+
+# 大概還能放幾天（地圖的滑鼠提示用）：到壞光為止
+func cache_days_left(c: Dictionary, region_id: String = "") -> int:
+	return maxi(0, int(floor(cache_fresh_days(region_id) * float(_cache_cfg().get("rot_mult", 2.0)))) - cache_age(c))
+
+# 每個時段更新（每天擲一次）：壞光的、被灰熊／狐狸／狼獾挖走的記成 lost，下次回到那一區才知道
+func _update_caches() -> void:
+	var cfg := _cache_cfg()
+	var dig: Dictionary = cfg.get("dig_per_day", {})
+	var today: int = int(life_log.get("days_lived", 1))
+	var season: String = GameTime.current_season()
+	for region_id in caches.keys():
+		var c: Dictionary = caches[region_id]
+		if str(c.get("lost", "")) != "" or int(c.get("dig_day", -1)) == today:
+			continue
+		c["dig_day"] = today
+		if cache_state(c, region_id) == "rotten":
+			c["lost"] = "rotten"
+			continue
+		# 灰熊：照這一區這一季的灰熊權重（冬眠時 0）；狐狸：苔原以外；狼獾：苔原、牠還活著
+		var bear_w: float = float(EncounterSystem.region_data(region_id).get("competitor_weights", {}).get("grizzly_bear", {}).get(season, 0))
+		var on_tundra: bool = GameData.map_of(region_id) == str(_wolverine_cfg().get("map", "tundra"))
+		if RNGService.chance(float(dig.get("grizzly", 0.0)) * bear_w):
+			c["lost"] = "grizzly"
+		elif not on_tundra and RNGService.chance(float(dig.get("fox", 0.0))):
+			c["lost"] = "fox"
+		elif on_tundra and _wolverine_alive() and RNGService.chance(float(dig.get("wolverine", 0.0))):
+			c["lost"] = "wolverine"
+		if str(c.get("lost", "")) != "":
+			life_log["caches_lost"] = int(life_log.get("caches_lost", 0)) + 1
+
+# 回到一區：藏的肉被挖走或壞光了，這時才知道（寫一行紀錄，清掉）
+func _cache_arrival_notice(region_id: String) -> void:
+	var c: Dictionary = caches.get(region_id, {})
+	var lost: String = str(c.get("lost", ""))
+	if lost == "":
+		return
+	log_message.emit(tr("log.cache.lost." + lost))
+	caches.erase(region_id)
+
+# 能不能吃這一區藏的肉（還在、你在這一區、沒有正在吃別的）
+func can_eat_cache() -> bool:
+	var c: Dictionary = cache_here()
+	return not c.is_empty() and str(c.get("lost", "")) == "" and int(c.get("segments", 0)) > 0 and not is_feeding()
+
+# 吃藏起來的肉：挖出來（1 回合），之後同殘骸一段一段吃（feed_once），不會引來搶食的動物。
+# 過了新鮮期：寫一句、可能吃壞肚子（現有的中毒；越久越容易）。回傳 {"stale": bool, "sick": bool}
+func action_eat_cache() -> Dictionary:
+	# 已經壞光、但還沒到每天的檢查：這時才發現
+	var c0: Dictionary = cache_here()
+	if not c0.is_empty() and str(c0.get("lost", "")) == "" and cache_state(c0) == "rotten":
+		c0["lost"] = "rotten"
+	_cache_arrival_notice(current_region)
+	if not can_eat_cache():
+		return {}
+	_record_action("eat_cache")
+	var cfg := _cache_cfg()
+	# 新鮮度看動手挖的那一刻（挖的這一回合可能跨過一天）
+	var c: Dictionary = caches[current_region]
+	var state: String = cache_state(c)
+	var fresh: float = cache_fresh_days()
+	var age: float = float(cache_age(c))
+	GameTime.advance_turns(int(cfg.get("dig_turns", 1)))
+	if not wolf.alive:
+		return {}
+	caches.erase(current_region)
+	var result := {"stale": false, "sick": false}
+	log_message.emit(tr("log.cache.dug_up"))
+	if state == "stale":
+		result["stale"] = true
+		log_message.emit(tr("log.cache.stale"))
+		var sp: Dictionary = cfg.get("stale_poison", {})
+		var chance: float = float(sp.get("base", 0.15)) + float(sp.get("per_fresh", 0.35)) * (age - fresh) / max(1.0, fresh)
+		if RNGService.chance(min(0.9, chance)):
+			result["sick"] = true
+			wolf.poison_days_remaining = RNGService.randi_range(int(GameData.balance.get("poison_duration_min", 2)), int(GameData.balance.get("poison_duration_max", 4)))
+			log_message.emit(tr("log.poisoned"))
+	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": int(c["segments"]),
+		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": _random_terrain(current_region), "src": "cache", "no_scavenger": true}
+	life_log["caches_eaten"] = int(life_log.get("caches_eaten", 0)) + 1
+	state_changed.emit()
+	return result
 
 func resolve_hunt_success(animal_id: String, life_stage: String) -> void:
 	var prey_count: Dictionary = life_log.get("prey_count", {})
@@ -5786,6 +5936,7 @@ func to_dict() -> Dictionary:
 		"wind_dir": wind_dir,
 		"region_knowledge": region_knowledge,
 		"carcasses": carcasses,
+		"caches": caches,
 		"knowledge": knowledge,
 		"identified": identified,
 		"stranger_territory": stranger_territory,
@@ -5832,6 +5983,7 @@ func load_from_dict(data: Dictionary) -> void:
 	current_discovery = {}
 	current_feeding = {}
 	carcasses = data.get("carcasses", [])
+	caches = data.get("caches", {})
 	knowledge = data.get("knowledge", {})
 	identified = data.get("identified", GameData.knowledge.get("identified_at_start", []).duplicate())
 	stranger_territory = str(data.get("stranger_territory", "forest_north"))
