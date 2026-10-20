@@ -3098,6 +3098,9 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	hunt.stage = HuntSystem.Stage.DONE
 	_stat_inc("tactical", th.result)
 	var stage_key: String = ["subadult", "adult", "elder"][wolf.life_stage()]
+	# 次成年分成未滿 1 歲（young）與 1～2 歲（yearling）（Phase 2c 第 5 步，使用者：1～2 歲不應該太弱）
+	if stage_key == "subadult":
+		stage_key = "young" if wolf.age_years < float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)) else "yearling"
 	_stat_inc("tactical_by_stage", stage_key + "." + th.result)
 	var st0: float = wolf.stamina
 	finish_hunt(hunt)

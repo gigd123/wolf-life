@@ -9,9 +9,10 @@ extends SceneTree
 # 餓死約 15～30%、平均壽命 9～11 歲。
 # 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
 # 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
-# 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）
+# 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時白尾鹿用選單式狩獵（對照 Phase 2b）
 
 const STAGES := ["subadult", "adult", "elder"]
+const SNAP_AGES := [1.0, 1.5, 2.0, 3.0, 5.0]
 const DENS := ["forest_east", "tundra_south", "mountain_canyon", "grassland_riverwoods"]
 
 func _env_int(key: String, fallback: int) -> int:
@@ -35,6 +36,9 @@ func _process(_d):
 	var duel_ages := [2.0, 3.0, 4.0]
 	var duel := {} # 年齡 -> [場數, 贏]
 	var stat_sum := {}
+	var snap := {} # 各年齡的平均能力值（Phase 2c 第 5 步：次成年 1～2 歲和成年比）
+	for a in SNAP_AGES:
+		snap[a] = {}
 	for a in duel_ages:
 		duel[a] = [0, 0]
 		stat_sum[a] = {}
@@ -46,16 +50,20 @@ func _process(_d):
 		pack_at[a] = {"n": 0, "size": 0, "regions": 0}
 	var first_event := {} # 事件 -> [你的年齡…]
 	var event_count := {}
+	var sub_days := {} # 次成年分成未滿 1 歲、1～2 歲：天數、挨餓天數
+	var sub_hungry := {}
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
 	var tac_st := {}
 	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
 	var meet_lives := 0
 	for r in runs:
 		var ap = AP.new("all", "average")
+		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
 		var dueled := {}
 		var sampled := {}
+		var snapped_at := {}
 		while not ap.done() and guard < 2000:
 			guard += 1
 			for a in duel_ages:
@@ -66,6 +74,12 @@ func _process(_d):
 					for st in ["strength", "skill", "speed", "health_max"]:
 						stat_sum[a][st] = float(stat_sum[a].get(st, 0.0)) + float(GS.wolf.get(st))
 					stat_sum[a]["n"] = int(stat_sum[a].get("n", 0)) + 1
+			for a in SNAP_AGES:
+				if not snapped_at.has(a) and GS.wolf.age_years >= a:
+					snapped_at[a] = true
+					for st in ["strength", "skill", "speed", "health_max"]:
+						snap[a][st] = float(snap[a].get(st, 0.0)) + float(GS.wolf.get(st))
+					snap[a]["n"] = int(snap[a].get("n", 0)) + 1
 			for a in pack_ages:
 				if not sampled.has(a) and GS.wolf.age_years >= a:
 					sampled[a] = true
@@ -95,6 +109,11 @@ func _process(_d):
 			var lean: bool = not GS.lean_effects()["kinds"].is_empty()
 			var yk: String = "lean" if lean else "normal"
 			year_days[yk] += 1
+			if stage == "subadult":
+				var sk: String = "young" if GS.wolf.age_years < 1.0 else "yearling"
+				sub_days[sk] = int(sub_days.get(sk, 0)) + 1
+				if h < hungry_at:
+					sub_hungry[sk] = int(sub_hungry.get(sk, 0)) + 1
 			if h < hungry_at:
 				hungry[stage] += 1
 				year_hungry[yk] += 1
@@ -135,6 +154,8 @@ func _process(_d):
 		print("  %-8s %5.1f 狼年：每年挨餓 %4.1f 天、吃不飽(<60) %5.1f 天；狩獵成功 %3d%%（每天出獵 %.1f 次）；每年獵到 大 %4.1f 中 %4.1f 小 %4.1f" % [
 			s, yrs, hungry[s] / yrs, underfed[s] / yrs, roundi(100.0 * wins[s] / max(1, tries[s])), float(tries[s]) / max(1, days[s]),
 			k["large"] / yrs, k["medium"] / yrs, k["small"] / yrs])
+	for sk in ["young", "yearling"]:
+		print("    其中 %s：每年挨餓 %4.1f 天（%d 天）" % ["未滿 1 歲" if sk == "young" else "1～2 歲", float(sub_hungry.get(sk, 0)) / max(0.01, float(sub_days.get(sk, 0)) / dpy), int(sub_days.get(sk, 0))])
 	for yk in ["normal", "lean"]:
 		print("  %-6s年：每年挨餓 %4.1f 天（共 %d 天）" % [yk, year_hungry[yk] / max(0.01, year_days[yk] / dpy), year_days[yk]])
 	print("  老年的荒年：每年挨餓 %4.1f 天（共 %d 天）" % [elder_lean[1] / max(0.01, elder_lean[0] / dpy), elder_lean[0]])
@@ -147,6 +168,9 @@ func _process(_d):
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
 		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）；這時平均 力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0],
 			float(stat_sum[a].get("strength", 0)) / sn, float(stat_sum[a].get("skill", 0)) / sn, float(stat_sum[a].get("speed", 0)) / sn, float(stat_sum[a].get("health_max", 0)) / sn])
+	for a in SNAP_AGES:
+		var nn: float = max(1, int(snap[a].get("n", 0)))
+		print("  %.1f 歲平均：力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, float(snap[a].get("strength", 0)) / nn, float(snap[a].get("skill", 0)) / nn, float(snap[a].get("speed", 0)) / nn, float(snap[a].get("health_max", 0)) / nn])
 	print("  黑狼家族（你在這個年齡時）：")
 	for a in pack_ages:
 		var pa: Dictionary = pack_at[a]
@@ -162,7 +186,7 @@ func _process(_d):
 		for x in l: t += x
 		print("    %-10s %d 局發生（共 %d 次）；第一次 平均 %.1f 歲、中位數 %.1f 歲" % [ev, l.size(), event_count[ev], t / l.size(), l[l.size() / 2]])
 	print("    撞上黑狼一家：%d 局有，%s" % [meet_lives, meet_count])
-	for st in STAGES:
+	for st in ["young", "yearling", "adult", "elder"]:
 		var n := 0
 		var ok := 0
 		var gave := 0
