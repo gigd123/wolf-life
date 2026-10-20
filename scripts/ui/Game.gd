@@ -205,6 +205,11 @@ func _build_ui() -> void:
 	tendency_button.flat = true
 	tendency_button.visible = false
 	tendency_button.expand_icon = false
+	# 狀態圖示多的時候文字會被截掉、只剩圖示（點了照樣打開說明），頂部列才不會把整個畫面撐出 640（ui_check OFFSCREEN）
+	tendency_button.clip_text = true
+	tendency_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	tendency_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tendency_button.size_flags_stretch_ratio = 0.6
 	tendency_button.pressed.connect(_show_tendency_panel)
 	top_row.add_child(tendency_button)
 
@@ -359,6 +364,10 @@ func _build_ui() -> void:
 		var btn := Button.new()
 		btn.text = tr("action." + action_id)
 		btn.custom_minimum_size = Vector2(0, 26)
+		# 長的按鈕字（「回到獵物殘骸（剩 N 段）」）截成「…」，不撐寬行動欄、把畫面推出 640（ui_check OFFSCREEN）；完整的字在滑鼠提示
+		btn.clip_text = true
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		btn.tooltip_text = btn.text
 		btn.pressed.connect(_on_action_button.bind(action_id))
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		action_grid.add_child(btn)
@@ -1001,6 +1010,7 @@ func _refresh() -> void:
 	tendency_button.visible = not tendency.is_empty()
 	if not tendency.is_empty():
 		tendency_button.text = tr("tendency." + str(tendency["type"]))
+		tendency_button.tooltip_text = tendency_button.text
 		tendency_button.icon = ArtLibrary.icon("tendency." + str(tendency["type"]))
 	rain.emitting = GameState.weather == "storm" and not GameState.blizzard_here()
 	snow.emitting = GameState.blizzard_here() or GameState.whiteout_here()
@@ -1126,11 +1136,12 @@ func _refresh() -> void:
 	explore_hint_label.visible = available.has("explore") and explore_hint_label.text != ""
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
+	action_buttons["sleep"].tooltip_text = action_buttons["sleep"].text
 	# 回到殘骸：寫出剩幾段（Phase 2b 第 1 步）；滑鼠移上去寫不在時一天大約少多少
 	var carcass: Dictionary = GameState.carcass_here()
 	if not carcass.is_empty():
 		action_buttons["return_to_carcass"].text = tr("action.return_to_carcass.n").replace("{n}", str(int(carcass["segments_left"])))
-		action_buttons["return_to_carcass"].tooltip_text = tr("carcass.loss_tip").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent(carcass))
+		action_buttons["return_to_carcass"].tooltip_text = action_buttons["return_to_carcass"].text + "\n" + tr("carcass.loss_tip").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent(carcass))
 
 # 顯示用的血量：無條件進位（還活著就不會顯示 0），但不超過顯示的上限
 # （血量 107.3／107.3 不會顯示成 108／107）。除錯選單也用這個值。
@@ -1275,6 +1286,13 @@ func _fit_hunt_layout(_option_count: int) -> void:
 	_set_hunt_sprite_height(40.0)
 	hunt_wolf_sprite.get_parent().get_parent().visible = true
 	_shrink_hunt_layout.call_deferred()
+	_shrink_hunt_layout_later()
+
+# 文字換行要排過一次才知道多高：下一個畫格再檢查一次（ui_check 的 OFFSCREEN：戰鬥紀錄、選項超出畫面底部）
+func _shrink_hunt_layout_later() -> void:
+	await get_tree().process_frame
+	if hunt_overlay.visible:
+		_shrink_hunt_layout()
 
 func _set_hunt_sprite_height(h: float) -> void:
 	hunt_unit_h = h
@@ -1307,6 +1325,8 @@ func _shrink_hunt_layout() -> void:
 		func():
 			hunt_strip_hidden = true
 			hunt_strip.visible = false,
+		# 還放不下（戰鬥選項多、每個選項兩行說明）：戰鬥也拿掉角色圖（動畫照樣跑，只是看不到）
+		func(): hunt_wolf_sprite.get_parent().get_parent().visible = false,
 	]
 	for tier in tiers:
 		if box.get_combined_minimum_size().y <= limit:
@@ -1408,6 +1428,9 @@ func _render_strips() -> void:
 		strip.text = text
 		strip.visible = session_active and not parts.is_empty() and not (strip == hunt_strip and hunt_strip_hidden)
 		strip.scroll_to_line.call_deferred(max(0, strip.get_line_count() - 1))
+	# 紀錄第一次出現（原本隱藏）時，狩獵、戰鬥畫面要重新量一次放不放得下（ui_check：紀錄跑到畫面底部外面）
+	if hunt_overlay != null and hunt_overlay.visible:
+		_shrink_hunt_layout_later()
 
 func _circled(n: int) -> String:
 	const CIRCLED := "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
