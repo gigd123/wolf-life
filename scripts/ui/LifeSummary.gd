@@ -140,6 +140,10 @@ func _ready() -> void:
 			entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
 				.replace("{outcome}", tr("summary.stranger_outcome." + str(m.get("outcome", "")))))
 		_add_line(box, tr("summary.stranger").replace("{n}", str(meetings.size())).replace("{list}", "、".join(entries)))
+	# 黑狼一家（Phase 3a 第 5 步）：成家、擴張、佔走你的地盤、換代、散了（你當時的年齡），生過幾窩幼狼，撞上牠們幾次
+	var pack_line := _pack_line(log_data)
+	if pack_line != "":
+		_add_line(box, pack_line)
 	# 苔原的經歷（1.6 第 6d 步）：困在暴風雪裡、和狼獾交手、在河谷落水
 	for b in log_data.get("blizzards", []):
 		if bool(b.get("in_tundra", false)):
@@ -261,6 +265,25 @@ func _fire_bio(f: Dictionary) -> String:
 	if str(f.get("result", "")) in ["light", "heavy"]:
 		text += tr("bio.fire.burned")
 	return text
+
+func _pack_line(log_data: Dictionary) -> String:
+	var entries: Array[String] = []
+	var litters := 0
+	for e in log_data.get("black_pack_events", []):
+		var ev: String = str(e.get("event", ""))
+		if ev == "pups":
+			litters += 1
+		elif ev in ["paired", "expanded", "took", "succession", "dissolved"]:
+			entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(e.get("age", 0.0))).replace("{outcome}", tr("summary.pack_event." + ev)))
+	if entries.is_empty():
+		return ""
+	var line: String = tr("summary.pack").replace("{list}", "、".join(entries))
+	if litters > 0:
+		line += tr("summary.pack_litters").replace("{n}", str(litters))
+	var meets: int = log_data.get("pack_meetings", []).filter(func(m): return str(m.get("kind", "")) == "meet").size()
+	if meets > 0:
+		line += tr("summary.pack_meets").replace("{n}", str(meets))
+	return line
 
 # 和那隻黑狼之間最重要的一次：咬死牠 > 趕走牠 > 向牠示弱。
 func _stranger_bio(log_data: Dictionary) -> String:

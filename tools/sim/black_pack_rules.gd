@@ -240,6 +240,23 @@ func _process(_d) -> bool:
 	gs.action_mark()
 	taken = gs._pack_take_probed()
 	_check(taken.is_empty() and not gs.black_pack.regions.has("forest_west"), "補上標記：不會被佔走")
+	# 10. 換代、年輕挑戰者、一生回顧（第 5 步）
+	gs.new_game("forest_east")
+	gs.npcs.erase("challenger")
+	gs._ensure_challenger()
+	_check(not gs.challenger_is_son(), "黑狼沒生過幼狼：挑戰者不是牠的兒子")
+	gs.npcs.erase("challenger")
+	gs.black_pack.history.append({"event": "pups", "age": 3.0, "size": 5})
+	gs._ensure_challenger()
+	_check(gs.challenger_is_son(), "黑狼生過幼狼：挑戰者是牠的兒子")
+	for k in ["meet", "territory", "carcass"]:
+		_check(tr("challenger.first.%s.son" % k) != "challenger.first.%s.son" % k, "有文字：challenger.first.%s.son" % k)
+	var LS = load("res://scripts/ui/LifeSummary.gd").new()
+	var line: String = LS._pack_line({"black_pack_events": [{"event": "paired", "age": 2.75}, {"event": "pups", "age": 3.0}, {"event": "pups", "age": 4.0},
+		{"event": "succession", "age": 7.0}], "pack_meetings": [{"kind": "meet"}, {"kind": "remains"}]})
+	_check(line.contains("2.8") and line.contains("2 窩") and line.contains("1 次") and line.contains("兒子"), "一生回顧寫出黑狼一家：" + line)
+	_check(LS._pack_line({}) == "", "沒有黑狼一家的事：不寫")
+	LS.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 

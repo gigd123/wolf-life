@@ -935,6 +935,8 @@ func _ensure_challenger() -> NpcWolf:
 	if challenger() == null or not challenger().alive:
 		npcs["challenger"] = NpcWolf.create("challenger", current_region)
 		life_log["challenger_visits"] = 0
+		# 黑狼一家生過幼狼：來挑戰你的年輕的狼是那隻黑狼的兒子（Phase 3a 第 5 步；只改文案與名字，數值不變）
+		life_log["challenger_son"] = pack_had_pups()
 	return challenger()
 
 # 牠找上門：探索時（在地盤時說要搶地盤）或吃東西時（搶殘骸）。回傳要不要觸發。
@@ -2838,6 +2840,12 @@ func _leave_stranger_territory() -> String:
 # 其他時候是新的事件：退開、對峙（比數量）、逃。牠們的態度看你和黑狼過去的紀錄（打贏過：戒備；示弱或被趕過：看輕）。
 func _pack_meet_cfg() -> Dictionary:
 	return WolfPack.cfg().get("meet", {})
+
+func pack_had_pups() -> bool:
+	return black_pack.history.any(func(h): return str(h.get("event", "")) == "pups")
+
+func challenger_is_son() -> bool:
+	return bool(life_log.get("challenger_son", false))
 
 func pack_active() -> bool:
 	return black_pack.stage in ["pair", "pack"] and not black_pack.regions.is_empty()

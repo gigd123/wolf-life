@@ -3463,6 +3463,9 @@ func _show_lie_down() -> void:
 # 年輕的挑戰者（1.9b 第 2 步）：讓牠、或對峙。carcass：牠來搶殘骸。
 func _show_challenger(d: Dictionary, carcass: bool) -> void:
 	var key: String = "challenger." + ("first" if d.get("first", false) else "again") + ("." + ("carcass" if carcass else ("territory" if d.get("territory", false) else "meet")))
+	# 黑狼的兒子（Phase 3a 第 5 步）：第一次見面寫出牠是誰（毛色偏黑，取代原本的偏紅）
+	if d.get("first", false) and GameState.challenger_is_son():
+		key += ".son"
 	var text: String = tr(key)
 	# 「牠比上次更壯」只在牠真的變強時才說（只有你上次打贏時，文案稽核 2026-10-16）
 	if not d.get("first", false) and GameState.challenger_grew():

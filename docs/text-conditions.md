@@ -41,6 +41,8 @@
 | `pack.sign.*、encounter.observed.stranger_wolf.pair／.pack` | 腳印、氣味、狼嚎、遠觀裡不只一隻狼 | `black_pack.stage` 是 pair／pack；`pack.sign.howl.pups` 要有幼狼；`pack.sign.observed.old` 要帶頭的是老年 | 獨居時出現 |
 | `pack.meet.wary` | 那隻黑狼記得輸給你的那一次 | `pack_attitude()` = wary：黑狼 `yielded_to_player`（你打贏過）或被你殺死；第一代 | 沒打贏過時出現；換代後用 `.heir` |
 | `pack.meet.scorn` | 你曾經在那隻黑狼面前退讓 | `pack_attitude()` = scorn：黑狼 `dominance` > 0（示弱、撤退、退讓過）；第一代 | 沒退讓過時出現；換代後用 `.heir` |
+| `challenger.first.*.son` | 年輕的挑戰者是那隻黑狼的兒子 | 挑戰者出現時黑狼一家生過幼狼（`pack_had_pups()`，記在 `life_log.challenger_son`） | 黑狼從沒生過幼狼時出現 |
+| `summary.pack*` | 黑狼一家的經過（成家、擴張、佔地盤、換代、散了、幾窩幼狼、撞上幾次） | `life_log.black_pack_events`、`pack_meetings` | — |
 | `factor.old_age、reason.old_age` | 老了，腿腳和力氣不如從前 | 年齡 ≥ `hunt.age.decline_start`（6 歲）時，追擊與制伏有年齡的扣分（Phase 2b 第 3 步） | 6 歲前出現 |
 | `hunt.give_up.*` | 放棄時的依據（步伐穩健、沒有明顯弱點、露出弱點） | 看得出體況時（`condition_known`）依體況；看不出來用 unknown | 沒看出體況卻寫依據 |
 | `combat.grow.clean` | 打得越來越熟練 | 幾乎沒受傷就打贏（受傷 ≤ 15%），不是老年（技巧會長） | 老年技巧不再長時出現 |

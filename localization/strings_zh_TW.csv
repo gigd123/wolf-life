@@ -836,6 +836,14 @@ summary.stranger_outcome.killed,咬死了牠
 summary.stranger_outcome.submit,示弱
 summary.stranger_outcome.retreated,撤退
 summary.stranger_outcome.died,戰死
+summary.pack,那隻黑狼的一家（你的年齡）：{list}
+summary.pack_event.paired,牠成了家
+summary.pack_event.expanded,牠們往外擴張
+summary.pack_event.took,牠們佔走你的地盤
+summary.pack_event.succession,黑狼的兒子接手
+summary.pack_event.dissolved,牠們散了
+summary.pack_litters,；前後生了 {n} 窩幼狼
+summary.pack_meets,；你撞上牠們 {n} 次
 bio.stranger.killed,{age} 歲那年，你咬死了盤踞在{region}的那隻黑狼
 bio.stranger.drove_off,{age} 歲那年，你把那隻黑狼趕出了{region}
 bio.stranger.submit,{age} 歲那年，你在{region}和那隻黑狼對峙，最後低下了頭
@@ -1476,6 +1484,9 @@ factor.worn_teeth,牙齒磨鈍了
 challenger.first.meet,一隻年輕的狼站在不遠處盯著你。牠毛色偏紅，肩膀還很瘦，眼神卻一點也不怕你。
 challenger.first.territory,你留下記號的地方，一隻年輕的狼正抬起後腿，把自己的氣味蓋上去。牠回頭看著你，沒有要走的意思。
 challenger.first.carcass,一隻年輕的狼從旁邊走過來，低著頭、壓著耳朵，一步步逼近你的獵物。
+challenger.first.meet.son,一隻年輕的狼站在不遠處盯著你。牠毛色偏黑，眉眼像極了那隻黑狼，是牠的兒子。肩膀還很瘦，眼神卻一點也不怕你。
+challenger.first.territory.son,你留下記號的地方，一隻年輕的黑狼正抬起後腿，把自己的氣味蓋上去。牠眉眼像極了那隻黑狼，是牠的兒子。牠回頭看著你，沒有要走的意思。
+challenger.first.carcass.son,一隻年輕的黑狼從旁邊走過來，低著頭、壓著耳朵，一步步逼近你的獵物。牠眉眼像極了那隻黑狼，是牠的兒子。
 challenger.again.meet,那隻年輕的狼又來了。
 challenger.again.territory,那隻年輕的狼又在你的地盤上留下氣味。
 challenger.again.carcass,那隻年輕的狼又來搶你的獵物了。
