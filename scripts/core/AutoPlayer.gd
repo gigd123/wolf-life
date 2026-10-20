@@ -388,6 +388,19 @@ func _routine_notable(d: Dictionary) -> bool:
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
 func _play_hunt(hunt: HuntSystem) -> void:
+	# 白尾鹿用戰術地圖（Phase 2c 第 3 步）：交給本能打；會判斷的狼先觀察，看出是健康的成鹿又還不太餓就放棄（同 Phase 2b）
+	if GameState.tactical_eligible(hunt):
+		var th := GameState.start_tactical(hunt)
+		if judge and not th.is_fawn(th.target):
+			th.observe()
+			if th.condition_known and th.condition == "healthy" and GameState.wolf.hunger >= JUDGE_HUNGER:
+				th.give_up()
+		if not th.done:
+			TacticalInstinct.play(th)
+		GameState.finish_tactical_hunt(hunt, th)
+		if not done():
+			_feed_loop()
+		return
 	var guard := 0
 	while hunt.stage != HuntSystem.Stage.DONE and not done() and guard < 25:
 		guard += 1

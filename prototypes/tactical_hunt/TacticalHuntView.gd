@@ -229,6 +229,11 @@ func _build_buttons() -> void:
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
 				buttons.add_child(b)
+		var auto_h := Button.new()
+		auto_h.theme_type_variation = &"SmallButton"
+		auto_h.text = "交給本能"
+		auto_h.pressed.connect(func(): TacticalInstinct.play(h); _after_action())
+		buttons.add_child(auto_h)
 		return
 	if h.knows_front_lock:
 		var fl := Button.new()
@@ -246,6 +251,13 @@ func _build_buttons() -> void:
 	obs.text = "觀察（原地，回喘）"
 	obs.pressed.connect(func(): h.observe(); _after_action())
 	buttons.add_child(obs)
+	# 交給本能（Phase 2c 第 3 步）：照同一套規則，依局面挑一種打法打完這一場
+	var auto := Button.new()
+	auto.theme_type_variation = &"SmallButton"
+	auto.text = "交給本能"
+	auto.tooltip_text = "依風向與地形挑一種打法（潛近、伏擊或耐力追），一路打完這一場。比自己打保守一些。"
+	auto.pressed.connect(func(): TacticalInstinct.play(h); _after_action())
+	buttons.add_child(auto)
 	var quit := Button.new()
 	quit.theme_type_variation = &"SmallButton"
 	quit.text = "放棄"

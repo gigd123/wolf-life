@@ -35,6 +35,7 @@ func _process(_d) -> bool:
 	for profile in ["normal", "fast"]:
 		for cond in ["healthy", "average", "weak"]:
 			var bests: Array = []
+			var instinct: Array = []
 			var line := "%-6s %-7s" % [profile, cond]
 			for sc in ["A", "B", "C", "D"]:
 				var rates: Array = []
@@ -49,6 +50,15 @@ func _process(_d) -> bool:
 					rates.append(float(ok) / runs)
 				var best: float = rates.max()
 				bests.append(best)
+				# 交給本能（Phase 2c 第 3 步）：依局面挑一種打法
+				var iok := 0
+				for i in runs:
+					h.setup(sc, profile, i * 7919 + 13)
+					h.herd[h.di]["condition"] = cond
+					TacticalInstinct.play(h)
+					if h.result == "caught":
+						iok += 1
+				instinct.append(float(iok) / runs)
 				line += "  %s %s（最好 %d%%）" % [sc, "/".join(rates.map(func(r): return "%d" % roundi(r * 100.0))), roundi(best * 100.0)]
 			var avg_best: float = 0.0
 			for b in bests:
@@ -58,7 +68,11 @@ func _process(_d) -> bool:
 			var target: String = ""
 			if TARGETS.has(key):
 				target = "目標 %d～%d%%" % [roundi(TARGETS[key][0] * 100.0), roundi(TARGETS[key][1] * 100.0)]
-			print(line + "  → 四情境最好策略平均 %d%% %s" % [roundi(avg_best * 100.0), target])
+			var avg_inst: float = 0.0
+			for b in instinct:
+				avg_inst += b
+			avg_inst /= max(1, instinct.size())
+			print(line + "  → 四情境最好策略平均 %d%% %s；交給本能 %d%%（%s）" % [roundi(avg_best * 100.0), target, roundi(avg_inst * 100.0), "/".join(instinct.map(func(r): return "%d" % roundi(r * 100.0)))])
 			print("        分階段（所有情境與策略）：", tally)
 			tally = {}
 	return true

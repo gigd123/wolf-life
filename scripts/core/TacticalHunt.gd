@@ -218,7 +218,11 @@ func _age_factor(factors: Array) -> float:
 	var a: float = float(game_mods.get("age_penalty", 0.0))
 	if a > 0.0:
 		factors.append(["你老了", -a])
-	return -a
+	# 交給本能（Phase 2c 第 3 步）：出手比較莽撞
+	var ip: float = float(game_mods.get("instinct_penalty", 0.0))
+	if ip > 0.0:
+		factors.append(["交給本能", -ip])
+	return -a - ip
 
 # --- 鹿群（鹿群版） ---
 
