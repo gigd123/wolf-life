@@ -46,6 +46,8 @@ func _process(_d):
 		pack_at[a] = {"n": 0, "size": 0, "regions": 0}
 	var first_event := {} # 事件 -> [你的年齡…]
 	var event_count := {}
+	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
+	var tac_st := {}
 	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
 	var meet_lives := 0
 	for r in runs:
@@ -104,6 +106,11 @@ func _process(_d):
 					elder_lean[1] += 1
 		ap.finish()
 		var seen := {}
+		var tstats: Dictionary = GS.life_log.get("stats", {})
+		for k in tstats.get("tactical_by_stage", {}).keys():
+			tac[k] = int(tac.get(k, 0)) + int(tstats["tactical_by_stage"][k])
+		for k in tstats.get("tactical_stamina", {}).keys():
+			tac_st[k] = int(tac_st.get(k, 0)) + int(tstats["tactical_stamina"][k])
 		var meets: Array = GS.life_log.get("pack_meetings", [])
 		if not meets.is_empty():
 			meet_lives += 1
@@ -155,6 +162,20 @@ func _process(_d):
 		for x in l: t += x
 		print("    %-10s %d 局發生（共 %d 次）；第一次 平均 %.1f 歲、中位數 %.1f 歲" % [ev, l.size(), event_count[ev], t / l.size(), l[l.size() / 2]])
 	print("    撞上黑狼一家：%d 局有，%s" % [meet_lives, meet_count])
+	for st in STAGES:
+		var n := 0
+		var ok := 0
+		var gave := 0
+		for k in tac.keys():
+			if str(k).begins_with(st + "."):
+				n += int(tac[k])
+				if str(k).ends_with(".caught"):
+					ok += int(tac[k])
+				elif str(k).ends_with(".gave_up"):
+					gave += int(tac[k])
+		if n > 0:
+			print("  戰術狩獵（白尾鹿）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
+				roundi(100.0 * ok / max(1, n - gave)), float(tac_st.get(st, 0)) / n])
 	quit()
 	return true
 

@@ -3097,7 +3097,11 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 			hunt.fled = true
 	hunt.stage = HuntSystem.Stage.DONE
 	_stat_inc("tactical", th.result)
+	var stage_key: String = ["subadult", "adult", "elder"][wolf.life_stage()]
+	_stat_inc("tactical_by_stage", stage_key + "." + th.result)
+	var st0: float = wolf.stamina
 	finish_hunt(hunt)
+	_stat_inc("tactical_stamina", stage_key, roundi(max(0.0, st0 - wolf.stamina)))
 
 # 年齡減成：同選單式狩獵（hunt.age，Phase 2b）
 func _tactical_age_penalty() -> float:
