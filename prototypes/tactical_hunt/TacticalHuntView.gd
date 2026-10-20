@@ -200,7 +200,7 @@ func _after_action() -> void:
 		else:
 			# 原型：多列給開發看的數字
 			if h.result == "caught" and (h.herd.size() > 1 or not h.sp(h.target).is_empty()):
-				what += "%s（%d 段肉）" % [tr("tactical.label.fawn") if h.caught_kind == "fawn" else tr(str(h.sp(h.target).get("name_key", "tactical.label.doe"))), h.meat]
+				what += "%s（%d 段肉）" % [h.label(h.target), h.meat]
 			lines.append("[color=%s]結果：%s（%d 回合，用掉的喘 %d、受傷 %d；換算遊戲時間 %d 回合、體力 −%d）[/color]" % [color, what,
 				h.rounds, roundi(h.breath_used), roundi(h.damage_taken), h.game_turns(), roundi(h.stamina_cost())])
 	log_box.text = "\n".join(lines.slice(maxi(0, lines.size() - 30)))
@@ -413,6 +413,10 @@ func _draw_map() -> void:
 		map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
 	if h.herd.size() > 1:
 		map.draw_rect(_cell_rect(h.deer_pos), COLORS["picked"], false, 1.0)
+	# 觀察後看出的最弱的那一隻（Phase 2d 第 2 步）：格子左上角的橘點
+	for i in h.active_deer():
+		if bool(h.herd[i].get("weakest", false)):
+			map.draw_circle(Vector2(h.herd[i]["pos"]) * CELL + Vector2(3, 3), 2.5, Color("#ff8a3d"))
 	# 狼
 	# 狼的面向：上一步移動的方向；沒動過時朝向鹿
 	if h.wolf_pos != last_wolf_pos:

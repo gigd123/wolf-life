@@ -179,10 +179,12 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 
 # 主遊戲開局（Phase 2c）：ctx = {map（情境或地圖 id）, seed, wolf（{speed, skill, strength, perception, stamina, health, health_max}）,
 # condition（主遊戲擲出的體況）, gorged, age_penalty, twilight, deep_snow, wind（Vector2i，可省略）}
+# Phase 2d 第 2 步：species（"deer" 白尾鹿、"elk" 馬鹿）；herd = {conditions: [每隻成鹿的體況，第一隻是主遊戲遇到的那一隻], calves: 幾隻小鹿}
 func setup_from_game(ctx: Dictionary) -> void:
 	var scenario: String = str(ctx.get("map", "A"))
+	var herd_cfg: Dictionary = ctx.get("herd", {})
 	if ctx.has("family"):
-		scenario = _build_game_scenario(str(ctx["family"]), bool(ctx.get("fawn", false)), int(ctx.get("seed", 1)))
+		scenario = _build_game_scenario(str(ctx["family"]), bool(ctx.get("fawn", false)), int(ctx.get("seed", 1)), str(ctx.get("species", "deer")), herd_cfg)
 	setup(scenario, "normal", int(ctx.get("seed", 1)))
 	var w: Dictionary = ctx.get("wolf", {})
 	for k in ["speed", "skill", "strength", "perception", "health", "health_max"]:
@@ -201,7 +203,15 @@ func setup_from_game(ctx: Dictionary) -> void:
 		game_mods["no_sprint"] = true
 	wolves[0]["breath"] = bmax
 	wolves[0]["breath_max"] = bmax
-	if str(ctx.get("condition", "")) in ["healthy", "average", "weak"]:
+	var conds: Array = herd_cfg.get("conditions", [])
+	if not conds.is_empty():
+		var k := 0
+		for d in herd:
+			if str(d.get("kind", "adult")) != "fawn" and k < conds.size():
+				if str(conds[k]) in ["healthy", "average", "weak"]:
+					d["condition"] = str(conds[k])
+				k += 1
+	elif str(ctx.get("condition", "")) in ["healthy", "average", "weak"]:
 		for d in herd:
 			if str(d.get("kind", "adult")) != "fawn":
 				d["condition"] = str(ctx["condition"])
@@ -231,7 +241,7 @@ func wind_for(relation: String) -> Vector2i:
 
 # 每種地形的地圖（Phase 2c 第 4 步，data/tactical_hunt.json 的 maps）：同一族挑一張，鹿在中間一帶的開闊處，
 # 狼在 game.start_dist 格外（可以在林子裡），鹿的兩個目的地在 5～9 格外的開闊處；幼鹿跟在母鹿旁邊。結果存成臨時情境 "_game"。
-func _build_game_scenario(family: String, fawn: bool, seed: int) -> String:
+func _build_game_scenario(family: String, fawn: bool, seed: int, species: String = "deer", herd_cfg: Dictionary = {}) -> String:
 	var pick := RandomNumberGenerator.new()
 	pick.seed = seed + 99991
 	var ids: Array = (t.get("maps", {}) as Dictionary).keys().filter(func(k): return str(t["maps"][k].get("family", "")) == family)
@@ -270,15 +280,39 @@ func _build_game_scenario(family: String, fawn: bool, seed: int) -> String:
 	if goals.is_empty():
 		goals = [[deer.x, deer.y]]
 	var sc := {"name": str(m.get("name", "")), "wind": [-1, 0], "wolf": [wolf.x, wolf.y], "goals": goals, "map": rows}
-	if fawn:
+	var calf_sp: String = species + "_calf" if t.get("species", {}).has(species + "_calf") else "deer"
+	# 鹿群（Phase 2d 第 2 步）：成鹿圍在中間那一隻旁邊 3 格內的開闊處，前幾隻成鹿身邊各跟一隻小鹿
+	var n_adults: int = (herd_cfg.get("conditions", []) as Array).size()
+	if n_adults >= 2:
+		var taken := {deer: true}
+		var list: Array = [{"pos": [deer.x, deer.y], "kind": "adult", "species": species}]
+		for r in [1, 2, 3]:
+			for i in 40:
+				if list.size() >= n_adults:
+					break
+				var c := deer + Vector2i(pick.randi_range(-r, r), pick.randi_range(-r, r))
+				if open_at.call(c) and not taken.has(c) and c != wolf:
+					taken[c] = true
+					list.append({"pos": [c.x, c.y], "kind": "adult", "species": species})
+		var adults: int = list.size()
+		for k in mini(int(herd_cfg.get("calves", 0)), adults):
+			var mp := Vector2i(int(list[k]["pos"][0]), int(list[k]["pos"][1]))
+			for d in DIRS:
+				var c: Vector2i = mp + d
+				if open_at.call(c) and not taken.has(c) and c != wolf:
+					taken[c] = true
+					list.append({"pos": [c.x, c.y], "kind": "fawn", "mother": k, "species": calf_sp})
+					break
+		sc["deer_list"] = list
+	elif fawn:
 		var f := deer + Vector2i(1, 1)
 		for d in DIRS:
 			if open_at.call(deer + d):
 				f = deer + d
 				break
-		sc["deer_list"] = [{"pos": [deer.x, deer.y], "kind": "adult"}, {"pos": [f.x, f.y], "kind": "fawn", "mother": 0}]
+		sc["deer_list"] = [{"pos": [deer.x, deer.y], "kind": "adult", "species": species}, {"pos": [f.x, f.y], "kind": "fawn", "mother": 0, "species": calf_sp}]
 	else:
-		sc["deer"] = [deer.x, deer.y]
+		sc["deer_list"] = [{"pos": [deer.x, deer.y], "kind": "adult", "species": species}]
 	t["scenarios"]["_game"] = sc
 	return "_game"
 
@@ -336,7 +370,9 @@ func label(i: int = -1) -> String:
 	var k: int = di if i < 0 else i
 	if herd.size() <= 1:
 		return _tx("tactical.label.it")
-	return _tx("tactical.label.fawn") if is_fawn(k) else _tx(str(sp(k).get("name_key", "tactical.label.doe")))
+	if is_fawn(k):
+		return _tx(str(sp(k).get("name_key", "tactical.label.fawn")))
+	return _tx(str(sp(k).get("name_key", "tactical.label.doe")))
 
 func set_target(i: int) -> void:
 	if i >= 0 and i < herd.size() and not bool(herd[i]["gone"]) and not held:
@@ -463,7 +499,27 @@ func observe() -> void:
 	condition_known = true
 	observed += 1
 	events.append(_tx("tactical.observe").replace("{condition}", _tx("tactical.condition." + condition)))
+	_mark_weakest()
 	_end_wolf_turn("still")
+
+# 鹿群（成鹿 2 隻以上）：觀察時看出群裡最弱的那一隻（Phase 2d 第 2 步；同主遊戲「觀察鹿群，找出跑得慢的」）。
+func _mark_weakest() -> void:
+	var adults: Array = active_deer().filter(func(i): return not is_fawn(i))
+	if adults.size() < 2:
+		return
+	var rank := {"weak": 0, "average": 1, "healthy": 2}
+	var best := -1
+	for i in adults:
+		if best < 0 or int(rank.get(str(herd[i]["condition"]), 2)) < int(rank.get(str(herd[best]["condition"]), 2)):
+			best = i
+	for i in herd.size():
+		herd[i]["weakest"] = false
+	if str(herd[best]["condition"]) == "healthy":
+		events.append(_tx("tactical.herd.all_healthy"))
+		return
+	herd[best]["weakest"] = true
+	herd[best]["condition_known"] = true
+	events.append(_tx("tactical.herd.weakest").replace("{animal}", label(best)))
 
 func give_up() -> void:
 	if done:

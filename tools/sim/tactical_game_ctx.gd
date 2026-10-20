@@ -128,6 +128,45 @@ func _process(_d) -> bool:
 			_:
 				_check(hunt.result == 2 and gs.current_discovery.get("fled", false), "逃走：留下足跡（%s）" % th.result)
 	print("結果：", outcomes)
+	# 9. Phase 2d 第 2 步：馬鹿（母鹿、小鹿走戰術地圖，公鹿照舊走選單）、鹿群、觀察標出最弱的、獵到的是哪一隻
+	gs.new_game("forest_east")
+	gs.debug_force_transition("adult")
+	_check(gs.tactical_eligible(gs.start_hunt("elk", "adult")) and gs.tactical_eligible(gs.start_hunt("elk", "juvenile")), "馬鹿：母鹿、小鹿走戰術地圖")
+	_check(not gs.tactical_eligible(gs.start_hunt("elk", "buck")), "馬鹿：公鹿照舊走選單")
+	for i in 30:
+		root.get_node("RNGService").set_seed(900 + i)
+		var eh = gs.start_hunt("elk", "adult")
+		eh.set_herd(true)
+		var eth = gs.start_tactical(eh)
+		var adults: int = eth.herd.filter(func(d): return str(d["kind"]) == "adult").size()
+		_check(adults >= 4 and adults <= 7, "馬鹿鹿群：成鹿 4～7 隻（%d）" % adults)
+		_check(eth.herd.all(func(d): return str(d["species"]) in ["elk", "elk_calf"]), "馬鹿鹿群：都是馬鹿")
+		_check(eth.herd.all(func(d): return eth.terrain(d["pos"]) == "."), "馬鹿鹿群：都在開闊處")
+		eth.observe()
+		var worst := "healthy"
+		for d in eth.herd:
+			if str(d["kind"]) == "adult" and str(d["condition"]) != "healthy" and (worst == "healthy" or str(d["condition"]) == "weak"):
+				worst = str(d["condition"])
+		var marked: Array = eth.herd.filter(func(d): return bool(d.get("weakest", false)))
+		_check((worst == "healthy" and marked.is_empty()) or (marked.size() == 1 and str(marked[0]["condition"]) == worst), "觀察鹿群：標出最弱的那一隻（%s）" % worst)
+	# 獵到小馬鹿 → 記成小鹿
+	var ch = gs.start_hunt("elk", "juvenile")
+	var cth = gs.start_tactical(ch)
+	_check(cth.is_fawn(cth.target) and cth.label(cth.target) == "小馬鹿", "馬鹿小鹿：目標是小馬鹿（%s）" % cth.label(cth.target))
+	cth._finish("caught", "test")
+	gs.finish_tactical_hunt(ch, cth)
+	_check(ch.life_stage == "juvenile" and gs.is_feeding(), "獵到小馬鹿：記成小鹿、進入進食")
+	if gs.is_feeding():
+		gs.leave_feeding()
+	# 幼鹿那一場換目標獵到母鹿 → 記成成鹿
+	var mh = gs.start_hunt("white_tailed_deer", "juvenile")
+	var mth = gs.start_tactical(mh)
+	for k in mth.herd.size():
+		if not mth.is_fawn(k):
+			mth.set_target(k)
+	mth._finish("caught", "test")
+	gs.finish_tactical_hunt(mh, mth)
+	_check(mh.life_stage == "adult", "幼鹿那一場換目標獵到母鹿：記成成鹿（%s）" % mh.life_stage)
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

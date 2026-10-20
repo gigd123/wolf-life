@@ -395,6 +395,7 @@ func _play_hunt(hunt: HuntSystem) -> void:
 		var th := GameState.start_tactical(hunt)
 		if judge and not th.is_fawn(th.target):
 			th.observe()
+			TacticalInstinct.pick_target(th)
 			if th.condition_known and th.condition == "healthy" and GameState.wolf.hunger >= JUDGE_HUNGER:
 				th.give_up()
 		if not th.done:

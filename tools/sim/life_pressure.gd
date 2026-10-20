@@ -198,7 +198,7 @@ func _process(_d):
 				elif str(k).ends_with(".gave_up"):
 					gave += int(tac[k])
 		if n > 0:
-			print("  戰術狩獵（白尾鹿）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
+			print("  戰術狩獵（白尾鹿、馬鹿）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
 				roundi(100.0 * ok / max(1, n - gave)), float(tac_st.get(st, 0)) / n])
 	quit()
 	return true

@@ -1740,6 +1740,9 @@ tactical.defend.hit,母鹿轉身朝你衝過來，前蹄踢中了你（血量 �
 tactical.defend.miss,母鹿轉身朝你衝過來，你閃開了牠的前蹄。
 tactical.separated,幼鹿和母鹿跑散了！
 tactical.regroup,跑散的鹿又聚到了一起。
+tactical.herd.weakest,你看出那隻{animal}步伐有點拖，是群裡最弱的一隻。
+tactical.herd.all_healthy,你把整群看了一遍，每一隻都很健壯，看不出破綻。
+tactical.label.elk_calf,小馬鹿
 tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。

@@ -15,8 +15,26 @@ static func pick_policy(h) -> String:
 		return "pace"
 	return "stalk"
 
+# 鹿群裡挑目標（Phase 2d 第 2 步）：觀察後標出最弱的那一隻就挑牠；沒有的話挑小鹿；都沒有就照原本的。
+static func pick_target(h) -> void:
+	if h.held or h.herd.size() <= 1:
+		return
+	for i in h.active_deer():
+		if bool(h.herd[i].get("weakest", false)):
+			h.set_target(i)
+			return
+	if h.is_fawn(h.target):
+		return
+	var best := -1
+	for i in h.active_deer():
+		if h.is_fawn(i) and (best < 0 or h.dist(h.herd[i]["pos"], h.wolf_pos) < h.dist(h.herd[best]["pos"], h.wolf_pos)):
+			best = i
+	if best >= 0:
+		h.set_target(best)
+
 # 從現在的局面打到結束（中途按「交給本能」也可以）。pol 空字串時由本能挑。
 static func play(h, pol: String = "") -> void:
+	pick_target(h)
 	if pol == "":
 		pol = pick_policy(h)
 		h.game_mods["instinct_penalty"] = float(h.t.get("game", {}).get("instinct_penalty", 0.0))
@@ -35,6 +53,12 @@ static func step(h, pol: String) -> void:
 			if opts.has(k) and float(opts[k]["chance"]) > bc:
 				bc = float(opts[k]["chance"])
 				pick = k
+		# 大型獵物（物種有咬住後的加減，例如馬鹿；Phase 2d 第 2 步）：機會不大時先咬後腿、再不行就死咬拖住，把牠拖垮
+		if h.sp().has("hold") and bc < float(h.t["game"].get("instinct_wear_down", 0.3)):
+			if opts.has("hamstring"):
+				pick = "hamstring"
+			elif opts.has("hang"):
+				pick = "hang"
 		h.hold_action(pick)
 		return
 	var targets: Dictionary = h.pounce_targets()

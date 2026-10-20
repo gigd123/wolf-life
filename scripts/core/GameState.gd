@@ -3053,13 +3053,26 @@ func tactical_context(terrain: String, wind: String, condition: String) -> Dicti
 # 受傷的個體（簡易流程）、躲在草裡的幼鹿（要先搜尋）照舊走選單。
 func tactical_eligible(hunt: HuntSystem) -> bool:
 	var t: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH))
-	return hunt != null and (t.get("game", {}).get("animals", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.hiding
+	var g: Dictionary = t.get("game", {})
+	# 公馬鹿照舊走選單（Phase 2d：會站定，之後和駝鹿、野牛一起做）
+	if hunt != null and (g.get("exclude_stages", {}).get(hunt.animal_id, []) as Array).has(hunt.life_stage):
+		return false
+	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.hiding
 
 # 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
 func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var ctx := tactical_context(hunt.terrain, hunt.wind_state(), hunt.condition)
 	ctx["fawn"] = hunt.life_stage == "juvenile"
+	# Phase 2d 第 2 步：物種與鹿群（成鹿的體況照主遊戲的季節比例各擲一次，第一隻是遇到的那一隻）
+	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
+	ctx["species"] = str(g.get("species", {}).get(hunt.animal_id, "deer"))
+	var size: Array = g.get("herd_size", {}).get(hunt.animal_id, [])
+	if hunt.in_herd and size.size() == 2 and hunt.life_stage != "juvenile":
+		var conds: Array = [hunt.condition]
+		for i in RNGService.randi_range(int(size[0]), int(size[1])) - 1:
+			conds.append(hunt._pick_condition())
+		ctx["herd"] = {"conditions": conds, "calves": int(g.get("herd_calves", {}).get(hunt.animal_id, {}).get(GameTime.current_season(), 0))}
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if hunt.life_stage == "juvenile":
@@ -3086,6 +3099,13 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	hunt.practice.append_array(th.practice)
 	hunt.condition_known = hunt.condition_known or th.condition_known
 	hunt.decisions.append("tactical." + th.result)
+	# 獵到的是哪一隻（鹿群裡換過目標）：小鹿 → juvenile、成鹿 → 原本是小鹿的話改成 adult；體況照那一隻
+	if th.result == "caught":
+		if th.caught_kind == "fawn":
+			hunt.life_stage = "juvenile"
+		elif hunt.life_stage == "juvenile":
+			hunt.life_stage = "adult"
+		hunt.condition = str(th.herd[th.target]["condition"])
 	match th.result:
 		"caught":
 			hunt.result = HuntSystem.Result.SUCCESS
