@@ -34,7 +34,8 @@ func _scenarios() -> Array:
 			out.append({"name": "%s.%s" % [a, st], "den": "forest_east", "stage": "adult", "trigger": "enc:%s:%s" % [a, st]})
 	for k in ["debug.event.bear_distant", "debug.event.stranger_distant", "debug.event.howl", "debug.event.driven_off",
 			"debug.event.prey_nearby", "debug.event.bear_passing", "debug.event.fox_scavenge", "debug.event.mother_bear",
-			"debug.event.stranger_meet", "debug.event.stranger_confront", "debug.event.bear_scavenge", "debug.event.old_injury"]:
+			"debug.event.stranger_meet", "debug.event.stranger_confront", "debug.event.bear_scavenge", "debug.event.old_injury",
+			"debug.event.pack_meet", "debug.event.pack_young"]:
 		out.append({"name": k, "den": "forest_east", "stage": "adult", "trigger": "btn:" + k})
 	out.append({"name": "debug.challenger", "den": "forest_east", "stage": "elder", "trigger": "btn:debug.challenger"})
 	for k in ["debug.tundra.wolverine", "debug.tundra.ravens", "debug.tundra.ice", "debug.tundra_wolf.meet", "debug.tundra_wolf.mob",

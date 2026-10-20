@@ -206,6 +206,19 @@ func _handle_pending() -> void:
 						break
 					if str(GameState.fire_escape(str(best["id"])).get("result", "")) != "smoke":
 						break
+			"pack_meet":
+				# 撞上黑狼一家（Phase 3a 第 3 步）：強攻型對峙或打落單的年輕狼，其他打法退開（被逼近時逃）
+				if str(event.get("lone", "")) == "young":
+					if style == "assault":
+						play_combat(GameState.start_pack_young_combat())
+					else:
+						GameState.pack_young_avoid()
+				elif style == "assault":
+					GameState.pack_standoff()
+				elif bool(event.get("charge", false)):
+					GameState.pack_flee()
+				else:
+					GameState.pack_retreat()
 			"stranger_confront":
 				if style == "assault":
 					play_combat(GameState.start_stranger_combat("territory"))

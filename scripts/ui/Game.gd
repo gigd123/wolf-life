@@ -731,6 +731,16 @@ func _build_debug_overlay() -> void:
 		GameState.pending_events.append({"type": "driven_off"})
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.pack_meet"), func():
+		debug_overlay.visible = false
+		GameState.debug_pack_meet()
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.pack_young"), func():
+		debug_overlay.visible = false
+		GameState.debug_pack_meet("young")
+		_refresh()
+	)
 	var event_row3 := _debug_row()
 	right.add_child(event_row3)
 	_debug_button(event_row3, tr("debug.event.prey_nearby"), func():
@@ -2231,6 +2241,9 @@ func _process_events() -> void:
 		"stranger_confront":
 			_show_stranger_confront()
 			return
+		"pack_meet":
+			_show_pack_meet(event)
+			return
 		"fire_warning":
 			var warn_key: String = "far" if event.get("far", false) else ("late" if event.get("late", false) else "early")
 			_show_event_message(tr("fire.warning." + warn_key) \
@@ -3594,6 +3607,55 @@ func _show_stranger_confront() -> void:
 	)
 	_add_encounter_button(tr("stranger.stand"), func():
 		_begin_combat(GameState.start_stranger_combat("territory"))
+	)
+	encounter_overlay.visible = true
+
+# 撞上黑狼一家（Phase 3a 第 3 步）：退開、對峙、逃；落單的年輕狼可以打或避開。
+func _show_pack_meet(event: Dictionary) -> void:
+	var location: String = tr("explore.location." + str(event.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_set_terrain_bg(encounter_bg, str(event.get("location", GameState._random_terrain(GameState.current_region))))
+	encounter_detail.text = ""
+	if str(event.get("lone", "")) == "young":
+		var young_text: String = tr("pack.meet.young").replace("{location}", location)
+		_log(young_text)
+		encounter_message.text = young_text
+		_set_creature(encounter_sprite, "challenger", "adult", "idle")
+		_add_encounter_button(tr("stranger.stand"), func():
+			_begin_combat(GameState.start_pack_young_combat())
+		)
+		_add_encounter_button(tr("ui.leave"), func():
+			GameState.pack_young_avoid()
+			_log(tr("pack.young.avoided"))
+			encounter_overlay.visible = false
+			_refresh()
+		)
+		encounter_overlay.visible = true
+		return
+	var who: String = tr("pack.who." + ("heir" if GameState.black_pack.generation > 1 else str(event.get("stage", "pack"))))
+	# 換代後是新一代：不寫「那隻黑狼記得…」，態度另有一句（效果減半）
+	var meet_key: String = "pack.meet." + str(event.get("attitude", "neutral")) + (".heir" if GameState.black_pack.generation > 1 and str(event.get("attitude", "neutral")) != "neutral" else "")
+	var text: String = tr(meet_key).replace("{who}", who).replace("{location}", location)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = tr("pack.meet.count").replace("{n}", str(int(event.get("size", 2))))
+	_set_creature(encounter_sprite, "stranger_wolf", "adult", "threaten")
+	var after := func(msg: String) -> void:
+		_log(msg)
+		encounter_overlay.visible = false
+		_refresh()
+	if not bool(event.get("charge", false)):
+		_add_encounter_button(tr("pack.option.retreat"), func():
+			var to: String = GameState.pack_retreat()
+			after.call(tr("pack.retreat").replace("{region}", tr("region." + to)))
+		)
+	_add_encounter_button(tr("pack.option.standoff").replace("{p}", str(roundi(GameState.pack_standoff_chance() * 100.0))), func():
+		var r: Dictionary = GameState.pack_standoff()
+		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
+	)
+	_add_encounter_button(tr("pack.option.flee").replace("{p}", str(roundi((1.0 - GameState.pack_flee_caught_chance()) * 100.0))), func():
+		var r: Dictionary = GameState.pack_flee()
+		after.call(tr("pack.flee." + ("caught" if r["caught"] else "safe")).replace("{region}", tr("region." + str(r["region"]))))
 	)
 	encounter_overlay.visible = true
 

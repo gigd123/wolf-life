@@ -134,6 +134,61 @@ func _process(_d) -> bool:
 		if e.get("type", "") == "season_card":
 			lines = e["lines"]
 	_check(lines.any(func(l): return str(l.get("key", "")).begins_with("pack.news.paired.")) and not gs.life_log.has("pack_news"), "人在森林：季節卡片寫出家族的消息（%s）" % [lines])
+	# 8. 撞上狼群（第 3 步）
+	gs.new_game("forest_east")
+	gs.debug_force_transition("adult")
+	gs.black_pack.stage = "pack"
+	gs.black_pack.mate_age = 3.0
+	gs.black_pack.young = [1.5, 0.5, 0.5]
+	gs.black_pack.regions = ["forest_north"]
+	_check(gs.pack_zone("forest_north") == "core" and gs.pack_zone("forest_east") == "border" and gs.pack_zone("forest_south") == "", "領域、相鄰、無關的區域（%s %s %s）" % [gs.pack_zone("forest_north"), gs.pack_zone("forest_east"), gs.pack_zone("forest_south")])
+	_check(gs.pack_attitude() == "neutral", "沒什麼往來：neutral")
+	gs.wolf.strength = 85.0
+	gs.wolf.skill = 80.0
+	var c5: float = gs.pack_standoff_chance()
+	gs.black_pack.young = [1.5]
+	var c3: float = gs.pack_standoff_chance()
+	_check(c3 > c5, "數量越少，對峙勝算越高（3 隻 %.2f、5 隻 %.2f）" % [c3, c5])
+	gs.stranger().dominance = 1
+	_check(gs.pack_attitude() == "scorn" and gs._pack_attitude_value("charge", 0.0) >= 0.5, "示弱過：看輕，直接逼過來")
+	gs.stranger().dominance = 0
+	gs.stranger().yielded_to_player = true
+	var wary_c: float = gs.pack_standoff_chance()
+	_check(gs.pack_attitude() == "wary" and wary_c > c3 and gs.pack_flee_caught_chance() < 0.35, "打贏過牠：戒備，對峙較有勝算、不太追（%.2f）" % wary_c)
+	var bonus1: float = gs._pack_attitude_value("standoff_bonus", 0.0)
+	gs.black_pack.generation = 2
+	var bonus2: float = gs._pack_attitude_value("standoff_bonus", 0.0)
+	gs.black_pack.generation = 1
+	_check(absf(bonus2 - bonus1 * 0.5) < 0.001 and bonus1 > 0.0, "換代後態度減半（%.2f → %.2f）" % [bonus1, bonus2])
+	# 退開：離開牠們的領域，不丟殘骸；對峙輸、被追上：丟殘骸、受傷
+	gs.current_region = "forest_north"
+	gs.carcasses = [{"region_id": "forest_north", "animal_id": "white_tailed_deer", "life_stage": "adult", "segments": 2, "day": 1}]
+	var to: String = gs.pack_retreat()
+	_check(to != "forest_north" and gs.carcasses.size() == 1, "退開：離開牠們的領域（%s），殘骸還在" % to)
+	gs.current_region = "forest_north"
+	var hp: float = gs.wolf.health
+	var caught := false
+	for i in 30:
+		rng.set_seed(i)
+		gs.current_region = "forest_north"
+		var r: Dictionary = gs.pack_flee()
+		if r["caught"]:
+			caught = true
+			break
+	_check(caught and gs.wolf.health < hp and gs.carcasses.is_empty(), "逃走被追上：受傷、殘骸被拿走")
+	# 每個時段在領域裡會撞上
+	cfg_meet_force(data)
+	gs.current_region = "forest_north"
+	gs.pending_events.clear()
+	gs.events_today = 0
+	gs._update_territory()
+	_check(gs.pending_events.any(func(e): return str(e.get("type", "")) in ["pack_meet", "stranger_confront"]), "在牠們的領域：撞上（%s）" % [gs.pending_events])
+	# 落單的年輕狼：打死少一隻
+	var n_young: int = gs.black_pack.young.size()
+	var cb = gs.start_pack_young_combat()
+	cb.outcome = "killed"
+	gs._after_pack_young_combat(cb)
+	_check(gs.black_pack.young.size() == n_young - 1 and not gs.npcs.has("pack_young"), "打死落單的年輕狼：少一隻")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
@@ -141,3 +196,6 @@ func _check(ok: bool, what: String) -> void:
 	if not ok:
 		fails += 1
 		print("  ✗ " + what)
+
+func cfg_meet_force(data) -> void:
+	data.balance["black_pack"]["meet"]["core_chance"] = 10.0

@@ -74,6 +74,8 @@
       "interaction": { "unlock_subadult_chance": 0.5, "follow_base": 0.45, "follow_divisor": 150, "drive_off_dominance_bonus": 0.15, "howl_mult_after_yield": 0.5, "submit_damage_mult": 0.6 }
     },
     "_black_heir_comment": "Phase 3a：黑狼死後接手牠狼群的兒子（換代）。設定沿用黑狼，年齡由 GameState 依接手時的年齡設定。",
+    "_pack_young_comment": "Phase 3a 第 3 步：落單的年輕狼（黑狼的孩子），比黑狼弱。戰鬥用 challenger 的外觀與名稱「年輕的狼」。",
+    "pack_young": { "base": "stranger_wolf", "start_age": [1.0, 2.0], "start_stats": { "speed": [58, 66], "strength": [50, 58], "skill": [46, 54], "perception": [50, 58], "health_max": [85, 95] } },
     "black_heir": { "base": "stranger_wolf", "start_stats": { "speed": [62, 70], "strength": [62, 70], "skill": [56, 64], "perception": [56, 64], "health_max": [100, 110] } },
     "wolverine": {
       "_comment": "狼獾（1.6 第 6d 步）：苔原的搶屍者。體型小但極兇猛：力量值約 110，很少放棄（耐力低於 15% 才退），不會示弱，也不會想殺狼。interaction：map 牠活動的地圖；feed_chance 在苔原分段進食時每一段吃完後找上門的機率（渡鴉的 feeding_bonus_per_turn 會再往上加）；return_chance 回到苔原的殘骸時撞見牠的機率；carcass_loss_mult 苔原的殘骸被偷吃（消失）的倍率；replace_chance_per_season 牠死後每一季有新的狼獾遷進來的機率。",
@@ -441,7 +443,20 @@
     "mate_age": [2.0, 3.0], "mate_death_per_season": 0.02, "mate_old_age": 8.0, "mate_old_death_per_season": 0.15,
     "pup_chance": 0.8, "litter": [3, 5], "pup_survival_per_season": 0.84,
     "disperse_per_season": { "autumn": 0.15, "winter": 0.15 }, "heir_min_age": 1.5,
-    "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10
+    "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10,
+    "_meet_comment": "第 3 步「撞上狼群」：在牠們的領域每個時段 core_chance、相鄰區 border_chance；先擲落單的黑狼（第一代、可以互動時 lone_leader_chance，走現有的單挑）、落單的年輕狼（lone_young_chance）。對峙勝算 = base ÷ 數量 + (你的力量值 − 帶頭的) ÷ power_divisor + 態度加減，限制在 min～max；輸了 standoff_damage 並離開。逃：caught 被追上（吃撐或有傷 + slow_bonus），flee_damage。attitude：wary（打贏過牠）、scorn（向牠示弱、被趕過）、neutral；換代後效果減半。charge ≥ 0.5：牠們直接逼過來，不能從容退開。",
+    "meet": {
+      "core_chance": 0.04, "border_chance": 0.015, "lone_leader_chance": 0.25, "lone_young_chance": 0.15,
+      "standoff": { "base": 0.7, "power_divisor": 200, "min": 0.03, "max": 0.6, "leaderless_power": 120 },
+      "standoff_damage": [6, 12],
+      "flee": { "caught": 0.35, "slow_bonus": 0.2 },
+      "flee_damage": [8, 16],
+      "attitude": {
+        "wary": { "meet_mult": 0.7, "standoff_bonus": 0.15, "chase_mult": 0.4, "charge": 0.0 },
+        "scorn": { "meet_mult": 1.5, "standoff_bonus": -0.1, "chase_mult": 1.3, "charge": 1.0 },
+        "neutral": {}
+      }
+    }
   },
   "growth": {
     "_comment": "SPEC 1.6「成長系統」，規則在 scripts/core/Growth.gd。learn_per_unit：技巧、感知每次成功的當下成長（失敗 × fail_mult，同一場狩獵連續失敗再 × fail_streak_decay 的次方）。training_points：鍛鍊點，action = 狩獵中練到速度或力量的一步（追擊一回合、撲抓、搏鬥一回合），takedown = 制伏獵物，guard = 守住獵物或打贏灰熊，另外 health_share 比例記到血量上限；gather、explore 三項平均。stat_per_point × 飽食倍率 × 生命階段倍率 = 睡覺時每點鍛鍊點的成長量。",

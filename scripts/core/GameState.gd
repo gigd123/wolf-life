@@ -2692,6 +2692,11 @@ func trigger_howl() -> void:
 
 # 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
 func _update_territory() -> void:
+	# 黑狼成家後，改成「撞上狼群」（Phase 3a 第 3 步）
+	if pack_active():
+		territory_periods = 0
+		_maybe_pack_meet()
+		return
 	var npc := stranger()
 	if current_region != stranger_territory or npc == null or not npc.alive or npc.yielded_to_player:
 		territory_periods = 0
@@ -2735,6 +2740,173 @@ func _leave_stranger_territory() -> String:
 	_check_death()
 	state_changed.emit()
 	return current_region
+
+# --- 撞上黑狼一家（Phase 3a 第 3 步）---
+# 在牠們的領域、相鄰的區域每個時段有機會撞上；落單的黑狼走現有的單挑，落單的年輕狼是一場小戰鬥，
+# 其他時候是新的事件：退開、對峙（比數量）、逃。牠們的態度看你和黑狼過去的紀錄（打贏過：戒備；示弱或被趕過：看輕）。
+func _pack_meet_cfg() -> Dictionary:
+	return WolfPack.cfg().get("meet", {})
+
+func pack_active() -> bool:
+	return black_pack.stage in ["pair", "pack"] and not black_pack.regions.is_empty()
+
+# core：牠們的領域；border：和領域相鄰（只算森林）；其他是空字串。
+func pack_zone(region_id: String) -> String:
+	if not pack_active():
+		return ""
+	if black_pack.regions.has(region_id):
+		return "core"
+	for r in black_pack.regions:
+		if EncounterSystem.region_data(str(r)).get("adjacent", []).has(region_id):
+			return "border"
+	return ""
+
+func pack_attitude() -> String:
+	var npc := stranger()
+	if npc != null and (npc.yielded_to_player or npc.death_cause == "killed_by_player"):
+		return "wary"
+	if npc != null and npc.dominance > 0:
+		return "scorn"
+	return "neutral"
+
+# 換代後，牠們對你的態度減半（新一代不記得那麼多）。
+func _pack_attitude_value(key: String, neutral: float) -> float:
+	var v: float = float(_pack_meet_cfg().get("attitude", {}).get(pack_attitude(), {}).get(key, neutral))
+	return lerp(neutral, v, 0.5 if black_pack.generation > 1 else 1.0)
+
+func pack_size_now() -> int:
+	var leader := pack_leader()
+	return black_pack.size(leader != null and leader.alive)
+
+func _maybe_pack_meet() -> void:
+	var zone: String = pack_zone(current_region)
+	if zone == "" or not _can_trigger_event() or blizzard_here():
+		return
+	var cfg := _pack_meet_cfg()
+	var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value("meet_mult", 1.0)
+	if RNGService.chance(chance_value):
+		_queue_event(_pack_meet_event())
+
+func _pack_meet_event() -> Dictionary:
+	var cfg := _pack_meet_cfg()
+	if black_pack.generation == 1 and stranger_can_interact() and RNGService.chance(float(cfg.get("lone_leader_chance", 0.25))):
+		return {"type": "stranger_confront"}
+	if black_pack.young.any(func(a): return float(a) >= 1.0) and RNGService.chance(float(cfg.get("lone_young_chance", 0.15))):
+		return {"type": "pack_meet", "lone": "young", "location": _random_terrain(current_region)}
+	return {"type": "pack_meet", "lone": "", "attitude": pack_attitude(), "charge": _pack_attitude_value("charge", 0.0) >= 0.5,
+		"size": pack_size_now(), "stage": black_pack.stage, "location": _random_terrain(current_region)}
+
+# 對峙的勝算：一隻對多隻通常輸；你比帶頭的強、牠們戒備你時好一些。
+func pack_standoff_chance() -> float:
+	var cfg: Dictionary = _pack_meet_cfg().get("standoff", {})
+	var leader := pack_leader()
+	var diff: float = FightRules.wolf_power(wolf) - (leader.power() if leader != null and leader.alive else float(cfg.get("leaderless_power", 120)))
+	var value: float = float(cfg.get("base", 0.7)) / max(1, pack_size_now()) + diff / float(cfg.get("power_divisor", 200)) + _pack_attitude_value("standoff_bonus", 0.0)
+	return clamp(value, float(cfg.get("min", 0.03)), float(cfg.get("max", 0.6)))
+
+# 逃跑被追上的機會：牠們戒備你時不太追；吃撐、受傷時較容易被追上。
+func pack_flee_caught_chance() -> float:
+	var cfg: Dictionary = _pack_meet_cfg().get("flee", {})
+	var value: float = float(cfg.get("caught", 0.35)) * _pack_attitude_value("chase_mult", 1.0)
+	if wolf.is_overfed() or wolf.injury != Wolf.Injury.NONE:
+		value += float(cfg.get("slow_bonus", 0.2))
+	return clamp(value, 0.0, 0.9)
+
+func _pack_record(kind: String, outcome: String) -> void:
+	var list: Array = life_log.get("pack_meetings", [])
+	list.append({"kind": kind, "outcome": outcome, "age": snapped(wolf.age_years, 0.1), "size": pack_size_now(), "attitude": pack_attitude()})
+	life_log["pack_meetings"] = list
+	_stat_inc("pack_meet", kind + "." + outcome)
+
+# 離開牠們的地方：往相鄰、不是牠們領域的區域（優先巢穴）。lose_food：這一帶的殘骸與進食被牠們拿走。
+func _pack_leave(lose_food: bool) -> String:
+	learn({"type": "territory", "animal": "stranger_wolf", "region": current_region})
+	if lose_food:
+		carcasses = carcasses.filter(func(c): return c["region_id"] != current_region)
+		current_feeding = {}
+	current_discovery = {}
+	var targets: Array = adjacent_regions().filter(func(r): return not black_pack.regions.has(r))
+	if targets.is_empty():
+		targets = adjacent_regions()
+	if targets.has(den_region):
+		targets = [den_region]
+	if not targets.is_empty():
+		current_region = targets[RNGService.randi_range(0, targets.size() - 1)]
+	wolf.clamp_stats()
+	_check_death()
+	state_changed.emit()
+	return current_region
+
+func _pack_bite(range_key: String) -> void:
+	var r: Array = _pack_meet_cfg().get(range_key, [6, 12])
+	FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(r[0]), int(r[1]))), {"leg": 0.4, "shoulder": 0.4, "face": 0.2}, "pack.bite", false)
+	wolf.apply_injury(Wolf.Injury.LIGHT, 2)
+
+func pack_retreat() -> String:
+	identify("stranger_wolf")
+	record_decision("pack.retreat")
+	_pack_record("meet", "retreat")
+	return _pack_leave(false)
+
+func pack_standoff() -> Dictionary:
+	identify("stranger_wolf")
+	record_decision("pack.standoff")
+	var won: bool = RNGService.chance(pack_standoff_chance())
+	_pack_record("meet", "standoff_won" if won else "standoff_lost")
+	if won:
+		state_changed.emit()
+		return {"won": true, "region": current_region}
+	_pack_bite("standoff_damage")
+	return {"won": false, "region": _pack_leave(true)}
+
+func pack_flee() -> Dictionary:
+	identify("stranger_wolf")
+	record_decision("pack.flee")
+	var caught: bool = RNGService.chance(pack_flee_caught_chance())
+	_pack_record("meet", "caught" if caught else "fled")
+	if caught:
+		_pack_bite("flee_damage")
+	return {"caught": caught, "region": _pack_leave(caught)}
+
+# 落單的年輕狼：可以打（牠是黑狼的孩子，比黑狼弱），也可以避開。
+func start_pack_young_combat() -> Combat:
+	identify("stranger_wolf")
+	var npc := NpcWolf.create("pack_young", current_region)
+	npcs["pack_young"] = npc
+	var c := start_combat("challenger", "adult", "meet")
+	c.set_npc(npc)
+	return c
+
+# 除錯：黑狼還獨居時直接給牠一個狼群（伴侶、一隻年輕的、兩隻幼狼），再排一個撞上的事件。
+func debug_pack_meet(lone: String = "") -> void:
+	if not pack_active():
+		black_pack.stage = "pack"
+		black_pack.mate_age = 3.0
+		black_pack.young = [1.5, 0.5, 0.5]
+		black_pack.regions = [stranger_territory if stranger_territory != "" else current_region]
+	if lone == "young":
+		pending_events.append({"type": "pack_meet", "lone": "young", "location": _random_terrain(current_region)})
+		return
+	var e := _pack_meet_event()
+	if str(e.get("type", "")) != "pack_meet" or str(e.get("lone", "")) != "":
+		e = {"type": "pack_meet", "lone": "", "attitude": pack_attitude(), "charge": _pack_attitude_value("charge", 0.0) >= 0.5,
+			"size": pack_size_now(), "stage": black_pack.stage, "location": _random_terrain(current_region)}
+	pending_events.append(e)
+
+func pack_young_avoid() -> void:
+	_pack_record("young", "avoided")
+	current_discovery = {}
+	state_changed.emit()
+
+func _after_pack_young_combat(c: Combat) -> void:
+	_pack_record("young", c.outcome)
+	if c.outcome == "killed":
+		# 少了一隻年輕的狼（最年長的那隻以外，隨便一隻 1 歲以上的）
+		for i in black_pack.young.size():
+			if float(black_pack.young[i]) >= 1.0:
+				black_pack.young.remove_at(i)
+				break
+	npcs.erase("pack_young")
 
 # 獵物靠近：短暫休息或伏低（快轉）時，野兔或幼鹿走近，可以直接撲抓（簡易狩獵）。
 func _maybe_prey_nearby() -> void:
@@ -3275,6 +3447,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		wolf.hunger += float(_lynx_cfg().get("hare_value", 12))
 		wolf.clamp_stats()
 		result["lynx_hare"] = true
+	if c.npc != null and c.npc.id == "pack_young":
+		_after_pack_young_combat(c)
 	if c.npc != null and c.npc.id == "challenger":
 		c.npc.health = c.opp_hp
 		_after_challenger(c.won())

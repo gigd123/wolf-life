@@ -46,6 +46,8 @@ func _process(_d):
 		pack_at[a] = {"n": 0, "size": 0, "regions": 0}
 	var first_event := {} # 事件 -> [你的年齡…]
 	var event_count := {}
+	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
+	var meet_lives := 0
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.start(DENS[r % DENS.size()])
@@ -102,6 +104,12 @@ func _process(_d):
 					elder_lean[1] += 1
 		ap.finish()
 		var seen := {}
+		var meets: Array = GS.life_log.get("pack_meetings", [])
+		if not meets.is_empty():
+			meet_lives += 1
+		for m in meets:
+			var mk: String = "%s.%s" % [m["kind"], m["outcome"]]
+			meet_count[mk] = int(meet_count.get(mk, 0)) + 1
 		for e in GS.life_log.get("black_pack_events", []):
 			var ev: String = str(e["event"])
 			event_count[ev] = int(event_count.get(ev, 0)) + 1
@@ -146,6 +154,7 @@ func _process(_d):
 		var t := 0.0
 		for x in l: t += x
 		print("    %-10s %d 局發生（共 %d 次）；第一次 平均 %.1f 歲、中位數 %.1f 歲" % [ev, l.size(), event_count[ev], t / l.size(), l[l.size() / 2]])
+	print("    撞上黑狼一家：%d 局有，%s" % [meet_lives, meet_count])
 	quit()
 	return true
 

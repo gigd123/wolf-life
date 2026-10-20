@@ -199,6 +199,8 @@ debug.event.bear_distant,灰熊遠距目擊
 debug.event.stranger_distant,黑狼遠距觀察
 debug.event.storm,暴雨
 debug.event.howl,狼嚎
+debug.event.pack_meet,撞上黑狼一家
+debug.event.pack_young,落單的年輕狼
 debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
@@ -761,6 +763,26 @@ stranger.challenge,挑戰
 stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾著低吼。牠要你離開這一帶。
 stranger.stand,對峙
 stranger.yielded,你退開了，往{region}走去。
+pack.who.pair,那隻黑狼和牠的伴侶
+pack.who.pack,那隻黑狼一家
+pack.who.heir,黑狼留下的那群狼
+pack.meet.neutral,{location}，{who}就在前面。牠們停下腳步，一起盯著你，頸毛慢慢豎了起來。
+pack.meet.scorn,{location}，{who}一看到你，壓低身子朝你逼過來。牠們記得你曾經在那隻黑狼面前退讓。
+pack.meet.wary,{location}，{who}就在前面。牠們沒有上前，只是站定了看著你。那隻黑狼記得輸給你的那一次。
+pack.meet.scorn.heir,{location}，{who}一看到你，壓低身子逼了過來，一點也不把你放在眼裡。
+pack.meet.wary.heir,{location}，{who}就在前面。牠們沒有上前，遠遠地打量著你，像是聽說過你。
+pack.meet.count,牠們有 {n} 隻，你只有自己。
+pack.option.retreat,退開
+pack.option.standoff,對峙（嚎叫示威，勝算 {p}%）
+pack.option.flee,逃走（甩掉牠們 {p}%）
+pack.retreat,你慢慢往後退，離開了這一帶，來到{region}。牠們沒有追上來。
+pack.standoff.won,你豎起頸毛長嚎，聲音在林間迴盪。{who}遲疑了一下，掉頭走進林子深處。
+pack.standoff.lost,你的嚎聲被牠們的合嚎蓋了過去。牠們一擁而上，你被咬了幾口，只能逃到{region}。
+pack.flee.safe,你轉身就跑，一路跑到{region}，身後的腳步聲漸漸聽不見了。
+pack.flee.caught,你轉身就跑，還是被追上咬了幾口，好不容易才逃到{region}。
+pack.meet.young,{location}，一隻年輕的狼獨自在林間嗅聞。牠的毛色偏黑，是那隻黑狼的孩子，身邊沒有別的狼。
+pack.young.avoided,你沒有驚動牠，悄悄繞開了。
+injury_source.pack.bite,被黑狼一家追咬
 stranger.won_territory,{region}原本是牠的地盤，從此是你的了。
 stranger.killed_card.title,那隻黑狼
 first_win.grizzly_bear.title,那頭灰熊

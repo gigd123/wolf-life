@@ -39,6 +39,8 @@
 | `day_summary.old_injury_*` | 舊傷發作／平息 | `flare_index`、`flare_days` | — |
 | `pack.news.*` | 黑狼家族的變化（多了一隻母狼、有了孩子、範圍變大、換了帶頭的、散了） | 那一季 `WolfPack.on_season_passed` 的事件（paired／pups／expanded／succession／dissolved），寫在下一張森林的季節卡片；`.known` 要已辨識黑狼 | 沒有發生那件事時出現；不在森林時寫 |
 | `pack.sign.*、encounter.observed.stranger_wolf.pair／.pack` | 腳印、氣味、狼嚎、遠觀裡不只一隻狼 | `black_pack.stage` 是 pair／pack；`pack.sign.howl.pups` 要有幼狼；`pack.sign.observed.old` 要帶頭的是老年 | 獨居時出現 |
+| `pack.meet.wary` | 那隻黑狼記得輸給你的那一次 | `pack_attitude()` = wary：黑狼 `yielded_to_player`（你打贏過）或被你殺死；第一代 | 沒打贏過時出現；換代後用 `.heir` |
+| `pack.meet.scorn` | 你曾經在那隻黑狼面前退讓 | `pack_attitude()` = scorn：黑狼 `dominance` > 0（示弱、撤退、退讓過）；第一代 | 沒退讓過時出現；換代後用 `.heir` |
 | `factor.old_age、reason.old_age` | 老了，腿腳和力氣不如從前 | 年齡 ≥ `hunt.age.decline_start`（6 歲）時，追擊與制伏有年齡的扣分（Phase 2b 第 3 步） | 6 歲前出現 |
 | `hunt.give_up.*` | 放棄時的依據（步伐穩健、沒有明顯弱點、露出弱點） | 看得出體況時（`condition_known`）依體況；看不出來用 unknown | 沒看出體況卻寫依據 |
 | `combat.grow.clean` | 打得越來越熟練 | 幾乎沒受傷就打贏（受傷 ≤ 15%），不是老年（技巧會長） | 老年技巧不再長時出現 |
