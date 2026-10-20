@@ -1728,7 +1728,7 @@ tactical.struggle.takedown,牠還在掙扎。
 tactical.struggle.throat,沒咬到要害，牠猛力一甩。
 tactical.struggle_kick,掙扎中牠踢中了你（血量 −{n}）。
 tactical.broke_free,{animal}掙脫了，帶著傷逃跑！
-tactical.scatter,你衝進鹿群，牠們四散奔逃！
+tactical.scatter,你衝進鹿群，鹿群分成幾群，往不同方向逃開！
 tactical.look,{animal}抬起頭，朝你這邊張望。
 tactical.flee.scent,風把你的氣味送了過去，牠猛地跳開！
 tactical.flee.noise,牠聽到動靜，拔腿就跑！
@@ -1739,6 +1739,7 @@ tactical.herd_runs,整群跟著跑了起來。
 tactical.defend.hit,母鹿轉身朝你衝過來，前蹄踢中了你（血量 −{n}）！
 tactical.defend.miss,母鹿轉身朝你衝過來，你閃開了牠的前蹄。
 tactical.separated,幼鹿和母鹿跑散了！
+tactical.regroup,跑散的鹿又聚到了一起。
 tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。

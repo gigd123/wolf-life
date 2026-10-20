@@ -98,6 +98,13 @@ var defends: int = 0 # 生母護幼的次數
 var damage_taken: float = 0.0
 var damage_by: Dictionary = {} # 受傷來源：prey（獵物本身踢）、mother（生母護幼）
 var scattered: bool = false # 這一回合狼衝進鹿群
+# 鹿群一起逃（Phase 2d 第 1 步）：逃跑中的鹿依 herd[i].group 分成小群，每一小群每回合算一個方向，
+# 每隻再沿這個方向、用自己的逃跑格數跑（虛弱的、幼鹿自然掉在後面）；狼衝進來時沿衝進來的線分成兩三群。
+var group_dirs := {} # 小群 -> 這回合（上回合）的方向
+var group_push := {} # 小群 -> {dir: Vector2, rounds}：剛分開時往兩側推開
+var group_split_age := {} # 小群 -> 分開後過了幾回合（沒分開過的不在裡面）
+var next_group: int = 1
+var wolf_from := Vector2i.ZERO # 狼這一回合從哪裡出發（衝進鹿群的方向）
 var last_mode: String = "still" # 狼這一回合怎麼動（生母踢中的機率看這個）
 var mother_hit_fawn_held: bool = false # 這一回合生母踢中了咬著幼鹿的狼
 # 特殊招式（2026-10-16）：會不會前截鎖喉（原型裡由畫面的開關決定）；用了幾次
@@ -142,7 +149,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 		herd.append({"pos": Vector2i(int(d["pos"][0]), int(d["pos"][1])), "facing": DIRS[rng.randi_range(0, 7)], "state": "unaware", "alert": 0.0,
 			"flee_round": 0, "condition": str(_weighted(t["deer"]["condition_weights"])), "condition_known": false, "held": false, "wounds": 0,
 			"lost_turns": 0, "goal_index": 0, "last_cells": [], "kind": str(d.get("kind", "adult")), "mother": int(d.get("mother", -1)),
-			"gone": false, "defend_rounds": 0, "separated": false, "species": str(d.get("species", "deer"))})
+			"gone": false, "defend_rounds": 0, "separated": false, "species": str(d.get("species", "deer")), "group": 0})
 	wi = 0
 	di = 0
 	target = 0
@@ -152,6 +159,11 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	damage_taken = 0.0
 	damage_by = {}
 	scattered = false
+	group_dirs = {}
+	group_push = {}
+	group_split_age = {}
+	next_group = 1
+	wolf_from = wolves[0]["pos"]
 	last_mode = "still"
 	mother_hit_fawn_held = false
 	front_locks = 0
@@ -432,6 +444,7 @@ func move_to(cell: Vector2i) -> void:
 	if not r.has(cell):
 		return
 	var mode: String = r[cell]
+	wolf_from = wolf_pos
 	wolf_pos = cell
 	_spend("breath_" + mode)
 	if mode == "sprint":
@@ -591,6 +604,7 @@ func pounce_at(cell: Vector2i) -> void:
 	if not targets.has(cell):
 		return
 	var info: Dictionary = targets[cell]
+	wolf_from = wolf_pos
 	if str(info["mode"]) != "still":
 		wolf_pos = cell
 		_spend("breath_" + str(info["mode"]))
@@ -848,14 +862,17 @@ func _end_wolf_turn(mode: String) -> void:
 			_raise_alert(mode)
 	di = target
 	_herd_alarm()
-	# 狼小跑或衝刺衝到鹿群旁邊：這一回合鹿群散開
+	# 狼小跑或衝刺衝到鹿群旁邊：這一回合鹿群散開（幼鹿可能和生母跑散），整群沿狼衝進來的線分成兩三群
 	scattered = false
 	if herd.size() > 1 and mode in ["trot", "sprint"]:
 		for i in active_deer():
 			if _cheb(herd[i]["pos"], wolf_pos) <= int(t["herd"]["scatter_dist"]):
 				scattered = true
-				events.append(_tx("tactical.scatter"))
 				break
+		if scattered and _split_groups():
+			events.append(_tx("tactical.scatter"))
+	if mode == "still":
+		wolf_from = wolf_pos
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
 		_finish("timeout", _tx("tactical.timeout.far"))
@@ -962,8 +979,11 @@ func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 	if done:
 		return
 	mother_hit_fawn_held = false
-	# 其他鹿先動（生母護幼要在咬住的幼鹿掙扎之前）
-	for i in active_deer():
+	_plan_groups()
+	# 其他鹿先動（生母護幼要在咬住的幼鹿掙扎之前）；離狼遠的（跑在前面的）先動，後面的才不會被同伴擋住
+	var order: Array = active_deer()
+	order.sort_custom(func(a, b): return dist(herd[a]["pos"], wolf_pos) > dist(herd[b]["pos"], wolf_pos))
+	for i in order:
 		if i == target or done:
 			continue
 		di = i
@@ -1105,7 +1125,9 @@ func deer_goal() -> Vector2i:
 	return Vector2i(int(g[0]), int(g[1]))
 
 # 逃跑的方向打分：離狼越遠越好、往場地外（逃得掉）加分、經過倒木扣分；不往狼的方向。
-func flee_options() -> Array:
+# lead_group ≥ 0：替那一小群算方向（di 是帶頭的那一隻）：慣性看小群上回合的方向、剛分開時往兩側推，不算凝聚力。
+# 平常（每一隻自己）：鹿群裡多一項「沿著小群的方向跑」（align），所以整群大致同一方向、左右稍微偏一點。
+func flee_options(lead_group: int = -1) -> Array:
 	var away := Vector2(deer_pos - wolf_pos).normalized()
 	var scored: Array = []
 	var budget: float = _flee_budget()
@@ -1127,10 +1149,17 @@ func flee_options() -> Array:
 		if sim["out"]:
 			score += 8.0
 		# 慣性：傾向沿原本的方向繼續跑（貼著邊緣時不會左右來回）
-		score += Vector2(d).normalized().dot(Vector2(deer_facing).normalized()) * float(t["deer"]["momentum"])
+		var prev: Vector2i = deer_facing
+		if lead_group >= 0 and group_dirs.has(lead_group):
+			prev = group_dirs[lead_group]
+		score += Vector2(d).normalized().dot(Vector2(prev).normalized()) * float(t["deer"]["momentum"])
 		score -= float(sim["logs"]) * 2.5
 		score -= float(sim["blocked"]) * 3.0
-		score += _cohesion_score(d)
+		if lead_group >= 0:
+			if group_push.has(lead_group):
+				score += Vector2(d).normalized().dot(group_push[lead_group]["dir"]) * float(t["herd"]["split_push"])
+		else:
+			score += _cohesion_score(d)
 		if float(sim["moved"]) <= 0.0:
 			score -= 20.0
 		scored.append({"dir": d, "score": score})
@@ -1147,10 +1176,14 @@ func _cohesion_score(d: Vector2i) -> float:
 	var score := 0.0
 	var center := Vector2.ZERO
 	var n := 0
+	var g: int = int(herd[di].get("group", 0))
 	for i in active_deer():
-		if i != di:
+		if i != di and int(herd[i].get("group", 0)) == g:
 			center += Vector2(herd[i]["pos"])
 			n += 1
+	# 沿著小群的方向跑（Phase 2d 第 1 步）
+	if group_dirs.has(g) and str(herd[di]["state"]) == "flee":
+		score += dn.dot(Vector2(group_dirs[g]).normalized()) * float(hc["align"])
 	if n > 0:
 		var to_c: Vector2 = center / n - Vector2(deer_pos)
 		if to_c.length() > 0.5:
@@ -1168,6 +1201,162 @@ func _cohesion_score(d: Vector2i) -> float:
 		if to_p.length() > 1.0:
 			score += dn.dot(to_p.normalized()) * float(hc["follow"]) * mult
 	return score
+
+# --- 鹿群一起逃（Phase 2d 第 1 步） ---
+
+# 鹿群裡的一隻只在小群方向的左右 45° 內挑（跑得動的話）；被擋住時放寬到 90°，再不行才照自己的打分。
+func _grouped(opts: Array) -> Array:
+	var g: int = int(herd[di].get("group", 0))
+	if herd.size() <= 1 or not group_dirs.has(g):
+		return opts
+	var gd := Vector2(group_dirs[g]).normalized()
+	for lim in [0.7, 0.0]:
+		var near: Array = opts.filter(func(o): return Vector2(o["dir"]).normalized().dot(gd) >= lim and float(o["score"]) > -10.0)
+		if not near.is_empty():
+			return near
+	return opts
+
+# 這一小群還在場上的鹿（fleeing_only：只算正在逃的、沒被咬住的）
+func _group_members(g: int, fleeing_only: bool = true) -> Array:
+	var out: Array = []
+	for i in active_deer():
+		if int(herd[i].get("group", 0)) != g or bool(herd[i]["held"]):
+			continue
+		if fleeing_only and str(herd[i]["state"]) != "flee":
+			continue
+		out.append(i)
+	return out
+
+func _group_ids(fleeing_only: bool = true) -> Array:
+	var out: Array = []
+	for i in active_deer():
+		var g: int = int(herd[i].get("group", 0))
+		if not out.has(g) and not _group_members(g, fleeing_only).is_empty():
+			out.append(g)
+	return out
+
+func _group_center(members: Array) -> Vector2:
+	var c := Vector2.ZERO
+	for i in members:
+		c += Vector2(herd[i]["pos"])
+	return c / max(1, members.size())
+
+# 每一小群算一個逃跑方向：用離狼最遠的那一隻（帶頭的）打分，從最好的兩三個方向挑一個；再看跑散的小群要不要合回來。
+func _plan_groups() -> void:
+	if herd.size() <= 1:
+		return
+	var keep := di
+	for g in _group_ids():
+		var m: Array = _group_members(g)
+		var lead: int = m[0]
+		for i in m:
+			if dist(herd[i]["pos"], wolf_pos) > dist(herd[lead]["pos"], wolf_pos):
+				lead = i
+		di = lead
+		var opts := flee_options(g)
+		if not opts.is_empty():
+			var weights: Array = t["deer"]["pick_weights"]
+			var n: int = mini(3, opts.size())
+			var pick: int = 0
+			var tot := 0.0
+			for k in n:
+				tot += float(weights[k])
+			var r := rng.randf() * tot
+			for k in n:
+				r -= float(weights[k])
+				if r <= 0.0:
+					pick = k
+					break
+			group_dirs[g] = opts[pick]["dir"]
+		if group_push.has(g):
+			group_push[g]["rounds"] = int(group_push[g]["rounds"]) - 1
+			if int(group_push[g]["rounds"]) <= 0:
+				group_push.erase(g)
+		if group_split_age.has(g):
+			group_split_age[g] = int(group_split_age[g]) + 1
+	di = keep
+	_merge_groups()
+
+# 衝散：沿狼衝進來的線，把靠近的那一小群分成兩邊（鹿夠多、線上也有鹿時分成三群）。有分開就回傳 true。
+func _split_groups() -> bool:
+	var hc: Dictionary = t["herd"]
+	var any := false
+	for g in _group_ids(false):
+		var m: Array = _group_members(g, false)
+		# 剛分開的小群幾回合內不會再分
+		if m.size() < 2 or int(group_split_age.get(g, 99)) < int(hc["split_cooldown"]):
+			continue
+		var near := false
+		for i in m:
+			if _cheb(herd[i]["pos"], wolf_pos) <= int(hc["scatter_dist"]):
+				near = true
+				break
+		if not near:
+			continue
+		var line := Vector2(wolf_pos - wolf_from)
+		if line.length() < 0.5:
+			line = _group_center(m) - Vector2(wolf_pos)
+		line = Vector2(1, 0) if line.length() < 0.01 else line.normalized()
+		var normal := Vector2(-line.y, line.x)
+		var parts := [[[], normal], [[], -normal], [[], line]]
+		for i in m:
+			var side: float = (Vector2(herd[i]["pos"]) - Vector2(wolf_pos)).dot(normal)
+			if absf(side) < 0.75 and m.size() >= int(hc["split_three_min"]):
+				parts[2][0].append(i)
+			elif side >= 0.0:
+				parts[0][0].append(i)
+			else:
+				parts[1][0].append(i)
+		var used: Array = parts.filter(func(p): return not (p[0] as Array).is_empty())
+		if used.size() < 2:
+			continue
+		var first := true
+		for p in used:
+			var gid: int = g if first else next_group
+			if not first:
+				next_group += 1
+			first = false
+			for i in p[0]:
+				herd[i]["group"] = gid
+			group_push[gid] = {"dir": p[1], "rounds": int(hc["split_push_rounds"])}
+			group_split_age[gid] = 0
+			if group_dirs.has(g):
+				group_dirs[gid] = group_dirs[g]
+		any = true
+	# 分到不同群的幼鹿和生母跑散了
+	if any:
+		for i in active_deer():
+			var mo: int = int(herd[i].get("mother", -1))
+			if mo >= 0 and not bool(herd[i]["separated"]) and not bool(herd[mo]["gone"]) and int(herd[mo]["group"]) != int(herd[i]["group"]):
+				herd[i]["separated"] = true
+				events.append(_tx("tactical.separated"))
+	return any
+
+# 跑散的小群合回來：分開 regroup_rounds 回合以上、彼此 regroup_dist 格內、狼離兩群都 regroup_wolf_dist 格以上。
+func _merge_groups() -> void:
+	var hc: Dictionary = t["herd"]
+	var ids: Array = _group_ids(false)
+	for a in ids:
+		for b in ids:
+			if a >= b:
+				continue
+			if int(group_split_age.get(a, 99)) < int(hc["regroup_rounds"]) or int(group_split_age.get(b, 99)) < int(hc["regroup_rounds"]):
+				continue
+			var ma: Array = _group_members(a, false)
+			var mb: Array = _group_members(b, false)
+			if ma.is_empty() or mb.is_empty():
+				continue
+			var ca := _group_center(ma)
+			var cb := _group_center(mb)
+			if ca.distance_to(cb) > float(hc["regroup_dist"]) or min(ca.distance_to(Vector2(wolf_pos)), cb.distance_to(Vector2(wolf_pos))) < float(hc["regroup_wolf_dist"]):
+				continue
+			for i in mb:
+				herd[i]["group"] = a
+			group_push.erase(b)
+			group_dirs.erase(b)
+			group_split_age.erase(b)
+			events.append(_tx("tactical.regroup"))
+			return
 
 # 意圖範圍：顯示幾個方向（感知越高越少，觀察過再少一個）
 func intent_count() -> int:
@@ -1242,7 +1431,7 @@ func _deer_flee() -> void:
 		elif scattered and rng.randf() < float(t["herd"]["separate_forest" if terrain(deer_pos) == "f" else "separate"]):
 			herd[di]["separated"] = true
 			events.append(_tx("tactical.separated"))
-	var opts := flee_options()
+	var opts := _grouped(flee_options())
 	if opts.is_empty() or float(opts[0]["score"]) < -10.0:
 		deer_state = "stand"
 		deer_facing = _dir_toward(deer_pos, wolf_pos)
