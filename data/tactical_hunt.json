@@ -8,7 +8,8 @@
     "terrain_extra": {
       ".": 0.0,
       "f": 1.0,
-      "l": 2.0
+      "l": 2.0,
+      "r": 2.0
     },
     "creep_range": 1.0,
     "trot_range_slow": 3.0,
@@ -438,6 +439,22 @@
       "name": "小馬鹿",
       "name_key": "tactical.label.elk_calf",
       "meat": 3
+    },
+    "_mule_deer_comment": "騾鹿（Phase 2d 第 3 步）：比白尾鹿重、平地跑不快，被追時彈跳往岩坡跑；在岩坡（r）不減速（terrain_cost），逃跑時往岩坡（seek：每經過一格岩坡 +per_cell、最多 max_cells 格，停在岩坡上 +end），在岩坡上比較難撲（terrain_pounce）。數值為初始值，tactical_mule_sim 校準。",
+    "mule_deer": {
+      "name": "騾鹿",
+      "name_key": "tactical.label.mule_deer",
+      "flee_profile": { "healthy": [3, 6, 5, 5, 4, 3], "average": [3, 5, 5, 4, 3, 3], "weak": [3, 5, 4, 3, 3] },
+      "terrain_cost": { "r": 0.0 },
+      "seek": { "terrain": "r", "per_cell": 1.5, "max_cells": 3, "end": 6.0 },
+      "terrain_pounce": { "r": -0.25 },
+      "meat": 3
+    },
+    "mule_deer_calf": {
+      "name": "騾鹿幼鹿",
+      "name_key": "tactical.label.mule_deer_fawn",
+      "terrain_cost": { "r": 0.0 },
+      "meat": 2
     }
   },
   "special": {
@@ -466,8 +483,8 @@
   },
   "_game_comment": "Phase 2c 接進主遊戲（setup_from_game、GameState.finish_tactical_hunt）：animals 用戰術地圖的獵物；時間 = 戰術回合 ÷ round_div（進位，最多 max_turns 個遊戲回合）；交給本能之後撲咬、壓倒、咬喉 − instinct_penalty（比自己打約低一成）；age_scope = pounce：年齡減成只扣撲咬（咬住後交給已經隨年齡下降的力量、技巧，避免重複計算；使用者 2026-10-20 同意）；吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
   "_game_herd_comment": "Phase 2d 第 2 步：exclude_stages：這些生命階段照舊走選單（公馬鹿會站定，之後和駝鹿、野牛一起做）；species：主遊戲的動物 → 戰術的物種；herd_size：主遊戲遇到鹿群時，地圖上放幾隻成鹿；herd_calves：各季鹿群裡跟著幾隻小鹿。",
-  "game": { "animals": ["white_tailed_deer", "elk"], "exclude_stages": { "elk": ["buck"] }, "species": { "elk": "elk" }, "herd_size": { "elk": [4, 7] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
-  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
+  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer"], "exclude_stages": { "elk": ["buck"] }, "species": { "elk": "elk", "mule_deer": "mule_deer" }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
+  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
   "maps": {
     "open_1": {
       "name": "空地、兩叢灌木",
@@ -753,6 +770,72 @@
         ".............................lll........",
         "........................................",
         "........................................"
+      ]
+    },
+    "slope_1": {
+      "name": "草甸與上方的碎石坡",
+      "family": "slope",
+      "map": [
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        ".rr...rrrrrrrrrrrrrrrrrr...rrrrrrrrrrrr.",
+        ".rr...r..r.rrrrr.rr....r...r..rr..r...r.",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........r...............................",
+        ".......rrr..............................",
+        "........r...............................",
+        "........................................"
+      ]
+    },
+    "slope_2": {
+      "name": "峽谷（兩側岩壁）",
+      "family": "slope",
+      "map": [
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        ".rrrrrr.rrrrr.r..rrrr.rrrrrrr..rrrrr.rr.",
+        "..r.......rr..r...r.r.r.r...r..r...r..r.",
+        "........................................",
+        "........................................",
+        "........................................",
+        "..............r.........................",
+        ".............rrr........................",
+        "..............r.........................",
+        "........................................",
+        "........................................",
+        ".r.r...r.....rr....r......r..r.........r",
+        ".r.r.rrrrrr..rr.r.rrrrr..rr.rr...r...rrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+      ]
+    },
+    "slope_3": {
+      "name": "一側岩坡、一側林子",
+      "family": "slope",
+      "map": [
+        "rrrrrrr.................................",
+        "rrrrrrrrr..............rrr..............",
+        "rrrrrrrrrrr...........rrrrr.............",
+        "rrrrrrrrrrr............rrr..............",
+        "rrrrrrr.................................",
+        "rrrrrrrr................................",
+        "rrrrrrrrrrr.............................",
+        "rrrrrrrrr......................ffffff...",
+        "rrrrrrrrrr....................ffffffff..",
+        "rrrrrrrrr......................ffffffff.",
+        "rrrrrrrrrr....................ffffffff..",
+        "rrrrrrrrrr......................ffffff..",
+        "rrrrrrr..........................f.f....",
+        "rrrrrrrr................................",
+        "rrrrrrrrrrr.............................",
+        "rrrrrrrrrrr............................."
       ]
     }
   }

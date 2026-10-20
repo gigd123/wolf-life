@@ -75,7 +75,7 @@ func _process(_d) -> bool:
 	_check(gs.tactical_context("dense_forest", "headwind", "weak")["family"] == "dense" and gs.tactical_context("stream", "headwind", "weak")["family"] == "stream" \
 		and gs.tactical_context("prairie", "headwind", "weak")["family"] == "open", "地形 → 地圖族（第 4 步）")
 	# 第 4 步：每種地圖族都開得起來、狼與鹿不在倒木上、鹿在開闊處、目的地在 5～9 格外
-	for fam in ["open", "edge", "dense", "stream", "logs"]:
+	for fam in ["open", "edge", "dense", "stream", "logs", "slope"]:
 		for sd in 10:
 			var fh = TH.new()
 			fh.setup_from_game({"family": fam, "seed": sd * 31 + 7, "condition": "healthy", "fawn": sd % 3 == 0, "wolf": base["wolf"], "wind_relation": "headwind"})
@@ -167,6 +167,25 @@ func _process(_d) -> bool:
 	mth._finish("caught", "test")
 	gs.finish_tactical_hunt(mh, mth)
 	_check(mh.life_stage == "adult", "幼鹿那一場換目標獵到母鹿：記成成鹿（%s）" % mh.life_stage)
+	# 10. Phase 2d 第 3 步：騾鹿（岩坡地圖、物種的地形代價）
+	_check(gs.tactical_eligible(gs.start_hunt("mule_deer", "adult")) and gs.tactical_eligible(gs.start_hunt("mule_deer", "buck")), "騾鹿：成鹿、公鹿走戰術地圖")
+	_check(gs.tactical_context("scree", "headwind", "weak")["family"] == "slope" and gs.tactical_context("cliff", "headwind", "weak")["family"] == "slope", "碎石坡、崖邊 → 岩坡地圖")
+	var mu = gs.start_hunt("mule_deer", "adult")
+	mu.terrain = "scree"
+	var muth = gs.start_tactical(mu)
+	_check(str(muth.herd[muth.target]["species"]) == "mule_deer" and muth.label(muth.target) in ["騾鹿", "牠"], "騾鹿：物種與稱呼（%s）" % muth.label(muth.target))
+	var rock := Vector2i(-1, -1)
+	for ry in muth.height:
+		for rx in range(1, muth.width):
+			if muth.terrain(Vector2i(rx, ry)) == "r" and muth.terrain(Vector2i(rx - 1, ry)) == ".":
+				rock = Vector2i(rx, ry)
+	_check(rock.x >= 0, "岩坡地圖上有岩坡")
+	if rock.x >= 0:
+		_check(muth.deer_extra(rock) == 0.0 and muth.step_cost(rock - Vector2i(1, 0), rock) >= 3.0, "岩坡：騾鹿不減速、狼 +2（狼 %.1f）" % muth.step_cost(rock - Vector2i(1, 0), rock))
+	var mfh = gs.start_hunt("mule_deer", "juvenile")
+	mfh.hiding = false
+	var mfth = gs.start_tactical(mfh)
+	_check(mfth.label(mfth.target) == "騾鹿幼鹿", "騾鹿幼鹿：稱呼（%s）" % mfth.label(mfth.target))
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

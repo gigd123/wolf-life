@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """戰術地圖：每種地形 2～3 張（Phase 2c 第 4 步，SPEC「每種地形手工做 2～3 張」）。
 
-每張 40×16 格，字元：. 開闊、f 密林（樹叢、柳叢、林子）、l 倒木（或岩堆）。
+每張 40×16 格，字元：. 開闊、f 密林（樹叢、柳叢、林子）、l 倒木（或岩堆）、r 岩坡（碎石坡、岩壁；騾鹿在上面不減速，Phase 2d）。
 用簡單的形狀「畫」出來，寫進 data/tactical_hunt.json 的 maps（{id: {name, family, map}}）；
 狼與鹿的起始位置、鹿的目的地由 TacticalHunt.setup_from_game 每場隨機挑。
 
 地形 → 地圖族（GameState.TACTICAL_TERRAIN_FAMILY）：
-  open（空地、草原、高山草甸、苔原、丘陵）、edge（林緣、樹線）、dense（密林）、stream（溪、河、柳叢）、logs（倒木、岩石、碎石、崖邊）。
+  open（空地、草原、高山草甸、苔原、丘陵）、edge（林緣、樹線）、dense（密林）、stream（溪、河、柳叢）、logs（倒木）、
+  slope（岩石、碎石、崖邊；Phase 2d 第 3 步）。
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
 """
@@ -136,6 +137,25 @@ def maps():
     for x, y in [(10, 4), (16, 11), (24, 6), (30, 12), (33, 3)]:
         blob(g, x, y, 1.6, 1.2, "l", rough=0.5, seed=x + y * 3)
     out["logs_3"] = {"name": "岩堆", "family": "logs", "map": g}
+    # --- 岩坡（Phase 2d 第 3 步）：鹿在下方的草甸、岩坡在幾格外 ---
+    g = blank()
+    edge_top(g, 5, 1, 51, "r")
+    blob(g, 30, 3, 3, 2, "r", rough=0.5, seed=52)
+    blob(g, 8, 13, 1.5, 1.2, "r", seed=53)
+    out["slope_1"] = {"name": "草甸與上方的碎石坡", "family": "slope", "map": g}
+    g = blank()
+    edge_top(g, 3, 1, 54, "r")
+    for x in range(W):  # 下方的岩壁
+        d = 3 + random.Random(55 + x).randint(-1, 1)
+        for y in range(H - d, H):
+            g[y][x] = "r"
+    blob(g, 14, 8, 1.5, 1.2, "r", seed=56)
+    out["slope_2"] = {"name": "峽谷（兩側岩壁）", "family": "slope", "map": g}
+    g = blank()
+    edge_left(g, 9, 2, 57, "r")
+    blob(g, 34, 9, 4, 3, "f", rough=0.5, seed=58)
+    blob(g, 24, 2, 2, 1.5, "r", seed=59)
+    out["slope_3"] = {"name": "一側岩坡、一側林子", "family": "slope", "map": g}
     for k in out:
         out[k]["map"] = ["".join(r) for r in out[k]["map"]]
     return out
@@ -146,7 +166,7 @@ def main():
     s = open(p, encoding="utf-8").read()
     m = maps()
     body = json.dumps(m, ensure_ascii=False, indent=2).replace("\n", "\n  ")
-    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
+    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
     if '"maps":' in s:
         s = re.sub(r'"_maps_comment": ".*?",\n  "maps": \{.*?\n  \}', lambda _: block, s, count=1, flags=re.S)
     else:

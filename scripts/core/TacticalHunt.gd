@@ -405,6 +405,20 @@ func step_cost(from: Vector2i, to: Vector2i) -> float:
 	var base: float = float(t["move"]["diag_cost"]) if d.x != 0 and d.y != 0 else 1.0
 	return base + float(t["move"]["terrain_extra"].get(terrain(to), 0.0))
 
+# 物種的地形代價（Phase 2d 第 3 步）：species.*.terrain_cost 覆寫 move.terrain_extra（騾鹿在岩坡 r 不減速）；di 那一隻
+func deer_extra(c: Vector2i) -> float:
+	var tc: Dictionary = sp().get("terrain_cost", {})
+	var k := terrain(c)
+	return float(tc[k]) if tc.has(k) else float(t["move"]["terrain_extra"].get(k, 0.0))
+
+# 擋路的地形（倒木、岩坡）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
+func deer_rough(c: Vector2i) -> bool:
+	return terrain(c) in ["l", "r"] and deer_extra(c) > 0.0
+
+func deer_step_cost(from: Vector2i, to: Vector2i) -> float:
+	var d := to - from
+	return (float(t["move"]["diag_cost"]) if d.x != 0 and d.y != 0 else 1.0) + deer_extra(to)
+
 func dist(a: Vector2i, b: Vector2i) -> float:
 	return Vector2(a - b).length()
 
@@ -619,6 +633,11 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	if terrain(deer_pos) == "l":
 		v += float(p["in_logs"])
 		factors.append([_tx("tactical.factor.in_logs"), float(p["in_logs"])])
+	# 物種在某些地形上比較難撲（騾鹿在岩坡上，Phase 2d 第 3 步）
+	var tp: float = float(sp().get("terrain_pounce", {}).get(terrain(deer_pos), 0.0))
+	if tp != 0.0:
+		v += tp
+		factors.append([_tx("tactical.factor.terrain_" + terrain(deer_pos)), tp])
 	if is_fawn():
 		var fb: float = float(t["herd"]["fawn"]["pounce"])
 		v += fb
@@ -1144,7 +1163,7 @@ func _deer_wander() -> void:
 		var fd := INF
 		for d in DIRS:
 			var n: Vector2i = deer_pos + d
-			if in_bounds(n) and n != wolf_pos and not others.has(n) and terrain(n) != "l" and dist(n, mp) < fd:
+			if in_bounds(n) and n != wolf_pos and not others.has(n) and not deer_rough(n) and dist(n, mp) < fd:
 				fd = dist(n, mp)
 				fb = d
 		if fb != Vector2i.ZERO:
@@ -1161,7 +1180,7 @@ func _deer_wander() -> void:
 	var bd := INF
 	for d in DIRS:
 		var n: Vector2i = deer_pos + d
-		if not in_bounds(n) or n == wolf_pos or others.has(n) or terrain(n) == "l":
+		if not in_bounds(n) or n == wolf_pos or others.has(n) or deer_rough(n):
 			continue
 		var dd: float = dist(n, goal) + rng.randf() * 0.8 # 一點隨機，路線不會完全筆直
 		if dd < bd:
@@ -1211,7 +1230,12 @@ func flee_options(lead_group: int = -1) -> Array:
 		score += Vector2(d).normalized().dot(Vector2(prev).normalized()) * float(t["deer"]["momentum"])
 		score -= float(sim["logs"]) * 2.5
 		score -= float(sim["blocked"]) * 3.0
-		if lead_group >= 0:
+		# 往牠想逃去的地形跑（騾鹿往岩坡，Phase 2d 第 3 步）
+		var sk: Dictionary = sp().get("seek", {})
+		if not sk.is_empty():
+			score += min(float(sim["seek"]), float(sk.get("max_cells", 3))) * float(sk.get("per_cell", 1.0))
+			if in_bounds(sim["end"]) and terrain(sim["end"]) == str(sk["terrain"]):
+				score += float(sk.get("end", 0.0))
 			if group_push.has(lead_group):
 				score += Vector2(d).normalized().dot(group_push[lead_group]["dir"]) * float(t["herd"]["split_push"])
 		else:
@@ -1449,10 +1473,12 @@ func _flee_budget(i: int = -1) -> float:
 func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 	var pos := start
 	var left := budget
-	var logs := 0
+	var logs := 0 # 經過擋路的格子（倒木；對這隻鹿是障礙的岩坡）
 	var blocked := 0
 	var moved := 0.0
 	var dir := d
+	var seek := 0 # 經過牠想逃去的地形（騾鹿的岩坡）
+	var seek_t: String = str(sp().get("seek", {}).get("terrain", ""))
 	var guard := 0
 	var others := deer_cells(di)
 	while left > 0.0 and guard < 20:
@@ -1461,22 +1487,24 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		if not in_bounds(n):
 			# 左右兩端（長邊的方向）可以跑出場地＝逃脫；上下邊緣是擋住的（16 格高，往上下跑 2 回合就出去，2026-10-15）
 			if n.x < 0 or n.x >= width:
-				return {"end": n, "out": true, "wall": false, "logs": logs, "blocked": blocked, "moved": moved + 1.0}
-			return {"end": pos, "out": false, "wall": true, "logs": logs, "blocked": blocked + 1, "moved": moved}
+				return {"end": n, "out": true, "wall": false, "logs": logs, "blocked": blocked, "moved": moved + 1.0, "seek": seek}
+			return {"end": pos, "out": false, "wall": true, "logs": logs, "blocked": blocked + 1, "moved": moved, "seek": seek}
 		if n == wolf_pos:
 			blocked += 1
 			break
 		if others.has(n):
 			break # 前面有同伴，停在牠後面
-		var c := step_cost(pos, n)
-		if terrain(n) == "l":
+		var c := deer_step_cost(pos, n)
+		if deer_rough(n):
 			logs += 1
+		if seek_t != "" and terrain(n) == seek_t:
+			seek += 1
 		if c > left and moved > 0.0:
 			break
 		left -= c
 		moved += c
 		pos = n
-	return {"end": pos, "out": false, "wall": false, "logs": logs, "blocked": blocked, "moved": moved}
+	return {"end": pos, "out": false, "wall": false, "logs": logs, "blocked": blocked, "moved": moved, "seek": seek}
 
 func _deer_flee() -> void:
 	if is_fawn() and int(herd[di]["mother"]) >= 0:
