@@ -4,7 +4,8 @@ extends Control
 # 邏輯全在 TacticalHunt.gd；這裡只畫格子、處理點選、顯示資訊。原型的文字直接寫中文（和美術測試一樣，不進翻譯檔）。
 #
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
-# 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是小方塊，細線連到生母。
+# 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是有白點的小鹿，細線連到生母。
+# 動物與地塊用 data/art.json 的 tactical（Phase 2c，程式畫的佔位圖，tools/make_tactical_art.py）；沒有圖時退回色塊。
 
 const TH := preload("res://scripts/core/TacticalHunt.gd")
 const CELL := 14
@@ -33,6 +34,11 @@ var lock_armed: bool = false # 按了「前截鎖喉」，下一次點紫框就�
 var hover := Vector2i(-1, -1)
 var game_seed: int = 0
 var lines: Array[String] = []
+# 動物與地塊的圖（Phase 2c，data/art.json 的 tactical；程式畫的佔位圖）
+var art_sprites := {}
+var art_tiles := {}
+var wolf_facing := Vector2i(1, 0)
+var last_wolf_pos := Vector2i(-99, -99)
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -43,6 +49,12 @@ func _ready() -> void:
 	map.position = MAP_ORIGIN
 	map.size = Vector2(40 * CELL, 16 * CELL)
 	map.mouse_filter = Control.MOUSE_FILTER_STOP
+	map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var ta: Dictionary = GameData.art.get("tactical", {})
+	for k in ta.get("sprites", {}).keys():
+		art_sprites[k] = ArtLibrary.texture(str(ta["sprites"][k]))
+	for k in ta.get("tiles", {}).keys():
+		art_tiles[k] = (ta["tiles"][k] as Array).map(func(path): return ArtLibrary.texture(str(path)))
 	map.draw.connect(_draw_map)
 	map.gui_input.connect(_map_input)
 	map.mouse_exited.connect(func(): hover = Vector2i(-1, -1); _refresh())
@@ -112,11 +124,12 @@ func _new_hunt(new_seed: bool) -> void:
 	if new_seed or game_seed == 0:
 		game_seed = randi() % 100000 + 1
 	h.setup(SCENARIOS[scenario_pick.selected], WOLVES.keys()[wolf_pick.selected], game_seed, 1.0 if stamina_pick.selected == 0 else 0.5)
+	last_wolf_pos = Vector2i(-99, -99)
 	h.knows_front_lock = special_pick.selected == 1
 	lock_armed = false
 	lines = ["情境 %s，種子 %d。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。" % [h.t["scenarios"][h.scenario_id]["name"], game_seed]]
 	if h.herd.size() > 1:
-		lines.append("鹿群：點一隻鹿設為目標（黃框）。小方塊是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
+		lines.append("鹿群：點一隻鹿設為目標（黃框）。身上有白點的小鹿是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
 	_after_action()
 
 # --- 輸入 ---
@@ -292,10 +305,35 @@ func _hover_text() -> String:
 func _cell_rect(c: Vector2i) -> Rect2:
 	return Rect2(Vector2(c) * CELL, Vector2(CELL, CELL))
 
+# 地塊：同一種地形有多張時依座標輪替（固定，不會每次重畫都變）；沒有圖就畫色塊
+func _draw_tile(c: Vector2i) -> void:
+	var kind: String = h.terrain(c)
+	var list: Array = art_tiles.get(kind, [])
+	var tex: Texture2D = list[(c.x * 7 + c.y * 13) % list.size()] if not list.is_empty() else null
+	if tex != null:
+		map.draw_texture_rect(tex, _cell_rect(c), false)
+	else:
+		map.draw_rect(_cell_rect(c), COLORS[kind])
+
+# 動物：8 個方向的橫條挑一格；held 時偏紅
+func _draw_animal(kind: String, c: Vector2i, facing: Vector2i, tint: Color = Color.WHITE) -> bool:
+	var tex: Texture2D = art_sprites.get(kind, null)
+	if tex == null:
+		return false
+	var d := Vector2i(signi(facing.x), signi(facing.y))
+	var idx: int = maxi(0, TH.DIRS.find(d))
+	map.draw_texture_rect_region(tex, _cell_rect(c), Rect2(idx * CELL, 0, CELL, CELL), tint)
+	return true
+
+func _deer_kind(i: int) -> String:
+	if h.is_fawn(i):
+		return "fawn"
+	return "elk" if str(h.herd[i].get("species", "deer")) == "elk" else "deer"
+
 func _draw_map() -> void:
 	for y in h.height:
 		for x in h.width:
-			map.draw_rect(_cell_rect(Vector2i(x, y)), COLORS[h.terrain(Vector2i(x, y))])
+			_draw_tile(Vector2i(x, y))
 	# 鹿的目的地（沒察覺時）
 	if h.deer_state == "unaware":
 		map.draw_rect(_cell_rect(h.deer_goal()).grow(-3), COLORS["goal"], false, 1.0)
@@ -316,22 +354,31 @@ func _draw_map() -> void:
 	for i in h.active_deer():
 		if i == h.target:
 			continue
-		var r := _cell_rect(h.herd[i]["pos"]).grow(-3 if h.is_fawn(i) else -1)
-		map.draw_rect(r, COLORS["fawn"] if h.is_fawn(i) else COLORS["deer"])
-		var oc: Vector2 = Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5
-		map.draw_line(oc, oc + Vector2(h.herd[i]["facing"]) * CELL * 0.5, Color(1, 1, 1, 0.7), 1.0)
+		if not _draw_animal(_deer_kind(i), h.herd[i]["pos"], h.herd[i]["facing"]):
+			var r := _cell_rect(h.herd[i]["pos"]).grow(-3 if h.is_fawn(i) else -1)
+			map.draw_rect(r, COLORS["fawn"] if h.is_fawn(i) else COLORS["deer"])
+			var oc: Vector2 = Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5
+			map.draw_line(oc, oc + Vector2(h.herd[i]["facing"]) * CELL * 0.5, Color(1, 1, 1, 0.7), 1.0)
 	# 目標：方塊＋面向；逃跑時畫意圖的方向
 	var dc: Vector2 = Vector2(h.deer_pos) * CELL + Vector2(CELL, CELL) * 0.5
 	var fawn_t: bool = h.is_fawn(h.target)
-	map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
-	if h.herd.size() > 1:
-		map.draw_rect(_cell_rect(h.deer_pos), COLORS["picked"], false, 1.0)
-	map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
+	# 意圖線先畫，鹿畫在上面
 	if not h.done and not h.held:
 		for d in h.deer_intent():
 			map.draw_line(dc, dc + Vector2(d).normalized() * CELL * h._flee_budget(), COLORS["intent"], 1.0)
+	if not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE):
+		map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
+		map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
+	if h.herd.size() > 1:
+		map.draw_rect(_cell_rect(h.deer_pos), COLORS["picked"], false, 1.0)
 	# 狼
-	var wc: Vector2 = Vector2(h.wolf_pos) * CELL + Vector2(CELL, CELL) * 0.5
-	map.draw_circle(wc, CELL * 0.42, COLORS["wolf"])
+	# 狼的面向：上一步移動的方向；沒動過時朝向鹿
+	if h.wolf_pos != last_wolf_pos:
+		var mv: Vector2i = h.wolf_pos - last_wolf_pos
+		wolf_facing = mv if last_wolf_pos.x > -99 and mv != Vector2i.ZERO else h.deer_pos - h.wolf_pos
+		last_wolf_pos = h.wolf_pos
+	if not _draw_animal("wolf", h.wolf_pos, wolf_facing):
+		var wc: Vector2 = Vector2(h.wolf_pos) * CELL + Vector2(CELL, CELL) * 0.5
+		map.draw_circle(wc, CELL * 0.42, COLORS["wolf"])
 	if hover.x >= 0:
 		map.draw_rect(_cell_rect(hover), Color(1, 1, 1, 0.6), false, 1.0)

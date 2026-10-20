@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
+
+輸出（每格 14×14，和戰術地圖的格子一樣大）：
+- assets/art/tactical/{wolf,deer,fawn,elk}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+  右、右下、下、左下、左、左上、上、右上。
+- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0}.png：地塊（14×14）。
+- arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
+
+用法：python3 tools/make_tactical_art.py
+"""
+import math
+import os
+import random
+
+from PIL import Image, ImageColor, ImageDraw
+
+CELL = 14
+SS = 8  # 先畫成 8 倍大再縮小（Nearest），得到乾淨的像素邊緣
+OUT = "assets/art/tactical"
+OUT_4X = "arts/tactical_placeholder"
+DIRS = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
+
+# 動物的形狀：面向右（+x），座標以 14 格為單位、中心 (7, 7)。每個部件 (種類, 顏色, 參數)
+#   ellipse: (cx, cy, rx, ry)；poly: [(x, y), ...]
+WOLF = [
+    ("ellipse", "#7c7c7c", (1.9, 7, 1.9, 0.75)),          # 尾巴
+    ("ellipse", "#a3a3a3", (6.0, 7, 4.0, 2.7)),           # 身體
+    ("ellipse", "#727272", (5.8, 7, 3.2, 1.0)),           # 背上的深色
+    ("ellipse", "#b4b4b4", (10.3, 7, 2.1, 2.0)),          # 頭
+    ("ellipse", "#c8c8c8", (12.4, 7, 1.0, 0.75)),         # 口鼻
+    ("poly", "#6a6a6a", [(9.6, 5.6), (10.6, 4.6), (10.9, 5.8)]),  # 耳朵
+    ("poly", "#6a6a6a", [(9.6, 8.4), (10.6, 9.4), (10.9, 8.2)]),
+]
+DEER = [
+    ("ellipse", "#9b6534", (6.6, 7, 4.3, 2.1)),           # 身體
+    ("ellipse", "#f2ead8", (2.5, 7, 1.0, 1.1)),           # 白色的臀部
+    ("ellipse", "#8a5a2e", (10.6, 7, 1.3, 0.9)),          # 脖子
+    ("ellipse", "#a8723f", (12.0, 7, 1.3, 1.0)),          # 頭
+    ("poly", "#6e4524", [(11.3, 5.9), (11.0, 4.6), (12.0, 5.7)]),  # 耳朵
+    ("poly", "#6e4524", [(11.3, 8.1), (11.0, 9.4), (12.0, 8.3)]),
+]
+FAWN = [
+    ("ellipse", "#c08a4e", (6.8, 7, 3.2, 1.6)),
+    ("ellipse", "#f2ead8", (3.8, 7, 0.7, 0.8)),
+    ("ellipse", "#c99559", (10.0, 7, 1.1, 0.9)),
+    ("ellipse", "#f6f0e2", (6.0, 6.3, 0.45, 0.45)),       # 白點
+    ("ellipse", "#f6f0e2", (7.6, 7.6, 0.45, 0.45)),
+    ("ellipse", "#f6f0e2", (5.2, 7.7, 0.45, 0.45)),
+    ("poly", "#8a5a2e", [(9.6, 6.2), (9.3, 5.0), (10.2, 6.0)]),
+    ("poly", "#8a5a2e", [(9.6, 7.8), (9.3, 9.0), (10.2, 8.0)]),
+]
+ELK = [
+    ("ellipse", "#c39a62", (6.2, 7, 4.8, 2.5)),           # 淺色的身體
+    ("ellipse", "#ede0bc", (1.7, 7, 1.0, 1.3)),           # 淺色的臀部
+    ("ellipse", "#5a3a22", (10.6, 7, 1.8, 1.4)),          # 深色的脖子（鬃毛）
+    ("ellipse", "#6b4a2c", (12.3, 7, 1.3, 1.0)),          # 頭
+]
+
+
+def _rot(x, y, ang):
+    dx, dy = x - 7.0, y - 7.0
+    c, s = math.cos(ang), math.sin(ang)
+    return 7.0 + dx * c - dy * s, 7.0 + dx * s + dy * c
+
+
+def _draw_shape(draw, parts, ang, ox):
+    for kind, color, p in parts:
+        if kind == "ellipse":
+            cx, cy, rx, ry = p
+            pts = []
+            for i in range(24):
+                t = 2 * math.pi * i / 24
+                pts.append(_rot(cx + rx * math.cos(t), cy + ry * math.sin(t), ang))
+        else:
+            pts = [_rot(x, y, ang) for x, y in p]
+        draw.polygon([((x + ox) * SS, y * SS) for x, y in pts], fill=color)
+
+
+def make_sprite(name, parts, outline):
+    big = Image.new("RGBA", (CELL * 8 * SS, CELL * SS), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(big)
+    for i, (dx, dy) in enumerate(DIRS):
+        _draw_shape(draw, parts, math.atan2(dy, dx), i * CELL)
+    img = big.resize((CELL * 8, CELL), Image.NEAREST)
+    _save(name, _outline(img, outline))
+
+
+# 1 像素的深色外框（不跨到相鄰的方向格）：和草地、密林分得開
+def _outline(img, color):
+    out = img.copy()
+    rgb = ImageColor.getrgb(color) + (255,)
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            if img.getpixel((x, y))[3] > 0:
+                continue
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and nx // CELL == x // CELL and img.getpixel((nx, ny))[3] > 0:
+                    out.putpixel((x, y), rgb)
+                    break
+    return out
+
+
+def _px(img, x, y, color):
+    if 0 <= x < CELL and 0 <= y < CELL:
+        img.putpixel((x, y), ImageColor.getrgb(color) + (255,))
+
+
+def tile_open(seed):
+    rnd = random.Random(seed)
+    img = Image.new("RGBA", (CELL, CELL), "#5f7a3a")
+    for _ in range(22):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), rnd.choice(["#56702f", "#6a8744", "#526b2c"]))
+    for _ in range(3):  # 小草叢
+        x, y = rnd.randrange(1, CELL - 1), rnd.randrange(2, CELL - 1)
+        for dx, dy in [(0, 0), (-1, -1), (1, -1), (0, -2)]:
+            _px(img, x + dx, y + dy, "#7a9a4c")
+    return img
+
+
+def tile_forest(seed):
+    rnd = random.Random(seed)
+    img = Image.new("RGBA", (CELL, CELL), "#253e23")
+    d = ImageDraw.Draw(img)
+    for _ in range(3):  # 樹冠
+        cx, cy, r = rnd.randrange(2, CELL - 2), rnd.randrange(2, CELL - 2), rnd.randrange(3, 5)
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#2f5230")
+        d.ellipse([cx - r + 1, cy - r + 1, cx, cy], fill="#3a6338")
+    for _ in range(8):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), "#1c301b")
+    return img
+
+
+def tile_logs(seed):
+    img = tile_open(seed + 100)
+    d = ImageDraw.Draw(img)
+    d.line([(1, 9), (12, 4)], fill="#6b4f33", width=3)  # 倒下的樹幹
+    d.line([(1, 9), (12, 4)], fill="#86643f", width=1)
+    d.point([(1, 9), (12, 4)], fill="#d8c08a")             # 斷面
+    d.line([(4, 12), (9, 11)], fill="#5a4129", width=2)
+    return img
+
+
+def _save(name, img):
+    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(OUT_4X, exist_ok=True)
+    img.save(os.path.join(OUT, name + ".png"))
+    img.resize((img.width * 4, img.height * 4), Image.NEAREST).save(os.path.join(OUT_4X, name + "_4x.png"))
+
+
+def main():
+    make_sprite("wolf", WOLF, "#262626")
+    make_sprite("deer", DEER, "#2e1a0c")
+    make_sprite("fawn", FAWN, "#2e1a0c")
+    make_sprite("elk", ELK, "#2e1a0c")
+    for i in range(3):
+        _save("tile_open_%d" % i, tile_open(i))
+    for i in range(2):
+        _save("tile_forest_%d" % i, tile_forest(i))
+    _save("tile_logs_0", tile_logs(0))
+    print("完成：", sorted(os.listdir(OUT)))
+
+
+if __name__ == "__main__":
+    main()

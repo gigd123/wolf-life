@@ -99,3 +99,15 @@
 - 換正式素材時沿用 `assets/art/` 的檔名；要改名或新增時，同步修改 `data/art.json`。
 
 2026-10-17：`arts/` 加了 `.gdignore`，Godot 不再匯入原始交付檔（遊戲只讀 `assets/art/`）；在 Godot 編輯器的檔案面板看不到 `arts/`，用一般看圖軟體開。
+
+## 戰術地圖（Phase 2c，2026-10-20）
+
+程式畫的佔位圖（`tools/make_tactical_art.py` 產生，4 倍的預覽在 `arts/tactical_placeholder/`），之後換正式素材時維持檔名與尺寸。對應在 `data/art.json` 的 `tactical`。
+
+| 路徑 | 內容 | 尺寸 |
+| --- | --- | --- |
+| `tactical/{wolf,deer,fawn,elk}.png` | 俯視的動物，8 個方向的橫條：右、右下、下、左下、左、左上、上、右上（同 `TacticalHunt.DIRS`），有 1 像素深色外框 | 112×14，每格 14×14 |
+| `tactical/tile_open_{0,1,2}.png` | 開闊地（草地，三種變化依座標輪替） | 14×14 |
+| `tactical/tile_forest_{0,1}.png` | 密林（樹冠） | 14×14 |
+| `tactical/tile_logs_0.png` | 倒木 | 14×14 |
+
