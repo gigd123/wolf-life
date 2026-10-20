@@ -23,6 +23,8 @@ var style: String
 var judge: bool = true
 const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
+# 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
+var roam: bool = false
 # 「照常過日子」（Phase 1.7b，提案之十 E）：代為行動 routine_days 天，遇到值得注意的事就停下、交還給玩家。
 # routine_style："small" 在附近獵小獵物、"big" 找大型獵物、"heal" 養傷（待在巢穴休息）。
 var routine: bool = false
@@ -35,6 +37,7 @@ var stop_encounter: Dictionary = {}
 var stop_scavenger: String = "" # 照常過日子進食時有東西來搶：停下交給玩家（2026-10-15 試玩回報 23）
 var _finished: bool = false
 var _encounter: Dictionary = {}
+var _roamed_today: Dictionary = {}
 
 # 偏好的選項依順序，有就選（不看成功率）；都沒有才從其餘選項挑成功率最高的。
 const PREFER := {
@@ -166,7 +169,14 @@ func _play_day() -> void:
 				_scavenger(str(rc["event"]))
 			_feed_loop()
 			continue
-		if _go_home():
+		if roam:
+			if GameTime.current_period() == "dawn" and not bool(_roamed_today.get(GameTime.day, false)):
+				_roamed_today = {GameTime.day: true}
+				var adj: Array = GameState.adjacent_regions().filter(func(r): return GameData.map_of(r) == GameState.current_map())
+				if not adj.is_empty() and RNGService.chance(0.5):
+					GameState.action_move(adj[RNGService.randi_range(0, adj.size() - 1)])
+					continue
+		elif _go_home():
 			continue
 		_explore_once()
 

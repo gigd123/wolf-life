@@ -1350,6 +1350,8 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	# 黑狼的標記蓋在你的地盤上：在那一區探索時發現（1.9b 第 1 步）
 	if is_overmarked() and RNGService.chance(0.6):
 		current_discovery = {"kind": "overmarked", "location": _random_terrain(current_region)}
+		if pack_active():
+			_pack_note("overmarked")
 		state_changed.emit()
 		return current_discovery
 	if _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
@@ -1571,6 +1573,7 @@ func _maybe_pack_remains() -> bool:
 		return false
 	var seg: Array = _pack_remains_cfg().get("segments", [2, 3])
 	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": RNGService.randi_range(int(seg[0]), int(seg[1])), "zone": zone}
+	_pack_note("remains")
 	return true
 
 func pack_remains_risk() -> float:
@@ -2841,6 +2844,13 @@ func _leave_stranger_territory() -> String:
 func _pack_meet_cfg() -> Dictionary:
 	return WolfPack.cfg().get("meet", {})
 
+# 和黑狼一家有關、要做決定的事（Phase 3a 第 6 步的驗證）：撞上、落單的、殘骸、標記被蓋過、地盤被佔走。
+# 記 {age, kind}，一生模擬依季節統計。
+func _pack_note(kind: String) -> void:
+	var list: Array = life_log.get("pack_decisions", [])
+	list.append({"age": snapped(wolf.age_years, 0.25), "kind": kind})
+	life_log["pack_decisions"] = list
+
 func pack_had_pups() -> bool:
 	return black_pack.history.any(func(h): return str(h.get("event", "")) == "pups")
 
@@ -2885,7 +2895,9 @@ func _maybe_pack_meet() -> void:
 	var cfg := _pack_meet_cfg()
 	var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value("meet_mult", 1.0)
 	if RNGService.chance(chance_value):
-		_queue_event(_pack_meet_event())
+		var e := _pack_meet_event()
+		_pack_note(str(e.get("lone", "")) if str(e.get("lone", "")) != "" else ("leader" if str(e.get("type", "")) == "stranger_confront" else "meet"))
+		_queue_event(e)
 
 func _pack_meet_event() -> Dictionary:
 	var cfg := _pack_meet_cfg()
@@ -4168,6 +4180,7 @@ func _update_black_pack() -> void:
 	var events: Array = black_pack.on_season_passed({"season": GameTime.current_season(), "leader": leader,
 		"player_age": wolf.age_years, "beaten": beaten, "den": den_region, "own": own_territories(), "adjacent": adjacent})
 	for r in _pack_take_probed():
+		_pack_note("took")
 		events.append("took")
 		var tl: Array = life_log.get("pack_news", [])
 		tl.append({"event": "took", "region": r})
