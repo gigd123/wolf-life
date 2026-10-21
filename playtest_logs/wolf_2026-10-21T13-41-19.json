@@ -1,0 +1,848 @@
+{
+  "age_years": 5.6667,
+  "den": "tundra_east",
+  "knowledge": [
+    {
+      "animal": "caribou",
+      "count": 1,
+      "last_day": 1,
+      "period": "dawn",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 10,
+      "period": "dusk",
+      "region": "tundra_east",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 2,
+      "last_day": 9,
+      "period": "predawn",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 2,
+      "period": "dawn",
+      "region": "tundra_north",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 4,
+      "period": "day",
+      "region": "forest_west",
+      "type": "prey"
+    },
+    {
+      "animal": "stranger_wolf",
+      "count": 2,
+      "region": "forest_west",
+      "type": "territory"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 5,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "elk",
+      "count": 1,
+      "last_day": 5,
+      "period": "dusk",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "white_tailed_deer",
+      "count": 1,
+      "last_day": 5,
+      "period": "night",
+      "region": "forest_east",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1,
+      "last_day": 6,
+      "period": "dusk",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "snowshoe_hare",
+      "count": 1,
+      "last_day": 6,
+      "period": "night",
+      "region": "mountain_meadow",
+      "type": "prey"
+    },
+    {
+      "animal": "caribou",
+      "count": 1,
+      "last_day": 6,
+      "period": "night",
+      "region": "tundra_south",
+      "type": "prey"
+    },
+    {
+      "animal": "wolverine",
+      "count": 1,
+      "life_stage": "adult",
+      "type": "opponent"
+    },
+    {
+      "animal": "grizzly_bear",
+      "count": 1,
+      "region": "tundra_south",
+      "season": "winter",
+      "type": "danger"
+    },
+    {
+      "animal": "tundra_wolf",
+      "count": 1,
+      "life_stage": "adult",
+      "type": "opponent"
+    }
+  ],
+  "life_log": {
+    "adult_body": "adult_body.health_max",
+    "adult_bonus": {
+      "health_max": 3.0,
+      "speed": 3.0,
+      "strength": 3.0
+    },
+    "adult_stats": {
+      "age": 2.17,
+      "health_max": 89.9,
+      "perception": 40.6,
+      "skill": 40.5,
+      "speed": 46.1,
+      "strength": 46.2
+    },
+    "beaten_opponents": [],
+    "biggest_prey": "snowshoe_hare",
+    "biggest_prey_stage": "adult",
+    "bison_region": "grassland_plains",
+    "blizzards": [
+      {
+        "age": 0.7,
+        "choice": "retreat",
+        "days": 3,
+        "in_tundra": true,
+        "result": "safe"
+      }
+    ],
+    "caches_made": 2,
+    "days_lived": 11,
+    "death_cause": "starvation",
+    "decisions": [
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "cautious",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "cautious",
+      "other",
+      "other",
+      "cautious",
+      "cautious",
+      "other",
+      "other",
+      "other",
+      "other",
+      "other",
+      "assault",
+      "other",
+      "cautious",
+      "cautious",
+      "assault",
+      "cautious",
+      "other"
+    ],
+    "den_moves": [
+      {
+        "age": 0.7,
+        "from": "tundra_south",
+        "to": "tundra_north"
+      },
+      {
+        "age": 0.7,
+        "from": "tundra_north",
+        "to": "forest_north"
+      },
+      {
+        "age": 0.7,
+        "from": "forest_north",
+        "to": "forest_west"
+      },
+      {
+        "age": 0.7,
+        "from": "forest_west",
+        "to": "forest_north"
+      },
+      {
+        "age": 0.7,
+        "from": "forest_north",
+        "to": "forest_west"
+      },
+      {
+        "age": 5.7,
+        "from": "forest_west",
+        "to": "tundra_south"
+      },
+      {
+        "age": 5.7,
+        "from": "tundra_south",
+        "to": "tundra_north"
+      },
+      {
+        "age": 5.7,
+        "from": "tundra_north",
+        "to": "tundra_east"
+      }
+    ],
+    "food_by": {
+      "carcass:moose": 30.0,
+      "kill:snowshoe_hare": 19.0
+    },
+    "hare_year": 2,
+    "hunger_tier": 2,
+    "hunt_attempts": 5,
+    "hunt_by_animal": {
+      "bison.juvenile": [
+        1,
+        0,
+        1
+      ],
+      "elk.adult": [
+        1,
+        0,
+        1
+      ],
+      "pronghorn.adult": [
+        1,
+        0,
+        1
+      ],
+      "snowshoe_hare.adult": [
+        1,
+        1,
+        0
+      ],
+      "snowshoe_hare.juvenile": [
+        1,
+        1,
+        0
+      ]
+    },
+    "hunt_by_condition": {
+      "healthy": [
+        3,
+        0,
+        3
+      ]
+    },
+    "hunt_successes": 2,
+    "ice_known": {
+      "solid": true
+    },
+    "main_tendency": "cautious",
+    "maps_visited": [
+      "tundra",
+      "forest",
+      "mountain"
+    ],
+    "marks": {
+      "tundra_east": 10,
+      "tundra_north": 8
+    },
+    "marks_made": 2,
+    "metrics": {
+      "best_choices": 3,
+      "by_context": {
+        "hunger.hungry": [
+          1,
+          1,
+          0
+        ],
+        "hunger.starving": [
+          6,
+          2,
+          4
+        ],
+        "injury.light": [
+          5,
+          1,
+          4
+        ],
+        "injury.none": [
+          2,
+          2,
+          0
+        ],
+        "period.dawn": [
+          1,
+          1,
+          0
+        ],
+        "period.day": [
+          6,
+          2,
+          4
+        ],
+        "stage.adult": [
+          5,
+          1,
+          4
+        ],
+        "stage.subadult": [
+          2,
+          2,
+          0
+        ],
+        "stamina.high": [
+          1,
+          1,
+          0
+        ],
+        "stamina.mid": [
+          6,
+          2,
+          4
+        ]
+      },
+      "cards": 17,
+      "choices": 7,
+      "events": 4,
+      "gorged_now": false,
+      "longest_quiet": 5,
+      "play_seconds": 73.1734360000001,
+      "quick_cards": 17,
+      "quiet_streak": 5,
+      "stage_seconds": {
+        "adult": 26.5732746666667,
+        "subadult": 46.6001613333333
+      }
+    },
+    "next_notable_id": 3,
+    "potential": {
+      "health_max": 98.9338342884038,
+      "perception": 55.7488,
+      "skill": 55.624,
+      "speed": 59.0739781670404,
+      "strength": 59.1069269742223
+    },
+    "prey_count": {
+      "snowshoe_hare": 2
+    },
+    "recent_combats": [
+      {
+        "age": 0.7,
+        "animal": "red_fox",
+        "context": "carcass",
+        "opp_hp_max": 18.0,
+        "opp_power": 30.0,
+        "outcome": "ignore",
+        "rounds": [
+          {
+            "choice": "ignore",
+            "danger": false,
+            "desperate": false,
+            "notes": [],
+            "opp_dmg": 0.0,
+            "opp_hp": 18.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 76.3
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 0.0,
+          "injury": 0,
+          "power": 75.3,
+          "skill": 36.4,
+          "speed": 38.8,
+          "strength": 38.8
+        },
+        "wolf_hp_max": 86.861435132,
+        "wolf_start_hp": 76.3
+      },
+      {
+        "age": 0.7,
+        "animal": "wolverine",
+        "context": "carcass",
+        "opp_hp_max": 64.0,
+        "opp_power": 116.0,
+        "outcome": "abandon",
+        "rounds": [
+          {
+            "choice": "probe",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.probe.resolute",
+              "combat.opp_hit.leg",
+              "combat.probe.swipe"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 64.0,
+            "r": 1,
+            "wolf_dmg": 16.0,
+            "wolf_hp": 50.3
+          },
+          {
+            "choice": "abandon",
+            "danger": false,
+            "desperate": false,
+            "notes": [],
+            "opp_dmg": 0.0,
+            "opp_hp": 64.0,
+            "r": 2,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 50.3
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 30.0,
+          "injury": 0,
+          "power": 83.6,
+          "skill": 40.5,
+          "speed": 43.1,
+          "strength": 43.1
+        },
+        "wolf_hp_max": 86.861435132,
+        "wolf_start_hp": 66.3
+      },
+      {
+        "age": 5.7,
+        "animal": "tundra_wolf",
+        "context": "meet",
+        "opp_hp_max": 104.0,
+        "opp_power": 134.0,
+        "outcome": "submit",
+        "rounds": [
+          {
+            "choice": "threaten",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.threaten.fail"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 1,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 73.1
+          },
+          {
+            "choice": "dodge",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.dodge.success"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 2,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 73.1
+          },
+          {
+            "choice": "retreat",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.retreat.fail",
+              "combat.opp_hit.shoulder"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 3,
+            "wolf_dmg": 21.0,
+            "wolf_hp": 52.1
+          },
+          {
+            "choice": "retreat",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.retreat.fail"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 4,
+            "wolf_dmg": 0.0,
+            "wolf_hp": 52.1
+          },
+          {
+            "choice": "lunge",
+            "danger": false,
+            "desperate": false,
+            "notes": [
+              "combat.first.opp",
+              "combat.opp_hit.shoulder",
+              "combat.interrupted"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 5,
+            "wolf_dmg": 21.0,
+            "wolf_hp": 31.1
+          },
+          {
+            "choice": "submit",
+            "danger": true,
+            "desperate": false,
+            "notes": [
+              "combat.opp_hit.leg",
+              "combat.submit"
+            ],
+            "opp_dmg": 0.0,
+            "opp_hp": 104.0,
+            "r": 6,
+            "wolf_dmg": 12.6,
+            "wolf_hp": 18.5
+          }
+        ],
+        "wolf_at_start": {
+          "hunger": 0.0,
+          "injury": 1,
+          "power": 72.1,
+          "skill": 36.4,
+          "speed": 32.5,
+          "strength": 35.7
+        },
+        "wolf_hp_max": 79.8721802218491,
+        "wolf_start_hp": 73.1
+      }
+    ],
+    "recent_messages": [
+      "冬 D7 黃昏　你在森林北部安了新家。",
+      "冬 D7 深夜　你在巢穴裡安穩地睡了一覺。昨天沒怎麼活動，身體沒什麼變化。",
+      "冬 D7 深夜　你移動到了森林西部。",
+      "冬 D7 凌晨　這裡沒有可採集的東西。發現了蹤跡：叉角羚（側風）。這次狩獵失敗了。",
+      "冬 D8 清晨　長期吃不飽，身體漸漸變差。你在森林西部安了新家。長久吃不飽，你的肋骨一根根浮了出來。",
+      "冬 D8 清晨　你移動到了森林北部。",
+      "冬 D8 清晨　你稍作休息，恢復了一些體力。",
+      "冬 D8 清晨　（除錯）年齡調整為 5.67 歲。你已經是一隻成年的狼了。你的口鼻開始泛白，毛色變淡，追久了會喘。但你比以前更懂得，什麼時候不該追。",
+      "冬 D8 清晨　你沿著結冰的河面走，冰上沒有積雪，走得很快。你移動到了苔原林線。",
+      "冬 D8 黃昏　你勉強睡了一覺，睡得不太好。昨天沒怎麼活動，身體沒什麼變化。",
+      "冬 D8 黃昏　這裡沒有可採集的東西。遠處遠遠地有一頭未知的大型掠食者在翻找食物，牠沒有發現你。你學到：【似乎】冬季的苔原林線有灰熊出沒。",
+      "冬 D8 深夜　你移動到了高山草甸。",
+      "冬 D8 深夜　你勉強睡了一覺，睡得不太好。睡了一覺：感知 ▲0.2。",
+      "冬 D8 深夜　你記得：【似乎】冬季的苔原林線有灰熊出沒。你沿著結冰的河面走，冰上沒有積雪，走得很快。你移動到了苔原林線。",
+      "冬 D8 凌晨　你沿著結冰的河面走，冰上沒有積雪，走得很快。你移動到了遠北苔原。",
+      "冬 D8 凌晨　你在遠北苔原的樹根、石頭上留下氣味，這一帶現在是你的地盤了。",
+      "冬 D8 凌晨　還不到一天：什麼也沒獵到。你餓了，得好好找吃的。",
+      "冬 D8 凌晨　還不到一天：什麼也沒獵到。你餓了，得好好找吃的。發現了蹤跡：白尾鹿（側風）。",
+      "冬 D9 清晨　飢餓正在侵蝕你的身體。你休息到了清晨。飢餓啃著你的身體，每一步都比昨天沉重。",
+      "冬 D9 清晨　河面結了厚冰，你踩著冰過了河。你移動到了苔原河谷。",
+      "冬 D9 清晨　你記得：【似乎】冬季的苔原林線有灰熊出沒。河面結了厚冰，你踩著冰過了河。你移動到了苔原林線。",
+      "冬 D9 白天　你勉強睡了一覺，睡得不太好。昨天沒怎麼活動，身體沒什麼變化。",
+      "冬 D9 白天　兩隻毛色偏淺的狼從遠處的雪坡上看著你。牠們腿很長，是一對住在苔原的灰狼，跟著馴鹿群四處遷徙。你活了下來，但這一帶不再是你能久留的地方。你學到：【似乎】苔原狼：上次交手，你沒佔到上風。",
+      "冬 D9 黃昏　你在苔原林線安了新家。",
+      "冬 D9 黃昏　河面結了厚冰，你踩著冰過了河。你移動到了苔原河谷。",
+      "冬 D9 深夜　找到了可以睡覺的地方。之後回到這一帶，還能睡在這裡。發現了蹤跡：狐狸（側風）。",
+      "冬 D9 深夜　河面結了厚冰，你踩著冰過了河。你移動到了遠北苔原。",
+      "冬 D9 深夜　你在遠北苔原安了新家。沙脊的沙土鬆軟乾燥，你挖得又深又暖。待在這一帶時，寒冷不再那麼難熬。",
+      "冬 D9 深夜　還不到一天：什麼也沒獵到。你餓了，得好好找吃的。",
+      "冬 D9 凌晨　沙脊上，你看見一隻雪兔。你學到：【通常】凌晨的遠北苔原常有雪兔。",
+      "冬 D10 清晨　飢餓正在侵蝕你的身體。你休息到了黃昏。",
+      "冬 D10 黃昏　河面結了厚冰，你踩著冰過了河。你移動到了苔原河谷。",
+      "冬 D10 黃昏　開闊的苔原上，你發現新鮮的糞便，是小雪兔留下的。你學到：【通常】黃昏的苔原河谷常有雪兔。雪白的身影一閃，就融進了雪地裡。",
+      "冬 D10 深夜　你在苔原河谷的樹根、石頭上留下氣味，這一帶現在是你的地盤了。",
+      "冬 D10 深夜　你在苔原河谷安了新家。",
+      "冬 D10 深夜　找到了可以睡覺的地方。之後回到這一帶，還能睡在這裡。",
+      "冬 D10 凌晨　河邊的柳叢裡，你發現了一處好睡處。",
+      "冬 D10 凌晨　河面結了厚冰，你踩著冰過了河。你移動到了遠北苔原。",
+      "冬 D10 凌晨　你稍作休息，恢復了一些體力。",
+      "冬 D10 凌晨　河面結了厚冰，你踩著冰過了河。飢餓正在侵蝕你的身體。"
+    ],
+    "region_periods": {
+      "forest_east": 7,
+      "forest_north": 6,
+      "forest_west": 6,
+      "mountain_meadow": 2,
+      "tundra_central": 4,
+      "tundra_east": 5,
+      "tundra_north": 9,
+      "tundra_south": 10
+    },
+    "regions_visited": [
+      "tundra_south",
+      "tundra_north",
+      "tundra_east",
+      "tundra_central",
+      "forest_north",
+      "forest_east",
+      "forest_west",
+      "mountain_meadow"
+    ],
+    "scavenged": 2,
+    "scavenged_by_wolverine": 1,
+    "season_days": 10,
+    "season_fed_days": 0,
+    "season_snapshot": {
+      "health_max": 84.0,
+      "perception": 40.0,
+      "skill": 40.0,
+      "speed": 40.0,
+      "strength": 40.0
+    },
+    "seasons_seen": [
+      "tundra:winter",
+      "mountain:winter"
+    ],
+    "severe_streak": 0,
+    "since_sleep": {},
+    "sleep_snapshot": {
+      "health_max": 79.8721802218491,
+      "perception": 39.258,
+      "skill": 40.48,
+      "speed": 36.1352293592618,
+      "strength": 39.6605745955556
+    },
+    "sleep_starved": false,
+    "start_map": "tundra",
+    "stats": {
+      "combat": {
+        "red_fox.ignore": 1,
+        "red_fox.started": 1,
+        "tundra_wolf.started": 1,
+        "tundra_wolf.submit": 1,
+        "wolverine.abandon": 1,
+        "wolverine.started": 1
+      },
+      "counters": {
+        "hunts": 5,
+        "observe_opportunities": 2
+      },
+      "fights_by_animal": {
+        "red_fox": 1,
+        "tundra_wolf": 1,
+        "wolverine": 1
+      },
+      "hunts_by_animal": {
+        "bison": 1,
+        "elk": 1,
+        "pronghorn": 1,
+        "snowshoe_hare": 2
+      },
+      "nights": {
+        "den": 4
+      },
+      "option_counts": {
+        "blizzard.dig": 1,
+        "blizzard.retreat": 1,
+        "combat.abandon": 1,
+        "combat.dodge": 1,
+        "combat.ignore": 1,
+        "combat.lunge": 1,
+        "combat.probe": 1,
+        "combat.retreat": 2,
+        "combat.submit": 1,
+        "combat.threaten": 1,
+        "explore.ridge": 2,
+        "give_up": 3,
+        "move.ice_shortcut": 7,
+        "pounce.creep_pounce": 2,
+        "routine.big": 1,
+        "routine.heal": 1,
+        "routine.small": 1,
+        "tactical.gave_up": 2,
+        "tundra.howl.reply": 1
+      },
+      "tactical": {
+        "gave_up": 2,
+        "started": 2
+      },
+      "tactical_by_species": {
+        "bison.gave_up": 1,
+        "elk.gave_up": 1
+      },
+      "tactical_by_stage": {
+        "young.gave_up": 2
+      },
+      "tactical_species_cost": {
+        "bison.stamina": 8,
+        "bison.turns": 1,
+        "elk.stamina": 8,
+        "elk.turns": 1
+      },
+      "tactical_stamina": {
+        "young": 16
+      }
+    },
+    "stranger_unlock": "adult",
+    "tendency_history": [
+      {
+        "age": 0.7,
+        "day": 5,
+        "type": "cautious"
+      }
+    ],
+    "tundra_meetings": [
+      {
+        "age": 0.7,
+        "kind": "howl",
+        "npc_damage": 0.0,
+        "outcome": "replied",
+        "pair": 2,
+        "region": "tundra_east",
+        "wolf_damage": 0.0
+      },
+      {
+        "age": 5.7,
+        "kind": "meet",
+        "npc_damage": 0.0,
+        "outcome": "submit",
+        "pair": 2,
+        "region": "tundra_south",
+        "wolf_damage": 55.0
+      }
+    ],
+    "tundra_relation": 0,
+    "tundra_seen_size": 2,
+    "wild_nights": 7,
+    "wolverine_meetings": [
+      {
+        "age": 0.7,
+        "context": "carcass",
+        "gen": 1,
+        "npc_damage": 0.0,
+        "outcome": "abandon",
+        "region": "tundra_south",
+        "wolf_damage": 16.0
+      }
+    ],
+    "year": {
+      "hare": 2,
+      "summer": "normal",
+      "winter": "normal"
+    },
+    "year_stats": {
+      "biggest": "snowshoe_hare",
+      "biggest_stage": "adult",
+      "flags": [
+        "den_moved",
+        "near_death"
+      ],
+      "heavy_start": 0,
+      "kills": 2,
+      "snap": {
+        "health_max": 80.0,
+        "perception": 40.0,
+        "skill": 40.0,
+        "speed": 40.0,
+        "strength": 40.0
+      }
+    },
+    "yearling_age": 1.17
+  },
+  "metrics": {
+    "best_choice_by_context": [
+      "hunger.hungry 1次 最高1.00 冒險0.00",
+      "injury.none 2次 最高1.00 冒險0.00",
+      "stamina.mid 6次 最高0.33 冒險0.67",
+      "period.dawn 1次 最高1.00 冒險0.00",
+      "stage.subadult 2次 最高1.00 冒險0.00",
+      "hunger.starving 6次 最高0.33 冒險0.67",
+      "stamina.high 1次 最高1.00 冒險0.00",
+      "period.day 6次 最高0.33 冒險0.67",
+      "injury.light 5次 最高0.20 冒險0.80",
+      "stage.adult 5次 最高0.20 冒險0.80"
+    ],
+    "best_choice_ratio": 0.43,
+    "decisions_per_day": 2.8,
+    "events_per_day": 0.36,
+    "gorged_avg_periods": 0.0,
+    "longest_quiet_days": 5,
+    "play_minutes": 1.2,
+    "quick_card_ratio": 1.0,
+    "stage_minutes": [
+      "subadult 0.8",
+      "adult 0.4"
+    ],
+    "text_issues": []
+  },
+  "region": "tundra_east",
+  "tendency": {
+    "effect": 0.035,
+    "share": 0.233333333333333,
+    "type": "cautious"
+  },
+  "time": {
+    "day": 11,
+    "period": "dawn",
+    "season": "winter"
+  },
+  "wolf": {
+    "age_years": 5.6667,
+    "alive": false,
+    "death_cause": "starvation",
+    "fed_streak": 0,
+    "flare_days": 0,
+    "flare_index": -1,
+    "health": 0.0,
+    "health_max": 79.8721802218491,
+    "health_value": 55.0,
+    "heavy_injury_count": 1,
+    "hunger": 0.0,
+    "injury": 2,
+    "injury_days_remaining": 3,
+    "injury_part": "face",
+    "injury_source": "tundra_wolf.meet",
+    "injury_stat": "perception",
+    "old_injuries": [],
+    "perception": 39.3,
+    "poison_days_remaining": 0,
+    "potential": {
+      "health_max": 88.9338342884038,
+      "perception": 54.2488,
+      "skill": 55.624,
+      "speed": 49.0739781670404,
+      "strength": 52.6069269742223
+    },
+    "season_reserve": {
+      "health_max": 0.0181189066666667,
+      "speed": 0.0136686488888889,
+      "strength": 0.0136686488888889
+    },
+    "skill": 40.655,
+    "speed": 36.1471293592618,
+    "stamina": 40.15,
+    "start_stats": {
+      "health_max": 80.0,
+      "perception": 40.0,
+      "skill": 40.0,
+      "speed": 40.0,
+      "strength": 40.0
+    },
+    "strength": 39.6650720955556,
+    "training": {
+      "health_max": 2.80916666666667,
+      "speed": 5.66666666666667,
+      "strength": 2.14166666666667
+    }
+  }
+}
