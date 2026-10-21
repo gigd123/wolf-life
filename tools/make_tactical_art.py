@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -94,6 +94,19 @@ MOOSE_CALF = [  # 小駝鹿：紅褐色、沒有斑點、長腿（俯視看不�
     ("ellipse", "#9a5832", (11.2, 7, 1.2, 0.75)),
     ("poly", "#5a2e16", [(10.2, 6.2), (9.8, 4.9), (10.8, 6.0)]),
     ("poly", "#5a2e16", [(10.2, 7.8), (9.8, 9.1), (10.8, 8.0)]),
+]
+
+BISON = [  # 野牛（Phase 2f 第 3 步）：深褐、後半身短毛淺一點、前半身大駝峰與蓬毛、低垂的大頭、短彎角
+    ("ellipse", "#5a3e26", (5.2, 7, 4.2, 2.6)),           # 後半身
+    ("ellipse", "#2e1e12", (8.4, 7, 2.6, 3.2)),           # 駝峰與前半身的蓬毛
+    ("ellipse", "#24180e", (11.4, 7, 1.6, 1.8)),          # 大頭
+    ("poly", "#d8d0bc", [(11.6, 5.4), (11.0, 4.0), (12.4, 4.6)]),  # 短彎角
+    ("poly", "#d8d0bc", [(11.6, 8.6), (11.0, 10.0), (12.4, 9.4)]),
+]
+BISON_CALF = [  # 小野牛：橘褐色（俗稱 red dog）、還沒有駝峰
+    ("ellipse", "#c0743a", (6.6, 7, 3.4, 1.9)),
+    ("ellipse", "#b0662e", (9.6, 7, 1.2, 1.3)),
+    ("ellipse", "#c88048", (11.0, 7, 1.1, 0.9)),
 ]
 
 
@@ -226,6 +239,8 @@ def main():
     make_sprite("elk_bull", ELK_BULL, "#2e1a0c")
     make_sprite("moose", MOOSE, "#140c06")
     make_sprite("moose_calf", MOOSE_CALF, "#2e1a0c")
+    make_sprite("bison", BISON, "#100a04")
+    make_sprite("bison_calf", BISON_CALF, "#3a1e0a")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

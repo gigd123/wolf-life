@@ -2,7 +2,8 @@ extends "res://tools/sim/tactical_hunt_sim.gd"
 # Phase 2f 第 2 步：獵幼鹿（母鹿護幼）的校準。物種（SPECIES，預設 moose）的母鹿＋幼鹿，目標是幼鹿；
 # 狼（普通、快）× 母鹿體況，四種打法取最好的、交給本能；另外列：母鹿衝過來的場次、被母鹿踢中的場次與平均傷害。
 # 目標：對齊選單式 hunt_levels 的 juvenile（駝鹿：一般成年約 80%）；母駝鹿踢中的傷比白尾鹿、馬鹿重。
-# 用法：bash tools/run_sim.sh tactical_calf_sim 0 40；SPECIES=elk FAMILIES=open,edge
+# HERD=n（Phase 2f 第 3 步，野牛）：整群 n 隻成獸、CALVES 隻小牛（預設 2），目標是一隻小牛，成獸的體況都照那一欄。
+# 用法：bash tools/run_sim.sh tactical_calf_sim 0 40；SPECIES=elk FAMILIES=open,edge；SPECIES=bison FAMILIES=open,river HERD=8
 const WINDS := ["headwind", "crosswind", "tailwind"]
 
 func _process(_d) -> bool:
@@ -12,6 +13,8 @@ func _process(_d) -> bool:
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 40
 	var species: String = OS.get_environment("SPECIES") if OS.get_environment("SPECIES") != "" else "moose"
 	var fams: PackedStringArray = (OS.get_environment("FAMILIES") if OS.get_environment("FAMILIES") != "" else "dense,edge,stream,logs").split(",")
+	var herd_n: int = int(OS.get_environment("HERD")) if OS.get_environment("HERD") != "" else 1
+	var calves: int = int(OS.get_environment("CALVES")) if OS.get_environment("CALVES") != "" else 2
 	var h = TH.new()
 	var wolves := {"normal": {"speed": 60, "skill": 55, "strength": 55, "perception": 55, "stamina": 80, "health": 100, "health_max": 100},
 		"fast": {"speed": 85, "skill": 60, "strength": 60, "perception": 60, "stamina": 80, "health": 100, "health_max": 100}}
@@ -29,11 +32,18 @@ func _process(_d) -> bool:
 				var ok := 0
 				for fam in fams:
 					for i in runs:
-						h.setup_from_game({"family": fam, "seed": i * 7919 + 17, "condition": cond, "wolf": wolves[wk].duplicate(), "wind_relation": WINDS[i % 3], "species": species, "season": "summer", "fawn": true})
+						var ctx := {"family": fam, "seed": i * 7919 + 17, "condition": cond, "wolf": wolves[wk].duplicate(), "wind_relation": WINDS[i % 3], "species": species, "season": "summer", "fawn": true}
+						if herd_n > 1:
+							var conds: Array = []
+							for k in herd_n:
+								conds.append(cond)
+							ctx["herd"] = {"conditions": conds, "calves": calves}
+						h.setup_from_game(ctx)
 						for k in h.herd.size():
 							if h.is_fawn(k):
 								h.target = k
 								h.di = k
+								break
 						if pol == "":
 							h.game_mods["instinct_penalty"] = float(h.t["game"]["instinct_penalty"])
 							var ip: String = TacticalInstinct.pick_policy(h)

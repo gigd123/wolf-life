@@ -1699,6 +1699,7 @@ tactical.factor.tired,牠累了
 tactical.factor.ability,你的速度與技巧
 tactical.factor.in_logs,牠在倒木裡
 tactical.factor.fawn,幼鹿
+tactical.factor.guarded,大野牛擋在牠旁邊
 tactical.factor.unaware,牠還沒發現你
 tactical.factor.rush_bolt,衝過去，牠先跳開
 tactical.factor.rush,衝過去，牠先驚覺
@@ -1833,6 +1834,8 @@ map.tip.cache.rotten,1 段可能已經壞了
 tactical.label.elk_bull,公馬鹿
 tactical.label.moose,駝鹿
 tactical.label.moose_calf,小駝鹿
+tactical.label.bison,野牛
+tactical.label.bison_calf,小野牛
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。

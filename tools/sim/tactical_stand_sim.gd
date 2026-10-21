@@ -28,6 +28,7 @@ func _process(_d) -> bool:
 				var stood_caught := 0
 				var ignored := 0
 				var hurt := 0
+				var dmg := 0.0
 				var n := 0
 				for pol in ["chase", "pace", "stalk", "ambush", ""]:
 					var ok := 0
@@ -60,6 +61,7 @@ func _process(_d) -> bool:
 									ignored += 1
 								if h.kicks > 0:
 									hurt += 1
+									dmg += float(h.damage_taken)
 							else:
 								_play(h, pol)
 							if h.result == "caught":
@@ -72,7 +74,7 @@ func _process(_d) -> bool:
 				for k in by_pol.keys():
 					if float(by_pol[k]) > float(by_pol[best_pol]):
 						best_pol = k
-				line += "  %s 最好 %d%%（%s）本能 %d%%｜站定 %d%%、站定獵到 %d%%、放棄 %d%%、受傷 %d%%" % [cond, roundi(100.0 * float(by_pol[best_pol])), best_pol,
-					roundi(100.0 * inst / max(1, n)), roundi(100.0 * stood / max(1, n)), roundi(100.0 * stood_caught / max(1, stood)), roundi(100.0 * ignored / max(1, n)), roundi(100.0 * hurt / max(1, n))]
+				line += "  %s 最好 %d%%（%s）本能 %d%%｜站定 %d%%、站定獵到 %d%%、放棄 %d%%、受傷 %d%%（平均 %.0f）" % [cond, roundi(100.0 * float(by_pol[best_pol])), best_pol,
+					roundi(100.0 * inst / max(1, n)), roundi(100.0 * stood / max(1, n)), roundi(100.0 * stood_caught / max(1, stood)), roundi(100.0 * ignored / max(1, n)), roundi(100.0 * hurt / max(1, n)), dmg / max(1, hurt)]
 			print(line)
 	return true

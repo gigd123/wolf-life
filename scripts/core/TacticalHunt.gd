@@ -96,6 +96,7 @@ var caught_kind: String = "" # 獵到的是 adult 還是 fawn
 var meat: int = 0
 var defends: int = 0 # 生母護幼的次數
 var damage_taken: float = 0.0
+var charged_round: int = -1 # 這一回合已經有站定的獵物衝撞過（一回合最多一次，Phase 2f 第 3 步：整群野牛站定時不會每隻都撞）
 var damage_by: Dictionary = {} # 受傷來源：prey（獵物本身踢）、mother（生母護幼）
 var scattered: bool = false # 這一回合狼衝進鹿群
 # 鹿群一起逃（Phase 2d 第 1 步）：逃跑中的鹿依 herd[i].group 分成小群，每一小群每回合算一個方向，
@@ -157,6 +158,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	meat = 0
 	defends = 0
 	damage_taken = 0.0
+	charged_round = -1
 	damage_by = {}
 	scattered = false
 	group_dirs = {}
@@ -361,6 +363,13 @@ func deer_cells(except: int = -1) -> Dictionary:
 	return out
 
 # 這隻母鹿的幼鹿（沒有就 -1）
+# 小牛旁邊 d 格內有沒有還在場上的成牛
+func _guarded(i: int, d: float) -> bool:
+	for j in herd.size():
+		if j != i and not is_fawn(j) and not bool(herd[j]["gone"]) and dist(herd[j]["pos"], herd[i]["pos"]) <= d:
+			return true
+	return false
+
 func fawn_of(i: int) -> int:
 	for j in herd.size():
 		if int(herd[j].get("mother", -1)) == i and not bool(herd[j].get("gone", false)):
@@ -666,7 +675,8 @@ func _deer_stand() -> void:
 		events.append(_tx("tactical.stand.bolt").replace("{animal}", label()))
 		return
 	_turn_toward_wolf()
-	if _cheb(deer_pos, wolf_pos) <= 2 and angle_side() == "front" and rng.randf() < float(st.get("charge", 0.0)):
+	if charged_round != rounds and _cheb(deer_pos, wolf_pos) <= 2 and angle_side() == "front" and rng.randf() < float(st.get("charge", 0.0)):
+		charged_round = rounds
 		var cd: Array = st.get("charge_damage", [8, 16])
 		var dmg: int = rng.randi_range(int(cd[0]), int(cd[1]))
 		wolf["health"] = float(wolf["health"]) - dmg
@@ -731,6 +741,11 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		var fb: float = float(t["herd"]["fawn"]["pounce"])
 		v += fb
 		factors.append([_tx("tactical.factor.fawn"), fb])
+		# 成牛擋在小牛旁邊（野牛，Phase 2f 第 3 步）：把小牛和牛群分開才好撲
+		var gd: Dictionary = sp().get("guarded", {})
+		if not gd.is_empty() and _guarded(di, float(gd.get("dist", 1.5))):
+			v += float(gd["pounce"])
+			factors.append([_tx("tactical.factor.guarded"), float(gd["pounce"])])
 	if sp().has("pounce"):
 		v += float(sp()["pounce"])
 		factors.append([_tx(str(sp().get("name_key", ""))), float(sp()["pounce"])])
@@ -1209,6 +1224,9 @@ func _mother_defend() -> bool:
 	if is_fawn() or bool(herd[di]["gone"]):
 		return false
 	var f: int = fawn_of(di)
+	# 成群護小牛的物種（野牛，Phase 2f 第 3 步）：你盯上的是小牛時，不是牠媽媽的成牛也會擋
+	if f < 0 and bool(sp(di).get("guard_calves", false)) and is_fawn(target) and not bool(herd[target]["gone"]):
+		f = target
 	# 有些物種的母鹿不護幼（馴鹿，Phase 2d 第 4 步）
 	if f < 0 or bool(sp(di).get("no_defend", false)):
 		return false
@@ -1568,12 +1586,19 @@ func deer_intent() -> Array:
 		out.append(opts[i]["dir"])
 	return out
 
+# 深雪時每回合少跑幾格：物種可以覆寫（野牛在深雪裡更慢，Phase 2f 第 3 步）
+func _snow_slow(k: int) -> float:
+	if not game_mods.has("snow_slow"):
+		return 0.0
+	return float(sp(k).get("snow_slow", game_mods["snow_slow"]))
+
 func _flee_budget(i: int = -1) -> float:
 	var k: int = di if i < 0 else i
 	var h: Dictionary = herd[k]
-	var prof: Array = t["herd"]["fawn_flee"] if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
+	# 幼鹿的逃跑格數：物種可以覆寫（小野牛跟得上牛群，Phase 2f 第 3 步）
+	var prof: Array = sp(k).get("calf_flee", t["herd"]["fawn_flee"]) if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
-	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - float(game_mods.get("snow_slow", 0.0)))
+	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - _snow_slow(k))
 	# 生母放慢等幼鹿：最多比幼鹿多跑 mother_slack 格（幼鹿還在附近、沒跑散時）
 	if not is_fawn(k):
 		var f: int = fawn_of(k)

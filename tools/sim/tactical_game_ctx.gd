@@ -247,6 +247,53 @@ func _process(_d) -> bool:
 		for d in mmh.hits_taken:
 			mtop = maxi(mtop, int(d))
 	_check(mtop > 14, "母駝鹿踢得比母白尾鹿重（最大 %d）" % mtop)
+	# 13. Phase 2f 第 3 步：野牛（一律成群 6～10 隻、獵小牛也是整群、成牛擋小牛、小牛在水裡不減速、深雪更慢）
+	gs.new_game("grassland_plains")
+	gs.debug_force_transition("adult")
+	_check(gs.tactical_eligible(gs.start_hunt("bison", "adult")) and gs.tactical_eligible(gs.start_hunt("bison", "juvenile")), "野牛：成牛、小牛走戰術地圖")
+	var bah = gs.start_hunt("bison", "adult")
+	bah.set_herd(true)
+	var bath = gs.start_tactical(bah)
+	var badults: int = bath.herd.filter(func(d): return str(d["kind"]) == "adult").size()
+	_check(badults >= 6 and badults <= 10 and str(bath.herd[bath.target]["species"]) == "bison", "野牛群 6～10 隻成牛（%d）" % badults)
+	var bjh = gs.start_hunt("bison", "juvenile")
+	bjh.set_herd(true)
+	var bjth = gs.start_tactical(bjh)
+	var bjadults: int = bjth.herd.filter(func(d): return str(d["kind"]) == "adult").size()
+	_check(bjth.is_fawn(bjth.target) and bjadults >= 6 and bjth.label(bjth.target) == "小野牛", "獵小牛也是整群、目標是小野牛（成牛 %d、%s）" % [bjadults, bjth.label(bjth.target)])
+	# 不是牠媽媽的成牛也會擋：把狼放到小牛旁邊、咬住小牛，找一隻不是生母的成牛試
+	var guard_ok := false
+	for i in 50:
+		var gh = gs.start_hunt("bison", "juvenile")
+		gh.set_herd(true)
+		var gth = gs.start_tactical(gh)
+		var calf: int = gth.target
+		var mom: int = int(gth.herd[calf]["mother"])
+		gth.herd[calf]["held"] = true
+		gth.herd[calf]["state"] = "flee"
+		gth.wolf_pos = Vector2i(gth.herd[calf]["pos"])
+		for j in gth.herd.size():
+			if j != mom and not gth.is_fawn(j) and gth.dist(gth.herd[j]["pos"], gth.wolf_pos) <= 3.0:
+				gth.di = j
+				if gth._mother_defend():
+					guard_ok = true
+				break
+		if guard_ok:
+			break
+	_check(guard_ok, "不是生母的成牛也會擋小牛")
+	# 小牛旁邊有成牛：撲咬有「大野牛擋在牠旁邊」
+	bjth.di = bjth.target
+	var gfac := false
+	for fct in bjth.pounce_chance("still")["factors"]:
+		if str(fct[0]) == "大野牛擋在牠旁邊":
+			gfac = true
+	var near_adult := false
+	for j in bjth.herd.size():
+		if not bjth.is_fawn(j) and bjth.dist(bjth.herd[j]["pos"], bjth.herd[bjth.target]["pos"]) <= 2.5:
+			near_adult = true
+	_check(gfac == near_adult, "小牛旁邊有成牛時撲咬減（%s／%s）" % [gfac, near_adult])
+	bjth.game_mods["snow_slow"] = 1.0
+	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

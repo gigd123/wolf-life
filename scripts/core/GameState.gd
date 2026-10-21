@@ -3080,11 +3080,15 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿
 	var stage_size: Dictionary = g.get("herd_size_stage", {}).get(hunt.animal_id, {})
 	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
-	if hunt.in_herd and size.size() == 2 and hunt.life_stage != "juvenile":
+	# 一律成群的物種（野牛，Phase 2f 第 3 步）：獵小牛時也是整群，至少一隻小牛
+	var herd_juv: bool = (g.get("herd_juvenile", []) as Array).has(hunt.animal_id)
+	if size.size() == 2 and ((hunt.in_herd and hunt.life_stage != "juvenile") or (herd_juv and hunt.life_stage == "juvenile")):
 		var conds: Array = [hunt.condition]
 		for i in RNGService.randi_range(int(size[0]), int(size[1])) - 1:
 			conds.append(hunt._pick_condition())
 		var calves: int = 0 if stage_size.has(hunt.life_stage) else int(g.get("herd_calves", {}).get(hunt.animal_id, {}).get(GameTime.current_season(), 0))
+		if hunt.life_stage == "juvenile":
+			calves = maxi(1, calves)
 		ctx["herd"] = {"conditions": conds, "calves": calves}
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)

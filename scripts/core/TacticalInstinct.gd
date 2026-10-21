@@ -117,9 +117,18 @@ static func step(h, pol: String) -> void:
 
 # 往目標走：在允許的方式裡挑離目標最近的格子；avoid_wind 時避開上風。
 const STAND_GIVE_UP := 6 # 站定幾回合還繞不到好角度就放棄
+const STAND_WALL := 3 # 鹿群裡幾隻站定就算站成一道牆
 
 static func _stand_step(h) -> void:
 	if (h.condition_known and h.condition == "healthy") or int(h.herd[h.target].get("stand_rounds", 0)) > STAND_GIVE_UP:
+		h.give_up()
+		return
+	# 整群站成一道牆（3 隻以上站定，野牛，Phase 2f 第 3 步）、或已經被撞或踢了兩下：不硬上
+	var standing := 0
+	for i in h.active_deer():
+		if not h.is_fawn(i) and str(h.herd[i]["state"]) == "stand":
+			standing += 1
+	if standing >= STAND_WALL or h.kicks >= 2:
 		h.give_up()
 		return
 	# 側面、後方而且機會夠的撲；正面不撲
