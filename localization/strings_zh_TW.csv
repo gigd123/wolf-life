@@ -1814,3 +1814,6 @@ log.cache.lost.grizzly,你藏的肉被挖走了，地上全是熊的氣味。
 log.cache.lost.fox,你藏的肉被挖開了，只剩幾撮狐狸的毛。
 log.cache.lost.wolverine,你藏的肉被挖走了，地上留著狼獾寬大的腳印。
 log.cache.lost.rotten,你藏的肉已經壞了，不能吃了。
+log.cache.replaced,你把放太久的那段扒出來丟了，換上新的。
+log.cache.part_rotten,藏的肉有一段已經壞了。
+log.cache.lost.fire,這裡燒過了，藏的肉找不到了。

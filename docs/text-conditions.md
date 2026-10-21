@@ -61,6 +61,8 @@
 | `routine.moved` | 這幾天你走到了 | 照常過日子期間換了區域 | 輕微：不到一天就停時仍說「這幾天」，先不改 |
 | `log.cache.stale` | 肉已經放了一陣子 | 挖出藏肉時已經過了新鮮期（`GameState.cache_state` = stale） | — |
 | `log.cache.lost.rotten` | 藏的肉已經壞了 | 回到那一區時，藏肉超過新鮮期 rot_mult 倍（`_update_caches` 記成 rotten） | — |
+| `log.cache.part_rotten` | 藏的肉有一段已經壞了 | 回到那一區（或在那裡動手藏、挖）時，有一段超過新鮮期 rot_mult 倍、被拿掉（`rotten_seen`） | — |
+| `log.cache.replaced` | 放太久的那段 | 藏滿 2 段、有一段過了新鮮期時換掉最舊的那段（`cache_status` = replace） | — |
 
 回歸測試：`tools/sim/text_claims.gd`（雪兔、年輕的狼、睡醒原因、苔原狼）、`tools/sim/notice_triage.gd`（痊癒）。
 
