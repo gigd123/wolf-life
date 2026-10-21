@@ -167,7 +167,7 @@ func _ready() -> void:
 		var t_entries: Array[String] = []
 		for m in tundra_meetings:
 			t_entries.append(tr("summary.stranger_entry").replace("{age}", "%.1f" % float(m.get("age", 0.0))) \
-				.replace("{outcome}", tr("summary.tundra_outcome." + str(m.get("outcome", "")))))
+				.replace("{outcome}", _tundra_outcome_text(m)))
 		_add_line(box, tr("summary.tundra").replace("{n}", str(tundra_meetings.size())).replace("{list}", "、".join(t_entries)) \
 			.replace("{relation}", tr("summary.tundra.relation." + _tundra_relation_key(int(log_data.get("tundra_relation", 0))))))
 	if log_data.has("bear_first_win"):
@@ -330,3 +330,9 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 	else:
 		parts.append(tr("bio.death").replace("{age}", age).replace("{cause}", _death_bio(log_data)))
 	return "，".join(parts) + "。"
+
+# 苔原狼相遇的結果：同一個結果名稱在不同場合意思不同時（看著牠們狩獵／看著牠們圍攻狼獾），先用「種類.結果」的文案
+func _tundra_outcome_text(m: Dictionary) -> String:
+	var outcome: String = str(m.get("outcome", ""))
+	var specific: String = "summary.tundra_outcome.%s.%s" % [str(m.get("kind", "")), outcome]
+	return tr(specific) if TranslationServer.translate(specific) != specific else tr("summary.tundra_outcome." + outcome)

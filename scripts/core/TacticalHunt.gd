@@ -301,11 +301,19 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		var adults: int = list.size()
 		for k in mini(int(herd_cfg.get("calves", 0)), adults):
 			var mp := Vector2i(int(list[k]["pos"][0]), int(list[k]["pos"][1]))
-			for d in DIRS:
-				var c: Vector2i = mp + d
-				if open_at.call(c) and not taken.has(c) and c != wolf:
-					taken[c] = true
-					list.append({"pos": [c.x, c.y], "kind": "fawn", "mother": k, "species": calf_sp})
+			# 先找母親旁邊一格；旁邊都被同伴或水佔住時往外找到 3 格（Phase 2f：河邊的野牛群曾經放不下小牛）
+			var placed := false
+			for r in [1, 2, 3]:
+				for dy in range(-r, r + 1):
+					for dx in range(-r, r + 1):
+						if placed or maxi(absi(dx), absi(dy)) != r:
+							continue
+						var c: Vector2i = mp + Vector2i(dx, dy)
+						if open_at.call(c) and not taken.has(c) and c != wolf:
+							taken[c] = true
+							list.append({"pos": [c.x, c.y], "kind": "fawn", "mother": k, "species": calf_sp})
+							placed = true
+				if placed:
 					break
 		sc["deer_list"] = list
 	elif fawn:

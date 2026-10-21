@@ -1126,6 +1126,27 @@ summary.tundra_outcome.helped_retreated,幫牠們圍攻狼獾，最後撤退
 summary.tundra_outcome.watched_drove_off,看著牠們趕走狼獾
 summary.tundra_outcome.watched_killed,看著牠們咬死狼獾
 summary.tundra_outcome.watched_held,看著狼獾守住殘骸
+summary.tundra_outcome.grabbed_got,趁亂搶到一塊殘骸
+summary.tundra_outcome.grabbed_missed,趁亂去搶殘骸，沒搶到
+summary.tundra_outcome.hunt.watched_killed,看著牠們獵到獵物
+summary.tundra_outcome.hunt.watched_missed,看著牠們狩獵落空
+summary.tundra_outcome.joint_caribou,和牠們一起獵到馴鹿
+summary.tundra_outcome.joint_moose,和牠們一起獵到駝鹿
+summary.tundra_outcome.seen,看到牠們的幼狼
+summary.tundra_outcome.warned,靠近牠們的窩，被低吼趕開
+summary.tundra_outcome.charged,靠近牠們的窩，被撲上來趕走
+summary.tundra_outcome.bear_driven_off,幫牠們把熊從窩邊趕走
+summary.tundra_outcome.bear_fought_off,和熊打了一場，守住牠們的窩
+summary.tundra_outcome.bear_stayed,和熊打了一場，沒能趕走牠
+summary.tundra_outcome.pup_lost,和熊打了一場，一隻幼狼被叼走
+summary.tundra_outcome.den.watched_held,看著牠們守住了窩
+summary.tundra_outcome.den.watched_pup_lost,看著熊叼走一隻幼狼
+summary.tundra_outcome.den.watched_lost_nothing,看著熊闖到窩邊，幼狼都還在
+summary.tundra_outcome.watched_both_left,看著牠們和狼獾各自走開
+summary.tundra_outcome.sided_wolverine_won,幫狼獾趕走了牠們
+summary.tundra_outcome.sided_wolverine_lost,幫狼獾，結果被牠們趕走
+summary.tundra_outcome.helped_died,幫牠們圍攻狼獾，戰死
+summary.tundra_outcome.helped_yield,幫牠們圍攻狼獾，最後退開
 summary.wolverine_gen,（前後共 {n} 隻）
 debug.tundra_wolf.mob,圍攻狼獾
 factor.combat.ally,苔原狼在一旁助攻

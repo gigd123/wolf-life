@@ -58,6 +58,25 @@ for a, v in animals.items():
         for k in (f'factor.refuge_near.{kind}', f'factor.refuge_far.{kind}', f'reason.refuge_near_{kind}'):
             need(k, f'data/animals.json {a} refuge')
 
+# 苔原狼相遇紀錄的結果（GameState._tundra_record 寫死的值，含 "前綴_" + ("a" if … else "b")）要有一生回顧的文案：
+# summary.tundra_outcome.<種類>.<結果> 或 summary.tundra_outcome.<結果>（2026-10-21 UI 檢查發現 grabbed_got 等十幾種漏寫）
+gs_src = open('scripts/core/GameState.gd', encoding='utf-8').read()
+for m in re.finditer(r'_tundra_record\("([a-z_]+)",\s*(.+?)(?:,\s*[a-z_.]+(?:\s*-\s*[a-z_.]+)?)*\)\s*$', gs_src, re.M):
+    kind, e = m.group(1), m.group(2)
+    outs = []
+    m2 = re.match(r'"([a-z_]*)"\s*\+\s*\("([a-z_]+)" if .+ else "([a-z_]+)"\)', e)
+    m3 = re.match(r'"([a-z_]+)" if .+ else "([a-z_]+)"$', e)
+    m4 = re.fullmatch(r'"([a-z_]+)"', e.strip())
+    if m2:
+        outs = [m2[1] + m2[2], m2[1] + m2[3]]
+    elif m3:
+        outs = [m3[1], m3[2]]
+    elif m4:
+        outs = [m4[1]]
+    for o in outs:
+        if f'summary.tundra_outcome.{kind}.{o}' not in keys and f'summary.tundra_outcome.{o}' not in keys:
+            missing.append(f'GameState._tundra_record("{kind}")  summary.tundra_outcome.{o}')
+
 for m in missing:
     print('缺少翻譯鍵：' + m)
 print(f'翻譯鍵檢查：{len(keys)} 個鍵，缺 {len(missing)} 個')

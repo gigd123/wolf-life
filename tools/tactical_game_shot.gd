@@ -1,5 +1,6 @@
 extends SceneTree
 # 戰術狩獵從主遊戲開的畫面檢查（Phase 2c 第 2 步）：開主遊戲、對白尾鹿出手 → 截圖 → 狼放棄 → 截圖 → 按「繼續」→ 截圖。
+# 動物、生命階段、巢穴可以用 ANIMAL、STAGE、DEN 指定（Phase 2f：駝鹿、野牛；預設白尾鹿成鹿、森林東部）。
 # 用法：OUT=<輸出路徑前綴> xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/tactical_game_shot.gd
 var f := 0
 var game
@@ -9,18 +10,20 @@ func _process(_d) -> bool:
 	var gs = root.get_node("GameState")
 	var out: String = OS.get_environment("OUT")
 	if f == 2:
-		gs.new_game("forest_east")
+		gs.new_game(OS.get_environment("DEN") if OS.get_environment("DEN") != "" else "forest_east")
 		gs.debug_force_transition("adult")
 		game = load("res://scenes/Game.tscn").instantiate()
 		root.add_child(game)
 	if f == 6:
 		# 地形可以用 TERRAIN 指定（例如 dense_forest、stream、fallen_logs）
 		var terrain: String = OS.get_environment("TERRAIN")
+		var animal: String = OS.get_environment("ANIMAL") if OS.get_environment("ANIMAL") != "" else "white_tailed_deer"
+		var stage: String = OS.get_environment("STAGE") if OS.get_environment("STAGE") != "" else "adult"
 		if terrain != "":
-			game.current_hunt = gs.start_hunt("white_tailed_deer", "adult", -1, false, terrain)
+			game.current_hunt = gs.start_hunt(animal, stage, -1, false, terrain)
 			game._open_tactical()
 		else:
-			game._begin_hunt("white_tailed_deer", "adult")
+			game._begin_hunt(animal, stage)
 		for c in game.get_children():
 			if c.has_method("start_from_game"):
 				view = c

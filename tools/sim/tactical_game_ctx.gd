@@ -293,6 +293,16 @@ func _process(_d) -> bool:
 			near_adult = true
 	_check(gfac == near_adult, "小牛旁邊有成牛時撲咬減（%s／%s）" % [gfac, near_adult])
 	bjth.game_mods["snow_slow"] = 1.0
+	# 河邊的牛群也放得下小牛：獵小牛時目標一定是小牛（2026-10-21 截圖發現河邊的野牛群沒有小牛、目標變成成牛）
+	var no_calf := 0
+	for i in 100:
+		for sp_ter in [["bison", "river_willow"], ["bison", ""], ["caribou", "river_willow"], ["elk", ""]]:
+			var jh = gs.start_hunt(sp_ter[0], "juvenile", -1, false, sp_ter[1])
+			jh.set_herd(true)
+			var jth = gs.start_tactical(jh)
+			if not jth.is_fawn(jth.target):
+				no_calf += 1
+	_check(no_calf == 0, "獵小牛、小鹿時目標一定是幼獸（河邊也是；%d 場不是）" % no_calf)
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
