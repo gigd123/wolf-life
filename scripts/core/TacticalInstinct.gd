@@ -61,6 +61,10 @@ static func step(h, pol: String) -> void:
 				pick = "hang"
 		h.hold_action(pick)
 		return
+	# 站定的大型獵物（Phase 2f）：看出是健康的就放棄（照生態幾乎打不下來）；否則繞到側面、後方再撲，站太久就放棄
+	if h.deer_state == "stand" and h.sp().has("stand"):
+		_stand_step(h)
+		return
 	var targets: Dictionary = h.pounce_targets()
 	if not targets.is_empty():
 		# 挑命中率最高（聰明的策略也看被踢的風險）的那一格；聰明的策略在鹿還沒逃、機率不到 60% 時先不撲
@@ -112,6 +116,31 @@ static func step(h, pol: String) -> void:
 					_go(h, reach, cover, ["creep"] if h.dist(h.wolf_pos, h.deer_pos) <= 8.0 else ["trot", "creep"], true)
 
 # 往目標走：在允許的方式裡挑離目標最近的格子；avoid_wind 時避開上風。
+const STAND_GIVE_UP := 6 # 站定幾回合還繞不到好角度就放棄
+
+static func _stand_step(h) -> void:
+	if (h.condition_known and h.condition == "healthy") or int(h.herd[h.target].get("stand_rounds", 0)) > STAND_GIVE_UP:
+		h.give_up()
+		return
+	# 側面、後方而且機會夠的撲；正面不撲
+	var targets: Dictionary = h.pounce_targets()
+	var best := Vector2i(-1, -1)
+	var bs := -1.0
+	for c in targets.keys():
+		var info: Dictionary = targets[c]
+		if str(info["side"]) == "front":
+			continue
+		var sc: float = float(info["chance"]) - float(info["kick"]) * 0.5
+		if sc > bs:
+			bs = sc
+			best = c
+	if best.x >= 0 and float(targets[best]["chance"]) >= 0.35:
+		h.pounce_at(best)
+		return
+	# 往牠身後兩格繞（小跑、潛行；牠每回合只轉 45°）
+	var rear: Vector2i = h.deer_pos - h.deer_facing * 2
+	_go(h, h.reachable(), rear, ["trot", "creep"])
+
 static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind: bool = false) -> void:
 	var best := Vector2i(-1, -1)
 	var best_score := INF

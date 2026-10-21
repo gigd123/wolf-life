@@ -132,7 +132,11 @@ func _process(_d) -> bool:
 	gs.new_game("forest_east")
 	gs.debug_force_transition("adult")
 	_check(gs.tactical_eligible(gs.start_hunt("elk", "adult")) and gs.tactical_eligible(gs.start_hunt("elk", "juvenile")), "馬鹿：母鹿、小鹿走戰術地圖")
-	_check(not gs.tactical_eligible(gs.start_hunt("elk", "buck")), "馬鹿：公鹿照舊走選單")
+	_check(gs.tactical_eligible(gs.start_hunt("elk", "buck")), "公馬鹿也走戰術地圖（Phase 2f）")
+	var bh = gs.start_hunt("elk", "buck")
+	bh.set_herd(true)
+	var bth = gs.start_tactical(bh)
+	_check(bth.herd.all(func(d): return str(d["species"]) == "elk_bull" and str(d["kind"]) == "adult") and bth.herd.size() >= 2 and bth.herd.size() <= 4, "公馬鹿的小群：2～4 隻、都是公鹿、沒有小鹿（%d）" % bth.herd.size())
 	for i in 30:
 		root.get_node("RNGService").set_seed(900 + i)
 		var eh = gs.start_hunt("elk", "adult")

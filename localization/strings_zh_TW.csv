@@ -1830,3 +1830,9 @@ map.tip.cache,藏了 {n} 段：{detail}
 map.tip.cache.fresh,1 段新鮮（還能放約 {d} 天）
 map.tip.cache.stale,1 段快壞了
 map.tip.cache.rotten,1 段可能已經壞了
+tactical.label.elk_bull,公馬鹿
+tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
+tactical.stand.bolt,{animal}突然轉身跑了起來！
+tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。
+tactical.stand.charge,{animal}衝過來撞你！（−{n}）
+tactical.factor.standing,牠站定面對你

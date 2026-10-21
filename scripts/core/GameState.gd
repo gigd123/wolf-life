@@ -3075,13 +3075,17 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	ctx["fawn"] = hunt.life_stage == "juvenile"
 	# Phase 2d 第 2 步：物種與鹿群（成鹿的體況照主遊戲的季節比例各擲一次，第一隻是遇到的那一隻）
 	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
-	ctx["species"] = str(g.get("species", {}).get(hunt.animal_id, "deer"))
-	var size: Array = g.get("herd_size", {}).get(hunt.animal_id, [])
+	ctx["species"] = str(g.get("species_stage", {}).get(hunt.animal_id, {}).get(hunt.life_stage, g.get("species", {}).get(hunt.animal_id, "deer")))
+	ctx["season"] = GameTime.current_season()
+	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿
+	var stage_size: Dictionary = g.get("herd_size_stage", {}).get(hunt.animal_id, {})
+	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
 	if hunt.in_herd and size.size() == 2 and hunt.life_stage != "juvenile":
 		var conds: Array = [hunt.condition]
 		for i in RNGService.randi_range(int(size[0]), int(size[1])) - 1:
 			conds.append(hunt._pick_condition())
-		ctx["herd"] = {"conditions": conds, "calves": int(g.get("herd_calves", {}).get(hunt.animal_id, {}).get(GameTime.current_season(), 0))}
+		var calves: int = 0 if stage_size.has(hunt.life_stage) else int(g.get("herd_calves", {}).get(hunt.animal_id, {}).get(GameTime.current_season(), 0))
+		ctx["herd"] = {"conditions": conds, "calves": calves}
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if hunt.life_stage == "juvenile":

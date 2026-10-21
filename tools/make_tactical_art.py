@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,mule_deer,caribou}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -72,6 +72,12 @@ ELK = [
     ("ellipse", "#ede0bc", (1.7, 7, 1.0, 1.3)),           # 淺色的臀部
     ("ellipse", "#5a3a22", (10.6, 7, 1.8, 1.4)),          # 深色的脖子（鬃毛）
     ("ellipse", "#6b4a2c", (12.3, 7, 1.3, 1.0)),          # 頭
+]
+
+
+ELK_BULL = ELK + [  # 公馬鹿（Phase 2f）：馬鹿加一對往後彎的大角
+    ("poly", "#e2d2a8", [(11.6, 6.0), (9.4, 2.6), (8.0, 2.2), (9.8, 3.4), (11.0, 5.6)]),
+    ("poly", "#e2d2a8", [(11.6, 8.0), (9.4, 11.4), (8.0, 11.8), (9.8, 10.6), (11.0, 8.4)]),
 ]
 
 
@@ -201,6 +207,7 @@ def main():
     make_sprite("elk", ELK, "#2e1a0c")
     make_sprite("mule_deer", MULE_DEER, "#2a221a")
     make_sprite("caribou", CARIBOU, "#2a1c10")
+    make_sprite("elk_bull", ELK_BULL, "#2e1a0c")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

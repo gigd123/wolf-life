@@ -217,6 +217,8 @@ func setup_from_game(ctx: Dictionary) -> void:
 				d["condition"] = str(ctx["condition"])
 	if float(ctx.get("age_penalty", 0.0)) > 0.0:
 		game_mods["age_penalty"] = float(ctx["age_penalty"])
+	if ctx.has("season"):
+		game_mods["season"] = str(ctx["season"])
 	if bool(ctx.get("twilight", false)):
 		game_mods["alert_mult"] = float(g.get("twilight_alert_mult", 0.85))
 	if bool(ctx.get("deep_snow", false)):
@@ -616,6 +618,85 @@ func _fatigue_rounds() -> float:
 	var r: float = float(t["deer"].get("condition_mods", {}).get(condition, {}).get("fatigue_rounds", 3.0)) if not is_fawn() else 3.0
 	return max(1.0, r)
 
+# --- 站定（Phase 2f，SPEC「Phase 2f：會站定的大型獵物」）---
+# species.*.stand：{healthy/average/weak 站定機率, season_mult, break（每回合改成逃跑）, startle（突然逼近、退開時加）,
+#   ignore_dist（退到這麼遠兩回合，牠不理你走開）, charge（正面 2 格內衝撞）, charge_damage, kick_mult}；
+# species.*.stand_mods[體況]：站定（或站定時被咬住）時撲咬、壓倒、咬喉的加減（照生態，健康的幾乎打不下來）
+
+func _stands() -> bool:
+	return deer_state == "stand" and sp().has("stand")
+
+func _roll_stand(cause: String) -> bool:
+	var st: Dictionary = sp().get("stand", {})
+	if st.is_empty() or is_fawn() or held or cause == "missed":
+		return false
+	var chance: float = float(st.get(condition, 0.0)) * float(st.get("season_mult", {}).get(str(game_mods.get("season", "")), 1.0))
+	if rng.randf() >= chance:
+		return false
+	deer_state = "stand"
+	herd[di]["stand_rounds"] = 0
+	herd[di]["far_rounds"] = 0
+	herd[di]["last_wolf_dist"] = dist(deer_pos, wolf_pos)
+	if detect_cause == "":
+		detect_cause = cause
+	events.append(_tx("tactical.stand.start").replace("{animal}", label()))
+	return true
+
+# 站定的這一回合（di 那一隻）：狼退得夠遠就走開；可能改成逃跑；轉身面向你（最多 45°）；你在正面 2 格內可能衝撞
+func _deer_stand() -> void:
+	var st: Dictionary = sp().get("stand", {})
+	var h: Dictionary = herd[di]
+	h["stand_rounds"] = int(h.get("stand_rounds", 0)) + 1
+	var d: float = dist(deer_pos, wolf_pos)
+	if d >= float(st.get("ignore_dist", 8.0)):
+		h["far_rounds"] = int(h.get("far_rounds", 0)) + 1
+		if int(h["far_rounds"]) >= 2 and di == target:
+			_finish("gave_up", _tx("tactical.stand.ignored").replace("{animal}", label()))
+			return
+	else:
+		h["far_rounds"] = 0
+	var p: float = float(st.get("break", {}).get(condition, 0.05))
+	var prev: float = float(h.get("last_wolf_dist", d))
+	if (last_mode in ["trot", "sprint"] and d <= 2.0) or d - prev >= 2.0:
+		p += float(st.get("startle", 0.0))
+	h["last_wolf_dist"] = d
+	if rng.randf() < p:
+		deer_state = "flee"
+		flee_round = 0
+		events.append(_tx("tactical.stand.bolt").replace("{animal}", label()))
+		return
+	_turn_toward_wolf()
+	if _cheb(deer_pos, wolf_pos) <= 2 and angle_side() == "front" and rng.randf() < float(st.get("charge", 0.0)):
+		var cd: Array = st.get("charge_damage", [8, 16])
+		var dmg: int = rng.randi_range(int(cd[0]), int(cd[1]))
+		wolf["health"] = float(wolf["health"]) - dmg
+		damage_taken += dmg
+		hits_taken.append(dmg)
+		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
+		kicks += 1
+		events.append(_tx("tactical.stand.charge").replace("{animal}", label()).replace("{n}", str(dmg)))
+
+# 轉身面向狼，每回合最多轉 45°（DIRS 相鄰的一格）
+func _turn_toward_wolf() -> void:
+	var want := _dir_toward(deer_pos, wolf_pos)
+	var cur: int = DIRS.find(deer_facing)
+	var goal: int = DIRS.find(want)
+	if cur < 0 or goal < 0:
+		deer_facing = want
+		return
+	var diff: int = posmod(goal - cur, 8)
+	if diff == 0:
+		return
+	deer_facing = DIRS[posmod(cur + (1 if diff <= 4 else -1), 8)]
+
+func _stand_factor(factors: Array, key: String) -> float:
+	if not (_stands() or bool(herd[di].get("stood", false))):
+		return 0.0
+	var v: float = float(sp().get("stand_mods", {}).get(condition, {}).get(key, 0.0))
+	if v != 0.0:
+		factors.append([_tx("tactical.factor.standing"), v])
+	return v
+
 func _cond_factor(factors: Array, key: String) -> float:
 	var v: float = cond_mod(key)
 	if v != 0.0 and condition_known:
@@ -654,6 +735,7 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		v += float(sp()["pounce"])
 		factors.append([_tx(str(sp().get("name_key", ""))), float(sp()["pounce"])])
 	v += _cond_factor(factors, "pounce")
+	v += _stand_factor(factors, "pounce")
 	v += _age_factor(factors)
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
@@ -673,6 +755,8 @@ func kick_chance() -> float:
 	var side := angle_side()
 	var k: Dictionary = t["pounce"]["kick"]
 	var m: float = float(sp().get("kick_mult", 1.0))
+	if deer_state == "stand":
+		m *= float(sp().get("stand", {}).get("kick_mult", 1.0))
 	if side == "rear":
 		return float(k["rear"]) * m if deer_state == "flee" else 0.0
 	if side == "front":
@@ -709,14 +793,17 @@ func pounce_at(cell: Vector2i) -> void:
 		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
 		held = true
 		hold_side = side
+		if deer_state == "stand":
+			herd[di]["stood"] = true # 站定時被咬住：咬住後的加減照站定（Phase 2f）
 		events.append(_tx("tactical.bite." + side).replace("{animal}", label()))
 		rounds += 1
 		_deer_turn()
 		return
 	events.append(_tx("tactical.miss"))
-	if deer_state != "flee":
+	if deer_state != "flee" and not _stands():
 		_start_flee("missed")
-	flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
+	if deer_state == "flee":
+		flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
 	rounds += 1
 	_herd_alarm()
 	_deer_turn()
@@ -816,6 +903,7 @@ func hold_options() -> Dictionary:
 		+ hams * float(h["hamstring"]["takedown"])
 	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
+	td += _stand_factor(tf, "takedown")
 	td += _age_factor(tf, true)
 	if hams > 0:
 		tf.append([_tx("tactical.factor.hamstrung"), hams * float(h["hamstring"]["takedown"])])
@@ -825,6 +913,7 @@ func hold_options() -> Dictionary:
 		+ float(fb.get("throat", 0.0)) + front_b
 	var thf: Array = [[_tx("tactical.factor.skill"), (float(wolf["skill"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	th += _cond_factor(thf, "throat")
+	th += _stand_factor(thf, "throat")
 	th += _age_factor(thf, true)
 	if front_b > 0.0:
 		thf.append([_tx("tactical.factor.neck"), front_b])
@@ -1023,6 +1112,9 @@ func _raise_alert(mode: String) -> void:
 		events.append(_tx("tactical.look").replace("{animal}", label()))
 
 func _start_flee(cause: String) -> void:
+	# 會站定的大型獵物（Phase 2f）：察覺你時照體況的機率站定、不逃
+	if _roll_stand(cause):
+		return
 	deer_state = "flee"
 	flee_round = 0
 	if detect_cause == "":
@@ -1098,7 +1190,12 @@ func _deer_act() -> void:
 	match deer_state:
 		"unaware":
 			_deer_wander()
-		"suspicious", "stand":
+		"stand":
+			if sp().has("stand"):
+				_deer_stand()
+			else:
+				deer_facing = _dir_toward(deer_pos, wolf_pos)
+		"suspicious":
 			deer_facing = _dir_toward(deer_pos, wolf_pos)
 		"flee":
 			_deer_flee()
