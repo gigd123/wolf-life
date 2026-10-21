@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "make_den", "mark", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1117,8 +1117,13 @@ func _refresh() -> void:
 			burn = "regrown"
 		# 火況只用一個字標在名稱後（「新綠」兩個字會擠掉名稱），說明放在滑鼠提示；長滿嫩草後不再標示
 		var fire_mark: String = tr("map." + burn) if burn in ["burning", "ash", "regrowth"] else ""
-		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark
+		# 藏了肉的區域（Phase 2e）：照你以為的（被挖走、燒掉的回到那裡才知道）
+		var cache_tip: String = _cache_map_tip(region_id)
+		var cache_mark: String = tr("map.cache") if cache_tip != "" else ""
+		btn.text = tr("region." + region_id) + marker + unknown + danger + fire_mark + cache_mark
 		var tips: Array[String] = []
+		if cache_tip != "":
+			tips.append(cache_tip)
 		if is_current:
 			tips.append(tr("ui.here"))
 		if burn != "":
@@ -1137,11 +1142,29 @@ func _refresh() -> void:
 	# 睡覺按鈕標出現在的睡處等級
 	action_buttons["sleep"].text = tr("action.sleep") + "（" + tr("sleep_spot." + GameState.sleep_quality()) + "）"
 	action_buttons["sleep"].tooltip_text = action_buttons["sleep"].text
+	# 吃藏起來的肉（Phase 2e）：寫出幾段；滑鼠提示寫下一段新不新鮮
+	var pieces: Array = GameState.cache_pieces()
+	if not pieces.is_empty():
+		action_buttons["eat_cache"].text = tr("action.eat_cache.n").replace("{n}", str(pieces.size()))
+		var nxt: Dictionary = GameState.next_cache_piece()
+		action_buttons["eat_cache"].tooltip_text = action_buttons["eat_cache"].text + "\n" + tr("action.eat_cache.tip." + ("stale" if not nxt.is_empty() and GameState.piece_state(nxt) == "stale" else "fresh"))
 	# 回到殘骸：寫出剩幾段（Phase 2b 第 1 步）；滑鼠移上去寫不在時一天大約少多少
 	var carcass: Dictionary = GameState.carcass_here()
 	if not carcass.is_empty():
 		action_buttons["return_to_carcass"].text = tr("action.return_to_carcass.n").replace("{n}", str(int(carcass["segments_left"])))
 		action_buttons["return_to_carcass"].tooltip_text = action_buttons["return_to_carcass"].text + "\n" + tr("carcass.loss_tip").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent(carcass))
+
+# 地圖上藏肉的提示：「藏了 2 段：1 段新鮮（還能放約 6 天）、1 段快壞了」。照你以為的（被挖走、燒掉的回到那裡才知道）
+func _cache_map_tip(region_id: String) -> String:
+	var c: Dictionary = GameState.cache_here(region_id)
+	var pieces: Array = c.get("pieces", [])
+	if pieces.is_empty():
+		return ""
+	var parts: Array[String] = []
+	for pc in pieces:
+		var st: String = GameState.piece_state(pc, region_id)
+		parts.append(tr("map.tip.cache." + st).replace("{d}", str(GameState.piece_days_left(pc, region_id))))
+	return tr("map.tip.cache").replace("{n}", str(pieces.size())).replace("{detail}", "、".join(parts))
 
 # 顯示用的血量：無條件進位（還活著就不會顯示 0），但不超過顯示的上限
 # （血量 107.3／107.3 不會顯示成 108／107）。除錯選單也用這個值。
@@ -1559,6 +1582,8 @@ func _on_action_button(action_id: String) -> void:
 				_show_scavenger(res["event"], true)
 			else:
 				_show_feeding()
+		"eat_cache":
+			GameState.action_eat_cache()
 		"sleep":
 			sleeping_now = true
 			woken_encounter = {}
@@ -2049,6 +2074,20 @@ func _show_feeding(intro: String = "") -> void:
 	_set_terrain_bg(encounter_bg, str(f.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("feeding.eat").replace("{v}", str(value)), _on_feed)
+	# 叼一段去藏（Phase 2e）：滿了而且都新鮮時灰掉；有過了新鮮期的寫「換掉放太久的那段」
+	var cache_status: String = GameState.cache_status()
+	if cache_status != "no":
+		_add_encounter_button(tr("feeding.cache.replace" if cache_status == "replace" else "feeding.cache"), func():
+			GameState.action_cache_segment()
+			if GameState.wolf != null and not GameState.wolf.alive:
+				_on_wolf_died(GameState.wolf.death_cause)
+				return
+			_show_feeding()
+			_refresh()
+		)
+		var cache_btn: Button = encounter_buttons_box.get_child(encounter_buttons_box.get_child_count() - 1)
+		cache_btn.disabled = cache_status == "full"
+		cache_btn.tooltip_text = tr("feeding.cache.full").replace("{n}", str(int(GameData.balance.get("cache", {}).get("max_segments", 2)))) if cache_status == "full" else tr("feeding.cache.tip")
 	_add_encounter_button(tr("feeding.leave"), func():
 		GameState.leave_feeding()
 		_log(tr("log.feeding_left"))

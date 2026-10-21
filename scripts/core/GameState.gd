@@ -730,6 +730,8 @@ func available_actions() -> Array[String]:
 		actions.append("gather")
 	if carcass_index_here() >= 0:
 		actions.append("return_to_carcass")
+	if can_eat_cache():
+		actions.append("eat_cache")
 	if can_make_den_here():
 		actions.append("make_den")
 	if can_mark_here():

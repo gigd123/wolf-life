@@ -63,6 +63,9 @@
 | `log.cache.lost.rotten` | 藏的肉已經壞了 | 回到那一區時，藏肉超過新鮮期 rot_mult 倍（`_update_caches` 記成 rotten） | — |
 | `log.cache.part_rotten` | 藏的肉有一段已經壞了 | 回到那一區（或在那裡動手藏、挖）時，有一段超過新鮮期 rot_mult 倍、被拿掉（`rotten_seen`） | — |
 | `log.cache.replaced` | 放太久的那段 | 藏滿 2 段、有一段過了新鮮期時換掉最舊的那段（`cache_status` = replace） | — |
+| `feeding.cache.full` | 藏的肉已經滿了 | 這一區藏滿 max_segments 段、都還新鮮（`cache_status` = full） | — |
+| `action.eat_cache.tip.stale` | 下一段已經放了一陣子 | 下一段要吃的（比較新鮮的那段）過了新鮮期（`piece_state` = stale） | — |
+| `map.tip.cache.rotten` | 可能已經壞了 | 照日期算那段超過新鮮期 rot_mult 倍（玩家還沒回去確認，所以寫「可能」） | — |
 
 回歸測試：`tools/sim/text_claims.gd`（雪兔、年輕的狼、睡醒原因、苔原狼）、`tools/sim/notice_triage.gd`（痊癒）。
 

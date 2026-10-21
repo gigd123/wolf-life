@@ -1817,3 +1817,16 @@ log.cache.lost.rotten,你藏的肉已經壞了，不能吃了。
 log.cache.replaced,你把放太久的那段扒出來丟了，換上新的。
 log.cache.part_rotten,藏的肉有一段已經壞了。
 log.cache.lost.fire,這裡燒過了，藏的肉找不到了。
+feeding.cache,叼一段去藏
+feeding.cache.replace,叼一段去藏（換掉放太久的那段）
+feeding.cache.full,這裡藏的肉已經滿了（{n} 段），先吃掉再藏
+feeding.cache.tip,藏在這一區，之後回來吃（冬天放得久，夏天很快就壞）
+action.eat_cache,吃藏起來的肉
+action.eat_cache.n,吃藏起來的肉（{n} 段）
+action.eat_cache.tip.fresh,下一段還新鮮
+action.eat_cache.tip.stale,下一段已經放了一陣子，可能吃壞肚子
+map.cache,◆
+map.tip.cache,藏了 {n} 段：{detail}
+map.tip.cache.fresh,1 段新鮮（還能放約 {d} 天）
+map.tip.cache.stale,1 段快壞了
+map.tip.cache.rotten,1 段可能已經壞了
