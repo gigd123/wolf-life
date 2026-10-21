@@ -25,6 +25,8 @@ var judge: bool = true
 var tactical: bool = true
 # 模擬用：不是空的時候，只有這些動物走戰術地圖（Phase 2d 第 5 步對照）
 var tactical_only: Array = []
+# 藏食物（Phase 2e 第 3 步）：離開殘骸前有剩就藏；沒有殘骸、肚子空出來時吃藏肉；餓了走去藏肉的區域。false 時不藏（模擬對照）
+var cache: bool = true
 const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
@@ -172,6 +174,11 @@ func _play_day() -> void:
 			if str(rc.get("event", "")) != "":
 				_scavenger(str(rc["event"]))
 			_feed_loop()
+			continue
+		# 藏起來的肉：這一區有就吃（過了新鮮期的很餓才吃）；別區有、餓了就走過去
+		if cache and _eat_cache_here():
+			continue
+		if cache and GameState.wolf.hunger < 60.0 and _go_cache():
 			continue
 		if roam:
 			if GameTime.current_period() == "dawn" and not bool(_roamed_today.get(GameTime.day, false)):
@@ -425,6 +432,9 @@ func _feed_loop() -> void:
 		# 吃到快撐滿（再吃一段會浪費一半以上）就先離開，剩下的留成殘骸，在旁邊休息，餓了再回來吃（Phase 2b 第 1 步）
 		var seg_value: float = float(GameState.current_feeding.get("segment_value", 0.0))
 		if GameState.wolf.hunger + seg_value * 0.5 > float(GameData.balance.get("hunger_max", 150)):
+			# 離開前有剩就叼去藏（Phase 2e）：藏滿為止，滿了而且有過期的就換掉
+			while cache and GameState.can_cache() and not done():
+				GameState.action_cache_segment()
 			GameState.leave_feeding()
 			return
 		var fr: Dictionary = GameState.feed_once()
@@ -476,6 +486,30 @@ func _pick_safest(opts: Array, key: String, apply: Callable) -> void:
 		apply.call(str(best["id"]))
 
 # 逃離大火或風雪後不在巢穴：一步一步走回去（巢穴正在燒就先不回去）。回傳有沒有移動。
+# 這一區有藏肉、沒有殘骸、肚子空出來了：挖一段吃（過了新鮮期的那段很餓才吃）
+func _eat_cache_here() -> bool:
+	if not GameState.can_eat_cache() or GameState.wolf.hunger >= 80.0:
+		return false
+	var nxt: Dictionary = GameState.next_cache_piece()
+	if GameState.piece_state(nxt) == "stale" and GameState.wolf.hunger >= 40.0:
+		return false
+	GameState.action_eat_cache()
+	return true
+
+# 餓了：往最近一處（照日期算）還沒壞光的藏肉走一步（同一張地圖）；被挖走的要走到那裡才知道
+func _go_cache() -> bool:
+	for region_id in GameState.caches.keys():
+		if region_id == GameState.current_region or GameData.map_of(region_id) != GameState.current_map():
+			continue
+		var pieces: Array = GameState.caches[region_id].get("pieces", [])
+		if not pieces.any(func(pc): return GameState.piece_state(pc, region_id) != "rotten"):
+			continue
+		var step := GameState.next_step_toward(region_id)
+		if step != "":
+			GameState.action_move(step)
+			return true
+	return false
+
 func _go_home() -> bool:
 	if GameState.current_region == GameState.den_region or GameState.burn_state(GameState.den_region) == "burning":
 		return false

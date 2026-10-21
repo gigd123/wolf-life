@@ -10,7 +10,7 @@ extends SceneTree
 # 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
 # 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
 # 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時鹿類都用選單式狩獵（對照 Phase 2b）；
-# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）
+# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）
 
 const STAGES := ["subadult", "adult", "elder"]
 const SNAP_AGES := [1.0, 1.5, 2.0, 3.0, 5.0]
@@ -32,6 +32,8 @@ func _process(_d):
 		days[s] = 0; hungry[s] = 0; underfed[s] = 0; tries[s] = 0; wins[s] = 0
 		kills[s] = {"large": 0, "medium": 0, "small": 0}
 	var year_days := {"lean": 0, "normal": 0}; var year_hungry := {"lean": 0, "normal": 0}
+	var season_days := {}; var season_hungry := {} # 各季的天數、挨餓天數（Phase 2e：冬季的挨餓要少一點但不歸零）
+	var cache_log := {"caches_made": 0, "caches_eaten": 0, "caches_lost": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
 	var duel_ages := [2.0, 3.0, 4.0]
@@ -62,6 +64,7 @@ func _process(_d):
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
+		ap.cache = OS.get_environment("NO_CACHE") == ""
 		if OS.get_environment("TACTICAL_ONLY") != "":
 			ap.tactical_only = OS.get_environment("TACTICAL_ONLY").split(",")
 		ap.start(DENS[r % DENS.size()])
@@ -114,6 +117,10 @@ func _process(_d):
 			var lean: bool = not GS.lean_effects()["kinds"].is_empty()
 			var yk: String = "lean" if lean else "normal"
 			year_days[yk] += 1
+			var season: String = root.get_node("GameTime").current_season()
+			season_days[season] = int(season_days.get(season, 0)) + 1
+			if h < hungry_at:
+				season_hungry[season] = int(season_hungry.get(season, 0)) + 1
 			if stage == "subadult":
 				var sk: String = "young" if GS.wolf.age_years < 1.0 else "yearling"
 				sub_days[sk] = int(sub_days.get(sk, 0)) + 1
@@ -129,6 +136,8 @@ func _process(_d):
 				if h < hungry_at:
 					elder_lean[1] += 1
 		ap.finish()
+		for k in cache_log.keys():
+			cache_log[k] += int(GS.life_log.get(k, 0))
 		var seen := {}
 		var tstats: Dictionary = GS.life_log.get("stats", {})
 		for k in tstats.get("tactical_by_stage", {}).keys():
@@ -171,6 +180,11 @@ func _process(_d):
 	ages.sort()
 	var total := 0.0
 	for a in ages: total += a
+	var sline := "  各季挨餓（每季 10 天）："
+	for se in ["spring", "summer", "autumn", "winter"]:
+		sline += " %s %.2f 天" % [se, 10.0 * float(season_hungry.get(se, 0)) / max(1, int(season_days.get(se, 0)))]
+	print(sline)
+	print("  藏食物（%d 隻合計）：藏 %d 段、吃 %d 段、被挖走／燒掉／壞光 %d 份" % [runs, cache_log["caches_made"], cache_log["caches_eaten"], cache_log["caches_lost"]])
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
 	print("  死因：", deaths)
 	for a in duel_ages:
