@@ -368,9 +368,10 @@ func _draw_animal(kind: String, c: Vector2i, facing: Vector2i, tint: Color = Col
 	return true
 
 func _deer_kind(i: int) -> String:
-	if h.is_fawn(i):
-		return "fawn"
+	# 幼鹿有自己的圖就用（小駝鹿，Phase 2f 第 2 步），沒有就用共用的小鹿圖
 	var sp: String = str(h.herd[i].get("species", "deer"))
+	if h.is_fawn(i):
+		return sp if art_sprites.has(sp) else "fawn"
 	return sp if art_sprites.has(sp) else "deer"
 
 func _draw_map() -> void:

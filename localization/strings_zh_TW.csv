@@ -1831,6 +1831,8 @@ map.tip.cache.fresh,1 段新鮮（還能放約 {d} 天）
 map.tip.cache.stale,1 段快壞了
 map.tip.cache.rotten,1 段可能已經壞了
 tactical.label.elk_bull,公馬鹿
+tactical.label.moose,駝鹿
+tactical.label.moose_calf,小駝鹿
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。

@@ -354,7 +354,7 @@
   "overlay_background_dim": 0.4,
   "_tactical_comment": "戰術地圖（Phase 2c）：程式畫的佔位圖（tools/make_tactical_art.py），每格 14×14。動物是 8 個方向的橫條（順序同 TacticalHunt.DIRS：右、右下、下、左下、左、左上、上、右上）；地塊依格子的地形挑一張（多張時依座標輪替）。",
   "tactical": {
-    "sprites": { "wolf": "res://assets/art/tactical/wolf.png", "deer": "res://assets/art/tactical/deer.png", "fawn": "res://assets/art/tactical/fawn.png", "elk": "res://assets/art/tactical/elk.png", "mule_deer": "res://assets/art/tactical/mule_deer.png", "caribou": "res://assets/art/tactical/caribou.png", "elk_bull": "res://assets/art/tactical/elk_bull.png" },
+    "sprites": { "wolf": "res://assets/art/tactical/wolf.png", "deer": "res://assets/art/tactical/deer.png", "fawn": "res://assets/art/tactical/fawn.png", "elk": "res://assets/art/tactical/elk.png", "mule_deer": "res://assets/art/tactical/mule_deer.png", "caribou": "res://assets/art/tactical/caribou.png", "elk_bull": "res://assets/art/tactical/elk_bull.png", "moose": "res://assets/art/tactical/moose.png", "moose_calf": "res://assets/art/tactical/moose_calf.png" },
     "tiles": {
       ".": ["res://assets/art/tactical/tile_open_0.png", "res://assets/art/tactical/tile_open_1.png", "res://assets/art/tactical/tile_open_2.png"],
       "f": ["res://assets/art/tactical/tile_forest_0.png", "res://assets/art/tactical/tile_forest_1.png"],

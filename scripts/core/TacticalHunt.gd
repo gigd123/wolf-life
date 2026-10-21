@@ -944,7 +944,9 @@ func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> flo
 	v += float(sp().get("hold", {}).get("break", 0.0))
 	v += cond_mod("break")
 	if mother_hit_fawn_held:
-		v += float(t["herd"]["defend"]["break_bonus"]) # 被母鹿踢得鬆口
+		# 被母鹿踢得鬆口（母鹿的物種可以覆寫，駝鹿踢得更重）
+		var m: int = int(herd[di].get("mother", -1))
+		v += float((sp(m) if m >= 0 else {}).get("defend", {}).get("break_bonus", t["herd"]["defend"]["break_bonus"]))
 	return clamp(v, 0.05, 0.95)
 
 # 疲勞：逃跑的回合數，或咬住時掙扎的消耗（沒在逃也算）
@@ -1210,7 +1212,9 @@ func _mother_defend() -> bool:
 	# 有些物種的母鹿不護幼（馴鹿，Phase 2d 第 4 步）
 	if f < 0 or bool(sp(di).get("no_defend", false)):
 		return false
-	var cfg: Dictionary = t["herd"]["defend"]
+	# 物種可以覆寫護幼的數值（駝鹿的母鹿更兇，Phase 2f 第 2 步）
+	var cfg: Dictionary = (t["herd"]["defend"] as Dictionary).duplicate()
+	cfg.merge(sp(di).get("defend", {}), true)
 	var fawn_held: bool = bool(herd[f]["held"])
 	# 狼衝著幼鹿去（離幼鹿比離自己近）才算威脅；狼追的是她自己時，她照常逃
 	var fawn_close: bool = dist(wolf_pos, herd[f]["pos"]) <= float(cfg["trigger"]) and dist(wolf_pos, herd[f]["pos"]) < dist(wolf_pos, deer_pos)

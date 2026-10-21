@@ -219,6 +219,34 @@ func _process(_d) -> bool:
 	ccth.herd[ccth.target]["state"] = "flee"
 	ccth.di = mo
 	_check(not ccth._mother_defend(), "馴鹿母鹿不護幼")
+	# 12. Phase 2f 第 2 步：駝鹿（成獸單隻、小駝鹿跟著母鹿、密林倒木不減速、母駝鹿護幼更兇）
+	gs.new_game("forest_east")
+	gs.debug_force_transition("adult")
+	_check(gs.tactical_eligible(gs.start_hunt("moose", "adult")) and gs.tactical_eligible(gs.start_hunt("moose", "juvenile")), "駝鹿：成獸、小駝鹿走戰術地圖")
+	var moth = gs.start_tactical(gs.start_hunt("moose", "adult"))
+	_check(moth.herd.size() == 1 and str(moth.herd[0]["species"]) == "moose" and moth.label(moth.target) == "牠", "駝鹿單隻、稱呼「牠」（%s）" % moth.label(moth.target))
+	var mforest := Vector2i(-1, -1)
+	for my in moth.height:
+		for mx in moth.width:
+			if moth.terrain(Vector2i(mx, my)) == "f":
+				mforest = Vector2i(mx, my)
+	_check(mforest.x < 0 or moth.deer_extra(mforest) == 0.0, "駝鹿在密林裡不減速")
+	var mch = gs.start_tactical(gs.start_hunt("moose", "juvenile"))
+	_check(mch.label(mch.target) == "小駝鹿" and str(mch.herd[int(mch.herd[mch.target]["mother"])]["species"]) == "moose", "小駝鹿：稱呼、母親是駝鹿（%s）" % mch.label(mch.target))
+	# 母駝鹿護幼：踢中的傷害上限比共用的（14）高
+	var mtop := 0
+	for i in 200:
+		var mmh = gs.start_tactical(gs.start_hunt("moose", "juvenile"))
+		var mi_: int = int(mmh.herd[mmh.target]["mother"])
+		mmh.herd[mmh.target]["held"] = true
+		mmh.herd[mmh.target]["state"] = "flee"
+		mmh.wolf_pos = Vector2i(mmh.herd[mmh.target]["pos"])
+		mmh.di = mi_
+		mmh.deer_pos = Vector2i(mmh.herd[mi_]["pos"])
+		mmh._mother_defend()
+		for d in mmh.hits_taken:
+			mtop = maxi(mtop, int(d))
+	_check(mtop > 14, "母駝鹿踢得比母白尾鹿重（最大 %d）" % mtop)
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -78,6 +78,22 @@ ELK = [
 ELK_BULL = ELK + [  # 公馬鹿（Phase 2f）：馬鹿加一對往後彎的大角
     ("poly", "#e2d2a8", [(11.6, 6.0), (9.4, 2.6), (8.0, 2.2), (9.8, 3.4), (11.0, 5.6)]),
     ("poly", "#e2d2a8", [(11.6, 8.0), (9.4, 11.4), (8.0, 11.8), (9.8, 10.6), (11.0, 8.4)]),
+]
+
+MOOSE = [  # 駝鹿（Phase 2f 第 2 步）：深褐的大身體、隆起的肩、長臉、往兩側張開的掌狀角
+    ("ellipse", "#3e2a1c", (6.0, 7, 5.0, 2.8)),           # 身體
+    ("ellipse", "#2e1e14", (8.2, 7, 1.8, 2.2)),           # 隆起的肩
+    ("ellipse", "#4a3424", (10.6, 7, 1.4, 1.2)),          # 脖子
+    ("ellipse", "#5a4030", (12.4, 7, 1.6, 0.9)),          # 長臉
+    ("poly", "#b8a27a", [(11.2, 6.0), (10.2, 3.0), (12.4, 2.8), (12.0, 4.4), (11.8, 5.8)]),   # 掌狀角
+    ("poly", "#b8a27a", [(11.2, 8.0), (10.2, 11.0), (12.4, 11.2), (12.0, 9.6), (11.8, 8.2)]),
+]
+MOOSE_CALF = [  # 小駝鹿：紅褐色、沒有斑點、長腿（俯視看不到）、長臉
+    ("ellipse", "#8a4a26", (6.6, 7, 3.4, 1.8)),
+    ("ellipse", "#7a4020", (9.8, 7, 1.0, 0.9)),
+    ("ellipse", "#9a5832", (11.2, 7, 1.2, 0.75)),
+    ("poly", "#5a2e16", [(10.2, 6.2), (9.8, 4.9), (10.8, 6.0)]),
+    ("poly", "#5a2e16", [(10.2, 7.8), (9.8, 9.1), (10.8, 8.0)]),
 ]
 
 
@@ -208,6 +224,8 @@ def main():
     make_sprite("mule_deer", MULE_DEER, "#2a221a")
     make_sprite("caribou", CARIBOU, "#2a1c10")
     make_sprite("elk_bull", ELK_BULL, "#2e1a0c")
+    make_sprite("moose", MOOSE, "#140c06")
+    make_sprite("moose_calf", MOOSE_CALF, "#2e1a0c")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

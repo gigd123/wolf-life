@@ -1,7 +1,7 @@
 extends SceneTree
 # 狩獵入口的回歸測試（2026-10-20 試玩：看到一群白尾鹿選「狩獵」沒有進戰術地圖）：
 # 實際開主畫面，從「看到獵物」「追蹤成功」「發現足跡」三個入口開始狩獵，
-# 白尾鹿、馬鹿（含公鹿，Phase 2f）、騾鹿、馴鹿要開戰術地圖；狐狸照舊走選單。
+# 白尾鹿、馬鹿（含公鹿，Phase 2f）、騾鹿、馴鹿、駝鹿（含小駝鹿）要開戰術地圖；狐狸照舊走選單。
 # 用法：bash tools/run_sim.sh hunt_entry_ui
 var gs
 var fails := 0
@@ -16,7 +16,8 @@ func _wait(n: int) -> void:
 
 func _run() -> void:
 	var cases := [["white_tailed_deer", "adult", true], ["white_tailed_deer", "adult", true, true], ["elk", "adult", true], ["mule_deer", "adult", true],
-		["caribou", "adult", true], ["red_fox", "adult", false], ["elk", "buck", true]]
+		["caribou", "adult", true], ["red_fox", "adult", false], ["elk", "buck", true],
+		["moose", "adult", true], ["moose", "juvenile", true]]
 	for entry in ["sight", "begin"]:
 		for c in cases:
 			gs.new_game("forest_east")
