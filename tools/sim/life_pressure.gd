@@ -36,6 +36,7 @@ func _process(_d):
 	var cache_log := {"caches_made": 0, "caches_eaten": 0, "caches_lost": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
+	var starved: Array = [] # 餓死的年齡與巢穴（Phase 2f 第 4 步）
 	var duel_ages := [2.0, 3.0, 4.0]
 	var duel := {} # 年齡 -> [場數, 贏]
 	var stat_sum := {}
@@ -72,6 +73,7 @@ func _process(_d):
 		var dueled := {}
 		var sampled := {}
 		var snapped_at := {}
+		var stuck := 0 # 一步之後遊戲日沒有前進的次數（Phase 2f 第 4 步：發現有一隻狼一直停在 0.7 歲）
 		while not ap.done() and guard < 2000:
 			guard += 1
 			for a in duel_ages:
@@ -101,7 +103,17 @@ func _process(_d):
 			var stage: String = STAGES[GS.wolf.life_stage()]
 			var t0 := int(GS.life_log.get("hunt_attempts", 0)); var w0 := int(GS.life_log.get("hunt_successes", 0))
 			var prey0: Dictionary = GS.life_log.get("prey_count", {}).duplicate()
+			var day0: int = root.get_node("GameTime").day
 			ap.step(1)
+			stuck = stuck + 1 if root.get_node("GameTime").day == day0 and GS.wolf.alive else 0
+			if stuck >= 5:
+				var msgs: Array = GS.life_log.get("recent_messages", [])
+				print("  ⚠ 卡住：第 %d 隻、種子 %d、%.2f 歲、%s %s、飽食 %.0f 體力 %.0f、事件 %s、殘骸 %d、遭遇 %s" % [r, GS.rng_seed, GS.wolf.age_years, GS.current_region,
+					root.get_node("GameTime").current_period(), GS.wolf.hunger, GS.wolf.stamina, GS.pending_events.map(func(e): return str(e.get("type", ""))),
+					GS.carcass_index_here(), GS.current_encounter.get("type", "") if GS.get("current_encounter") is Dictionary else "?"])
+				for m in msgs.slice(maxi(0, msgs.size() - 8)):
+					print("    " + str(m).replace("\n", " ").left(160))
+				break
 			tries[stage] += int(GS.life_log.get("hunt_attempts", 0)) - t0
 			wins[stage] += int(GS.life_log.get("hunt_successes", 0)) - w0
 			for k in GS.life_log.get("prey_count", {}).keys():
@@ -163,6 +175,8 @@ func _process(_d):
 				l.append(float(e["age"]))
 				first_event[ev] = l
 		deaths[GS.wolf.death_cause] = int(deaths.get(GS.wolf.death_cause, 0)) + 1
+		if str(GS.wolf.death_cause) == "starvation":
+			starved.append("%.1f 歲（%s）" % [GS.wolf.age_years, GS.den_region])
 		ages.append(GS.wolf.age_years)
 	var dpy: float = 4.0 * float(GT._season_day_count()) # 一年幾天
 	print("== life_pressure：%d 隻狼（什麼都獵、平均打法，四張地圖輪流），挨餓 = 飽食度 < %d，一年約 %d 天" % [runs, hungry_at, dpy])
@@ -186,7 +200,7 @@ func _process(_d):
 	print(sline)
 	print("  藏食物（%d 隻合計）：藏 %d 段、吃 %d 段、被挖走／燒掉／壞光 %d 份" % [runs, cache_log["caches_made"], cache_log["caches_eaten"], cache_log["caches_lost"]])
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
-	print("  死因：", deaths)
+	print("  死因：", deaths, "；餓死：", ", ".join(starved) if not starved.is_empty() else "無")
 	for a in duel_ages:
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
 		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）；這時平均 力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0],
@@ -223,7 +237,7 @@ func _process(_d):
 		if n > 0:
 			print("  戰術狩獵（鹿類）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
 				roundi(100.0 * ok / max(1, n - gave)), float(tac_st.get(st, 0)) / n])
-	for sp in ["white_tailed_deer", "elk", "mule_deer", "caribou"]:
+	for sp in ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison"]:
 		var n := 0
 		var ok := 0
 		var gave := 0
