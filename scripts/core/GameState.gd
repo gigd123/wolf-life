@@ -773,6 +773,57 @@ func _lynx_cfg() -> Dictionary:
 func _migration_cfg() -> Dictionary:
 	return GameData.balance.get("migration", {})
 
+# --- 鮭魚洄流季（Phase 2h，balance.salmon）---
+func _salmon_cfg() -> Dictionary:
+	return GameData.balance.get("salmon", {})
+
+# 這一區現在的洄流強度："early"、"peak"、"decline"，沒有洄流（區域不對、季節不對）是 ""
+func salmon_stage(region_id: String = "") -> String:
+	var cfg := _salmon_cfg()
+	if region_id == "":
+		region_id = current_region
+	if not (cfg.get("regions", []) as Array).has(region_id):
+		return ""
+	var season: String = GameTime.current_season()
+	for st in cfg.get("stages", []):
+		if str(st["season"]) == season and GameTime.day >= int(st["from"]) and GameTime.day <= int(st["to"]):
+			return str(st["stage"])
+	return ""
+
+func _maybe_salmon(mode: String) -> bool:
+	var stage := salmon_stage()
+	if stage == "" or blizzard_here():
+		return false
+	var cfg := _salmon_cfg()
+	var p: float = float(cfg.get("find", {}).get(stage, 0.0)) * float(cfg.get("find_mode_mult", {}).get(mode, 1.0))
+	if not salmon_fishing_enabled():
+		p *= float(cfg.get("find_mult_disabled", 1.0))
+	if not RNGService.chance(p):
+		return false
+	var clue: String = RNGService.weighted_pick(cfg.get("clues", {}).get(stage, {"shadows": 1}))
+	current_discovery = {"kind": "salmon", "stage": stage, "clue": clue, "location": _water_terrain(current_region)}
+	var sl: Dictionary = life_log.get_or_add("salmon", {})
+	sl["seen"] = int(sl.get("seen", 0)) + 1
+	return true
+
+# 這一區的水邊地形（溪流、河谷柳叢、大河），沒有就隨便一個
+func _water_terrain(region_id: String) -> String:
+	for t in EncounterSystem.region_data(region_id).get("terrains", []):
+		if str(t) in ["stream", "river_willow", "river"]:
+			return str(t)
+	return _random_terrain(region_id)
+
+func salmon_fishing_enabled() -> bool:
+	return bool(_salmon_cfg().get("fishing_enabled", false))
+
+# 除錯：這一區有洄流時照現在的強度，沒有的話當成高峰（只看畫面與文字）
+func debug_salmon() -> void:
+	var stage := salmon_stage()
+	if stage == "":
+		stage = "peak"
+	var clue: String = RNGService.weighted_pick(_salmon_cfg().get("clues", {}).get(stage, {"shadows": 1}))
+	current_discovery = {"kind": "salmon", "stage": stage, "clue": clue, "location": _water_terrain(current_region)}
+
 func _maybe_lynx() -> bool:
 	var here: float = float(_lynx_cfg().get("regions", {}).get(current_region, 0.0))
 	if here <= 0.0 or blizzard_here():
@@ -1486,6 +1537,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
 	# 猞猁、遷徙的足跡（Phase 2 第 6 步）
+	# 鮭魚洄流的線索（Phase 2h 第 1 步）
+	if _maybe_salmon(mode):
+		state_changed.emit()
+		return current_discovery
 	if _maybe_lynx() or _maybe_migration_tracks():
 		state_changed.emit()
 		return current_discovery

@@ -11,7 +11,8 @@ b 洞口（旱獺，Phase 2g：旱獺一鑽進去就算逃掉；狼可以站在�
 地形 → 地圖族（GameState.TACTICAL_TERRAIN_FAMILY）：
   open（空地、草原、高山草甸、苔原、丘陵）、edge（林緣、樹線）、dense（密林）、stream（溪、河、柳叢）、logs（倒木）、
   slope（岩石、碎石、崖邊；Phase 2d 第 3 步）、tundra（開闊苔原、冰磧丘）、river（柳叢河谷，有河；Phase 2d 第 4 步）、
-  pond（水塘：深水外圍一圈淺水；河狸一律用這一族，species.family）、cliff（峽谷：峭壁、碎石坡、草地；大角羊）、talus（岩坡草甸：碎石與岩塊、2～3 個洞口；旱獺，Phase 2g）。
+  pond（水塘：深水外圍一圈淺水；河狸一律用這一族，species.family）、cliff（峽谷：峭壁、碎石坡、草地；大角羊）、talus（岩坡草甸：碎石與岩塊、2～3 個洞口；旱獺，Phase 2g）、
+  salmon（鮭魚溪：深潭與淺灘相間，fish 層標出每個淺灘的魚量 3 好／2 普通／1 差；Phase 2h）。
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
 """
@@ -263,8 +264,62 @@ def maps():
     for x, y in [(6, 6), (33, 11), (21, 5)]:
         g[y][x] = "b"
     out["talus_3"] = {"name": "兩片碎石坡之間的草甸", "family": "talus", "map": g}
+    # --- 鮭魚溪（Phase 2h）：d 深潭（狼撲不到）、s 淺灘（可以站上去撲魚）、. 岸邊、f 樹林、r 岩石；
+    #     fish 層：每格魚多不多（3 好、2 普通、1 差、. 沒有），只在淺灘；好的淺灘在深潭的上游口與落差下方 ---
+    def span(x, y_mid, half, wobble, seed):
+        # 這一欄水道的上下緣：和前一欄的中心連起來，彎的地方不會斷開
+        c = y_mid + int(round(wobble * math.sin(x / 6.0 + seed)))
+        p = y_mid + int(round(wobble * math.sin((x - 1) / 6.0 + seed))) if x > 0 else c
+        return min(c, p) - half, max(c, p) + half
+    def creek(y_mid, half, wobble, seed):
+        g = blank()
+        for x in range(W):
+            lo, hi = span(x, y_mid, half, wobble, seed)
+            for y in range(lo, hi + 1):
+                put(g, x, y, "d")
+        return g
+    def riffle(g, fish, x0, x1, quality_up, quality_down, y_mid, half, wobble, seed):
+        for x in range(x0, x1 + 1):
+            lo, hi = span(x, y_mid, half, wobble, seed)
+            q = quality_up if x <= x0 + (x1 - x0) // 2 else quality_down
+            for y in range(lo, hi + 1):
+                put(g, x, y, "s")
+                if 0 <= y < H:
+                    fish[y][x] = str(q)
+    def banks(g, top, bottom, seed):
+        edge_top(g, top, 1, seed)
+        for x in range(W):
+            for y in range(H - bottom - (1 if random.Random(seed + x).random() < 0.4 else 0), H):
+                g[y][x] = "f"
+    g = creek(8, 1, 1.2, 0.0)
+    fish = blank(".")
+    riffle(g, fish, 3, 9, 3, 2, 8, 1, 1.2, 0.0)
+    riffle(g, fish, 17, 23, 2, 1, 8, 1, 1.2, 0.0)
+    riffle(g, fish, 30, 36, 3, 1, 8, 1, 1.2, 0.0)
+    banks(g, 3, 3, 101)
+    out["salmon_1"] = {"name": "淺灘與深潭相間的溪", "family": "salmon", "map": g, "fish": fish}
+    g = creek(7, 1, 0.8, 1.5)
+    fish = blank(".")
+    for y in range(4, 11):
+        put(g, 20, y, "r")  # 一道落差：魚在下方擠著等著跳
+    riffle(g, fish, 21, 25, 3, 2, 7, 1, 0.8, 1.5)
+    riffle(g, fish, 8, 13, 2, 1, 7, 1, 0.8, 1.5)
+    riffle(g, fish, 31, 37, 1, 1, 7, 1, 0.8, 1.5)
+    banks(g, 2, 4, 102)
+    out["salmon_2"] = {"name": "落差下的淺灘", "family": "salmon", "map": g, "fish": fish}
+    g = creek(8, 1, 3.0, 3.0)
+    fish = blank(".")
+    riffle(g, fish, 2, 7, 2, 1, 8, 1, 3.0, 3.0)
+    riffle(g, fish, 14, 19, 3, 2, 8, 1, 3.0, 3.0)
+    riffle(g, fish, 26, 30, 3, 1, 8, 1, 3.0, 3.0)
+    riffle(g, fish, 35, 38, 2, 1, 8, 1, 3.0, 3.0)
+    blob(g, 10, 13, 2.5, 1.2, seed=103)
+    blob(g, 33, 2, 2.5, 1.2, seed=104)
+    out["salmon_3"] = {"name": "彎曲的溪與礫石灘", "family": "salmon", "map": g, "fish": fish}
     for k in out:
         out[k]["map"] = ["".join(r) for r in out[k]["map"]]
+        if "fish" in out[k]:
+            out[k]["fish"] = ["".join(r) for r in out[k]["fish"]]
     return out
 
 
@@ -273,7 +328,7 @@ def main():
     s = open(p, encoding="utf-8").read()
     m = maps()
     body = json.dumps(m, ensure_ascii=False, indent=2).replace("\n", "\n  ")
-    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）／talus（旱獺）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
+    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）／talus（旱獺）／salmon（鮭魚溪，Phase 2h：fish 層是每格的魚量）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
     if '"maps":' in s:
         s = re.sub(r'"_maps_comment": ".*?",\n  "maps": \{.*?\n  \}', lambda _: block, s, count=1, flags=re.S)
     else:

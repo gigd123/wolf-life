@@ -1894,6 +1894,14 @@ func _deer_flee() -> void:
 			break
 	if terrain(deer_pos) == "f" and n > 1 and rng.randf() < float(t["deer"]["forest_turn"]):
 		pick = 1
+	# 逃向一格洞口的物種（seek.toward：旱獺）：這一下就跑得進洞的方向一定選它（2026-10-22：原本照權重隨機，離洞 2 格也有四成跑過頭）
+	if float(sp().get("seek", {}).get("toward", 0.0)) > 0.0:
+		var esc_t: String = str(sp().get("escape_terrain", ""))
+		for k in opts.size():
+			var e: Vector2i = _run_line(deer_pos, opts[k]["dir"], _flee_budget())["end"]
+			if float(opts[k]["score"]) > -10.0 and in_bounds(e) and terrain(e) == esc_t:
+				pick = k
+				break
 	var d: Vector2i = opts[pick]["dir"]
 	var sim := _run_line(deer_pos, d, _flee_budget())
 	# 不在兩格之間來回：會回到上上回合的位置時，換下一個方向

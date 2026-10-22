@@ -9,6 +9,7 @@
 
 | 文字的鍵 | 在說什麼 | 依據是哪個狀態 | 不該出現的情況 |
 | --- | --- | --- | --- |
+| `salmon.clue.decline.spawned`、`salmon.clue.decline.bones` | 魚群已經稀了、往上游的已經不多 | 這一區的洄流強度是衰退（`GameState.salmon_stage` = decline：秋季第 5～8 天） | 初期、高峰期出現 |
 | `year.hint.spring.hare_low` | 雪兔比去年少很多 | 雪兔倍率 ≤ 0.3 且比去年低（`hare_mult_last_year`） | 從谷底回升的那年說「少了很多」 |
 | `year.hint.spring.hare_low_rising` | 雪兔還是少，但比去年多 | 雪兔倍率 ≤ 0.3 且比去年高 | 比去年少時出現 |
 | `year.hint.spring.hare_high` | 雪兔多 | 雪兔倍率 ≥ 1.6（不做比較） | — |

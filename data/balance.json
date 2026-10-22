@@ -383,6 +383,23 @@
   "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
     "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
   "_lynx_comment": "加拿大猞猁（Phase 2 第 6 步）：北方森林、山腳、林線的獨行貓科，主食雪兔，很少和狼衝突、多半退讓。探索時 chance × 區域倍率 × 這一年的雪兔倍率（雪兔低谷年猞猁變少）看到牠；kill_chance 的機率牠剛抓到一隻雪兔，可以把牠趕走、搶下雪兔（hare_value）。",
+  "_salmon_comment": "鮭魚洄流季（Phase 2h，SPEC「Phase 2h」、docs/proposals/salmon-run.md）。regions：有洄流的區域。stages：依季節與天數的強度（early 初期、peak 高峰、decline 衰退；沒列到的日子沒有）。發現：在這些區域探索時，依強度 × 探索方式擲 find（守在水邊多），取代這次的一般探索結果（是值得停下的發現）；線索依強度挑 clues 的權重。fishing_enabled：河岸的捕魚做好前（第 2 步）不顯示「到河邊捕魚」，線索的機率 × find_mult_disabled（只能看、不能捕的線索會取代一般的探索結果，先少一點）。",
+  "salmon": {
+    "regions": ["forest_north", "forest_east", "mountain_headwaters"],
+    "stages": [
+      { "season": "summer", "from": 6, "to": 10, "stage": "early" },
+      { "season": "autumn", "from": 1, "to": 4, "stage": "peak" },
+      { "season": "autumn", "from": 5, "to": 8, "stage": "decline" }
+    ],
+    "find": { "early": 0.15, "peak": 0.3, "decline": 0.2 },
+    "find_mode_mult": { "trail": 1.0, "ridge": 0.5, "water": 2.0, "border": 0.7 },
+    "clues": {
+      "early": { "shadows": 3, "bones": 1 },
+      "peak": { "bear": 3, "bones": 2, "shadows": 1 },
+      "decline": { "spawned": 3, "bones": 2, "bear": 1 }
+    },
+    "fishing_enabled": false, "find_mult_disabled": 0.3
+  },
   "_small_pounce_comment": "田鼠與地松鼠的小撲（Phase 2g 第 2 步，探索事件、不進戰術地圖）：探索（trail、ridge、border）的結果是平淡的（什麼都沒發現、採集物、陳舊的獵物線索；冬眠的洞口、逆風除外）時，擲 chance 換成小動物，再從這一區有的地形、這一季有的動物裡挑（weight）——不蓋掉獵物、殘骸這些發現（2026-10-22 一生模擬：原本每次探索先擲 10%，取代了小狼原本的發現，1～2 歲挨餓反而多；使用者選 A）。有小動物的區域平淡結果約 22%，chance 0.45 → 整體約 10%；地點換成那個地形。夏季前半＝夏季第 summer_early_until_day 天以前。成功率 = chance（冬季的田鼠在雪下 snow_chance）+ Σ（能力 − 50）÷ stat_divisor，夾在 min～max。撲過去：體力 −stamina，不花時段；成功飽食度 +hunger（一小口）；技巧成長 = learn_per_unit × skill_units（約狩獵撲中一次的六分之一，2026-10-22 使用者選 A 從三分之一減半；失敗再 × growth.fail_mult），同一天第 repeat_free 次之後每次再 × growth.repeat_decay。照常過日子：未滿 auto.max_age 歲、體力 ≥ auto.min_stamina 才撲。",
   "small_pounce": {
     "chance": 0.45, "modes": ["trail", "ridge", "border"], "summer_early_until_day": 5,

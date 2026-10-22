@@ -751,6 +751,12 @@ func _build_debug_overlay() -> void:
 		_show_discovery(GameState.current_discovery)
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.salmon"), func():
+		debug_overlay.visible = false
+		GameState.debug_salmon()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
 		debug_overlay.visible = false
 		GameState.debug_lynx_kill()
@@ -1719,6 +1725,9 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") == "small_pounce":
 		_show_small_pounce(d)
 		return
+	if d.get("kind", "") == "salmon":
+		_show_salmon(d)
+		return
 	if d.get("kind", "") == "migration":
 		_show_migration(d)
 		return
@@ -1971,6 +1980,8 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("explore.ridge.wind_bad")
 		"small_pounce":
 			return _small_pounce_text("see", d)
+		"salmon":
+			return tr("salmon.clue.%s.%s" % [str(d.get("stage", "peak")), str(d.get("clue", "shadows"))]).replace("{location}", tr("explore.location." + str(d.get("location", ""))))
 		"nothing" when d.has("hibernating"):
 			return tr("explore.hibernating." + str(d["hibernating"])).replace("{location}", location)
 		"nothing" when str(d.get("mode", "")) == "water":
@@ -3548,6 +3559,28 @@ func _show_lynx(d: Dictionary) -> void:
 			_begin_combat(GameState.start_lynx_combat(), "move"))
 	_add_encounter_button(tr("ui.leave"), func():
 		GameState.leave_lynx()
+		encounter_overlay.visible = false
+		_refresh())
+	encounter_overlay.visible = true
+
+# 鮭魚洄流的線索（Phase 2h 第 1 步）：河岸的捕魚做好前（第 2 步）只有「離開」
+func _show_salmon(d: Dictionary) -> void:
+	var text := _discovery_text(d)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	if str(d.get("clue", "")) == "bear":
+		_set_creature(encounter_sprite, "grizzly_bear", "adult", "idle")
+	else:
+		_set_wolf_pose(encounter_sprite, "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	if GameState.salmon_fishing_enabled():
+		_add_encounter_button(tr("salmon.go_fish"), func():
+			encounter_overlay.visible = false
+			_refresh())
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.clear_discovery()
 		encounter_overlay.visible = false
 		_refresh())
 	encounter_overlay.visible = true

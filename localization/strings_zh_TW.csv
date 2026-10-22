@@ -204,6 +204,7 @@ debug.event.pack_young,落單的年輕狼
 debug.event.pack_remains,黑狼一家的殘骸
 debug.event.small_pounce,小撲（田鼠、地松鼠）
 debug.event.lynx_kill,猞猁（咬著雪兔）
+debug.event.salmon,鮭魚洄流的線索
 debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
@@ -455,6 +456,15 @@ explore.clue.sight_herd,{location}，你看見一小群{animal}
 explore.gather,{location}，你發現了{item}
 explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
 explore.hibernating.marmot,{location}的岩塊下有幾個洞口，都被雪封住了。旱獺在洞裡冬眠，要等春天才會出來。
+salmon.clue.early.shadows,{location}的水裡，一道道深色的影子逆著水流往上擠——鮭魚上來了，還不算多。
+salmon.clue.early.bones,{location}的岸邊有一兩副新鮮的魚骨，附近飄著淡淡的魚腥味。
+salmon.clue.peak.bear,{location}傳來嘩啦的水花聲。淺灘上站著一頭灰熊，一低頭就叼起一條還在甩尾的鮭魚。溪裡滿是魚。
+salmon.clue.peak.bones,{location}的岸邊散滿魚骨和亮晶晶的魚鱗，空氣裡全是魚腥味。淺灘上的魚多得把水面都擠皺了。
+salmon.clue.peak.shadows,{location}的淺灘上，鮭魚一條挨著一條往上游衝，背鰭露出水面。
+salmon.clue.decline.spawned,{location}的淺灘上躺著不少產完卵、奄奄一息的鮭魚，還在往上游的已經不多了。
+salmon.clue.decline.bones,{location}的岸邊堆著發臭的魚骨，魚群已經稀了。
+salmon.clue.decline.bear,{location}的淺灘上有一頭灰熊在慢慢翻找，叼起的多半是快死的魚。
+salmon.go_fish,到河邊捕魚
 small_pounce.see.vole,{location}的草叢裡一陣晃動，是一隻田鼠。
 small_pounce.see.vole.snow,{location}的雪面下傳來細細的窸窣聲，是田鼠在雪下的通道裡跑。
 small_pounce.see.ground_squirrel,{location}，一隻地松鼠站起來張望。
