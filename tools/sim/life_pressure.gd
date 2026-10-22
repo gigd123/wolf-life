@@ -13,6 +13,26 @@ extends SceneTree
 # TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）
 
 const STAGES := ["subadult", "adult", "elder"]
+const FOOD_CATS := ["大中型獵物", "小獵物", "殘骸撿食", "藏肉", "採集", "小撲", "猞猁的雪兔", "其他"]
+
+# 食物來源分類（Phase 2g 第 4 步）：kill:／carcass: 這類「來源:動物」依動物大小分；其他照名稱
+func _food_cat(src: String) -> String:
+	if src == "small_pounce":
+		return "小撲"
+	if src.begins_with("lynx"):
+		return "猞猁的雪兔"
+	if src.begins_with("cache:"):
+		return "藏肉"
+	if src == "gather":
+		return "採集"
+	if src in ["remains", "pack_remains"] or src.begins_with("bear_steal") or src.begins_with("winter") or src.begins_with("found"):
+		return "殘骸撿食"
+	if src.begins_with("carcass:"):
+		return "殘骸撿食" # 不是自己獵到的屍體（凍死的、別人留下的）
+	if src.contains(":"):
+		var animal: String = src.get_slice(":", 1)
+		return "小獵物" if str(root.get_node("GameData").animals.get(animal, {}).get("size", "small")) == "small" else "大中型獵物"
+	return "其他"
 const SNAP_AGES := [1.0, 1.5, 2.0, 3.0, 5.0]
 const DENS := ["forest_east", "tundra_south", "mountain_canyon", "grassland_riverwoods"]
 
@@ -63,6 +83,10 @@ func _process(_d):
 	var tac_st := {}
 	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
 	var meet_lives := 0
+	# 食物從哪裡來（Phase 2g 第 4 步）：年齡（young 未滿 1 歲、yearling 1～2 歲、life 一生）-> 類別 -> 飽食度總和
+	var food := {"young": {}, "yearling": {}, "life": {}}
+	var sp_log := {"tries": 0, "caught": 0, "young_tries": 0} # 小撲
+	var lynx_log := {} # 猞猁的雪兔：選擇 -> 次數
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
@@ -74,6 +98,7 @@ func _process(_d):
 		var dueled := {}
 		var sampled := {}
 		var snapped_at := {}
+		var food_at := {} # 1 歲、2 歲時的 food_by（累計）
 		var stuck := 0 # 一步之後遊戲日沒有前進的次數（Phase 2f 第 4 步：發現有一隻狼一直停在 0.7 歲）
 		var same_age := 0 # 年齡（換季才長）連續幾天沒變：季節要睡覺才換，一直沒睡的話天數照走、年齡不動（2026-10-22 又出現一次）
 		var last_age: float = -1.0
@@ -98,7 +123,11 @@ func _process(_d):
 			for a in SNAP_AGES:
 				if not snapped_at.has(a) and GS.wolf.age_years >= a:
 					snapped_at[a] = true
-					for st in ["strength", "skill", "speed", "health_max"]:
+					if a == 1.0 or a == 2.0:
+						food_at[a] = (GS.life_log.get("food_by", {}) as Dictionary).duplicate()
+						if a == 1.0:
+							sp_log["young_tries"] += int(GS.life_log.get("small_pounce", {}).get("tries", 0))
+					for st in ["strength", "skill", "speed", "health_max", "perception"]:
 						snap[a][st] = float(snap[a].get(st, 0.0)) + float(GS.wolf.get(st))
 					snap[a]["n"] = int(snap[a].get("n", 0)) + 1
 			for a in pack_ages:
@@ -191,6 +220,18 @@ func _process(_d):
 				var l: Array = first_event.get(ev, [])
 				l.append(float(e["age"]))
 				first_event[ev] = l
+		var fb: Dictionary = GS.life_log.get("food_by", {})
+		var f1: Dictionary = food_at.get(1.0, fb)
+		var f2: Dictionary = food_at.get(2.0, fb)
+		for src in fb.keys():
+			var cat := _food_cat(str(src))
+			food["life"][cat] = float(food["life"].get(cat, 0.0)) + float(fb[src])
+			food["young"][cat] = float(food["young"].get(cat, 0.0)) + float(f1.get(src, 0.0))
+			food["yearling"][cat] = float(food["yearling"].get(cat, 0.0)) + float(f2.get(src, 0.0)) - float(f1.get(src, 0.0))
+		sp_log["tries"] += int(GS.life_log.get("small_pounce", {}).get("tries", 0))
+		sp_log["caught"] += int(GS.life_log.get("small_pounce", {}).get("caught", 0))
+		for k in GS.life_log.get("lynx_choices", {}).keys():
+			lynx_log[k] = int(lynx_log.get(k, 0)) + int(GS.life_log["lynx_choices"][k])
 		deaths[GS.wolf.death_cause] = int(deaths.get(GS.wolf.death_cause, 0)) + 1
 		if str(GS.wolf.death_cause) == "starvation":
 			starved.append("%.1f 歲（%s）" % [GS.wolf.age_years, GS.den_region])
@@ -224,7 +265,17 @@ func _process(_d):
 			float(stat_sum[a].get("strength", 0)) / sn, float(stat_sum[a].get("skill", 0)) / sn, float(stat_sum[a].get("speed", 0)) / sn, float(stat_sum[a].get("health_max", 0)) / sn])
 	for a in SNAP_AGES:
 		var nn: float = max(1, int(snap[a].get("n", 0)))
-		print("  %.1f 歲平均：力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, float(snap[a].get("strength", 0)) / nn, float(snap[a].get("skill", 0)) / nn, float(snap[a].get("speed", 0)) / nn, float(snap[a].get("health_max", 0)) / nn])
+		print("  %.1f 歲平均：力量 %.0f 技巧 %.1f 速度 %.0f 血量上限 %.0f 感知 %.1f" % [a, float(snap[a].get("strength", 0)) / nn, float(snap[a].get("skill", 0)) / nn, float(snap[a].get("speed", 0)) / nn, float(snap[a].get("health_max", 0)) / nn, float(snap[a].get("perception", 0)) / nn])
+	for fk in ["young", "yearling", "life"]:
+		var tot := 0.0
+		for c in food[fk].keys():
+			tot += float(food[fk][c])
+		var parts: Array = []
+		for c in FOOD_CATS:
+			if float(food[fk].get(c, 0.0)) > 0.0:
+				parts.append("%s %d%%" % [c, roundi(100.0 * float(food[fk][c]) / max(1.0, tot))])
+		print("  食物來源 %s（飽食度合計 %d）：%s" % [{"young": "未滿 1 歲", "yearling": "1～2 歲", "life": "一生"}[fk], roundi(tot), "、".join(parts)])
+	print("  小撲：%d 次（未滿 1 歲 %d）、撲到 %d；猞猁的雪兔：%s" % [sp_log["tries"], sp_log["young_tries"], sp_log["caught"], lynx_log])
 	print("  黑狼家族（你在這個年齡時）：")
 	for a in pack_ages:
 		var pa: Dictionary = pack_at[a]
