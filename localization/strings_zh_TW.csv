@@ -1884,6 +1884,8 @@ tactical.ui.hang,死咬拖住
 tactical.ui.hamstring,咬後腿
 tactical.ui.release,鬆口
 tactical.ui.breath_cost,（{n} 喘）
+tactical.ui.no_breath,（喘不夠）
+tactical.ui.no_breath_tip,要 {n} 喘，你現在只剩 {have}。可以死咬拖住把牠拖累，或鬆口退開喘一下。
 tactical.ui.instinct,交給本能
 tactical.ui.instinct_tip,依風向挑一種打法（潛近或耐力追），一路打完這一場。出手比自己打莽撞一些。
 tactical.ui.front_lock,前截鎖喉
@@ -1972,6 +1974,7 @@ tactical.ally.intent.following,跟著你
 tactical.ally.intent.chasing,追上去
 tactical.ally.intent.holding,咬住了
 tactical.ally.intent.joining,圍上去
+tactical.ally.intent.helping,一起咬著
 tactical.ally.tip,苔原狼（{role}）：{what}
 tactical.ally.intent_tip.circling,繞大圈到獵物的另一側；你離獵物 7 格內時牠會衝過去，把獵物往你這邊趕。
 tactical.ally.intent_tip.waiting,已經在另一側等著；你離獵物 7 格內時牠就衝過去。
@@ -1980,6 +1983,7 @@ tactical.ally.intent_tip.following,跟在你後面；獵物跑了就追上去。
 tactical.ally.intent_tip.chasing,追著逃跑的獵物，追上了會咬牠的後腿。
 tactical.ally.intent_tip.holding,咬住獵物死命拖住；快撲上去。
 tactical.ally.intent_tip.joining,衝過去一起咬住那隻獵物。
+tactical.ally.intent_tip.helping,在旁邊一起咬著：你壓倒、咬喉更容易，牠也比較難掙脫。
 tactical.label.marmot,旱獺
 tactical.label.marmot_young,幼獺
 tactical.label.pronghorn,叉角羚

@@ -291,7 +291,15 @@ func _build_buttons() -> void:
 		var names := {"takedown": tr("tactical.ui.takedown"), "throat": tr("tactical.ui.throat"), "hang": tr("tactical.ui.hang"), "hamstring": tr("tactical.ui.hamstring"), "release": tr("tactical.ui.release")}
 		var opts: Dictionary = h.hold_options()
 		for id in ["takedown", "throat", "hamstring", "hang", "release"]:
-			if opts.has(id):
+			# 喘不夠的招式照樣列出、灰掉，寫出要多少喘
+			if h.hold_short.has(id):
+				var sb := Button.new()
+				sb.theme_type_variation = &"SmallButton"
+				sb.text = names[id] + tr("tactical.ui.no_breath")
+				sb.disabled = true
+				sb.tooltip_text = tr("tactical.ui.no_breath_tip").replace("{n}", str(roundi(float(h.hold_short[id]["breath"])))).replace("{have}", str(floori(h.breath)))
+				buttons.add_child(sb)
+			elif opts.has(id):
 				var b := Button.new()
 				b.theme_type_variation = &"SmallButton"
 				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))

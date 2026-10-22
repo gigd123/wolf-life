@@ -1062,6 +1062,8 @@ func front_lock_at(cell: Vector2i) -> void:
 
 # --- 咬住之後：壓倒（力量）、咬喉（技巧，成功就咬死）、鬆口 ---
 
+var hold_short: Dictionary = {} # 上一次 hold_options 因為喘不夠拿掉的招式（id -> 同 hold_options 的內容）
+
 func hold_options() -> Dictionary:
 	if not held or done:
 		return {}
@@ -1112,8 +1114,10 @@ func hold_options() -> Dictionary:
 		var hc: float = float(hm["base"]) + (float(wolf["strength"]) - 50.0) / float(hm["divisor"]) + fat * float(hm["tired"]) + float(fb.get("hamstring", 0.0))
 		out["hamstring"] = {"chance": clamp(hc, 0.05, 0.95), "breath": float(hm["breath"]),
 			"factors": [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], [_tx("tactical.factor.tired"), fat * float(hm["tired"])]]}
+	hold_short = {}
 	for k in out.keys():
 		if breath < float(out[k]["breath"]):
+			hold_short[k] = out[k] # 畫面照樣列出、灰掉（2026-10-22 試玩回報：按鈕直接不見，看不出是喘不夠）
 			out.erase(k)
 	out["release"] = {"chance": 1.0, "breath": 0.0, "factors": []}
 	return out
@@ -1418,7 +1422,7 @@ func _ally_step(k: int) -> void:
 		if not intent.is_empty():
 			tgt = deer_pos + Vector2i(intent[0]) * int(_flee_budget())
 	if held or _ally_holding() > 0:
-		intent_id = "joining"
+		intent_id = "helping" if _cheb(wolf_pos, deer_pos) <= 1 else "joining"
 	wolves[k]["intent"] = intent_id
 	wolves[k]["aim"] = tgt
 	var blocks := deer_cells()
