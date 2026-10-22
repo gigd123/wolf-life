@@ -1864,6 +1864,8 @@ tactical.label.bison,野牛
 tactical.label.bison_calf,小野牛
 tactical.label.beaver,河狸
 tactical.label.beaver_kit,小河狸
+tactical.label.pronghorn,叉角羚
+tactical.label.pronghorn_kid,小叉角羚
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。

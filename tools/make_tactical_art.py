@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -119,6 +119,22 @@ BEAVER_KIT = [  # 小河狸：小一號
     ("ellipse", "#2e2620", (4.6, 7, 1.2, 1.0)),
     ("ellipse", "#8a5a34", (7.6, 7, 2.2, 1.7)),
     ("ellipse", "#7a4e2c", (10.0, 7, 1.1, 1.0)),
+]
+
+PRONGHORN = [  # 叉角羚（2026-10-22）：黃褐的背、白色的腹側與臀部、黑色的短角
+    ("ellipse", "#f2ead8", (6.4, 7, 4.0, 2.0)),           # 白色的腹側（從上面看是外圍）
+    ("ellipse", "#c08a4a", (6.6, 7, 3.6, 1.3)),           # 黃褐的背
+    ("ellipse", "#f6f0e2", (2.6, 7, 1.0, 1.2)),           # 白色的臀部
+    ("ellipse", "#b07a3e", (10.4, 7, 1.0, 0.8)),          # 脖子
+    ("ellipse", "#c89254", (11.8, 7, 1.2, 0.85)),         # 頭
+    ("poly", "#1e1a16", [(11.6, 6.2), (11.2, 4.8), (12.0, 5.9)]),  # 黑色的角
+    ("poly", "#1e1a16", [(11.6, 7.8), (11.2, 9.2), (12.0, 8.1)]),
+]
+PRONGHORN_KID = [  # 小叉角羚：淡灰褐、縮成一團
+    ("ellipse", "#c8b08a", (7.0, 7, 2.8, 1.6)),
+    ("ellipse", "#b8a07a", (9.6, 7, 1.0, 0.8)),
+    ("poly", "#8a7458", [(9.4, 6.2), (9.1, 5.1), (9.9, 6.0)]),
+    ("poly", "#8a7458", [(9.4, 7.8), (9.1, 8.9), (9.9, 8.0)]),
 ]
 
 
@@ -281,6 +297,8 @@ def main():
     make_sprite("bison_calf", BISON_CALF, "#3a1e0a")
     make_sprite("beaver", BEAVER, "#1a120c")
     make_sprite("beaver_kit", BEAVER_KIT, "#1a120c")
+    make_sprite("pronghorn", PRONGHORN, "#2e1a0c")
+    make_sprite("pronghorn_kid", PRONGHORN_KID, "#3a2a18")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

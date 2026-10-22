@@ -398,6 +398,18 @@ func _process(_d) -> bool:
 			dove = true
 			break
 	_check(dove, "河狸進了深水就潛走")
+	# 叉角羚（2026-10-22）：成羚成群 4～8 隻、小羚單獨出場、躲在草裡的小羚照舊走選單、深雪時跑不動
+	gs.new_game("grassland_plains")
+	gs.wolf.age_years = 2.5
+	var pha = gs.start_hunt("pronghorn", "adult")
+	pha.set_herd(true)
+	var phth = gs.start_tactical(pha)
+	_check(gs.tactical_eligible(pha) and phth.herd.size() >= 4 and phth.herd.size() <= 8 and str(phth.herd[0]["species"]) == "pronghorn", "叉角羚：成群 4～8 隻（%d）" % phth.herd.size())
+	var pkth = gs.start_tactical(gs.start_hunt("pronghorn", "juvenile"))
+	_check(pkth.herd.size() == 1 and str(pkth.herd[0]["species"]) == "pronghorn_kid", "小叉角羚單獨出場")
+	_check(not gs.tactical_eligible(gs.start_hunt("pronghorn", "juvenile", -1, false, "", false, true)), "躲在草裡的小羚照舊走選單")
+	phth.game_mods["snow_slow"] = 1.0
+	_check(phth._snow_slow(phth.target) == 3.0, "深雪：叉角羚每回合少跑 3 格")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
