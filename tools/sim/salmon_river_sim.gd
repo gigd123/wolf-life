@@ -30,7 +30,10 @@ func _walk_to(rf, goal: Vector2i) -> void:
 
 func _run() -> void:
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 200
-	var cfg: Dictionary = root.get_node("GameData").balance["salmon"]["river"]
+	var cfg: Dictionary = (root.get_node("GameData").balance["salmon"]["river"] as Dictionary).duplicate(true)
+	# 第 2 步的基準：沒有熊（第 3 步之後熊照資料；有熊的打法比較在第 4 步）
+	cfg["bears"]["start"] = {"early": [0, 0], "peak": [0, 0], "decline": [0, 0]}
+	cfg["bears"]["arrive"] = {"early": 0.0, "peak": 0.0, "decline": 0.0}
 	var RF = load("res://scripts/core/RiverFishing.gd")
 	print("== 河岸（沒有熊）：飽食度 60 → 120 要幾個時段（含走過去；每格 %d 場）" % runs)
 	for st in ["early", "peak", "decline"]:

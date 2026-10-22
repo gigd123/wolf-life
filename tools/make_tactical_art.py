@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf,hare,hare_young,snowshoe_hare(_young)(_winter),marmot,marmot_young}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf,hare,hare_young,snowshoe_hare(_young)(_winter),marmot,marmot_young,grizzly,grizzly_young}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1,cliff_0..1,burrow_0}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸；cliff 峭壁，大角羊；burrow 洞口，旱獺）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -182,6 +182,22 @@ MARMOT = [  # 黃腹旱獺（Phase 2g）：胖胖的灰褐身體、蓬鬆的短�
     ("ellipse", "#a07c56", (6.6, 7, 2.0, 1.2)),           # 背上較淺的毛
     ("ellipse", "#4e3a2a", (10.2, 7, 1.3, 1.2)),          # 頭
     ("ellipse", "#e8dcc4", (11.2, 7, 0.4, 0.5)),          # 鼻口的淡色
+]
+GRIZZLY = [  # 灰熊（鮭魚洄流，Phase 2h）：又寬又圓的褐色身體、肩上的隆起、圓耳
+    ("ellipse", "#6a4a2e", (6.4, 7, 4.4, 3.4)),           # 身體
+    ("ellipse", "#7c5836", (7.6, 7, 2.2, 2.4)),           # 肩上的隆起（毛色較淺）
+    ("ellipse", "#5a3e26", (11.0, 7, 1.8, 1.7)),          # 頭
+    ("ellipse", "#3a2818", (12.6, 7, 0.6, 0.6)),          # 鼻
+    ("ellipse", "#4a3220", (10.4, 5.2, 0.6, 0.6)),        # 耳
+    ("ellipse", "#4a3220", (10.4, 8.8, 0.6, 0.6)),
+]
+GRIZZLY_YOUNG = [  # 年輕的灰熊：小一號、毛色淡一點
+    ("ellipse", "#80603e", (6.8, 7, 3.4, 2.6)),
+    ("ellipse", "#8c6c46", (7.8, 7, 1.6, 1.8)),
+    ("ellipse", "#6e5032", (10.4, 7, 1.4, 1.3)),
+    ("ellipse", "#3a2818", (11.7, 7, 0.45, 0.45)),
+    ("ellipse", "#5a4028", (9.9, 5.6, 0.5, 0.5)),
+    ("ellipse", "#5a4028", (9.9, 8.4, 0.5, 0.5)),
 ]
 MARMOT_YOUNG = [  # 幼獺：小一號
     ("ellipse", "#5e4632", (4.4, 7, 1.0, 0.8)),
@@ -386,6 +402,8 @@ def main():
     make_sprite("snowshoe_hare_young_winter", _hare("#f4f4ee", "#2a2622", "#ffffff", 0.75), "#6a6a66")
     make_sprite("marmot", MARMOT, "#2a2018")
     make_sprite("marmot_young", MARMOT_YOUNG, "#2a2018")
+    make_sprite("grizzly", GRIZZLY, "#1e140c")
+    make_sprite("grizzly_young", GRIZZLY_YOUNG, "#2a1c10")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

@@ -7,6 +7,10 @@ extends SceneTree
 # 第 2 步（河岸模式）：
 #   5. 開場在岸邊；只有站在有魚的淺灘上才能撲；成功率照魚量與強度；撲到就吃（+5）、吃撐時走得比較近、吃到上限就不能撲
 #   6. 離開、待太久；8 個戰術回合＝1 個遊戲回合；結算加上時間、體力、飽食度與紀錄
+# 第 3 步（灰熊）：
+#   7. 開場的頭數照強度與線索；大熊佔魚最多的淺灘、彼此 2 格以上；小熊離大熊 3 格以上；狼開場不在威嚇範圍內；熊佔的格子走不過去
+#   8. 太靠近：先威嚇（不能撲魚、可以硬撐），下一回合還在就被趕到範圍外；硬撐 → 灰熊遭遇（先被撞）
+#   9. 熊吃剩的魚：丟在旁邊的岸上，走上去就吃（+8）；熊會後到、會離開
 # 用法：bash tools/run_sim.sh salmon_rules
 var gs
 var gt
@@ -90,6 +94,9 @@ func _run() -> void:
 	gs.debug_salmon()
 	var rf = gs.start_salmon_fishing()
 	_check(gs.current_discovery.is_empty() and rf.terrain(rf.wolf_pos) == "." and not rf.can_fish() and rf.stage == "peak", "開場在岸邊、不能撲、強度是高峰")
+	# 第 2 步的檢查不要熊（熊在第 7～9 項另外測）
+	rf.bears = []
+	rf.cfg["bears"]["arrive"] = {"early": 0.0, "peak": 0.0, "decline": 0.0}
 	var spots := {}
 	for y in rf.height:
 		for x in rf.width:
@@ -140,6 +147,85 @@ func _run() -> void:
 	for i in int(cfg["max_rounds"]):
 		rf2.move_to(rf2.wolf_pos + Vector2i(1, 0) if rf2.in_bounds(rf2.wolf_pos + Vector2i(1, 0)) else rf2.wolf_pos + Vector2i(-1, 0))
 	_check(rf2.done and rf2.result == "timeout", "待太久就離開")
+	# 7. 開場的灰熊
+	var counts_b := {"early": [], "peak": [], "bears": [], "bear": []}
+	var bad_place := 0
+	for i in 80:
+		for k in ["early", "peak", "bears", "bear"]:
+			var r = RF_new()
+			r.setup({"stage": "peak" if k in ["bears", "bear"] else k, "clue": k if k in ["bears", "bear"] else "", "seed": i * 31 + k.length(), "hunger": 60.0, "cfg": cfg})
+			counts_b[k].append(r.bears.size())
+			for a1 in r.bears.size():
+				var b1: Dictionary = r.bears[a1]
+				if r.fish_at(b1["pos"]) <= 0:
+					bad_place += 1
+				for a2 in r.bears.size():
+					if a2 != a1 and bool(r.bears[a2]["big"]):
+						var dd: int = r._cheb(b1["pos"], r.bears[a2]["pos"])
+						if dd < (2 if bool(b1["big"]) else 3):
+							bad_place += 1
+			if r._bear_threat_dist(r.wolf_pos) <= 0:
+				bad_place += 1
+	_check(counts_b["early"].max() <= 1 and counts_b["peak"].min() >= 1 and counts_b["peak"].max() <= 2 and counts_b["bears"].min() >= 2 and counts_b["bear"].min() >= 1,
+		"開場的頭數：初期 0～1、高峰 1～2、「好幾頭灰熊」2～3、「灰熊在捕魚」至少 1")
+	_check(bad_place == 0, "熊都站在有魚的淺灘、大熊彼此 2 格以上、小熊離大熊 3 格以上、狼開場不在威嚇範圍內（不對的 %d）" % bad_place)
+	var rb = RF_new()
+	rb.setup({"stage": "peak", "clue": "bears", "seed": 77, "hunger": 60.0, "cfg": cfg})
+	var big_i := -1
+	for i in rb.bears.size():
+		if bool(rb.bears[i]["big"]):
+			big_i = i
+	var bq := 0
+	for y in rb.height:
+		for x in rb.width:
+			bq = maxi(bq, rb.fish_at(Vector2i(x, y)))
+	_check(big_i >= 0 and rb.fish_at(rb.bears[big_i]["pos"]) == bq, "大熊佔魚最多的淺灘")
+	var bpos: Vector2i = rb.bears[big_i]["pos"]
+	rb.wolf_pos = bpos + Vector2i(2, 0) if rb.in_bounds(bpos + Vector2i(2, 0)) else bpos - Vector2i(2, 0)
+	rb.wolf_pos = bpos + Vector2i(1, 0) if rb.in_bounds(bpos + Vector2i(1, 0)) else bpos - Vector2i(1, 0)
+	_check(not rb.reachable().has(bpos), "熊佔的格子走不過去")
+	# 8. 威嚇、趕開、硬撐
+	rb.cfg["bears"]["arrive"] = {"early": 0.0, "peak": 0.0, "decline": 0.0}
+	rb.cfg["bears"]["leave"] = 0.0
+	rb._bears_turn()
+	_check(rb.threatened() and rb.warns >= 1 and not rb.can_fish(), "太靠近：被威嚇、不能撲魚")
+	rb._bears_turn()
+	_check(not rb.threatened() and rb.pushes == 1 and rb._bear_threat_dist(rb.wolf_pos) > 0, "還在範圍內：被趕到所有熊的範圍外")
+	rb.wolf_pos = bpos + Vector2i(1, 0) if rb.in_bounds(bpos + Vector2i(1, 0)) and rb.bear_at(bpos + Vector2i(1, 0)) < 0 else bpos - Vector2i(1, 0)
+	rb._bears_turn()
+	rb.stand_ground()
+	_check(rb.done and rb.result == "stand", "被威嚇時可以硬撐不走")
+	gs.wolf.health = gs.wolf.health_max
+	var res2: Dictionary = gs.finish_salmon_fishing(rb)
+	var enc: Dictionary = gs.salmon_stand_encounter()
+	_check(str(res2["result"]) == "stand" and bool(enc.get("salmon_stand", false)) and bool(enc.get("direct", false)) and gs.wolf.health < gs.wolf.health_max,
+		"硬撐 → 灰熊衝過來（先被撞）、接成灰熊遭遇")
+	# 9. 吃剩的魚、後到與離開
+	var rl = RF_new()
+	rl.setup({"stage": "peak", "clue": "bear", "seed": 5, "hunger": 60.0, "cfg": cfg})
+	rl._drop_leftover(rl.bears[0]["pos"])
+	_check(rl.leftovers.size() == 1 and rl.terrain(rl.leftovers[0]) == ".", "吃剩的魚丟在旁邊的岸上")
+	var lo: Vector2i = rl.leftovers[0]
+	rl.wolf_pos = lo
+	var e0: float = rl.eaten
+	rl._eat_leftover()
+	_check(rl.leftovers.is_empty() and absf(rl.eaten - e0 - 8.0) < 0.01 and rl.scraps == 1, "走上去就吃 +8")
+	var arrived := 0
+	var left := 0
+	for i in 40:
+		var ra = RF_new()
+		ra.setup({"stage": "peak", "seed": 900 + i, "hunger": 60.0, "cfg": cfg})
+		var n0: int = ra.bears.size()
+		for k in 64:
+			if ra.done:
+				break
+			var before: int = ra.bears.size()
+			ra._end_round()
+			if ra.bears.size() > before:
+				arrived += 1
+			elif ra.bears.size() < before:
+				left += 1
+	_check(arrived > 10 and left > 5, "熊會後到（%d 次）、會離開（%d 次）" % [arrived, left])
 	for k in ["river.ui.intro", "river.ui.fish", "river.ui.leave", "river.catch", "river.miss", "river.full", "river.ui.result", "salmon.clue.peak.bears"]:
 		_check(TranslationServer.translate(k) != k, "有翻譯：" + k)
 	print("線索次數（300 次探索）：%s" % counts)

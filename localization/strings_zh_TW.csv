@@ -489,6 +489,25 @@ river.miss,撲了個空，水花四濺，魚從你腳邊滑走了。
 river.gorged,肚子撐得圓滾滾的，動作慢了下來。
 river.full,再也吃不下了。
 river.timeout,在河邊待了快一整天，你離開了溪邊。
+river.bear.arrive.big,下游的樹林裡走出一頭大灰熊，直直走向魚最多的那段淺灘。
+river.bear.arrive.small,一頭年輕的灰熊沿著岸邊走來，左右張望，挑了一段沒有熊的淺灘。
+river.bear.leave,一頭灰熊叼著一條魚，慢吞吞地走進了樹林。
+river.bear.warn.big,大灰熊轉過頭來，對著你低吼一聲，站直了身子——你離牠太近了。
+river.bear.warn.small,年輕的灰熊衝著你噴氣，前掌重重拍了一下水面。
+river.bear.charge.big,大灰熊猛地朝你衝過來，水花四濺。你只好退開。
+river.bear.charge.small,年輕的灰熊作勢撲過來，你往後一跳，讓開了。
+river.bear.discard,一頭灰熊把一條只咬了幾口的魚丟在岸邊。
+river.bear.stand,你壓低身子，沒有退。
+river.leftover,你叼起熊丟下的魚，把剩下的肉啃乾淨（飽食度 +{n}）。
+river.ui.stand,硬撐不走
+river.ui.threatened,灰熊在威嚇你
+river.ui.fish_threatened,被威嚇，不能撲魚（再不走會被趕開）
+river.ui.bears,灰熊 {n} 頭
+river.ui.bear.big,大灰熊：離牠 2 格內會被威嚇
+river.ui.bear.small,年輕的灰熊：離牠 1 格內會被威嚇
+river.ui.leftover,熊吃剩的魚：走過去就吃
+river.ui.stand_tip,不退，和灰熊打起來（可能受重傷、被打死）
+encounter.salmon_stand,你沒有退開。那頭灰熊放下嘴裡的魚，低著頭朝你衝了過來。
 small_pounce.see.vole,{location}的草叢裡一陣晃動，是一隻田鼠。
 small_pounce.see.vole.snow,{location}的雪面下傳來細細的窸窣聲，是田鼠在雪下的通道裡跑。
 small_pounce.see.ground_squirrel,{location}，一隻地松鼠站起來張望。

@@ -3036,6 +3036,8 @@ func _on_encounter_triggered(encounter: Dictionary) -> void:
 		key = "encounter.mother"
 	if encounter.get("direct", false):
 		key = "encounter.direct_mother" if encounter.get("mother", false) else "encounter.direct"
+	if encounter.get("salmon_stand", false):
+		key = "encounter.salmon_stand"
 	if encounter.get("woken", false):
 		key = "encounter.woken_mother" if encounter.get("mother", false) else "encounter.woken"
 		# 被驚醒時牠已經衝過來：不能寫「正盯著你」（2026-10-15 試玩回報 14、15）
@@ -3594,7 +3596,10 @@ func _open_river() -> void:
 	view.start(GameState.start_salmon_fishing(), func(rf):
 		var res: Dictionary = GameState.finish_salmon_fishing(rf)
 		_log(tr("river.ui.result").replace("{turns}", load("res://scripts/ui/RiverView.gd").periods_text(int(res["turns"]))).replace("{n}", str(int(res["caught"]))).replace("{h}", str(roundi(float(res["eaten"])))))
-		_refresh())
+		_refresh()
+		# 硬撐不走：那頭熊衝過來（灰熊遭遇）
+		if str(res["result"]) == "stand":
+			_on_encounter_triggered(GameState.salmon_stand_encounter()))
 
 # 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：撲過去或不理牠；結果寫明只是一小口。
 func _small_pounce_text(kind: String, d: Dictionary) -> String:

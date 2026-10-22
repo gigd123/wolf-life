@@ -842,8 +842,25 @@ func finish_salmon_fishing(rf: RiverFishing) -> Dictionary:
 	sl["fish"] = int(sl.get("fish", 0)) + rf.caught
 	sl["attempts"] = int(sl.get("attempts", 0)) + rf.attempts
 	sl["turns"] = int(sl.get("turns", 0)) + turns
+	for k in ["warns", "pushes", "scraps"]:
+		sl[k] = int(sl.get(k, 0)) + int(rf.get(k))
+	if rf.result == "stand":
+		sl["stands"] = int(sl.get("stands", 0)) + 1
 	state_changed.emit()
-	return {"turns": turns, "caught": rf.caught, "eaten": rf.eaten, "result": rf.result}
+	return {"turns": turns, "caught": rf.caught, "eaten": rf.eaten, "result": rf.result, "scraps": rf.scraps}
+
+# 在河邊硬撐不走（Phase 2h 第 3 步）：那頭熊衝過來，接現有的灰熊遭遇（同「直接衝撞」：先扣衝撞的傷，再進戰鬥；可能受重傷、被打死）
+func salmon_stand_encounter() -> Dictionary:
+	identify("grizzly_bear", false)
+	var cfg := _bear_cfg()
+	var e := {"encountered": true, "animal_id": "grizzly_bear", "life_stage": "adult", "direct": true, "salmon_stand": true}
+	var dmg: float = float(RNGService.randi_range(int(cfg.get("direct_damage_min", 10)), int(cfg.get("direct_damage_max", 25))))
+	var parts: Dictionary = FightRules.opponent_profile("grizzly_bear", "adult").get("parts", {})
+	var hit := FightRules.hurt_wolf(wolf, dmg, parts, "grizzly_bear.encounter", false)
+	e["damage"] = hit["damage"]
+	record_decision("salmon.stand")
+	state_changed.emit()
+	return e
 
 # 除錯：這一區有洄流時照現在的強度，沒有的話當成高峰（只看畫面與文字）
 func debug_salmon() -> void:

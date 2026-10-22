@@ -10,6 +10,7 @@ const MAP_ORIGIN := Vector2(4, 4)
 const COLORS := {
 	".": Color("#5f7a3a"), "f": Color("#2d4a2a"), "l": Color("#6b4f33"), "r": Color("#8a877e"), "w": Color("#3f6478"), "s": Color("#5f8f8a"), "d": Color("#1f3f5c"),
 	"move": Color(0.95, 0.85, 0.3, 0.3), "fish": Color("#f08a70"), "wolf": Color("#c9c9c9"),
+	"threat": Color(0.9, 0.25, 0.2, 0.16), "threat_on": Color(1.0, 0.3, 0.25, 0.35), "bear": Color("#6a4a2e"), "leftover": Color("#e8a070"),
 }
 
 var rf = null
@@ -127,10 +128,18 @@ func _build_buttons() -> void:
 	if rf.can_fish():
 		fb.text = tr("river.ui.fish").replace("{p}", str(roundi(rf.fish_chance() * 100.0)))
 	else:
-		fb.text = tr("river.ui.full") if rf.hunger >= rf.hunger_max else tr("river.ui.fish_here")
+		fb.text = tr("river.ui.full") if rf.hunger >= rf.hunger_max else (tr("river.ui.fish_threatened") if rf.threatened() else tr("river.ui.fish_here"))
 		fb.disabled = true
 	fb.pressed.connect(func(): rf.fish_once(); _after_action())
 	buttons.add_child(fb)
+	# 被威嚇時可以硬撐不走（變成灰熊遭遇，Phase 2h 第 3 步）
+	if rf.threatened():
+		var st := Button.new()
+		st.theme_type_variation = &"SmallButton"
+		st.text = tr("river.ui.stand")
+		st.tooltip_text = tr("river.ui.stand_tip")
+		st.pressed.connect(func(): rf.stand_ground(); _after_action())
+		buttons.add_child(st)
 	var lv := Button.new()
 	lv.theme_type_variation = &"SmallButton"
 	lv.text = tr("river.ui.leave")
@@ -168,12 +177,21 @@ func _info_text() -> String:
 	if rf.overfed():
 		t.append("[color=#e0c070]%s[/color]" % tr("river.ui.overfed"))
 	t.append(tr("river.ui.caught").replace("{n}", str(rf.caught)))
+	t.append("")
+	t.append(tr("river.ui.bears").replace("{n}", str(rf.bears.size())))
+	if rf.threatened():
+		t.append("[color=#ff8080]%s[/color]" % tr("river.ui.threatened"))
 	return "\n".join(t)
 
 func _hover_text() -> String:
 	if rf.done or hover.x < 0 or not rf.in_bounds(hover):
 		return ""
 	var parts: Array[String] = []
+	var bi: int = rf.bear_at(hover)
+	if bi >= 0:
+		return tr("river.ui.bear." + ("big" if bool(rf.bears[bi]["big"]) else "small"))
+	if rf.leftovers.has(hover):
+		parts.append(tr("river.ui.leftover"))
 	var q: int = rf.fish_at(hover)
 	if q > 0:
 		parts.append(tr("river.ui.spot.%d" % q))
@@ -217,9 +235,29 @@ func _draw_map() -> void:
 			var q: int = rf.fish_at(c)
 			for i in q:
 				map.draw_circle(Vector2(c) * CELL + Vector2(3 + i * 4, CELL - 3), 1.5, COLORS["fish"])
+	# 灰熊的威嚇範圍（警告過你的那頭畫深一點）
+	for i in rf.bears.size():
+		var bp: Vector2i = rf.bears[i]["pos"]
+		var r: int = rf.radius(i)
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var c: Vector2i = bp + Vector2i(dx, dy)
+				if rf.in_bounds(c) and c != bp:
+					map.draw_rect(_cell_rect(c), COLORS["threat_on"] if bool(rf.bears[i]["warned"]) else COLORS["threat"])
 	if not rf.done:
 		for c in rf.reachable().keys():
 			map.draw_rect(_cell_rect(c), COLORS["move"])
+	# 熊吃剩的魚
+	for c in rf.leftovers:
+		map.draw_circle(Vector2(c) * CELL + Vector2(CELL, CELL) * 0.5, 3.0, COLORS["leftover"])
+		map.draw_line(Vector2(c) * CELL + Vector2(CELL * 0.5 + 2, CELL * 0.5), Vector2(c) * CELL + Vector2(CELL * 0.5 + 5, CELL * 0.5 - 2), COLORS["leftover"], 1.5)
+	# 灰熊：朝向牠要去的地方（在捕魚時朝向你）
+	for i in rf.bears.size():
+		var b: Dictionary = rf.bears[i]
+		var bpos: Vector2i = b["pos"]
+		var face: Vector2i = (Vector2i(b["target"]) - bpos) if not bool(b["fishing"]) else (rf.wolf_pos - bpos)
+		if not _draw_animal("grizzly" if bool(b["big"]) else "grizzly_young", bpos, face if face != Vector2i.ZERO else Vector2i(1, 0)):
+			map.draw_circle(Vector2(bpos) * CELL + Vector2(CELL, CELL) * 0.5, CELL * (0.48 if bool(b["big"]) else 0.36), COLORS["bear"])
 	if rf.wolf_pos != last_wolf_pos:
 		var mv: Vector2i = rf.wolf_pos - last_wolf_pos
 		if last_wolf_pos.x > -99 and mv != Vector2i.ZERO:
