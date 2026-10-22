@@ -84,7 +84,9 @@ static func step(h, pol: String) -> void:
 				bs = sc
 				best = c
 		# 出手的門檻：物種可以覆寫（趴著不動的兔子撲咬機率本來就不高，等下去只會讓牠發現，2026-10-22）
-		if pol.begins_with("dumb") or pol == "chase" or h.deer_state == "flee" or float(targets[best]["chance"]) >= float(h.sp().get("instinct_pounce_at", 0.6)):
+		# 等同伴趕（hold）：被逼到角落站定的獵物也撲（不然會一直等下去）
+		if pol.begins_with("dumb") or pol == "chase" or h.deer_state == "flee" or (pol == "hold" and h.deer_state == "stand") \
+				or float(targets[best]["chance"]) >= float(h.sp().get("instinct_pounce_at", 0.6)):
 			h.pounce_at(best)
 			return
 	var reach: Dictionary = h.reachable()
@@ -92,6 +94,10 @@ static func step(h, pol: String) -> void:
 		h.observe()
 		return
 	var fleeing: bool = h.deer_state == "flee"
+	# 苔原狼咬住、拖住了獵物（群體狩獵實驗）：不管哪種打法都衝過去一起咬
+	if h.wolves.size() > 1 and h._ally_holding() > 0:
+		_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"])
+		return
 	match pol:
 		"dumb_sprint":
 			_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"])
@@ -111,11 +117,17 @@ static func step(h, pol: String) -> void:
 			else:
 				_go(h, reach, _behind(h), ["creep"], true)
 		"hold":
-			# 等同伴趕（群體狩獵實驗）：沒察覺時潛到 hold_dist 格內就停下等（同伴繞到另一側把獵物趕過來），逃跑時截住
-			if fleeing:
+			# 等同伴趕（群體狩獵實驗）：沒察覺時潛到 hold_dist 格內就停下等（同伴繞到另一側把獵物趕過來）；
+			# 被趕過來時只潛行迎上去（衝出去就沒有埋伏的加成；撲出去那一下可以衝），其他時候截住
+			if fleeing and h._driven():
+				_go(h, reach, _predict(h), ["creep"])
+			elif fleeing:
 				_go(h, reach, _predict(h), ["sprint", "trot", "creep"])
 			elif h.dist(h.wolf_pos, h.deer_pos) > 6.0:
 				_go(h, reach, h.deer_pos, ["creep"], true)
+			elif int(h.rounds) >= 12:
+				# 等太久同伴還沒趕過來：自己潛近
+				_go(h, reach, _behind(h), ["creep"], true)
 			else:
 				h.observe()
 		"cutoff":

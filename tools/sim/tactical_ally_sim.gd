@@ -29,10 +29,12 @@ func _process(_d) -> bool:
 		for setup in [["單狼最好", 0, ""], ["單狼本能", 0, "instinct"], ["同伴+潛近", 1, "stalk"], ["同伴+猛追", 1, "chase"], ["同伴+等著趕", 1, "hold"]]:
 			var best := 0.0
 			var best_r := 0.0
+			var best_st := {}
 			var pols: Array = ["chase", "pace", "stalk", "ambush"] if setup[2] == "" else [setup[2]]
 			for pol in pols:
 				var ok := 0
 				var rsum := 0
+				var st := {}
 				for i in runs:
 					var conds: Array = []
 					for k in int(c[2]):
@@ -53,10 +55,16 @@ func _process(_d) -> bool:
 					if h.result == "caught":
 						ok += 1
 					rsum += int(h.rounds)
+					for key in h.stats.keys():
+						if key not in ["stuck", "toward_wolf"]:
+							st[key] = int(st.get(key, 0)) + int(h.stats[key])
 				var rate := float(ok) / runs
 				if rate >= best:
 					best = rate
 					best_r = float(rsum) / runs
+					best_st = st
 			line += "  %s %d%%（%.1f）" % [setup[0], roundi(best * 100.0), best_r]
+			if OS.get_environment("DETAIL") != "" and not best_st.is_empty():
+				line += str(best_st)
 		print(line)
 	return true

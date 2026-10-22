@@ -191,6 +191,8 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	kicks = 0
 	events = []
 	stats = {"stuck": 0, "toward_wolf": 0}
+	drive_ally = -1
+	drive_until = -1
 
 # 主遊戲開局（Phase 2c）：ctx = {map（情境或地圖 id）, seed, wolf（{speed, skill, strength, perception, stamina, health, health_max}）,
 # condition（主遊戲擲出的體況）, gorged, age_penalty, twilight, deep_snow, wind（Vector2i，可省略）}
@@ -878,6 +880,15 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	v += _cond_factor(factors, "pounce")
 	v += _stand_factor(factors, "pounce")
 	v += _age_factor(factors)
+	# 群體狩獵實驗：被同伴趕著往你這邊跑（埋伏）、被同伴咬住拖著
+	var amb: float = _ambush_bonus(mode)
+	if amb > 0.0:
+		v += amb
+		factors.append([_tx("tactical.factor.ambush"), amb])
+	if _ally_holding() > 0:
+		var ah: float = float(_allies_cfg().get("hold", {}).get("pounce", 0.0))
+		v += ah
+		factors.append([_tx("tactical.factor.ally_holding"), ah])
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
 	if deer_state == "unaware" and not (mode in ["trot", "sprint"] and alert + float(alert_gain(mode)["gain"]) >= float(t["deer"]["flee_at"])):
 		v += float(p["unaware"])
@@ -898,6 +909,8 @@ func kick_chance() -> float:
 	var m: float = float(sp().get("kick_mult", 1.0))
 	if deer_state == "stand":
 		m *= float(sp().get("stand", {}).get("kick_mult", 1.0))
+	if _ally_holding() > 0:
+		m *= float(_allies_cfg().get("hold", {}).get("kick_mult", 1.0))
 	if side == "rear":
 		return float(k["rear"]) * m if deer_state == "flee" else 0.0
 	if side == "front":
@@ -937,11 +950,18 @@ func pounce_at(cell: Vector2i) -> void:
 		events.append(_tx(str(sp().get("kick_text", "tactical.kick.rear" if side == "rear" else "tactical.kick.hoof"))).replace("{n}", str(dmg)))
 	var hit: bool = rng.randf() < float(info["chance"])
 	_practice("skill", hit)
+	if wolves.size() > 1:
+		var tag: String = "ambush" if _ambush_bonus(str(info["mode"])) > 0.0 else ("on_held" if _ally_holding() > 0 else "plain")
+		stats["p_" + tag] = int(stats.get("p_" + tag, 0)) + 1
+		if hit:
+			stats["h_" + tag] = int(stats.get("h_" + tag, 0)) + 1
 	if hit:
 		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
 		held = true
 		was_held = true
 		hold_side = side
+		if _ally_holding() > 0:
+			herd[di]["ally_held"] = 0 # 換你咬住；同伴還在旁邊（壓倒、咬喉、掙脫有加成）
 		if deer_state == "stand":
 			herd[di]["stood"] = true # 站定時被咬住：咬住後的加減照站定（Phase 2f）
 		events.append(_tx("tactical.bite." + side).replace("{animal}", label()))
@@ -1108,6 +1128,8 @@ func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> flo
 		v += float(t["herd"]["fawn"]["break"])
 	v += float(sp().get("hold", {}).get("break", 0.0))
 	v += cond_mod("break")
+	if wolves.size() > 1:
+		v -= _allies_adjacent() * float(_allies_cfg().get("hold", {}).get("break_per_wolf", 0.0))
 	if mother_hit_fawn_held:
 		# 被母鹿踢得鬆口（母鹿的物種可以覆寫，駝鹿踢得更重）
 		var m: int = int(herd[di].get("mother", -1))
@@ -1266,16 +1288,59 @@ func _wolf_dist(c: Vector2i) -> float:
 		best = minf(best, dist(c, w["pos"]))
 	return best
 
-# 獵物要逃離的方向：只有你時是背對你；有同伴時每隻狼的推力加起來（越近推得越多）
+# 獵物要逃離的方向：只有你時是背對你；有同伴時每隻狼的推力加起來（越近推得越多）；
+# 被驅趕的那幾回合只看衝過來的那隻（往另一側、你的方向跑，方案 A）
 func _away_dir() -> Vector2:
 	if wolves.size() <= 1:
 		return Vector2(deer_pos - wolf_pos).normalized()
+	if _driven():
+		var dv := Vector2(deer_pos - Vector2i(wolves[drive_ally]["pos"]))
+		if dv.length() > 0.0:
+			return dv.normalized()
 	var v := Vector2.ZERO
 	for w in wolves:
 		var d := Vector2(deer_pos - Vector2i(w["pos"]))
 		var l: float = maxf(1.0, d.length())
 		v += d.normalized() / (l * l) if d.length() > 0.0 else Vector2.ZERO
 	return v.normalized() if v.length() > 0.0 else Vector2(deer_pos - wolf_pos).normalized()
+
+var drive_ally: int = -1 # 正在驅趕的同伴（衝向沒察覺的獵物那一隻）
+var drive_until: int = -1 # 驅趕的效果到第幾回合
+
+func _driven() -> bool:
+	return drive_ally > 0 and drive_ally < wolves.size() and rounds <= drive_until and target_index_ok()
+
+func target_index_ok() -> bool:
+	return target >= 0 and target < herd.size()
+
+# 獵物逃跑時「離狼多遠」：被驅趕時只看衝過來的那隻，其他時候看最近的狼
+func _threat_dist(c: Vector2i) -> float:
+	if _driven():
+		return dist(c, wolves[drive_ally]["pos"])
+	return _wolf_dist(c)
+
+# 牠被同伴趕著、正往你這邊跑，你上一步一直藏著（停著或潛行）：埋伏（撲出去這一下可以衝刺）
+func _ambush_bonus(_mode: String) -> float:
+	if not _driven() or deer_state != "flee" or not last_mode in ["still", "creep"]:
+		return 0.0
+	var to_me := Vector2(wolf_pos - deer_pos)
+	if to_me.length() == 0.0 or Vector2(deer_facing).normalized().dot(to_me.normalized()) < 0.3:
+		return 0.0
+	return float(_allies_cfg().get("ambush", 0.0))
+
+# 同伴咬住、拖住的那隻（herd[i].ally_held = 同伴的編號，0 是沒有）
+func _ally_holding(i: int = -1) -> int:
+	if wolves.size() <= 1:
+		return 0
+	return int(herd[di if i < 0 else i].get("ally_held", 0))
+
+# 獵物旁邊（1 格內）有幾隻同伴；skip 那隻不算
+func _allies_adjacent(skip: int = 0) -> int:
+	var n := 0
+	for k in range(1, wolves.size()):
+		if k != skip and _cheb(wolves[k]["pos"], deer_pos) <= 1:
+			n += 1
+	return n
 
 func _ally_hold_help() -> float:
 	if wolves.size() <= 1 or not held:
@@ -1306,9 +1371,14 @@ func _ally_step(k: int) -> void:
 	var player: Vector2i = wolves[0]["pos"]
 	var fleeing: bool = deer_state == "flee"
 	var tgt: Vector2i = deer_pos
-	var allow_sprint := fleeing
+	# 你咬住了、咬傷了，或別的同伴咬住了：趕快一起圍上去
+	var allow_sprint := fleeing or held or wounds > 0 or _ally_holding() > 0
 	var flank := false # 繞到另一側：還沒到那一側時不靠近獵物 flank_radius 格內（繞大圈）
-	if not fleeing and not held:
+	# 自己咬著獵物：不動
+	if _ally_holding() == k:
+		wolves[k]["mode"] = "still"
+		return
+	if not fleeing and not held and _ally_holding() == 0:
 		if role == "drive":
 			var axis := Vector2(deer_pos - player).normalized()
 			var side := axis * float(cfg.get("drive_dist", 3))
@@ -1323,13 +1393,19 @@ func _ally_step(k: int) -> void:
 				var way := perp * float(cfg.get("flank_radius", 5.0))
 				tgt = deer_pos + Vector2i(roundi(way.x), roundi(way.y))
 			# 到位、你也夠近了：衝過去把獵物往你這邊趕
-			if dist(wolf_pos, tgt) <= 1.5 and dist(player, deer_pos) <= float(cfg.get("rush_when", 7.0)):
+			# 到位＝在另一側（偏離不到約 60°）、離獵物 drive_dist + 1.5 格內
+			var placed: bool = dist(wolf_pos, tgt) <= 1.5 or (rel.normalized().dot(axis) >= 0.5 and dist(wolf_pos, deer_pos) <= float(cfg.get("drive_dist", 3)) + 1.5)
+			if placed and dist(player, deer_pos) <= float(cfg.get("rush_when", 7.0)):
 				tgt = deer_pos
 				allow_sprint = true
+				if drive_ally != k or rounds > drive_until:
+					stats["drive"] = int(stats.get("drive", 0)) + 1
+				drive_ally = k
+				drive_until = rounds + int(cfg.get("drive_rounds", 2))
 		else:
 			var back := Vector2(player - deer_pos).normalized() * float(cfg.get("follow_dist", 2))
 			tgt = player + Vector2i(roundi(back.x), roundi(back.y))
-	elif fleeing and role == "chase":
+	elif fleeing and role == "chase" and not held and _ally_holding() == 0:
 		var intent: Array = deer_intent()
 		if not intent.is_empty():
 			tgt = deer_pos + Vector2i(intent[0]) * int(_flee_budget())
@@ -1345,8 +1421,9 @@ func _ally_step(k: int) -> void:
 		var cost: float = float(costs[c])
 		if not allow_sprint and mode_for_cost(cost) == "sprint":
 			continue
-		# 沒察覺時只潛行（離得遠時可以小跑）
-		if not fleeing and not allow_sprint and mode_for_cost(cost) == "trot" and dist(c, deer_pos) <= 6.0:
+		# 沒察覺時只潛行（離得遠時可以小跑；繞圈卡住兩回合以上也可以小跑）
+		if not fleeing and not allow_sprint and mode_for_cost(cost) == "trot" and dist(c, deer_pos) <= 6.0 \
+				and not (flank and int(wolves[k].get("stuck", 0)) >= 2):
 			continue
 		# 繞大圈：還沒到獵物的另一側時，不進 flank_radius 格內
 		if flank and not allow_sprint and dist(c, deer_pos) < float(cfg.get("flank_radius", 5.0)) - 0.5 \
@@ -1359,19 +1436,50 @@ func _ally_step(k: int) -> void:
 			best = c
 			best_cost = cost
 	var mode: String = "still" if best == wolf_pos else mode_for_cost(best_cost)
+	wolves[k]["stuck"] = int(wolves[k].get("stuck", 0)) + 1 if best == wolf_pos and not fleeing else 0
 	if best != wolf_pos:
 		wolves[k]["pos"] = best
 		_spend("breath_" + mode)
 	wolves[k]["mode"] = mode
-	# 咬：逃跑中的獵物在旁邊
-	if fleeing and not held and _cheb(wolf_pos, deer_pos) <= 1:
+	# 咬：逃跑中的獵物在旁邊（你或別的同伴咬住時不另外咬，壓倒、咬喉的加成在 hold_options）
+	if fleeing and not held and _ally_holding() == 0 and _cheb(wolf_pos, deer_pos) <= 1:
 		var fat: float = deer_fatigue()
 		if fat >= float(cfg.get("pull_down", {}).get("min_fatigue", 0.75)) and rng.randf() < float(cfg.get("pull_down", {}).get("chance", 0.2)):
+			stats["ally_pull"] = int(stats.get("ally_pull", 0)) + 1
 			_finish("caught", _tx("tactical.ally.pull_down").replace("{animal}", label()))
 			return
-		if rng.randf() < float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3)):
+		var hc: Dictionary = cfg.get("hold", {})
+		if not hc.is_empty() and rng.randf() < float(hc.get("base", 0.0)) + fat * float(hc.get("tired", 0.0)):
+			# 咬住拖住：牠跑不了，你和其他同伴可以圍上去
+			herd[di]["ally_held"] = k
+			stats["ally_hold"] = int(stats.get("ally_hold", 0)) + 1
+			events.append(_tx("tactical.ally.hold").replace("{animal}", label()))
+		elif rng.randf() < float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3)):
 			wounds += 1
 			events.append(_tx("tactical.ally.bite").replace("{animal}", label()))
+
+# 同伴咬住時獵物的回合：掙扎（越累越甩不掉、旁邊的狼越多越甩不掉）；其他同伴在旁邊時可能一起拖倒
+func _ally_held_struggle() -> void:
+	var cfg: Dictionary = _allies_cfg().get("hold", {})
+	var k: int = _ally_holding()
+	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
+	var fat: float = deer_fatigue_any()
+	var others: int = _allies_adjacent(k)
+	if others > 0 and rng.randf() < float(cfg.get("pull_base", 0.0)) + others * float(cfg.get("pull_per_ally", 0.0)) + fat * float(cfg.get("pull_tired", 0.0)):
+		stats["pack_pull"] = int(stats.get("pack_pull", 0)) + 1
+		_finish("caught", _tx("tactical.ally.pull_down_pack").replace("{animal}", label()))
+		return
+	var near: int = others + (1 if _cheb(wolf_pos, deer_pos) <= 1 else 0)
+	var br: float = float(cfg.get("break_base", 0.35)) - fat * float(cfg.get("break_tired", 0.3)) - near * float(cfg.get("break_per_wolf", 0.08)) \
+		+ float(sp().get("hold", {}).get("break", 0.0)) + cond_mod("break")
+	if rng.randf() < clamp(br, 0.05, 0.95):
+		herd[di]["ally_held"] = 0
+		wounds += 1
+		deer_state = "flee"
+		flee_round = maxi(flee_round, 1)
+		events.append(_tx("tactical.ally.broke_free").replace("{animal}", label()))
+		if not _refuge_dive():
+			_deer_flee()
 
 func wind_side() -> String:
 	var v := Vector2(deer_pos - wolf_pos)
@@ -1427,6 +1535,9 @@ func _band(table: Array, d: float) -> float:
 func _raise_alert(mode: String) -> void:
 	var a := alert_gain(mode)
 	var gain: float = float(a["gain"])
+	# 同伴繞圈、跟著時很會藏（群體狩獵實驗）；衝出去驅趕時照算
+	if wi > 0 and mode != "sprint":
+		gain *= float(_allies_cfg().get("alert_mult", 1.0))
 	if gain <= 0.0 and deer_state == "unaware" and dist(wolf_pos, deer_pos) > float(t["alert"]["relax_beyond"]):
 		alert = max(0.0, alert - float(t["alert"]["relax"]))
 		return
@@ -1439,6 +1550,9 @@ func _raise_alert(mode: String) -> void:
 		events.append(_tx("tactical.look").replace("{animal}", label()))
 
 func _start_flee(cause: String) -> void:
+	if wolves.size() > 1 and di == target and deer_state != "flee":
+		var tag: String = "flee_driven" if _driven() else ("flee_by_ally" if wi > 0 else ("flee_herd" if cause == "herd" else "flee_by_me"))
+		stats[tag] = int(stats.get(tag, 0)) + 1
 	# 會站定的大型獵物（Phase 2f）：察覺你時照體況的機率站定、不逃
 	if _roll_stand(cause):
 		return
@@ -1510,6 +1624,10 @@ func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 		_deer_struggle(after_throat_miss, hanging)
 		if not bool(herd[target]["gone"]):
 			di = target
+		return
+	if _ally_holding() > 0:
+		_ally_held_struggle()
+		di = target
 		return
 	if not _mother_defend():
 		_deer_act()
@@ -1658,7 +1776,8 @@ func flee_options(lead_group: int = -1) -> Array:
 	var scored: Array = []
 	var budget: float = _flee_budget()
 	# 只往大致遠離狼的方向跑（夾角 < 約 80°）；被逼到沒有這種方向時才放寬
-	var limit: float = 0.2
+	# 被同伴驅趕時只顧著逃離衝過來的那隻（夾角 < 約 50°，群體狩獵實驗）
+	var limit: float = float(_allies_cfg().get("drive_cone", 0.2)) if _driven() else 0.2
 	var any_open := false
 	for d in DIRS:
 		if Vector2(d).normalized().dot(away) >= limit and not bool(_run_line(deer_pos, d, budget)["wall"]):
@@ -1673,7 +1792,7 @@ func flee_options(lead_group: int = -1) -> Array:
 		# 不往狼的方向跑；但這一下就能鑽進洞的話照跑（seek.toward 的物種：旱獺衝向洞口，Phase 2g；狼擋在路上時 _run_line 會停在狼前面）
 		if Vector2(d).normalized().dot(away) < limit and not (esc != "" and in_bounds(end) and terrain(end) == esc):
 			continue
-		var score: float = _wolf_dist(end) * 1.0 + Vector2(d).normalized().dot(away) * 3.0
+		var score: float = _threat_dist(end) * 1.0 + Vector2(d).normalized().dot(away) * 3.0
 		if sim["out"]:
 			score += 8.0
 		# 慣性：傾向沿原本的方向繼續跑（貼著邊緣時不會左右來回）
