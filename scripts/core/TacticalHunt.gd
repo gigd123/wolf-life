@@ -919,7 +919,13 @@ func hold_options() -> Dictionary:
 	var h: Dictionary = t["hold"]
 	var fat: float = deer_fatigue_any()
 	var out := {}
-	var fb: Dictionary = t["herd"]["fawn"] if is_fawn() else sp().get("hold", {})
+	var fb: Dictionary = sp().get("hold", {})
+	# 幼獸：共用的幼鹿加減，再加上物種的（小野牛比較重、比較難壓倒，2026-10-22；掙脫另外在 _break_chance 算）
+	if is_fawn():
+		fb = (t["herd"]["fawn"] as Dictionary).duplicate()
+		for k in sp().get("hold", {}).keys():
+			if k != "break":
+				fb[k] = float(fb.get(k, 0.0)) + float(sp()["hold"][k])
 	var hams: int = int(herd[di].get("hamstrung", 0))
 	var td: float = float(h["takedown_base"]) + (float(wolf["strength"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) \
 		+ (float(h["rear"]) if hold_side == "rear" else 0.0) + wounds * float(h["per_wound"]) + float(fb.get("takedown", 0.0)) \

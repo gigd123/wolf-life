@@ -25,6 +25,9 @@ var h = TH.new()
 var map: Control
 var info: RichTextLabel
 var hover_box: RichTextLabel
+# 撲咬的機率與所有因素（2026-10-22 試玩回報：右下角的小框放不下，因素被截掉）：滑鼠停在可以撲的格子時，蓋在下方紀錄上
+var detail_panel: PanelContainer
+var detail_box: RichTextLabel
 var log_box: RichTextLabel
 var buttons: HFlowContainer
 var scenario_pick: OptionButton
@@ -115,6 +118,24 @@ func _ready() -> void:
 	hover_box.scroll_active = false
 	hover_box.theme_type_variation = &"SmallRichLabel"
 	add_child(hover_box)
+	detail_panel = PanelContainer.new()
+	detail_panel.position = Vector2(4, 262)
+	detail_panel.size = Vector2(400, 94)
+	detail_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dbg := StyleBoxFlat.new()
+	dbg.bg_color = Color(0.1, 0.1, 0.09, 1.0)
+	dbg.border_color = Color("#ff8080")
+	dbg.set_border_width_all(1)
+	dbg.set_content_margin_all(4)
+	detail_panel.add_theme_stylebox_override("panel", dbg)
+	detail_panel.visible = false
+	add_child(detail_panel)
+	detail_box = RichTextLabel.new()
+	detail_box.bbcode_enabled = true
+	detail_box.scroll_active = false
+	detail_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail_box.theme_type_variation = &"SmallRichLabel"
+	detail_panel.add_child(detail_box)
 	_new_hunt(true)
 
 # 主遊戲用：換成主遊戲開好的這一場（GameState.start_tactical），結束時呼叫 done_cb(th)
@@ -273,7 +294,13 @@ func _build_buttons() -> void:
 func _refresh() -> void:
 	map.queue_redraw()
 	info.text = _info_text()
-	hover_box.text = _hover_text()
+	# 撲咬、前截鎖喉的機率有一長串因素：放在下方的大框；移動方式之類的短句照舊放右下角
+	var ht: String = _hover_text()
+	var long: bool = ht.contains("\n")
+	detail_panel.visible = long
+	log_box.visible = not long
+	detail_box.text = ht if long else ""
+	hover_box.text = "" if long else ht
 
 # --- 右側資訊 ---
 
@@ -327,7 +354,7 @@ func _hover_text() -> String:
 	var targets: Dictionary = h.pounce_targets()
 	if targets.has(hover):
 		var p: Dictionary = targets[hover]
-		var s := "[color=#ff8080]%s[/color]" % tr("tactical.ui.pounce").replace("{p}", str(roundi(float(p["chance"]) * 100.0)))
+		var s := ("%s　" % h.label() if h.herd.size() > 1 else "") + "[color=#ff8080]%s[/color]" % tr("tactical.ui.pounce").replace("{p}", str(roundi(float(p["chance"]) * 100.0)))
 		var parts: Array[String] = []
 		for f in p["factors"]:
 			if absf(float(f[1])) >= 0.005:
@@ -335,6 +362,10 @@ func _hover_text() -> String:
 		s += tr("tactical.ui.kick_risk").replace("{p}", str(roundi(float(p["kick"]) * 100.0))) if float(p["kick"]) > 0.0 else ""
 		s += "\n" + "、".join(parts)
 		return s
+	# 滑鼠停在一隻鹿上：寫出牠是誰（母鹿、幼鹿分得出來，2026-10-22 試玩回報）
+	for i in h.active_deer():
+		if Vector2i(h.herd[i]["pos"]) == hover and h.herd.size() > 1:
+			return h.label(i) + ("（" + tr("tactical.ui.target_mark") + "）" if i == h.target else "")
 	var r: Dictionary = h.reachable()
 	if r.has(hover):
 		if r[hover] == "trot" and h.tired():
@@ -358,13 +389,17 @@ func _draw_tile(c: Vector2i) -> void:
 		map.draw_rect(_cell_rect(c), COLORS[kind])
 
 # 動物：8 個方向的橫條挑一格；held 時偏紅
-func _draw_animal(kind: String, c: Vector2i, facing: Vector2i, tint: Color = Color.WHITE) -> bool:
+# small：幼獸畫小一號（格子的 0.8，置中），和母親一眼分得出來（2026-10-22 試玩回報）
+func _draw_animal(kind: String, c: Vector2i, facing: Vector2i, tint: Color = Color.WHITE, small: bool = false) -> bool:
 	var tex: Texture2D = art_sprites.get(kind, null)
 	if tex == null:
 		return false
 	var d := Vector2i(signi(facing.x), signi(facing.y))
 	var idx: int = maxi(0, TH.DIRS.find(d))
-	map.draw_texture_rect_region(tex, _cell_rect(c), Rect2(idx * CELL, 0, CELL, CELL), tint)
+	var r := _cell_rect(c)
+	if small:
+		r = r.grow(-CELL * 0.1)
+	map.draw_texture_rect_region(tex, r, Rect2(idx * CELL, 0, CELL, CELL), tint)
 	return true
 
 func _deer_kind(i: int) -> String:
@@ -398,7 +433,7 @@ func _draw_map() -> void:
 	for i in h.active_deer():
 		if i == h.target:
 			continue
-		if not _draw_animal(_deer_kind(i), h.herd[i]["pos"], h.herd[i]["facing"]):
+		if not _draw_animal(_deer_kind(i), h.herd[i]["pos"], h.herd[i]["facing"], Color.WHITE, h.is_fawn(i)):
 			var r := _cell_rect(h.herd[i]["pos"]).grow(-3 if h.is_fawn(i) else -1)
 			map.draw_rect(r, COLORS["fawn"] if h.is_fawn(i) else COLORS["deer"])
 			var oc: Vector2 = Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5
@@ -410,7 +445,7 @@ func _draw_map() -> void:
 	if not h.done and not h.held:
 		for d in h.deer_intent():
 			map.draw_line(dc, dc + Vector2(d).normalized() * CELL * h._flee_budget(), COLORS["intent"], 1.0)
-	if not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE):
+	if not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE, fawn_t):
 		map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
 		map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
 	if h.herd.size() > 1:

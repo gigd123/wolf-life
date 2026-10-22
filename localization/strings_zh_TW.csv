@@ -1809,6 +1809,7 @@ tactical.ui.wind_side.crosswind,側風
 tactical.ui.breath,喘 {n}/{max}
 tactical.ui.health,血 {n}
 tactical.ui.target,目標 {animal}
+tactical.ui.target_mark,目標
 tactical.ui.herd_count,場上 {n} 隻
 tactical.ui.deer_prefix,鹿：
 tactical.ui.state.unaware,沒察覺

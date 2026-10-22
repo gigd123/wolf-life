@@ -560,8 +560,8 @@
       "seek": { "terrain": "w", "per_cell": 1.0, "max_cells": 3, "end": 3.0 },
       "terrain_pounce": { "w": -0.15 },
       "guarded": { "dist": 2.5, "pounce": -0.3 },
-      "calf_flee": [4, 5, 5, 4, 3, 3],
-      "hold": { "takedown": -0.15, "throat": -0.1, "break": 0.15 },
+      "calf_flee": [3, 4, 4, 3, 3, 2],
+      "hold": { "takedown": -0.4, "throat": -0.3, "break": 0.3 },
       "snow_slow": 2.0,
       "meat": 2
     }

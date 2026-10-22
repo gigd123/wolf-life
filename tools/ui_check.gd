@@ -87,6 +87,10 @@ func _play(den: String) -> void:
 				and game.hunt_message.get_parent().get_combined_minimum_size().y + 48.0 < game.get_viewport_rect().size.y - 6.0:
 			_issue("HUNT_SPRITE_HIDDEN", ctx)
 			found = true
+		# 診斷（2026-10-22 試玩回報：動物圖片又不見）：狩獵、戰鬥畫面的角色圖被拿掉（不論原因）就截圖、記下來
+		if OS.get_environment("UI_CHECK_SPRITES") != "" and game.hunt_overlay.visible and not game.hunt_wolf_sprite.get_parent().get_parent().visible:
+			_issue("SPRITE_ROW_HIDDEN", ctx + (" combat" if game.current_combat != null else " hunt"))
+			found = true
 		var sig := _overlay_kind(game)
 		if found or (sig != last_sig and shots < 400 and rng.randf() < 0.35) or step % 40 == 0:
 			_shot("%s_%03d_%s" % [den, step, sig])
