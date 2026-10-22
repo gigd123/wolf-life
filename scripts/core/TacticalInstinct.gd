@@ -66,6 +66,9 @@ static func step(h, pol: String) -> void:
 				pick = "hamstring"
 			elif opts.has("hang"):
 				pick = "hang"
+		# 苔原狼在旁邊（群體狩獵實驗）：牠們一起拖倒的機會比自己出手好，就死咬拖住
+		if opts.has("hang") and float(opts["hang"].get("ally_takedown_any", 0.0)) > bc:
+			pick = "hang"
 		h.hold_action(pick)
 		return
 	# 站定的大型獵物（Phase 2f）：看出是健康的就放棄（照生態幾乎打不下來）；否則繞到側面、後方再撲，站太久就放棄

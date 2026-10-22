@@ -303,10 +303,19 @@ func _build_buttons() -> void:
 				var b := Button.new()
 				b.theme_type_variation = &"SmallButton"
 				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
-				# 有苔原狼同伴時每個招式都寫喘（一起咬著時省喘，看得出來）
-				if id == "hang" or (h.wolves.size() > 1 and id != "release"):
-					b.text += tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(opts[id]["breath"]), 0.1)))
+				var cost: String = tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(opts[id]["breath"]), 0.1)))
+				var allies_help: bool = id == "hang" and opts[id].has("ally_takedown_any")
+				# 死咬拖住寫喘；旁邊有苔原狼時改寫牠們拖倒的機率（按鈕放不下兩個，喘寫在滑鼠提示）
+				if id == "hang" and not allies_help:
+					b.text += cost
 				b.tooltip_text = "、".join((opts[id]["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
+				# 有苔原狼同伴時滑鼠提示寫喘（一起咬著時省喘）
+				if h.wolves.size() > 1 and id != "release":
+					b.tooltip_text = cost + " " + b.tooltip_text
+				if allies_help:
+					var pa: String = str(roundi(float(opts[id]["ally_takedown_any"]) * 100.0))
+					b.text += tr("tactical.ui.ally_takedown").replace("{p}", pa)
+					b.tooltip_text = tr("tactical.ui.ally_takedown_tip").replace("{n}", str((opts[id]["ally_takedown"] as Array).size())).replace("{p}", pa) + "\n" + b.tooltip_text
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
 				buttons.add_child(b)
@@ -409,7 +418,7 @@ func _info_text() -> String:
 
 # 苔原狼同伴（群體狩獵實驗）：角色與現在在做什麼，一行；被趕過來時第二行提示。右側資訊欄放不下，滑鼠沒停在格子上時寫在右下角
 func _ally_text() -> String:
-	if h.wolves.size() <= 1 or h.done:
+	if h.wolves.size() <= 1 or h.done or h.held: # 咬住時按鈕排三行，放不下（苔原狼拖倒的機率寫在死咬拖住上）
 		return ""
 	var parts: Array[String] = []
 	for k in range(1, h.wolves.size()):

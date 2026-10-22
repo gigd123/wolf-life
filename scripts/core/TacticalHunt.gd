@@ -1092,7 +1092,10 @@ func hold_options() -> Dictionary:
 	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
 	td += _stand_factor(tf, "takedown")
-	td += _age_factor(tf, true)
+	var age_v: float = _age_factor(tf, true)
+	td += age_v
+	# 苔原狼拖倒（群體狩獵實驗，使用者選 C）：一樣的算法，力量換成牠的、不算你的年齡
+	var td_other: float = td - (float(wolf["strength"]) - 50.0) / float(h["divisor"]) - age_v
 	if hams > 0:
 		tf.append([_tx("tactical.factor.hamstrung"), hams * float(h["hamstring"]["takedown"])])
 	var ally_h: float = _ally_hold_help()
@@ -1116,6 +1119,14 @@ func hold_options() -> Dictionary:
 	# 死咬拖住：用體重掛著不放（每個位置都能用，側面最有效）
 	out["hang"] = {"chance": 1.0, "breath": float(h["hang"]["breath"]),
 		"factors": [[_tx("tactical.factor.break"), float(h["hang"]["break"].get(hold_side, -0.08))]]}
+	# 你死咬拖住的那一回合，旁邊的苔原狼各自試著把牠拖倒（使用者選 C，2026-10-22）
+	var ally_td: Array = _ally_takedown_chances(td_other)
+	if not ally_td.is_empty():
+		var miss_all := 1.0
+		for c in ally_td:
+			miss_all *= 1.0 - float(c)
+		out["hang"]["ally_takedown"] = ally_td
+		out["hang"]["ally_takedown_any"] = 1.0 - miss_all
 	# 咬後腿：從後方咬住才有
 	if hold_side == "rear" and hams < int(h["hamstring"]["max"]):
 		var hm: Dictionary = h["hamstring"]
@@ -1174,6 +1185,15 @@ func hold_action(id: String) -> void:
 		herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + int(t["hold"]["hang"]["struggle"].get(hold_side, 1)) - 1
 		events.append(_tx("tactical.hang").replace("{animal}", label()))
 		rounds += 1
+		# 旁邊的苔原狼趁你拖住時試著把牠拖倒（使用者選 C）
+		var tried: Array = o.get("ally_takedown", [])
+		for c in tried:
+			if rng.randf() < float(c):
+				stats["ally_takedown"] = int(stats.get("ally_takedown", 0)) + 1
+				_finish("caught", _tx("tactical.ally.takedown").replace("{animal}", label()))
+				return
+		if not tried.is_empty():
+			events.append(_tx("tactical.ally.takedown_miss").replace("{animal}", label()))
 		_deer_turn(false, true)
 		if not done and rounds >= int(t["max_rounds"]):
 			_finish("timeout", _tx("tactical.timeout"))
@@ -1365,6 +1385,20 @@ func _ally_breath_mult() -> float:
 		return 1.0
 	var mults: Array = _allies_cfg().get("hold_breath_mult", [1.0])
 	return float(mults[mini(_allies_adjacent(), mults.size() - 1)])
+
+# 你咬住時旁邊每隻同伴拖倒的機率（死咬拖住那一回合各擲一次）：壓倒的算法用牠的力量 × hang_takedown.mult，夾在 min～max
+func _ally_takedown_chances(td_other: float) -> Array:
+	var out: Array = []
+	if wolves.size() <= 1 or not held:
+		return out
+	var cfg: Dictionary = _allies_cfg().get("hang_takedown", {})
+	if cfg.is_empty():
+		return out
+	for k in range(1, wolves.size()):
+		if _cheb(wolves[k]["pos"], deer_pos) <= 1:
+			var v: float = (td_other + (float(wolves[k]["stats"]["strength"]) - 50.0) / float(t["hold"]["divisor"])) * float(cfg.get("mult", 0.6))
+			out.append(clamp(v, float(cfg.get("min", 0.02)), float(cfg.get("max", 0.5))))
+	return out
 
 func _ally_hold_help() -> float:
 	if wolves.size() <= 1 or not held:

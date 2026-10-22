@@ -5,6 +5,7 @@ extends SceneTree
 #   3. 同伴咬住：獵物不動（除非掙脫）；你撲牠有「苔原狼拖住了牠」加成、被踢的機率減半；撲中就換你咬住
 #   4. 你咬住時：遠處的同伴衝刺過來；旁邊有同伴時牠比較難掙脫；旁邊 1／2 隻同伴時招式的喘 × 0.5／0.3，成功率不變
 #   5. 同伴停著時回喘；你撲空的回合同伴也動
+#   6. 你死咬拖住的那一回合，旁邊的同伴各自試著拖倒（比你自己壓倒低）；沒有同伴時死咬拖住不會獵到
 # 用法：bash tools/run_sim.sh tactical_ally_rules
 var f := 0
 var fails := 0
@@ -139,6 +140,42 @@ func _process(_d) -> bool:
 			moved = h.wolves[1]["pos"] != a0
 			break
 	_check(moved, "你撲空的回合同伴也會動")
+	# 死咬拖住時同伴拖倒
+	h = _new(8)
+	h.held = true
+	h.hold_side = "rear"
+	h.wolves[0]["breath"] = 60.0
+	_check(not h.hold_options()["hang"].has("ally_takedown"), "沒有同伴：死咬拖住沒有拖倒的機會")
+	h.add_ally("chase", h.deer_pos + Vector2i(1, 1))
+	h.wolves[1]["pos"] = h.deer_pos + Vector2i(1, 1)
+	var ho: Dictionary = h.hold_options()
+	var at: Array = ho["hang"].get("ally_takedown", [])
+	_check(at.size() == 1 and float(at[0]) > 0.0 and float(at[0]) < float(ho["takedown"]["chance"]), "旁邊 1 隻同伴：拖倒 %s，比你壓倒 %.2f 低" % [str(at), ho["takedown"]["chance"]])
+	var hang_caught := 0
+	for i in 300:
+		h = _new(i)
+		h.held = true
+		h.hold_side = "rear"
+		h.wolves[0]["breath"] = 60.0
+		h.add_ally("chase", h.deer_pos + Vector2i(1, 1))
+		h.wolves[1]["pos"] = h.deer_pos + Vector2i(1, 1)
+		var p_any: float = float(h.hold_options()["hang"].get("ally_takedown_any", 0.0))
+		h.hold_action("hang")
+		if h.result == "caught":
+			hang_caught += 1
+		if i == 0:
+			_check(p_any > 0.05, "拖倒的機率（%.2f）" % p_any)
+	_check(hang_caught > 15 and hang_caught < 150, "死咬拖住時同伴拖倒（%d／300）" % hang_caught)
+	hang_caught = 0
+	for i in 300:
+		h = _new(i)
+		h.held = true
+		h.hold_side = "rear"
+		h.wolves[0]["breath"] = 60.0
+		h.hold_action("hang")
+		if h.result == "caught":
+			hang_caught += 1
+	_check(hang_caught == 0, "沒有同伴時死咬拖住不會獵到（%d）" % hang_caught)
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
