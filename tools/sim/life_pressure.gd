@@ -74,6 +74,8 @@ func _process(_d):
 		var sampled := {}
 		var snapped_at := {}
 		var stuck := 0 # 一步之後遊戲日沒有前進的次數（Phase 2f 第 4 步：發現有一隻狼一直停在 0.7 歲）
+		var same_age := 0 # 年齡（換季才長）連續幾天沒變：季節要睡覺才換，一直沒睡的話天數照走、年齡不動（2026-10-22 又出現一次）
+		var last_age: float = -1.0
 		# YOUNG_PREY=small_only：未滿 1 歲只獵小獵物（殘骸照吃），1 歲後照常（2026-10-22：小狼「先吃小的」能不能活）；
 		# MAX_AGE：到這個年紀就停（只看前半生時省時間）
 		var young_prey: String = OS.get_environment("YOUNG_PREY")
@@ -114,11 +116,15 @@ func _process(_d):
 			var day0: int = root.get_node("GameTime").day
 			ap.step(1)
 			stuck = stuck + 1 if root.get_node("GameTime").day == day0 and GS.wolf.alive else 0
-			if stuck >= 5:
+			same_age = same_age + 1 if absf(GS.wolf.age_years - last_age) < 0.0001 else 0
+			last_age = GS.wolf.age_years
+			if stuck >= 5 or same_age >= 30:
 				var msgs: Array = GS.life_log.get("recent_messages", [])
-				print("  ⚠ 卡住：第 %d 隻、種子 %d、%.2f 歲、%s %s、飽食 %.0f 體力 %.0f、事件 %s、殘骸 %d、遭遇 %s" % [r, GS.rng_seed, GS.wolf.age_years, GS.current_region,
+				print("  ⚠ 卡住（%s）：第 %d 隻、種子 %d、%.2f 歲、季節 %s 第 %d 天、%s %s、飽食 %.0f 體力 %.0f、事件 %s、殘骸 %d、遭遇 %s" % ["同一天" if stuck >= 5 else "年齡 30 天沒變",
+					r, GS.rng_seed, GS.wolf.age_years, root.get_node("GameTime").current_season(), root.get_node("GameTime").day, GS.current_region,
 					root.get_node("GameTime").current_period(), GS.wolf.hunger, GS.wolf.stamina, GS.pending_events.map(func(e): return str(e.get("type", ""))),
 					GS.carcass_index_here(), GS.current_encounter.get("type", "") if GS.get("current_encounter") is Dictionary else "?"])
+				print("    最近的選擇：", (GS.life_log.get("decisions", []) as Array).slice(-12), "；睡覺 ", GS.life_log.get("stats", {}).get("option_counts", {}).get("sleep", 0), "；時段 ", root.get_node("GameTime").current_period(), "；pending_season ", root.get_node("GameTime").season_due())
 				for m in msgs.slice(maxi(0, msgs.size() - 8)):
 					print("    " + str(m).replace("\n", " ").left(160))
 				break

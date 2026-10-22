@@ -530,7 +530,7 @@
       "hold": { "break": 0.12 },
       "meat": 2
     },
-    "_beaver_comment": "河狸（2026-10-22 使用者的構想）：一律用水塘地圖（family pond）；開局離深水近 1～3 格（岸邊或淺水裡）或遠 5～8 格（spawn_refuge，照主遊戲 HuntSystem.refuge_near 的季節機率）；陸上慢（flee_profile），淺水稍快（terrain_cost s −0.3）、深水很快（d −0.6），被追時直奔深水（seek），一進深水就潛走（escape_terrain）；淺水裡難撲；咬住後幾乎甩不掉（hold.break −0.3）、會咬你一口（kick）。數值為初始值，tactical_beaver_sim 校準到選單式（一般的狼約 70%）。",
+    "_beaver_comment": "河狸（2026-10-22 使用者的構想）：一律用水塘地圖（family pond）；開局離深水近 1～3 格（岸邊或淺水裡）或遠 5～8 格（spawn_refuge，照主遊戲 HuntSystem.refuge_near 的季節機率）；陸上慢（flee_profile），淺水稍快（terrain_cost s −0.3）、深水很快（d −0.6），被追時直奔深水（seek），一進深水就潛走（escape_terrain）；小獵物，代價照短版：一場最多 1 個遊戲回合、體力 ×0.5（2026-10-22）；淺水裡難撲；咬住後幾乎甩不掉（hold.break −0.3）、會咬你一口（kick）。數值為初始值，tactical_beaver_sim 校準到選單式（一般的狼約 70%）。",
     "beaver": {
       "name": "河狸",
       "name_key": "tactical.label.beaver",
@@ -541,6 +541,8 @@
       "seek": { "terrain": "d", "per_cell": 2.0, "max_cells": 4, "end": 12.0 },
       "terrain_pounce": { "s": -0.15 },
       "escape_terrain": "d",
+      "round_div": 8,
+      "max_turns": 1,
       "escape_text": "tactical.dive",
       "pounce": 0.0,
       "kick_mult": 0.3,
@@ -558,6 +560,8 @@
       "seek": { "terrain": "d", "per_cell": 2.0, "max_cells": 4, "end": 12.0 },
       "terrain_pounce": { "s": -0.15 },
       "escape_terrain": "d",
+      "round_div": 8,
+      "max_turns": 1,
       "escape_text": "tactical.dive",
       "kick_mult": 0.0,
       "hold": { "takedown": 0.3, "throat": 0.2, "break": -0.35 },
@@ -788,7 +792,7 @@
   },
   "_game_comment": "Phase 2c 接進主遊戲（setup_from_game、GameState.finish_tactical_hunt）：animals 用戰術地圖的獵物；時間 = 戰術回合 ÷ round_div（進位，最多 max_turns 個遊戲回合）；交給本能之後撲咬、壓倒、咬喉 − instinct_penalty（比自己打約低一成）；age_scope = pounce：年齡減成只扣撲咬（咬住後交給已經隨年齡下降的力量、技巧，避免重複計算；使用者 2026-10-20 同意）；吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
   "_game_herd_comment": "Phase 2d 第 2 步：exclude_stages：這些生命階段照舊走選單（公馬鹿會站定，之後和駝鹿、野牛一起做）；species：主遊戲的動物 → 戰術的物種；herd_size：主遊戲遇到鹿群時，地圖上放幾隻成鹿；herd_calves：各季鹿群裡跟著幾隻小鹿。",
-  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "pronghorn", "bighorn_sheep", "hare", "snowshoe_hare"], "no_mother": ["beaver", "pronghorn", "hare", "snowshoe_hare"], "herd_juvenile": ["bison"], "lone_calf_alone": { "bison": 0.3 }, "injured_tactical": ["bison"], "injured_wounds": 1, "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison", "beaver": "beaver", "pronghorn": "pronghorn", "bighorn_sheep": "bighorn_sheep", "hare": "hare", "snowshoe_hare": "snowshoe_hare" }, "species_stage": { "elk": { "buck": "elk_bull" }, "beaver": { "juvenile": "beaver_kit" }, "pronghorn": { "juvenile": "pronghorn_kid" }, "bighorn_sheep": { "buck": "bighorn_ram" }, "hare": { "juvenile": "hare_young" }, "snowshoe_hare": { "juvenile": "snowshoe_hare_young" } }, "herd_size_stage": { "elk": { "buck": [2, 4] }, "bighorn_sheep": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10], "pronghorn": [4, 8], "bighorn_sheep": [3, 6] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 }, "bighorn_sheep": { "summer": 1, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": { "hare": 0.4, "snowshoe_hare": 0.4 }, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
+  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "pronghorn", "bighorn_sheep", "hare", "snowshoe_hare"], "no_mother": ["beaver", "pronghorn", "hare", "snowshoe_hare"], "herd_juvenile": ["bison"], "lone_calf_alone": { "bison": 0.3 }, "injured_tactical": ["bison"], "injured_wounds": 1, "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison", "beaver": "beaver", "pronghorn": "pronghorn", "bighorn_sheep": "bighorn_sheep", "hare": "hare", "snowshoe_hare": "snowshoe_hare" }, "species_stage": { "elk": { "buck": "elk_bull" }, "beaver": { "juvenile": "beaver_kit" }, "pronghorn": { "juvenile": "pronghorn_kid" }, "bighorn_sheep": { "buck": "bighorn_ram" }, "hare": { "juvenile": "hare_young" }, "snowshoe_hare": { "juvenile": "snowshoe_hare_young" } }, "herd_size_stage": { "elk": { "buck": [2, 4] }, "bighorn_sheep": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10], "pronghorn": [4, 8], "bighorn_sheep": [3, 6] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 }, "bighorn_sheep": { "summer": 1, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": { "hare": 0.4, "snowshoe_hare": 0.4, "beaver": 0.5 }, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
   "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
   "maps": {
     "open_1": {
