@@ -303,6 +303,46 @@ func _process(_d) -> bool:
 			if not jth.is_fawn(jth.target):
 				no_calf += 1
 	_check(no_calf == 0, "獵小牛、小鹿時目標一定是幼獸（河邊也是；%d 場不是）" % no_calf)
+	# 2026-10-22 使用者：落單的野牛（15%）、落單的小牛（一對母子或旁邊沒有成獸）、受傷的野牛帶著傷走戰術地圖、小牛躲到站定的母牛身後
+	var lone := 0
+	for i in 600:
+		if not gs.start_hunt("bison", "adult").in_herd:
+			lone += 1
+	_check(lone >= 60 and lone <= 120, "野牛約 15%% 落單（%d／600）" % lone)
+	var single_n := 0
+	var alone_n := 0
+	for i in 200:
+		var lj = gs.start_hunt("bison", "juvenile", -1, false, "", false, false, 0)
+		var ljth = gs.start_tactical(lj)
+		if not ljth.is_fawn(ljth.target):
+			single_n += 1000
+		elif ljth.herd.size() == 1:
+			alone_n += 1
+		elif ljth.herd.size() == 2:
+			single_n += 1
+	_check(single_n + alone_n == 200 and alone_n >= 40 and alone_n <= 80, "落單的小牛：約三成旁邊沒有成獸、其餘是一對母子（只有小牛 %d、母子 %d）" % [alone_n, single_n])
+	var ih = gs.start_hunt("bison", "adult", -1, false, "", true)
+	_check(gs.tactical_eligible(ih), "受傷的野牛走戰術地圖")
+	var ith = gs.start_tactical(ih)
+	_check(int(ith.herd[ith.target]["wounds"]) == 1 and ith.herd.size() == 1, "受傷的野牛帶著 1 道傷、單獨一頭")
+	_check(not gs.tactical_eligible(gs.start_hunt("white_tailed_deer", "adult", -1, false, "", true)), "受傷的白尾鹿照舊走選單")
+	# 小牛躲到站定的母牛身後：母牛站定、小牛在逃，下一步小牛到母牛旁邊、離狼比母牛遠
+	var hid_ok := false
+	for i in 30:
+		var ph = gs.start_hunt("bison", "juvenile", -1, false, "", false, false, 0)
+		var pth = gs.start_tactical(ph)
+		if pth.herd.size() != 2:
+			continue
+		var calf: int = pth.target
+		var mom: int = 1 - calf
+		pth.herd[mom]["state"] = "stand"
+		pth.herd[calf]["state"] = "flee"
+		pth.wolf_pos = Vector2i(pth.herd[mom]["pos"]) + Vector2i(0, 3) if pth.in_bounds(Vector2i(pth.herd[mom]["pos"]) + Vector2i(0, 3)) else Vector2i(pth.herd[mom]["pos"]) + Vector2i(0, -3)
+		pth.di = calf
+		if pth._huddle_behind_standing():
+			hid_ok = pth._cheb(pth.herd[calf]["pos"], pth.herd[mom]["pos"]) <= 1 and pth.dist(pth.herd[calf]["pos"], pth.wolf_pos) >= pth.dist(pth.herd[mom]["pos"], pth.wolf_pos)
+			break
+	_check(hid_ok, "小野牛躲到站定的母牛身後")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")

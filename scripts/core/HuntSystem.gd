@@ -878,7 +878,7 @@ func _pick_condition() -> String:
 	table["weak"] = float(table.get("weak", 0)) * GameState.year_weak_mult(animal_id)
 	return str(RNGService.weighted_pick(table))
 
-# 成群（1.8 第 5 步）：herd 的動物一律成群；其他依季節的機率（herd_by_season × herd_stage_mult）。受傷、落單的幼體不算。
+# 成群（1.8 第 5 步）：herd 的動物一律成群（lone_chance 的機率落單）；其他依季節的機率（herd_by_season × herd_stage_mult）。受傷、落單的幼體不算。
 func _roll_herd() -> void:
 	in_herd = roll_herd(animal_id, life_stage, injured)
 
@@ -887,8 +887,9 @@ static func roll_herd(p_animal_id: String, p_life_stage: String, p_injured: bool
 	var data: Dictionary = GameData.animals.get(p_animal_id, {})
 	if p_injured:
 		return false
+	# 一律成群的動物也可能落單（野牛 lone_chance，2026-10-22 使用者選 15%：獨行的公牛、老弱的一頭、一對母子）
 	if bool(data.get("herd", false)):
-		return true
+		return not RNGService.chance(float(data.get("lone_chance", 0.0)))
 	if p_life_stage == "juvenile" or not data.has("herd_by_season"):
 		return false
 	var chance: float = float(data["herd_by_season"].get(GameTime.current_season(), 0.0)) * float(data.get("herd_stage_mult", {}).get(p_life_stage, 1.0))

@@ -96,6 +96,7 @@ var caught_kind: String = "" # 獵到的是 adult 還是 fawn
 var meat: int = 0
 var defends: int = 0 # 生母護幼的次數
 var damage_taken: float = 0.0
+var defended_round: int = -1 # 這一回合已經有成獸衝過來護幼（一回合最多一隻，2026-10-22：整群野牛一起擋時一場平均傷 51）
 var charged_round: int = -1 # 這一回合已經有站定的獵物衝撞過（一回合最多一次，Phase 2f 第 3 步：整群野牛站定時不會每隻都撞）
 var damage_by: Dictionary = {} # 受傷來源：prey（獵物本身踢）、mother（生母護幼）
 var scattered: bool = false # 這一回合狼衝進鹿群
@@ -167,6 +168,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	defends = 0
 	damage_taken = 0.0
 	charged_round = -1
+	defended_round = -1
 	damage_by = {}
 	scattered = false
 	group_dirs = {}
@@ -225,6 +227,9 @@ func setup_from_game(ctx: Dictionary) -> void:
 		for d in herd:
 			if str(d.get("kind", "adult")) != "fawn":
 				d["condition"] = str(ctx["condition"])
+	# 受傷的個體（之前被咬傷逃掉的，2026-10-22 野牛受傷的也走戰術地圖）：第一隻帶著傷出場（每道傷少跑 wound_slow 格、比較好壓倒）
+	if int(ctx.get("wounds", 0)) > 0:
+		herd[0]["wounds"] = int(ctx["wounds"])
 	if float(ctx.get("age_penalty", 0.0)) > 0.0:
 		game_mods["age_penalty"] = float(ctx["age_penalty"])
 	if ctx.has("season"):
@@ -324,6 +329,9 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 				if placed:
 					break
 		sc["deer_list"] = list
+	elif fawn and bool(herd_cfg.get("calf_alone", false)):
+		# 落單的幼獸，旁邊沒有成獸（野牛，2026-10-22 使用者：運氣好遇到只有一隻小野牛）
+		sc["deer_list"] = [{"pos": [deer.x, deer.y], "kind": "fawn", "mother": -1, "species": calf_sp}]
 	elif fawn:
 		var f := deer + Vector2i(1, 1)
 		for d in DIRS:
@@ -1273,6 +1281,9 @@ func _mother_defend() -> bool:
 		if int(herd[di]["defend_rounds"]) >= int(cfg["max_rounds"]) and deer_state != "flee":
 			deer_state = "flee"
 		return false
+	if defended_round == rounds:
+		return false
+	defended_round = rounds
 	herd[di]["defend_rounds"] = int(herd[di]["defend_rounds"]) + 1
 	defends += 1
 	deer_state = "flee" # 之後放棄時直接逃
@@ -1399,6 +1410,14 @@ func flee_options(lead_group: int = -1) -> Array:
 				score += Vector2(d).normalized().dot(group_push[lead_group]["dir"]) * float(t["herd"]["split_push"])
 		else:
 			score += _cohesion_score(d)
+		# 幼獸往成獸身邊擠（小野牛，2026-10-22）：跑到的那一格 2 格內每有一隻成獸 + seek_herd（最多 3 隻）
+		var sh: float = float(sp().get("seek_herd", 0.0))
+		if sh > 0.0 and is_fawn():
+			var near := 0
+			for j in active_deer():
+				if j != di and not is_fawn(j) and dist(herd[j]["pos"], end) <= 2.0:
+					near += 1
+			score += mini(near, 3) * sh
 		if float(sim["moved"]) <= 0.0:
 			score -= 20.0
 		scored.append({"dir": d, "score": score})
@@ -1631,8 +1650,20 @@ func _flee_budget(i: int = -1) -> float:
 	# 生母放慢等幼鹿：最多比幼鹿多跑 mother_slack 格（幼鹿還在附近、沒跑散時）
 	if not is_fawn(k):
 		var f: int = fawn_of(k)
-		if f >= 0 and not bool(herd[f]["separated"]) and not bool(herd[f]["held"]) and dist(herd[f]["pos"], h["pos"]) <= 4.0:
-			b = min(b, _flee_budget(f) + float(t["herd"]["mother_slack"]))
+		# 物種可以覆寫（野牛的母牛跑得不比小牛快、8 格內都等，2026-10-22）
+		if f >= 0 and not bool(herd[f]["separated"]) and not bool(herd[f]["held"]) and dist(herd[f]["pos"], h["pos"]) <= float(sp(k).get("mother_slack_dist", 4.0)):
+			b = min(b, _flee_budget(f) + float(sp(k).get("mother_slack", t["herd"]["mother_slack"])))
+		# 整群放慢等小牛（guard_calves 的物種，野牛，2026-10-22）：同一小群裡還沒跑散、沒被咬住、在 herd_slack_dist 格內的幼獸，
+		# 成獸最多比牠們裡最慢的多跑 herd_slack 格
+		var gs_cfg: Dictionary = sp(k)
+		# 自己的小牛被咬住：生母不跑遠，在附近繞（每回合最多 1 格），一直回來護幼（guard_calves 的物種）
+		if bool(gs_cfg.get("guard_calves", false)) and f >= 0 and bool(herd[f]["held"]) and dist(herd[f]["pos"], h["pos"]) <= 6.0:
+			b = min(b, 1.0)
+		if bool(gs_cfg.get("guard_calves", false)):
+			for j in active_deer():
+				if is_fawn(j) and not bool(herd[j]["separated"]) and not bool(herd[j]["held"]) and int(herd[j].get("group", 0)) == int(h.get("group", 0)) \
+						and dist(herd[j]["pos"], h["pos"]) <= float(gs_cfg.get("herd_slack_dist", 4.0)):
+					b = min(b, _flee_budget(j) + float(gs_cfg.get("herd_slack", 1.0)))
 	return b
 
 # 沿一個方向跑：撞到邊界就出場；遇到障礙轉 ±45° 繼續。回傳 {end, out, logs, blocked, moved}
@@ -1672,7 +1703,45 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		pos = n
 	return {"end": pos, "out": false, "wall": false, "logs": logs, "blocked": blocked, "moved": moved, "seek": seek}
 
+# 幼獸躲到站定的成獸身後（guard_calves 的物種，野牛，2026-10-22：母牛站定時小牛原本自己跑開、跟母牛分散）：
+# 4 格內有站定的成獸時，走到牠旁邊、離狼最遠的那一格（這一回合跑得到的話）；回傳有沒有躲過去
+func _huddle_behind_standing() -> bool:
+	if not is_fawn():
+		return false
+	var best_j := -1
+	for j in active_deer():
+		if is_fawn(j) or str(herd[j]["state"]) != "stand" or not bool(sp(j).get("guard_calves", false)):
+			continue
+		if dist(herd[j]["pos"], deer_pos) <= 4.0 and (best_j < 0 or dist(herd[j]["pos"], deer_pos) < dist(herd[best_j]["pos"], deer_pos)):
+			best_j = j
+	if best_j < 0:
+		return false
+	var occupied := deer_cells(di)
+	var budget: float = _flee_budget()
+	var goal := Vector2i(-1, -1)
+	var gd := -1.0
+	for d in DIRS:
+		var c: Vector2i = Vector2i(herd[best_j]["pos"]) + d
+		if not in_bounds(c) or occupied.has(c) or c == wolf_pos or deer_extra(c) > 1.0:
+			continue
+		if _cheb(c, deer_pos) > int(budget):
+			continue
+		var wd: float = dist(c, wolf_pos)
+		if wd > gd:
+			gd = wd
+			goal = c
+	if goal.x < 0:
+		return false
+	if goal != deer_pos:
+		deer_facing = _dir_toward(deer_pos, goal)
+		deer_pos = goal
+	herd[di]["separated"] = false
+	return true
+
 func _deer_flee() -> void:
+	if _huddle_behind_standing():
+		_check_lost()
+		return
 	if is_fawn() and int(herd[di]["mother"]) >= 0:
 		var m: int = int(herd[di]["mother"])
 		if bool(herd[di]["separated"]):

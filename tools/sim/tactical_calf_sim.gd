@@ -2,7 +2,7 @@ extends "res://tools/sim/tactical_hunt_sim.gd"
 # Phase 2f 第 2 步：獵幼鹿（母鹿護幼）的校準。物種（SPECIES，預設 moose）的母鹿＋幼鹿，目標是幼鹿；
 # 狼（普通、快）× 母鹿體況，四種打法取最好的、交給本能；另外列：母鹿衝過來的場次、被母鹿踢中的場次與平均傷害。
 # 目標：對齊選單式 hunt_levels 的 juvenile（駝鹿：一般成年約 80%）；母駝鹿踢中的傷比白尾鹿、馬鹿重。
-# HERD=n（Phase 2f 第 3 步，野牛）：整群 n 隻成獸、CALVES 隻小牛（預設 2），目標是一隻小牛，成獸的體況都照那一欄。
+# CALF_ALONE=1：落單的幼獸、旁邊沒有成獸（2026-10-22）。HERD=n（Phase 2f 第 3 步，野牛）：整群 n 隻成獸、CALVES 隻小牛（預設 2），目標是一隻小牛，成獸的體況都照那一欄。
 # 用法：bash tools/run_sim.sh tactical_calf_sim 0 40；SPECIES=elk FAMILIES=open,edge；SPECIES=bison FAMILIES=open,river HERD=8
 const WINDS := ["headwind", "crosswind", "tailwind"]
 
@@ -33,7 +33,9 @@ func _process(_d) -> bool:
 				for fam in fams:
 					for i in runs:
 						var ctx := {"family": fam, "seed": i * 7919 + 17, "condition": cond, "wolf": wolves[wk].duplicate(), "wind_relation": WINDS[i % 3], "species": species, "season": "summer", "fawn": true}
-						if herd_n > 1:
+						if OS.get_environment("CALF_ALONE") != "":
+							ctx["herd"] = {"calf_alone": true}
+						elif herd_n > 1:
 							var conds: Array = []
 							for k in herd_n:
 								conds.append(cond)

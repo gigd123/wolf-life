@@ -551,7 +551,11 @@
         "weak": { "pounce": -0.15, "takedown": -0.2, "throat": -0.1 }
       },
       "guard_calves": true,
-      "defend": { "base": 0.1, "still_bonus": 0.04, "held_bonus": 0.06, "max_rounds": 3, "trigger": 2.5, "reach": 3.0, "break_bonus": 0.35, "damage": [10, 22] }
+      "herd_slack": 1.0,
+      "mother_slack": 0.0,
+      "mother_slack_dist": 8.0,
+      "herd_slack_dist": 4.0,
+      "defend": { "base": 0.12, "still_bonus": 0.04, "held_bonus": 0.08, "max_rounds": 5, "trigger": 2.5, "reach": 3.0, "break_bonus": 0.4, "damage": [10, 22] }
     },
     "bison_calf": {
       "name": "小野牛",
@@ -559,9 +563,11 @@
       "terrain_cost": { "w": 0.0 },
       "seek": { "terrain": "w", "per_cell": 1.0, "max_cells": 3, "end": 3.0 },
       "terrain_pounce": { "w": -0.15 },
-      "guarded": { "dist": 2.5, "pounce": -0.3 },
+      "guarded": { "dist": 2.5, "pounce": -0.35 },
+      "seek_herd": 3.0,
       "calf_flee": [3, 4, 4, 3, 3, 2],
-      "hold": { "takedown": -0.4, "throat": -0.3, "break": 0.3 },
+      "pounce": -0.35,
+      "hold": { "takedown": -0.6, "throat": -0.5, "break": 0.4 },
       "snow_slow": 2.0,
       "meat": 2
     }
@@ -592,7 +598,7 @@
   },
   "_game_comment": "Phase 2c 接進主遊戲（setup_from_game、GameState.finish_tactical_hunt）：animals 用戰術地圖的獵物；時間 = 戰術回合 ÷ round_div（進位，最多 max_turns 個遊戲回合）；交給本能之後撲咬、壓倒、咬喉 − instinct_penalty（比自己打約低一成）；age_scope = pounce：年齡減成只扣撲咬（咬住後交給已經隨年齡下降的力量、技巧，避免重複計算；使用者 2026-10-20 同意）；吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
   "_game_herd_comment": "Phase 2d 第 2 步：exclude_stages：這些生命階段照舊走選單（公馬鹿會站定，之後和駝鹿、野牛一起做）；species：主遊戲的動物 → 戰術的物種；herd_size：主遊戲遇到鹿群時，地圖上放幾隻成鹿；herd_calves：各季鹿群裡跟著幾隻小鹿。",
-  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison"], "herd_juvenile": ["bison"], "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison" }, "species_stage": { "elk": { "buck": "elk_bull" } }, "herd_size_stage": { "elk": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": {}, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
+  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison"], "herd_juvenile": ["bison"], "lone_calf_alone": { "bison": 0.3 }, "injured_tactical": ["bison"], "injured_wounds": 1, "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison" }, "species_stage": { "elk": { "buck": "elk_bull" } }, "herd_size_stage": { "elk": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": {}, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
   "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
   "maps": {
     "open_1": {

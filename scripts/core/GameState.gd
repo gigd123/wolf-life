@@ -3091,7 +3091,9 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 	# 公馬鹿照舊走選單（Phase 2d：會站定，之後和駝鹿、野牛一起做）
 	if hunt != null and (g.get("exclude_stages", {}).get(hunt.animal_id, []) as Array).has(hunt.life_stage):
 		return false
-	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.hiding
+	# 受傷的個體照舊走選單；game.injured_tactical 的物種（野牛，2026-10-22）帶著傷走戰術地圖
+	var injured_ok: bool = hunt != null and (g.get("injured_tactical", []) as Array).has(hunt.animal_id)
+	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and (not hunt.injured or injured_ok) and not hunt.hiding
 
 # 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
@@ -3107,7 +3109,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
 	# 一律成群的物種（野牛，Phase 2f 第 3 步）：獵小牛時也是整群，至少一隻小牛
 	var herd_juv: bool = (g.get("herd_juvenile", []) as Array).has(hunt.animal_id)
-	if size.size() == 2 and ((hunt.in_herd and hunt.life_stage != "juvenile") or (herd_juv and hunt.life_stage == "juvenile")):
+	if size.size() == 2 and hunt.in_herd and (hunt.life_stage != "juvenile" or herd_juv):
 		var conds: Array = [hunt.condition]
 		for i in RNGService.randi_range(int(size[0]), int(size[1])) - 1:
 			conds.append(hunt._pick_condition())
@@ -3115,6 +3117,11 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 		if hunt.life_stage == "juvenile":
 			calves = maxi(1, calves)
 		ctx["herd"] = {"conditions": conds, "calves": calves}
+	# 落單的幼獸（野牛 15% 落單時，game.lone_calf_alone 的機率旁邊沒有母親；其餘是一對母子）
+	elif hunt.life_stage == "juvenile" and RNGService.chance(float(g.get("lone_calf_alone", {}).get(hunt.animal_id, 0.0))):
+		ctx["herd"] = {"calf_alone": true}
+	if hunt.injured:
+		ctx["wounds"] = int(g.get("injured_wounds", 1))
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if hunt.life_stage == "juvenile":
