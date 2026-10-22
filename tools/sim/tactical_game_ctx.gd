@@ -308,7 +308,7 @@ func _process(_d) -> bool:
 	for i in 600:
 		if not gs.start_hunt("bison", "adult").in_herd:
 			lone += 1
-	_check(lone >= 60 and lone <= 120, "野牛約 15%% 落單（%d／600）" % lone)
+	_check(lone >= 45 and lone <= 100, "野牛約 12%% 落單（%d／600）" % lone)
 	var single_n := 0
 	var alone_n := 0
 	for i in 200:

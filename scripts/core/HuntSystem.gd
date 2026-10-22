@@ -887,7 +887,7 @@ static func roll_herd(p_animal_id: String, p_life_stage: String, p_injured: bool
 	var data: Dictionary = GameData.animals.get(p_animal_id, {})
 	if p_injured:
 		return false
-	# 一律成群的動物也可能落單（野牛 lone_chance，2026-10-22 使用者選 15%：獨行的公牛、老弱的一頭、一對母子）
+	# 一律成群的動物也可能落單（野牛 lone_chance，2026-10-22 使用者選 12%：獨行的公牛、老弱的一頭、一對母子）
 	if bool(data.get("herd", false)):
 		return not RNGService.chance(float(data.get("lone_chance", 0.0)))
 	if p_life_stage == "juvenile" or not data.has("herd_by_season"):
