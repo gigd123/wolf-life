@@ -181,6 +181,11 @@ func fish_once() -> void:
 		events.append(_tx("river.miss"))
 	_end_round()
 
+# 原地待一回合（不撲魚）
+func wait() -> void:
+	if not done:
+		_end_round()
+
 func leave() -> void:
 	if done:
 		return
