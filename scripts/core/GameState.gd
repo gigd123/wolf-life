@@ -786,6 +786,8 @@ func _maybe_lynx() -> bool:
 
 func start_lynx_combat() -> Combat:
 	var d: Dictionary = current_discovery
+	if bool(d.get("has_kill", false)):
+		_lynx_choice("fight")
 	clear_discovery()
 	var c := start_combat("lynx", "adult", "meet", {"location": str(d.get("location", ""))})
 	c.set_meta("lynx_kill", bool(d.get("has_kill", false)))
@@ -877,6 +879,52 @@ func resolve_small_pounce(go: bool) -> Dictionary:
 	Growth.learn(wolf, "skill", units * mult)
 	state_changed.emit()
 	return {"caught": caught, "gain": gain, "animal": str(d.get("animal", "")), "snow": bool(d.get("snow", false))}
+
+# 悄悄叼走猞猁的雪兔（Phase 2g 第 3 步，balance.lynx.sneak）：風險低但不一定成功；正面搶要打一場，贏了一定拿到。
+func lynx_sneak_chance() -> float:
+	var sc: Dictionary = _lynx_cfg().get("sneak", {})
+	var c: float = float(sc.get("base", 0.25)) + (wolf.effective_perception() + wolf.effective_skill() - float(sc.get("stat_offset", 65))) / float(sc.get("stat_divisor", 200.0))
+	return clampf(c, float(sc.get("min", 0.15)), float(sc.get("max", 0.7)))
+
+# 回傳 {success, gain, escape（失敗時牠躲去哪：thicket／tree／rocks）, damage（失敗時被抓的傷）}
+func lynx_sneak() -> Dictionary:
+	var d: Dictionary = current_discovery
+	var sc: Dictionary = _lynx_cfg().get("sneak", {})
+	var ok: bool = RNGService.chance(lynx_sneak_chance())
+	clear_discovery()
+	_lynx_choice("sneak")
+	GameTime.advance_turns(int(sc.get("turns", 1)))
+	var out := {"success": ok, "gain": 0.0, "escape": "", "damage": 0}
+	if ok:
+		var gain: float = float(_lynx_cfg().get("hare_value", 12))
+		_note_food("lynx_sneak", gain)
+		wolf.hunger += gain
+		out["gain"] = gain
+		var lc: Dictionary = life_log.get_or_add("lynx_choices", {})
+		lc["sneak_got"] = int(lc.get("sneak_got", 0)) + 1
+	else:
+		var esc: Dictionary = sc.get("escape", {})
+		var opts: Array = esc.get(str(d.get("location", "")), esc.get("default", ["thicket"]))
+		out["escape"] = str(opts[RNGService.randi_range(0, opts.size() - 1)])
+		if RNGService.chance(float(sc.get("swipe_chance", 0.1))):
+			var r: Array = sc.get("swipe_damage", [3, 8])
+			var dmg: int = RNGService.randi_range(int(r[0]), int(r[1]))
+			wolf.health = max(1.0, wolf.health - dmg)
+			out["damage"] = dmg
+	wolf.clamp_stats()
+	state_changed.emit()
+	return out
+
+func leave_lynx() -> void:
+	if bool(current_discovery.get("has_kill", false)):
+		_lynx_choice("leave")
+	clear_discovery()
+
+# 試玩紀錄：遇到有雪兔的猞猁時選了什麼（sneak 悄悄叼走、fight 正面搶、leave 離開）；拿到的食物在 food_by 的 lynx_sneak、lynx_steal
+func _lynx_choice(kind: String) -> void:
+	var lc: Dictionary = life_log.get_or_add("lynx_choices", {})
+	lc[kind] = int(lc.get(kind, 0)) + 1
+	record_decision("lynx." + kind)
 
 # 遷徙的足跡：秋季後半往低處、春季前段往高處
 func _maybe_migration_tracks() -> bool:
@@ -2722,6 +2770,8 @@ func metrics_summary() -> Dictionary:
 		"best_choice_by_context": (m.get("by_context", {}) as Dictionary).keys().map(func(k): return "%s %d次 最高%.2f 冒險%.2f" % [k, int(m["by_context"][k][0]),
 			float(m["by_context"][k][1]) / max(1, int(m["by_context"][k][0])), float(m["by_context"][k][2]) / max(1, int(m["by_context"][k][0]))]),
 		# 吃撐：一次平均幾個時段（Phase 2b 第 1 步，目標約 5～10 個時段＝1～2 天）
+		# 猞猁的雪兔（Phase 2g 第 3 步）：悄悄叼走／正面搶／離開的次數、叼到幾次、從猞猁拿到的食物
+		"lynx_choices": JSON.stringify(life_log.get("lynx_choices", {})) + " 食物 %.0f" % (float(life_log.get("food_by", {}).get("lynx_sneak", 0.0)) + float(life_log.get("food_by", {}).get("lynx_steal", 0.0))),
 		"gorged_avg_periods": snapped(float(m.get("gorged_periods", 0)) / max(1, int(m.get("gorged_spells", 0))), 0.1),
 		# 戰術狩獵：各年齡 場數、交給本能、自己撲的平均命中率（當下能選到的最高）、怎麼結束的
 		"tactical_detail": (m.get("tactical_detail", {}) as Dictionary).keys().map(func(k): return "%s %d場 本能%d 撲%d次 平均命中%.2f（可選最高%.2f） 結束%s 放棄%s" % [k,
@@ -3135,6 +3185,11 @@ func debug_pack_remains() -> void:
 	_debug_ensure_pack()
 	var zone: String = pack_zone(current_region)
 	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": 3, "zone": zone if zone != "" else "border"}
+
+# 猞猁咬著剛抓到的雪兔（Phase 2g 第 3 步：悄悄叼走、正面搶、離開）
+func debug_lynx_kill() -> void:
+	current_discovery = {"kind": "lynx", "location": _random_terrain(current_region), "has_kill": true, "known": is_identified("lynx")}
+	identify("lynx", false)
 
 # 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：這一區這一季有的就挑一種，沒有的話用田鼠
 func debug_small_pounce() -> void:

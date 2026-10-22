@@ -396,7 +396,11 @@
     "auto": { "max_age": 2.0, "min_stamina": 30 }
   },
   "lynx": { "regions": { "forest_north": 1.0, "forest_west": 0.5, "mountain_foothills": 0.8, "mountain_headwaters": 0.6, "tundra_south": 0.8 },
-    "chance": 0.04, "kill_chance": 0.5, "hare_value": 12 },
+    "chance": 0.04, "kill_chance": 0.5, "hare_value": 12,
+    "_sneak_comment": "悄悄叼走（Phase 2g 第 3 步）：成功率 = base +（感知 + 技巧 − stat_offset）÷ stat_divisor，夾在 min～max（約 1 歲 感知 50、技巧 45 → 40%；成年 60、60 → 53%）。花 turns 回合。成功：雪兔（hare_value）歸你，牠跳上樹，不打架。失敗：牠帶著雪兔離開（描述照地形 escape：密林 thicket、樹 tree、岩縫 rocks，沒列的地形用 default），只有失敗時 swipe_chance 被牠回頭抓一下（swipe_damage）。",
+    "sneak": { "base": 0.25, "stat_offset": 65, "stat_divisor": 200.0, "min": 0.15, "max": 0.7, "turns": 1, "swipe_chance": 0.1, "swipe_damage": [3, 8],
+      "escape": { "dense_forest": ["thicket", "tree"], "fallen_logs": ["thicket", "tree"], "stream": ["thicket", "tree"], "river_willow": ["thicket", "tree"],
+        "forest_edge": ["tree", "thicket"], "treeline": ["tree", "thicket"], "open_tundra": ["rocks", "thicket"], "rocky": ["rocks"], "scree": ["rocks"], "cliff": ["rocks"], "default": ["thicket", "tree"] } } },
   "_migration_comment": "季節遷徙（Phase 2 第 6 步）：秋季後半（autumn_from_day 之後）與春季前段（spring_until_day 之前），在這些區域探索時 track_chance 看到馬鹿、騾鹿遷徙的足跡，指向牠們要去的區域（regions）；可以跟著走。嚴冬的年份，秋季高山草甸的鹿 × severe_meadow_mult、山腳 × severe_foothills_mult（更早下山）。bison：野牛群每天 move_chance 換一區（herd_weights），在牠們那一區野牛 × here_mult、草原其他區 × elsewhere_mult，那一區的郊狼 × coyote_mult。",
   "migration": { "track_chance": 0.1, "autumn_from_day": 5, "spring_until_day": 6,
     "regions": { "autumn": { "mountain_meadow": "mountain_foothills", "mountain_canyon": "mountain_foothills", "mountain_headwaters": "mountain_foothills", "mountain_foothills": "forest_east" },

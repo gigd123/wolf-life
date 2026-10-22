@@ -302,10 +302,13 @@ func _explore_once() -> void:
 		GameState.resolve_small_pounce(GameState.wolf.age_years < float(spa.get("max_age", 2.0)) and GameState.wolf.stamina >= float(spa.get("min_stamina", 30)))
 		return
 	if d.get("kind", "") == "lynx":
-		if d.get("has_kill", false) and style != "cautious":
+		# 謹慎型悄悄叼走（Phase 2g 第 3 步），其他正面搶
+		if d.get("has_kill", false) and style == "cautious":
+			GameState.lynx_sneak()
+		elif d.get("has_kill", false):
 			play_combat(GameState.start_lynx_combat())
 		else:
-			GameState.clear_discovery()
+			GameState.leave_lynx()
 		return
 	if d.get("kind", "") == "cougar_ambush":
 		play_combat(GameState.start_cougar_ambush_combat())

@@ -203,6 +203,7 @@ debug.event.pack_meet,撞上黑狼一家
 debug.event.pack_young,落單的年輕狼
 debug.event.pack_remains,黑狼一家的殘骸
 debug.event.small_pounce,小撲（田鼠、地松鼠）
+debug.event.lynx_kill,猞猁（咬著雪兔）
 debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
@@ -1652,6 +1653,12 @@ lynx.kill.unknown,一隻耳尖有兩撮黑毛的灰色大貓正咬著一隻剛�
 lynx.kill.known,一隻猞猁正咬著一隻剛抓到的雪兔。牠看見你，耳朵往後一貼。
 lynx.drive_off,上前搶下牠的雪兔
 lynx.got_hare,牠丟下雪兔跳上樹逃走了，雪兔歸你。
+lynx.sneak,等牠分心，悄悄靠近叼走
+lynx.sneak.got,你壓低身子，等牠低頭撕咬時一點一點挪近。牠一抬頭，你已經叼起雪兔退開。牠嘶了一聲，跳上樹，沒有追來（飽食度 +{n}）。
+lynx.sneak.fail.thicket,你還差幾步，牠的耳朵一轉，叼起雪兔鑽進密林，不見了。
+lynx.sneak.fail.tree,你還差幾步，牠的耳朵一轉，叼著雪兔幾下就爬上樹，蹲在高處看著你。
+lynx.sneak.fail.rocks,你還差幾步，牠的耳朵一轉，叼起雪兔躲進岩塊間的縫隙。
+lynx.sneak.swipe,臨走前牠回身一掌，抓在你的臉上（血量 −{n}）。
 combat.stake.meet.lynx,牠叼著雪兔弓起背，低聲嘶吼，但眼睛在找退路。
 migration.tracks.autumn,地上一大片新鮮的鹿蹄印，全都朝著同一個方向——往{region}去了。天冷了，牠們在下山。
 migration.tracks.spring,泥地上一大片新鮮的鹿蹄印，全都朝著同一個方向——往{region}去了。雪在融，牠們在往高處走。

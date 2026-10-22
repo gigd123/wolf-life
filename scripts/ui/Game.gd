@@ -751,6 +751,12 @@ func _build_debug_overlay() -> void:
 		_show_discovery(GameState.current_discovery)
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
+		debug_overlay.visible = false
+		GameState.debug_lynx_kill()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.small_pounce"), func():
 		debug_overlay.visible = false
 		GameState.debug_small_pounce()
@@ -3515,7 +3521,7 @@ func _show_cougar(d: Dictionary) -> void:
 			_refresh())
 	encounter_overlay.visible = true
 
-# 猞猁（Phase 2 第 6 步）：看到牠；牠剛抓到雪兔時可以趕走牠搶下來。
+# 猞猁（Phase 2 第 6 步）：看到牠；牠剛抓到雪兔時可以趕走牠搶下來，或悄悄靠近叼走（Phase 2g 第 3 步）。
 func _show_lynx(d: Dictionary) -> void:
 	var text: String = tr("lynx.%s.%s" % ["kill" if d.get("has_kill", false) else "seen", "known" if d.get("known", false) else "unknown"])
 	_log(text)
@@ -3525,10 +3531,23 @@ func _show_lynx(d: Dictionary) -> void:
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	if d.get("has_kill", false):
+		# 悄悄叼走（Phase 2g 第 3 步）：不打架，失敗了牠帶著雪兔離開
+		_add_encounter_button(tr("lynx.sneak") + "　" + tr("chance_label.success") + " " + _chance_text(GameState.lynx_sneak_chance(), "lynx"), func():
+			var res: Dictionary = GameState.lynx_sneak()
+			var out: String = tr("lynx.sneak.got").replace("{n}", str(int(res["gain"]))) if res["success"] else tr("lynx.sneak.fail." + str(res["escape"]))
+			if int(res["damage"]) > 0:
+				out += tr("lynx.sneak.swipe").replace("{n}", str(int(res["damage"])))
+			_log(out)
+			encounter_message.text = out
+			_clear_children(encounter_buttons_box)
+			_add_encounter_button(tr("ui.continue"), func():
+				encounter_overlay.visible = false
+				_refresh())
+			_refresh())
 		_add_encounter_button(tr("lynx.drive_off"), func():
 			_begin_combat(GameState.start_lynx_combat(), "move"))
 	_add_encounter_button(tr("ui.leave"), func():
-		GameState.clear_discovery()
+		GameState.leave_lynx()
 		encounter_overlay.visible = false
 		_refresh())
 	encounter_overlay.visible = true
