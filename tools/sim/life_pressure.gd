@@ -10,15 +10,17 @@ extends SceneTree
 # 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
 # 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
 # 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時鹿類都用選單式狩獵（對照 Phase 2b）；
-# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）
+# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）；DENS_ONLY=forest_east 只從這些巢穴開始；NO_SALMON=1 沒有鮭魚洄流；SALMON_SET='{...}' 覆寫鮭魚的設定
 
 const STAGES := ["subadult", "adult", "elder"]
-const FOOD_CATS := ["大中型獵物", "小獵物", "殘骸撿食", "藏肉", "採集", "小撲", "猞猁的雪兔", "其他"]
+const FOOD_CATS := ["大中型獵物", "小獵物", "殘骸撿食", "藏肉", "採集", "小撲", "猞猁的雪兔", "鮭魚", "其他"]
 
 # 食物來源分類（Phase 2g 第 4 步）：kill:／carcass: 這類「來源:動物」依動物大小分；其他照名稱
 func _food_cat(src: String) -> String:
 	if src == "small_pounce":
 		return "小撲"
+	if src == "salmon":
+		return "鮭魚"
 	if src.begins_with("lynx"):
 		return "猞猁的雪兔"
 	if src.begins_with("cache:"):
@@ -87,13 +89,24 @@ func _process(_d):
 	var food := {"young": {}, "yearling": {}, "life": {}}
 	var sp_log := {"tries": 0, "caught": 0, "young_tries": 0} # 小撲
 	var lynx_log := {} # 猞猁的雪兔：選擇 -> 次數
+	var food_season := {} # 鮭魚（Phase 2h 第 5 步）：巢穴 -> 季節 -> [食物合計, 鮭魚]
+	var salmon_log := {} # life_log.salmon 的合計（trips、fish、warns、pushes、scraps、stands）
+	# DENS_ONLY=forest_east,...：只從這些巢穴開始（校準某一區的系統時用，例如鮭魚，Phase 2h 第 5 步）
+	# SALMON_SET='{"find": {...}}'：覆寫 balance.salmon 的部分設定（字典逐層合併；校準 Phase 2h 第 5 步用）
+	if OS.get_environment("SALMON_SET") != "":
+		_merge(GS.get_node("/root/GameData").balance["salmon"], JSON.parse_string(OS.get_environment("SALMON_SET")))
+	# NO_SALMON=1：沒有鮭魚洄流（對照 Phase 2h）
+	if OS.get_environment("NO_SALMON") != "":
+		GS.get_node("/root/GameData").balance["salmon"]["find"] = {}
+		GS.get_node("/root/GameData").balance["salmon"]["fishing_enabled"] = false
+	var dens: Array = Array(OS.get_environment("DENS_ONLY").split(",")) if OS.get_environment("DENS_ONLY") != "" else DENS
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
 		ap.cache = OS.get_environment("NO_CACHE") == ""
 		if OS.get_environment("TACTICAL_ONLY") != "":
 			ap.tactical_only = OS.get_environment("TACTICAL_ONLY").split(",")
-		ap.start(DENS[r % DENS.size()])
+		ap.start(dens[r % dens.size()])
 		var guard := 0
 		var dueled := {}
 		var sampled := {}
@@ -144,7 +157,22 @@ func _process(_d):
 			var t0 := int(GS.life_log.get("hunt_attempts", 0)); var w0 := int(GS.life_log.get("hunt_successes", 0))
 			var prey0: Dictionary = GS.life_log.get("prey_count", {}).duplicate()
 			var day0: int = root.get_node("GameTime").day
+			var fs0: String = root.get_node("GameTime").current_season()
+			var fb0: Dictionary = GS.life_log.get("food_by", {})
+			var ft0 := 0.0
+			for k in fb0.keys():
+				ft0 += float(fb0[k])
+			var sal0: float = float(fb0.get("salmon", 0.0))
 			ap.step(1)
+			var fb1: Dictionary = GS.life_log.get("food_by", {})
+			var ft1 := 0.0
+			for k in fb1.keys():
+				ft1 += float(fb1[k])
+			var fden: String = dens[r % dens.size()]
+			var fd: Dictionary = food_season.get_or_add(fden, {})
+			var fsv: Array = fd.get_or_add(fs0, [0.0, 0.0])
+			fsv[0] += ft1 - ft0
+			fsv[1] += float(fb1.get("salmon", 0.0)) - sal0
 			stuck = stuck + 1 if root.get_node("GameTime").day == day0 and GS.wolf.alive else 0
 			same_age = same_age + 1 if absf(GS.wolf.age_years - last_age) < 0.0001 else 0
 			last_age = GS.wolf.age_years
@@ -230,6 +258,8 @@ func _process(_d):
 			food["yearling"][cat] = float(food["yearling"].get(cat, 0.0)) + float(f2.get(src, 0.0)) - float(f1.get(src, 0.0))
 		sp_log["tries"] += int(GS.life_log.get("small_pounce", {}).get("tries", 0))
 		sp_log["caught"] += int(GS.life_log.get("small_pounce", {}).get("caught", 0))
+		for k in GS.life_log.get("salmon", {}).keys():
+			salmon_log[k] = int(salmon_log.get(k, 0)) + int(GS.life_log["salmon"][k])
 		for k in GS.life_log.get("lynx_choices", {}).keys():
 			lynx_log[k] = int(lynx_log.get(k, 0)) + int(GS.life_log["lynx_choices"][k])
 		deaths[GS.wolf.death_cause] = int(deaths.get(GS.wolf.death_cause, 0)) + 1
@@ -276,6 +306,19 @@ func _process(_d):
 				parts.append("%s %d%%" % [c, roundi(100.0 * float(food[fk][c]) / max(1.0, tot))])
 		print("  食物來源 %s（飽食度合計 %d）：%s" % [{"young": "未滿 1 歲", "yearling": "1～2 歲", "life": "一生"}[fk], roundi(tot), "、".join(parts)])
 	print("  小撲：%d 次（未滿 1 歲 %d）、撲到 %d；猞猁的雪兔：%s" % [sp_log["tries"], sp_log["young_tries"], sp_log["caught"], lynx_log])
+	# 鮭魚（Phase 2h）：各巢穴、各季食物裡鮭魚佔多少（目標 T2：住在有鮭魚區域的狼秋季 25～40%、全年 ≤ 10～15%）
+	var sline2 := "  鮭魚佔食物："
+	for den in food_season.keys():
+		var tot := [0.0, 0.0]
+		var parts: Array = []
+		for se in ["summer", "autumn"]:
+			var v: Array = food_season[den].get(se, [0.0, 0.0])
+			parts.append("%s %d%%" % [se, roundi(100.0 * float(v[1]) / max(1.0, float(v[0])))])
+		for se in food_season[den].keys():
+			tot[0] += float(food_season[den][se][0]); tot[1] += float(food_season[den][se][1])
+		sline2 += "%s（%s、全年 %d%%） " % [den, "、".join(parts), roundi(100.0 * tot[1] / max(1.0, tot[0]))]
+	print(sline2)
+	print("  鮭魚紀錄（合計）：%s" % salmon_log)
 	print("  黑狼家族（你在這個年齡時）：")
 	for a in pack_ages:
 		var pa: Dictionary = pack_at[a]
@@ -375,3 +418,10 @@ func _duel(GS, n: int) -> Array:
 			won += 1
 	GS.wolf = keep
 	return [n, won]
+
+func _merge(dst: Dictionary, src: Dictionary) -> void:
+	for k in src.keys():
+		if dst.has(k) and dst[k] is Dictionary and src[k] is Dictionary:
+			_merge(dst[k], src[k])
+		else:
+			dst[k] = src[k]

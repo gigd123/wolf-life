@@ -297,8 +297,17 @@ func _explore_once() -> void:
 		GameState.clear_discovery()
 		return
 	if d.get("kind", "") == "salmon":
-		# 鮭魚洄流（Phase 2h）：河岸的捕魚做好前（第 2 步）、自動玩家學會去河邊前（第 5 步）先離開
-		GameState.clear_discovery()
+		# 鮭魚洄流（Phase 2h 第 5 步）：餓了、體力夠才去河邊，照局勢換位，吃到 stop_at 就走；不硬撐
+		var sa: Dictionary = GameData.balance.get("salmon", {}).get("auto", {})
+		if GameState.salmon_fishing_enabled() and GameState.wolf.hunger < float(sa.get("go_below", 110)) and GameState.wolf.stamina >= float(sa.get("min_stamina", 20)):
+			var rf := GameState.start_salmon_fishing()
+			var guard := 0
+			while not rf.done and guard < 400:
+				guard += 1
+				RiverInstinct.step(rf, "adaptive", float(sa.get("stop_at", 130)))
+			GameState.finish_salmon_fishing(rf)
+		else:
+			GameState.clear_discovery()
 		return
 	if d.get("kind", "") == "small_pounce":
 		# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：未滿 2 歲、體力夠才撲（練習），成年後不理

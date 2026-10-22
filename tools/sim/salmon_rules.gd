@@ -1,6 +1,6 @@
 extends SceneTree
 # 鮭魚洄流季（Phase 2h）的回歸測試。第 1 步：
-#   1. 強度照季節與天數（夏季 6～10 初期、秋季 1～4 高峰、5～8 衰退、其他沒有），只在森林北部、森林東部、山地源頭
+#   1. 強度照季節與天數（夏季 8～10 初期、秋季 1～3 高峰、4～6 衰退、其他沒有；第 5 步校準後），只在森林北部、森林東部、山地源頭
 #   2. 探索時的線索：只在有洄流的區域與日子；守在水邊比一般探索常見；高峰期比初期常見；地點是水邊；是值得停下的發現
 #   3. 線索的種類照強度；文字都有翻譯、衰退期的「已經稀了」只在衰退期
 #   4. 鮭魚溪地圖族 3 張，每張都有好、普通、差的淺灘，fish 層只在淺灘上
@@ -29,8 +29,8 @@ func _run() -> void:
 	gs.new_game("forest_east")
 	gs.pending_events.clear()
 	# 1. 強度
-	var cases := [["spring", 5, ""], ["summer", 5, ""], ["summer", 6, "early"], ["summer", 10, "early"], ["autumn", 1, "peak"], ["autumn", 4, "peak"],
-		["autumn", 5, "decline"], ["autumn", 8, "decline"], ["autumn", 9, ""], ["winter", 2, ""]]
+	var cases := [["spring", 5, ""], ["summer", 7, ""], ["summer", 8, "early"], ["summer", 10, "early"], ["autumn", 1, "peak"], ["autumn", 3, "peak"],
+		["autumn", 4, "decline"], ["autumn", 6, "decline"], ["autumn", 7, ""], ["winter", 2, ""]]
 	for c in cases:
 		_at(c[0], c[1])
 		_check(gs.salmon_stage("forest_east") == c[2], "%s 第 %d 天：%s（%s）" % [c[0], c[1], c[2], gs.salmon_stage("forest_east")])
@@ -48,7 +48,7 @@ func _run() -> void:
 			gs.wolf.stamina = 100.0; gs.wolf.hunger = 100.0; gs.wolf.health = gs.wolf.health_max
 			gs.current_region = "forest_east" if k[0] != "none" else "forest_west"
 			if k[0] == "early":
-				_at("summer", 7)
+				_at("summer", 9)
 			else:
 				_at("autumn", 2)
 			gs.clear_discovery(); gs.pending_events.clear()
@@ -166,8 +166,8 @@ func _run() -> void:
 							bad_place += 1
 			if r._bear_threat_dist(r.wolf_pos) <= 0:
 				bad_place += 1
-	_check(counts_b["early"].max() <= 1 and counts_b["peak"].min() >= 1 and counts_b["peak"].max() <= 2 and counts_b["bears"].min() >= 2 and counts_b["bear"].min() >= 1,
-		"開場的頭數：初期 0～1、高峰 1～2、「好幾頭灰熊」2～3、「灰熊在捕魚」至少 1")
+	_check(counts_b["early"].max() <= 1 and counts_b["peak"].min() >= 2 and counts_b["peak"].max() <= 3 and counts_b["bears"].min() >= 3 and counts_b["bear"].min() >= 1,
+		"開場的頭數：初期 0～1、高峰 2～3、「好幾頭灰熊」3～4、「灰熊在捕魚」至少 1（%s）" % [[counts_b["peak"].min(), counts_b["peak"].max(), counts_b["bears"].min()]])
 	_check(bad_place == 0, "熊都站在有魚的淺灘、大熊彼此 2 格以上、小熊離大熊 3 格以上、狼開場不在威嚇範圍內（不對的 %d）" % bad_place)
 	var rb = RF_new()
 	rb.setup({"stage": "peak", "clue": "bears", "seed": 77, "hunger": 60.0, "cfg": cfg})

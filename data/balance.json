@@ -383,15 +383,15 @@
   "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
     "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
   "_lynx_comment": "加拿大猞猁（Phase 2 第 6 步）：北方森林、山腳、林線的獨行貓科，主食雪兔，很少和狼衝突、多半退讓。探索時 chance × 區域倍率 × 這一年的雪兔倍率（雪兔低谷年猞猁變少）看到牠；kill_chance 的機率牠剛抓到一隻雪兔，可以把牠趕走、搶下雪兔（hare_value）。",
-  "_salmon_comment": "鮭魚洄流季（Phase 2h，SPEC「Phase 2h」、docs/proposals/salmon-run.md）。regions：有洄流的區域。stages：依季節與天數的強度（early 初期、peak 高峰、decline 衰退；沒列到的日子沒有）。發現：在這些區域探索時，依強度 × 探索方式擲 find（守在水邊多），取代這次的一般探索結果（是值得停下的發現）；線索依強度挑 clues 的權重。fishing_enabled：河岸的捕魚做好前（第 2 步）不顯示「到河邊捕魚」，線索的機率 × find_mult_disabled（只能看、不能捕的線索會取代一般的探索結果，先少一點）。",
+  "_salmon_comment": "鮭魚洄流季（Phase 2h，SPEC「Phase 2h」、docs/proposals/salmon-run.md；第 5 步一生模擬校準：洄流 13 → 9 天、高峰期的熊 1～2 → 2～3 頭、後到 3% → 5%、線索的機率 ×0.3——住在森林東部的狼秋季食物 77% → 29% 來自鮭魚）。regions：有洄流的區域。stages：依季節與天數的強度（early 初期、peak 高峰、decline 衰退；沒列到的日子沒有）。發現：在這些區域探索時，依強度 × 探索方式擲 find（守在水邊多），取代這次的一般探索結果（是值得停下的發現）；線索依強度挑 clues 的權重。fishing_enabled：河岸的捕魚做好前（第 2 步）不顯示「到河邊捕魚」，線索的機率 × find_mult_disabled（只能看、不能捕的線索會取代一般的探索結果，先少一點）。",
   "salmon": {
     "regions": ["forest_north", "forest_east", "mountain_headwaters"],
     "stages": [
-      { "season": "summer", "from": 6, "to": 10, "stage": "early" },
-      { "season": "autumn", "from": 1, "to": 4, "stage": "peak" },
-      { "season": "autumn", "from": 5, "to": 8, "stage": "decline" }
+      { "season": "summer", "from": 8, "to": 10, "stage": "early" },
+      { "season": "autumn", "from": 1, "to": 3, "stage": "peak" },
+      { "season": "autumn", "from": 4, "to": 6, "stage": "decline" }
     ],
-    "find": { "early": 0.15, "peak": 0.3, "decline": 0.2 },
+    "find": { "early": 0.04, "peak": 0.09, "decline": 0.06 },
     "find_mode_mult": { "trail": 1.0, "ridge": 0.5, "water": 2.0, "border": 0.7 },
     "clues": {
       "early": { "shadows": 3, "bones": 1 },
@@ -399,12 +399,14 @@
       "decline": { "spawned": 3, "bones": 2, "bear": 1 }
     },
     "fishing_enabled": true, "find_mult_disabled": 0.3,
+    "_auto_comment": "自動玩家、照常過日子（Phase 2h 第 5 步）：看到洄流的線索時，飽食度 < go_below、體力 ≥ min_stamina 才去河邊；用照局勢換位的打法（RiverInstinct adaptive），吃到 stop_at 就走；不硬撐。",
+    "auto": { "go_below": 110, "min_stamina": 20, "stop_at": 130 },
     "_river_comment": "河岸模式（Phase 2h 第 2 步，scripts/core/RiverFishing.gd）：一個戰術回合可以移動（最多 move_range 格的地形代價；吃撐時少 gorged_move_less）或在淺灘上撲一次魚。撲魚成功率 = catch[淺灘的魚量 1～3] × stage_mult[強度]；撲到就吃（飽食度 +fish_value，邊捕邊吃），飽食度到 hunger_max 就吃不下。每撲一次體力 −fish_stamina。rounds_per_turn 個戰術回合 = 1 個遊戲回合；最多待 max_rounds 個戰術回合（約一天）就離開。",
     "river": { "move_range": 4.0, "gorged_move_less": 1.0, "catch": { "1": 0.12, "2": 0.25, "3": 0.4 }, "stage_mult": { "early": 0.5, "peak": 1.0, "decline": 0.5 },
       "fish_value": 5, "fish_stamina": 1.0, "rounds_per_turn": 8, "max_rounds": 160,
       "_bears_comment": "灰熊（Phase 2h 第 3 步）：開場的頭數照強度 start（線索是「好幾頭灰熊」時 start_clue_bears，「灰熊在捕魚」時至少 1）；big_share 是大熊的比例。每個戰術回合依強度 arrive 的機率從地圖左右兩端來一頭（最多 max 頭），正在捕魚的熊每回合 leave 的機率離開。大熊走向魚最多、離其他大熊 2 格以上的淺灘；小熊挑離大熊 3 格以上的空位（大熊靠近就讓開）。熊每回合走 speed 格。威嚇：你在大熊 radius.big、小熊 radius.small 格內（直線格數）時牠威嚇你（這時不能撲魚）；下一回合你還在範圍內就衝過來把你趕到範圍外。硬撐不走＝灰熊遭遇（現有的戰鬥）。熊吃剩的魚：捕魚的熊每回合 discard 的機率、離開時 leave_discard 的機率丟一條在旁邊的岸上，走上去就吃（leftover_value），最多 max_leftovers 條。",
-      "bears": { "start": { "early": [0, 1], "peak": [1, 2], "decline": [0, 1] }, "start_clue_bears": [2, 3], "big_share": 0.5,
-        "arrive": { "early": 0.01, "peak": 0.03, "decline": 0.015 }, "max": 4, "leave": 0.012, "speed": 3,
+      "bears": { "start": { "early": [0, 1], "peak": [2, 3], "decline": [1, 2] }, "start_clue_bears": [3, 4], "big_share": 0.5,
+        "arrive": { "early": 0.015, "peak": 0.05, "decline": 0.025 }, "max": 4, "leave": 0.012, "speed": 3,
         "radius": { "big": 2, "small": 1 },
         "discard": { "early": 0.0, "peak": 0.03, "decline": 0.02 }, "leave_discard": 0.5, "leftover_value": 8, "max_leftovers": 4 } }
   },
