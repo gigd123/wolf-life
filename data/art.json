@@ -14,6 +14,10 @@
       "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 }, "poses": { "herd": "res://assets/art/sprites/animals/bighorn_ram_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bighorn_lamb_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "marmot": { "display_scale": {"adult": 0.6, "juvenile": 0.5}, "_comment": "佔位圖：河狸換色（tools/make_marmot_sheet.py，Phase 2g）",
+      "adult": { "sheet": "res://assets/art/sprites/animals/marmot_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/marmot_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
     "beaver": { "display_scale": {"adult": 0.711, "juvenile": 0.64},
       "adult": { "sheet": "res://assets/art/sprites/animals/beaver_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/beaver_young_sheet.png", "rows": { "idle": 0, "move": 1 } }
@@ -354,7 +358,7 @@
   "overlay_background_dim": 0.4,
   "_tactical_comment": "戰術地圖（Phase 2c）：程式畫的佔位圖（tools/make_tactical_art.py），每格 14×14。動物是 8 個方向的橫條（順序同 TacticalHunt.DIRS：右、右下、下、左下、左、左上、上、右上）；地塊依格子的地形挑一張（多張時依座標輪替）。",
   "tactical": {
-    "sprites": { "wolf": "res://assets/art/tactical/wolf.png", "deer": "res://assets/art/tactical/deer.png", "fawn": "res://assets/art/tactical/fawn.png", "elk": "res://assets/art/tactical/elk.png", "mule_deer": "res://assets/art/tactical/mule_deer.png", "caribou": "res://assets/art/tactical/caribou.png", "elk_bull": "res://assets/art/tactical/elk_bull.png", "moose": "res://assets/art/tactical/moose.png", "moose_calf": "res://assets/art/tactical/moose_calf.png", "bison": "res://assets/art/tactical/bison.png", "bison_calf": "res://assets/art/tactical/bison_calf.png", "beaver": "res://assets/art/tactical/beaver.png", "beaver_kit": "res://assets/art/tactical/beaver_kit.png", "pronghorn": "res://assets/art/tactical/pronghorn.png", "pronghorn_kid": "res://assets/art/tactical/pronghorn_kid.png", "bighorn_sheep": "res://assets/art/tactical/bighorn_sheep.png", "bighorn_ram": "res://assets/art/tactical/bighorn_ram.png", "bighorn_sheep_calf": "res://assets/art/tactical/bighorn_sheep_calf.png", "hare": "res://assets/art/tactical/hare.png", "hare_young": "res://assets/art/tactical/hare_young.png", "snowshoe_hare": "res://assets/art/tactical/snowshoe_hare.png", "snowshoe_hare_young": "res://assets/art/tactical/snowshoe_hare_young.png", "snowshoe_hare_winter": "res://assets/art/tactical/snowshoe_hare_winter.png", "snowshoe_hare_young_winter": "res://assets/art/tactical/snowshoe_hare_young_winter.png" },
+    "sprites": { "wolf": "res://assets/art/tactical/wolf.png", "deer": "res://assets/art/tactical/deer.png", "fawn": "res://assets/art/tactical/fawn.png", "elk": "res://assets/art/tactical/elk.png", "mule_deer": "res://assets/art/tactical/mule_deer.png", "caribou": "res://assets/art/tactical/caribou.png", "elk_bull": "res://assets/art/tactical/elk_bull.png", "moose": "res://assets/art/tactical/moose.png", "moose_calf": "res://assets/art/tactical/moose_calf.png", "bison": "res://assets/art/tactical/bison.png", "bison_calf": "res://assets/art/tactical/bison_calf.png", "beaver": "res://assets/art/tactical/beaver.png", "beaver_kit": "res://assets/art/tactical/beaver_kit.png", "pronghorn": "res://assets/art/tactical/pronghorn.png", "pronghorn_kid": "res://assets/art/tactical/pronghorn_kid.png", "bighorn_sheep": "res://assets/art/tactical/bighorn_sheep.png", "bighorn_ram": "res://assets/art/tactical/bighorn_ram.png", "bighorn_sheep_calf": "res://assets/art/tactical/bighorn_sheep_calf.png", "hare": "res://assets/art/tactical/hare.png", "hare_young": "res://assets/art/tactical/hare_young.png", "snowshoe_hare": "res://assets/art/tactical/snowshoe_hare.png", "snowshoe_hare_young": "res://assets/art/tactical/snowshoe_hare_young.png", "snowshoe_hare_winter": "res://assets/art/tactical/snowshoe_hare_winter.png", "snowshoe_hare_young_winter": "res://assets/art/tactical/snowshoe_hare_young_winter.png", "marmot": "res://assets/art/tactical/marmot.png", "marmot_young": "res://assets/art/tactical/marmot_young.png" },
     "tiles": {
       ".": ["res://assets/art/tactical/tile_open_0.png", "res://assets/art/tactical/tile_open_1.png", "res://assets/art/tactical/tile_open_2.png"],
       "f": ["res://assets/art/tactical/tile_forest_0.png", "res://assets/art/tactical/tile_forest_1.png"],
@@ -363,6 +367,7 @@
       "s": ["res://assets/art/tactical/tile_shallow_0.png", "res://assets/art/tactical/tile_shallow_1.png"],
       "d": ["res://assets/art/tactical/tile_deep_0.png", "res://assets/art/tactical/tile_deep_1.png"],
       "c": ["res://assets/art/tactical/tile_cliff_0.png", "res://assets/art/tactical/tile_cliff_1.png"],
+      "b": ["res://assets/art/tactical/tile_burrow_0.png"],
       "l": ["res://assets/art/tactical/tile_logs_0.png"]
     }
   }

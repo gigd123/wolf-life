@@ -2,9 +2,9 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf,hare,hare_young,snowshoe_hare(_young)(_winter)}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf,hare,hare_young,snowshoe_hare(_young)(_winter),marmot,marmot_young}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
-- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1,cliff_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸；cliff 峭壁，大角羊）。
+- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1,cliff_0..1,burrow_0}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸；cliff 峭壁，大角羊；burrow 洞口，旱獺）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
 
 用法：python3 tools/make_tactical_art.py
@@ -176,6 +176,19 @@ HARE = _hare("#8a7458", "#5a4a38", "#f2ead8")
 SNOWSHOE = _hare("#7a5e44", "#4e3c2c", "#f2ead8")
 SNOWSHOE_WINTER = _hare("#f4f4ee", "#2a2622", "#ffffff")  # 冬季：白毛、耳尖黑
 
+MARMOT = [  # 黃腹旱獺（Phase 2g）：胖胖的灰褐身體、蓬鬆的短尾巴、深色的頭
+    ("ellipse", "#5e4632", (3.4, 7, 1.4, 1.0)),           # 尾巴
+    ("ellipse", "#8a6a48", (7.0, 7, 3.0, 2.4)),           # 身體
+    ("ellipse", "#a07c56", (6.6, 7, 2.0, 1.2)),           # 背上較淺的毛
+    ("ellipse", "#4e3a2a", (10.2, 7, 1.3, 1.2)),          # 頭
+    ("ellipse", "#e8dcc4", (11.2, 7, 0.4, 0.5)),          # 鼻口的淡色
+]
+MARMOT_YOUNG = [  # 幼獺：小一號
+    ("ellipse", "#5e4632", (4.4, 7, 1.0, 0.8)),
+    ("ellipse", "#957452", (7.4, 7, 2.2, 1.8)),
+    ("ellipse", "#54402e", (9.8, 7, 1.0, 0.95)),
+]
+
 
 def _rot(x, y, ang):
     dx, dy = x - 7.0, y - 7.0
@@ -328,6 +341,17 @@ def tile_cliff(seed):
     return img
 
 
+def tile_burrow(seed):
+    """洞口（旱獺，Phase 2g）：碎石邊的黑洞、外圍一圈挖出來的土"""
+    img = tile_open(seed + 900)
+    d = ImageDraw.Draw(img)
+    d.ellipse([2, 4, 12, 12], fill="#8a7458")   # 挖出來的土
+    d.ellipse([4, 6, 10, 11], fill="#1a140e")   # 洞
+    d.ellipse([3, 1, 7, 5], fill="#9a968c")      # 旁邊的岩塊
+    d.line([(3, 4), (7, 4)], fill="#5e5b54")
+    return img
+
+
 def _save(name, img):
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(OUT_4X, exist_ok=True)
@@ -360,6 +384,8 @@ def main():
     make_sprite("snowshoe_hare_young", _hare("#8a6e54", "#5e4c3c", "#f2ead8", 0.75), "#2a2018")
     make_sprite("snowshoe_hare_winter", SNOWSHOE_WINTER, "#6a6a66")
     make_sprite("snowshoe_hare_young_winter", _hare("#f4f4ee", "#2a2622", "#ffffff", 0.75), "#6a6a66")
+    make_sprite("marmot", MARMOT, "#2a2018")
+    make_sprite("marmot_young", MARMOT_YOUNG, "#2a2018")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):
@@ -373,6 +399,7 @@ def main():
         _save("tile_shallow_%d" % i, tile_shallow(i))
         _save("tile_deep_%d" % i, tile_deep(i))
         _save("tile_cliff_%d" % i, tile_cliff(i))
+    _save("tile_burrow_0", tile_burrow(0))
     print("完成：", sorted(os.listdir(OUT)))
 
 

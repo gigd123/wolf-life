@@ -452,6 +452,7 @@ explore.clue.sight,{location}，你看見一隻{animal}
 explore.clue.sight_herd,{location}，你看見一小群{animal}
 explore.gather,{location}，你發現了{item}
 explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
+explore.hibernating.marmot,{location}的岩塊下有幾個洞口，都被雪封住了。旱獺在洞裡冬眠，要等春天才會出來。
 explore.feature,{location}，你發現了{feature}
 explore.fresh,新鮮的
 explore.stale,陳舊的
@@ -1556,13 +1557,20 @@ prey_name.bighorn_sheep.juvenile,小羊
 animal.beaver,河狸
 prey_name.beaver.adult,河狸
 prey_name.beaver.juvenile,小河狸
+animal.marmot,旱獺
+prey_name.marmot.adult,旱獺
+prey_name.marmot.juvenile,幼獺
 prey_style.climber,牠一被追就往岩壁跑，在石頭上跳得比你穩得多。
 factor.refuge_near.cliff,牠離岩壁很近
 factor.refuge_far.cliff,牠離岩壁很遠
 factor.refuge_near.water,牠就在水邊
 factor.refuge_far.water,牠離水很遠
+factor.refuge_near.burrow,牠就在洞口邊
+factor.refuge_far.burrow,牠離洞口很遠
 explore.sign.gnawed,被啃斷的樹（樹樁上滿是牙印）
+explore.sign.burrow_mound,岩塊下的洞口（外面堆著新挖的土）
 hunt.refuge.water,水面一響，牠已經鑽進水裡，只剩一圈圈的漣漪。
+hunt.refuge.burrow,牠一縮身鑽進岩塊下的洞，洞裡傳出一聲尖銳的叫聲。
 animal.cougar,美洲獅
 animal.black_bear,黑熊
 cougar.ambush.unknown,一道黃褐色的影子從岩石上撲下來，爪子劃過你的背！你損失了 {n} 點血量。
@@ -1683,6 +1691,7 @@ reason.terrain_treeline,稀疏的樹擋不住你的身影。
 reason.terrain_river_willow,柳叢太密，你衝不進去。
 reason.refuge_near_cliff,牠離岩壁太近，一轉身就上去了。
 reason.refuge_near_water,牠就在水邊，一轉身就下了水。
+reason.refuge_near_burrow,牠就在洞口邊，一縮身就進了洞。
 reason.worn_teeth,牙齒磨鈍了，咬不住。
 reason.herd_eyes,鹿群裡總有一雙眼睛看見了你。
 reason.condition_healthy,{animal}正健壯，你追不上。
@@ -1731,6 +1740,7 @@ tactical.factor.neck,咬在頸部
 tactical.factor.break,牠掙脫的機會
 tactical.kick.rear,牠的後腿踢中了你（血量 −{n}）。
 tactical.kick.hoof,牠的蹄子踢中了你（血量 −{n}）。
+tactical.kick.bite,牠回頭狠狠咬了你一口（血量 −{n}）。
 tactical.bite.rear,你從後方咬住了{animal}的後腿！
 tactical.bite.side,你從側面咬住了{animal}！
 tactical.bite.front,你正面咬住了{animal}的脖子！
@@ -1749,6 +1759,7 @@ tactical.caught.throat,你咬住牠的咽喉，牠倒了下去。
 tactical.struggle.takedown,牠還在掙扎。
 tactical.struggle.throat,沒咬到要害，牠猛力一甩。
 tactical.struggle_kick,掙扎中牠踢中了你（血量 −{n}）。
+tactical.struggle_bite,掙扎中牠扭頭咬了你一口（血量 −{n}）。
 tactical.broke_free,{animal}掙脫了，帶著傷逃跑！
 tactical.scatter,你衝進鹿群，鹿群分成幾群，往不同方向逃開！
 tactical.look,{animal}抬起頭，朝你這邊張望。
@@ -1778,6 +1789,8 @@ tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
 tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。
 tactical.cliff,{animal}幾個跳躍就上了峭壁，你上不去。
+tactical.factor.refuge_near,牠就在洞口邊
+tactical.burrow,{animal}一溜煙鑽進岩縫下的洞，洞裡傳出一聲尖叫。
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
@@ -1865,6 +1878,8 @@ tactical.label.bison,野牛
 tactical.label.bison_calf,小野牛
 tactical.label.beaver,河狸
 tactical.label.beaver_kit,小河狸
+tactical.label.marmot,旱獺
+tactical.label.marmot_young,幼獺
 tactical.label.pronghorn,叉角羚
 tactical.label.pronghorn_kid,小叉角羚
 tactical.label.bighorn_ewe,母羊

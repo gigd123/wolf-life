@@ -465,6 +465,89 @@ func _process(_d) -> bool:
 	var hy = gs.start_tactical(gs.start_hunt("snowshoe_hare", "juvenile"))
 	_check(hy.herd.size() == 1 and str(hy.herd[0]["species"]) == "snowshoe_hare_young", "小雪兔單獨出場")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
+	# 旱獺（Phase 2g）：走戰術地圖（岩坡草甸）、單隻、離洞口近 1～2 格或遠 4～7 格、狼在 5～8 格外、沒察覺時不動；
+	# 洞口邊很難撲（擋在洞口那一側就不算）、撲空時就在洞口邊會一縮進洞、狼站在洞口上牠就換下一個洞；冬季探索看得到「洞口被雪封住」
+	gs.new_game("mountain_canyon")
+	gs.wolf.age_years = 2.5
+	_check(gs.tactical_eligible(gs.start_hunt("marmot", "adult")) and gs.tactical_eligible(gs.start_hunt("marmot", "juvenile")), "旱獺、幼獺走戰術地圖")
+	var mnear := 0
+	var mfar := 0
+	var mstart := 0
+	for i in 40:
+		var mmh = gs.start_hunt("marmot", "adult", -1, false, "scree")
+		var mmth = gs.start_tactical(mmh)
+		var mhd := 99
+		for my in mmth.height:
+			for mx in mmth.width:
+				if mmth.terrain(Vector2i(mx, my)) == "b":
+					mhd = mini(mhd, mmth._cheb(Vector2i(mx, my), mmth.deer_pos))
+		_check(mmth.herd.size() == 1 and str(mmth.herd[0]["species"]) == "marmot" and mhd < 99, "旱獺單獨一隻、地圖上有洞口")
+		if mmh.refuge_near and mhd >= 1 and mhd <= 2:
+			mnear += 1
+		elif not mmh.refuge_near and mhd >= 4 and mhd <= 7:
+			mfar += 1
+		var mmd: float = mmth.dist(mmth.wolf_pos, mmth.deer_pos)
+		if mmd >= 4.5 and mmd <= 8.5 and mmth.terrain(mmth.wolf_pos) != "b":
+			mstart += 1
+	_check(mnear + mfar >= 36, "旱獺離洞口的距離照近／遠（近 %d、遠 %d／40）" % [mnear, mfar])
+	_check(mstart >= 36, "狼開局在旱獺 5～8 格外、不在洞口上（%d／40）" % mstart)
+	var mmyh = gs.start_tactical(gs.start_hunt("marmot", "juvenile"))
+	_check(mmyh.herd.size() == 1 and str(mmyh.herd[0]["species"]) == "marmot_young", "幼獺單獨出場")
+	var mmz = gs.start_tactical(gs.start_hunt("marmot", "adult"))
+	var mmp0: Vector2i = mmz.deer_pos
+	mmz.di = mmz.target
+	for i in 5:
+		mmz._deer_wander()
+	_check(mmz.deer_pos == mmp0, "沒察覺的旱獺不動")
+	# 洞口邊：狼從洞口的另一側衝過去 → 有「牠就在洞口邊」；狼已經站在洞口上 → 沒有
+	var mmr = gs.start_tactical(gs.start_hunt("marmot", "adult"))
+	var mhole: Vector2i = mmr._open_hole(mmr.deer_pos)
+	var mspot := Vector2i(-1, -1)
+	for d in mmr.DIRS:
+		var c: Vector2i = mhole + d
+		if mmr.in_bounds(c) and mmr.terrain(c) in [".", "r"] and mspot.x < 0:
+			mspot = c
+	mmr.herd[0]["pos"] = mspot
+	var maway: Vector2i = mspot + (mspot - mhole) * 3
+	maway = Vector2i(clampi(maway.x, 0, mmr.width - 1), clampi(maway.y, 0, mmr.height - 1))
+	mmr.wolf_pos = maway
+	var mhas_rp := func(info: Dictionary) -> bool:
+		for fc in info["factors"]:
+			if str(fc[0]) == "牠就在洞口邊":
+				return true
+		return false
+	_check(mhas_rp.call(mmr.pounce_chance("still")), "旱獺在洞口邊、你從另一側：撲咬有「牠就在洞口邊」")
+	mmr.wolf_pos = mhole
+	_check(not mhas_rp.call(mmr.pounce_chance("still")), "你站在洞口上：沒有「牠就在洞口邊」")
+	_check(mmr._open_hole(mspot) != mhole, "你站在洞口上：牠改找下一個洞")
+	mmr.wolf_pos = maway
+	mmr.di = mmr.target
+	_check(mmr._refuge_dive() and mmr.done and mmr.result == "escaped" and str(mmr.reason).contains("洞"), "撲空時就在洞口邊：一縮進洞")
+	var mmf = gs.start_tactical(gs.start_hunt("marmot", "adult"))
+	mmf.deer_state = "flee"
+	var fhole: Vector2i = mmf._open_hole(mmf.deer_pos)
+	var fspot := Vector2i(-1, -1)
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if mmf.in_bounds(fhole + d * 2) and mmf.terrain(fhole + d * 2) in [".", "r"] and mmf.terrain(fhole + d) in [".", "r"] and fspot.x < 0:
+			fspot = fhole + d * 2
+	mmf.herd[0]["pos"] = fspot
+	var fdir: Vector2i = (fspot - fhole) / 2
+	mmf.wolf_pos = Vector2i(clampi(fspot.x + fdir.x * 3, 0, mmf.width - 1), clampi(fspot.y + fdir.y * 3, 0, mmf.height - 1))
+	mmf.di = mmf.target
+	mmf._deer_flee()
+	_check(mmf.done and mmf.result == "escaped" and str(mmf.reason).contains("洞"), "逃跑的旱獺一跑到洞口就鑽進去")
+	# 冬眠：冬季在有旱獺的區域，什麼都沒發現的結果有時改成「洞口被雪封住」；夏季不會
+	var ES = load("res://scripts/core/ExploreSystem.gd")
+	var mmreg: Dictionary = root.get_node("GameData").regions().get("mountain_meadow", {})
+	var mhib_w := 0
+	var mhib_s := 0
+	for i in 60:
+		if ES._hibernate_hint({"kind": "nothing", "location": "scree"}, mmreg, "winter").has("hibernating"):
+			mhib_w += 1
+		if ES._hibernate_hint({"kind": "nothing", "location": "scree"}, mmreg, "summer").has("hibernating"):
+			mhib_s += 1
+	_check(mhib_w > 5 and mhib_s == 0, "冬季探索看得到旱獺冬眠的洞口、夏季不會（%d／%d）" % [mhib_w, mhib_s])
+	_check(TranslationServer.translate("explore.hibernating.marmot") != "explore.hibernating.marmot", "冬眠的文字有翻譯")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true

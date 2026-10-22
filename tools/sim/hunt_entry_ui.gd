@@ -20,6 +20,7 @@ func _run() -> void:
 		["moose", "adult", true], ["moose", "juvenile", true], ["bison", "adult", true], ["bison", "juvenile", true],
 		["beaver", "adult", true], ["beaver", "juvenile", true], ["pronghorn", "adult", true], ["pronghorn", "juvenile", true],
 		["bighorn_sheep", "adult", true], ["bighorn_sheep", "buck", true], ["bighorn_sheep", "juvenile", true],
+		["marmot", "adult", true], ["marmot", "juvenile", true],
 		["hare", "adult", true], ["snowshoe_hare", "adult", true], ["snowshoe_hare", "juvenile", true]]
 	for entry in ["sight", "begin"]:
 		for c in cases:

@@ -254,7 +254,7 @@ func _process(_d):
 		if n > 0:
 			print("  戰術狩獵（鹿類）%-8s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f" % [st, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n),
 				roundi(100.0 * ok / max(1, n - gave)), float(tac_st.get(st, 0)) / n])
-	for sp in ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "hare", "snowshoe_hare", "pronghorn", "bighorn_sheep"]:
+	for sp in ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "hare", "snowshoe_hare", "pronghorn", "bighorn_sheep", "marmot"]:
 		var n := 0
 		var ok := 0
 		var gave := 0
@@ -269,7 +269,7 @@ func _process(_d):
 			print("  戰術狩獵 %-18s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f、遊戲回合 %.1f" % [sp, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n), roundi(100.0 * ok / max(1, n - gave)),
 				float(tac_spx.get(sp + ".stamina", 0)) / n, float(tac_spx.get(sp + ".turns", 0)) / n])
 	# 小獵物各年齡的獵到比例（2026-10-22 使用者：未成年的狼抓雪兔約六到七成）
-	for sp in ["snowshoe_hare", "hare", "beaver"]:
+	for sp in ["snowshoe_hare", "hare", "beaver", "marmot"]:
 		var line := "  %s 各年齡獵到：" % sp
 		for st in ["young", "yearling", "adult", "elder"]:
 			var n := 0

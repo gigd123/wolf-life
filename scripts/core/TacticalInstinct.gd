@@ -5,12 +5,18 @@ extends RefCounted
 # 主遊戲的「交給本能」按鈕、自動玩家與照常過日子、模擬共用。
 # 策略：chase 猛追、pace 耐力追（鹿跑 3 回合後才衝）、stalk 潛近截角、ambush 伏擊；dumb_sprint／dumb_pounce 是模擬用的對照。
 # 本能（pick_policy）依風向挑：上風 → 耐力追；其他 → 潛近截角（模擬裡下風、林緣、倒木旁都是潛近最好）。
+# cutoff 截斷退路（旱獺，Phase 2g）：逃向一格洞口的獵物（species.refuge_pounce），先繞到牠和洞口之間、站上洞口，再潛近；本能在牠就在洞口邊時用它，離洞遠時潛近。
 # 本能比自己打差一些（SPEC 2c：約低一成）：交給本能之後，撲咬、壓倒、咬喉扣 game.instinct_penalty（出手比較莽撞）。
 
 const POLICIES := ["chase", "pace", "stalk", "ambush"]
 
 # 依局面挑一種打法（本能）。
 static func pick_policy(h) -> String:
+	# 逃向一格洞口的獵物（旱獺）：牠就在洞口邊才先截斷退路；離洞遠的直接潛近（模擬：遠的時候繞去洞口太慢，Phase 2g）
+	var rp: Dictionary = h.sp().get("refuge_pounce", {})
+	if not rp.is_empty():
+		var hole: Vector2i = h._open_hole(h.deer_pos)
+		return "cutoff" if hole.x >= 0 and h.dist(hole, h.deer_pos) <= float(rp["dist"]) else "stalk"
 	if h.wind_side() == "upwind":
 		return "pace"
 	return "stalk"
@@ -103,6 +109,14 @@ static func step(h, pol: String) -> void:
 				_go(h, reach, h.deer_pos, ["trot", "creep"], true)
 			else:
 				_go(h, reach, _behind(h), ["creep"], true)
+		"cutoff":
+			var hole := _refuge_cell(h)
+			if fleeing:
+				_go(h, reach, _predict(h), ["sprint", "trot", "creep"])
+			elif hole == Vector2i(-1, -1) or h.wolf_pos == hole:
+				_go(h, reach, h.deer_pos, ["creep"], true)
+			else:
+				_go(h, reach, hole, ["trot", "creep"] if h.dist(h.wolf_pos, h.deer_pos) > 6.0 else ["creep"], true)
 		"ambush":
 			if fleeing:
 				_go(h, reach, _predict(h), ["sprint", "trot", "creep"])
@@ -187,6 +201,21 @@ static func _predict(h) -> Vector2i:
 # 鹿的側後方（潛近的目標）
 static func _behind(h) -> Vector2i:
 	return h.deer_pos - h.deer_facing
+
+# 獵物會逃進去的那一格（離牠最近的 seek 地形：旱獺的洞口）；沒有就 (-1, -1)
+static func _refuge_cell(h) -> Vector2i:
+	var ter: String = str(h.sp().get("seek", {}).get("terrain", ""))
+	var best := Vector2i(-1, -1)
+	var bd := INF
+	if ter == "":
+		return best
+	for y in h.height:
+		for x in h.width:
+			var c := Vector2i(x, y)
+			if h.terrain(c) == ter and h.dist(c, h.deer_pos) < bd:
+				bd = h.dist(c, h.deer_pos)
+				best = c
+	return best
 
 # 伏擊點：鹿的目的地附近、離目的地最近的掩蔽（密林、倒木）
 static func _cover_near(h) -> Vector2i:

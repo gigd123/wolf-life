@@ -81,7 +81,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	if mode == "water" and not ctx["period"] in ["dawn", "dusk"]:
 		nothing_chance = 1.0 - (1.0 - nothing_chance) * float(mc.get("dawn_dusk_mult", 1.0))
 	if RNGService.chance(nothing_chance):
-		return {"kind": "nothing", "location": location, "absent_source": _least_likely(weights), "mode": mode, "wind_bad": not wind_good}
+		return _hibernate_hint({"kind": "nothing", "location": location, "absent_source": _least_likely(weights), "mode": mode, "wind_bad": not wind_good}, region, ctx["season"])
 
 	# 別人吃剩的殘骸（骨頭、碎肉）與其他狼的氣味標記（Phase 1.7b 的多樣結果）
 	var scorched_now: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
@@ -255,6 +255,27 @@ static func threat_weights(region_id: String, season: String, stranger_territory
 		if w > 0.0:
 			result[threat_id] = w * float(t.get("weight_mult", 0.3))
 	return result
+
+# 冬眠的動物（discovery.hibernate：旱獺，Phase 2g）：這一區其他季節有牠、這一季沒有時，什麼都沒發現的結果有 chance 的機率改成
+# 「洞口被雪封住」這類線索（hibernating = 動物；地點換成牠出沒的地形），讓玩家知道不是運氣不好。守在水邊、逆風時不換。
+static func _hibernate_hint(d: Dictionary, region: Dictionary, season: String) -> Dictionary:
+	var hb: Dictionary = _cfg().get("hibernate", {})
+	if str(d.get("mode", "trail")) == "water" or bool(d.get("wind_bad", false)):
+		return d
+	for animal_id in hb.get("animals", []):
+		var w: Dictionary = region.get("prey_weights", {}).get(animal_id, {})
+		var other := 0.0
+		for k in w.keys():
+			if k != season:
+				other += float(w[k])
+		if other > 0.0 and float(w.get(season, 0.0)) <= 0.0 and RNGService.chance(float(hb.get("chance", 0.3))):
+			d["hibernating"] = animal_id
+			var only: Array = _cfg().get("source_terrains", {}).get(animal_id, [])
+			var here: Array = (region.get("terrains", []) as Array).filter(func(t): return only.has(t))
+			if not here.is_empty():
+				d["location"] = here[RNGService.randi_range(0, here.size() - 1)]
+			return d
+	return d
 
 static func _least_likely(weights: Dictionary) -> String:
 	var best: String = ""

@@ -750,11 +750,11 @@ func _do_pounce(opt: Dictionary) -> Dictionary:
 		notes.append("hunt.mother.charge")
 	pounce_bonus = 0.0
 	var pounce_hit: bool = _roll(float(opt["chance"]))
-	# 河狸就在水邊：撲空就鑽進水裡，沒了（Phase 2 第 2 步）
-	if not pounce_hit and refuge_near and str(refuge.get("kind", "")) == "water":
+	# 河狸就在水邊、旱獺就在洞口邊：撲空就鑽進水裡、洞裡，沒了（Phase 2 第 2 步；旱獺 Phase 2g）
+	if not pounce_hit and refuge_near and str(refuge.get("kind", "")) in ["water", "burrow"]:
 		stage = Stage.DONE
 		result = Result.PREY_FLED
-		return {"success": false, "text_key": "hunt.refuge.water", "notes": notes, "damage": damage}
+		return {"success": false, "text_key": "hunt.refuge." + str(refuge["kind"]), "notes": notes, "damage": damage}
 	if pounce_hit:
 		var won := _kill("hunt.pounce.success")
 		won["notes"] = notes

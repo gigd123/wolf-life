@@ -19,10 +19,13 @@
     "bighorn_sheep": { "spring": 0.25, "summer": 0.3, "autumn": 0.15, "winter": 0.1 },
     "beaver": { "spring": 0.4, "summer": 0.3, "autumn": 0.2, "winter": 0.0 },
     "bison": { "spring": 0.3, "summer": 0.3, "autumn": 0.15, "winter": 0.1 },
-    "pronghorn": { "spring": 0.25, "summer": 0.35, "autumn": 0.05, "winter": 0.0 }
+    "pronghorn": { "spring": 0.25, "summer": 0.35, "autumn": 0.05, "winter": 0.0 },
+    "marmot": { "spring": 0.0, "summer": 0.35, "autumn": 0.1, "winter": 0.0 }
   },
   "_source_terrains_comment": "只出現在某些地形的動物（Phase 2 第 2 步）：探索到牠時，地點換成這些地形之一（區域有的話）。",
-  "source_terrains": { "beaver": ["stream", "river_willow"], "bighorn_sheep": ["cliff", "scree", "alpine_meadow"] },
+  "source_terrains": { "beaver": ["stream", "river_willow"], "bighorn_sheep": ["cliff", "scree", "alpine_meadow"], "marmot": ["scree", "alpine_meadow", "rocky"] },
+  "_hibernate_comment": "冬眠的動物（Phase 2g）：這一區其他季節有牠、這一季沒有時，什麼都沒發現的結果有 chance 的機率改成「洞口被雪封住」（explore.hibernating.<動物>）。",
+  "hibernate": { "animals": ["marmot"], "chance": 0.35 },
   "hidden_young": { "white_tailed_deer": ["summer"], "elk": ["summer"], "mule_deer": ["summer"], "pronghorn": ["spring", "summer"] },
   "bugle": { "elk": { "season": "autumn", "sound_mult": 3.0, "stage": "buck" } },
   "injured_chance": 0.08,
@@ -51,13 +54,14 @@
     "bighorn_sheep": { "scent": 1, "track": 2, "sound": 1, "sign": 1, "sight": 4 },
     "beaver": { "scent": 1, "track": 2, "sound": 1, "sign": 4, "sight": 2 },
     "bison": { "scent": 2, "track": 3, "sound": 2, "sign": 2, "sight": 3 },
-    "pronghorn": { "scent": 1, "track": 2, "sound": 1, "sign": 1, "sight": 4 }
+    "pronghorn": { "scent": 1, "track": 2, "sound": 1, "sign": 1, "sight": 4 },
+    "marmot": { "scent": 1, "track": 1, "sound": 3, "sign": 2, "sight": 3 }
   },
   "_clue_icon_overrides_comment": "特定動物的線索圖示（1.6 第 6b 步）：{動物.線索類型: 圖示鍵}，沒有的用 clue_icon_path 的通用圖示。",
   "clue_icon_overrides": { "snowshoe_hare.track": "track_snowhare", "caribou.track": "track_caribou", "moose.sign": "antler_rub" },
   "always_fresh_clues": ["sound", "sight"],
   "scent_wind_mult": { "headwind": 2.0, "crosswind": 1.0, "tailwind": 0.4 },
-  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch", "snowshoe_hare": "droppings", "caribou": "trampled", "moose": "antler_rub", "moose.juvenile": "browse", "elk": "browse", "elk.buck": "antler_rub", "mule_deer": "browse", "mule_deer.buck": "antler_rub", "bighorn_sheep": "droppings", "beaver": "gnawed", "bison": "wallow", "pronghorn": "droppings" },
+  "signs": { "white_tailed_deer": "browse", "hare": "droppings", "red_fox": "scratch", "snowshoe_hare": "droppings", "caribou": "trampled", "moose": "antler_rub", "moose.juvenile": "browse", "elk": "browse", "elk.buck": "antler_rub", "mule_deer": "browse", "mule_deer.buck": "antler_rub", "bighorn_sheep": "droppings", "beaver": "gnawed", "bison": "wallow", "pronghorn": "droppings", "marmot": "burrow_mound" },
   "track": {
     "turns": 1,
     "base": 0.6,

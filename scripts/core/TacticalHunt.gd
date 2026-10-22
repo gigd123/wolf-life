@@ -320,7 +320,7 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		# 物種自訂起始距離時，實際距離也要在範圍內（縱向乘 0.6 會壓得太近；其他動物照原本的算法，校準不變）
 		if t.get("species", {}).get(species, {}).has("start_dist") and (Vector2(c - deer).length() < float(sd[0]) - 0.5 or Vector2(c - deer).length() > float(sd[1]) + 0.5):
 			continue
-		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d", "c"]:
+		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d", "c", "b"]:
 			wolf = c
 			break
 	var goals: Array = []
@@ -483,6 +483,54 @@ func deer_extra(c: Vector2i) -> float:
 	var k := terrain(c)
 	return float(tc[k]) if tc.has(k) else float(t["move"]["terrain_extra"].get(k, 0.0))
 
+# 離最近的某種地形幾格（旱獺離洞口，Phase 2g）；地圖上沒有就 0
+func _nearest_terrain_dist(c: Vector2i, ter: String) -> float:
+	var best := INF
+	for y in height:
+		var row := String(grid[y])
+		for x in width:
+			if row[x] == ter:
+				best = minf(best, dist(c, Vector2i(x, y)))
+	return 0.0 if best == INF else best
+
+# 撲空或被掙脫時，牠就在洞口邊（refuge_pounce.dist 內）而且你沒站在那個洞口上：一縮就進洞（旱獺，Phase 2g）
+func _refuge_dive() -> bool:
+	var rp: Dictionary = sp().get("refuge_pounce", {})
+	if rp.is_empty() or done:
+		return false
+	var hole := _open_hole(deer_pos)
+	if hole.x < 0 or dist(deer_pos, hole) > float(rp["dist"]):
+		return false
+	deer_pos = hole
+	_deer_gone("escaped", _tx(str(sp().get("escape_text", "tactical.dive"))).replace("{animal}", label()), true)
+	return true
+
+# 離 c 最近、狼沒站在上面的洞口（escape_terrain 的格子）；沒有就 (-1, -1)
+func _open_hole(c: Vector2i) -> Vector2i:
+	var ter: String = str(sp().get("escape_terrain", ""))
+	var best := Vector2i(-1, -1)
+	if ter == "":
+		return best
+	for y in height:
+		var row := String(grid[y])
+		for x in width:
+			var hc := Vector2i(x, y)
+			if row[x] == ter and hc != wolf_pos and (best.x < 0 or dist(c, hc) < dist(c, best)):
+				best = hc
+	return best
+
+# 從 from 看離 deer 最近的那個 ter 格（牠會逃進去的洞口），from 離它幾格；地圖上沒有就 INF
+func _nearest_hole_dist_from(deer: Vector2i, from: Vector2i, ter: String) -> float:
+	var best := INF
+	var hole := Vector2i(-1, -1)
+	for y in height:
+		var row := String(grid[y])
+		for x in width:
+			if row[x] == ter and dist(deer, Vector2i(x, y)) < best:
+				best = dist(deer, Vector2i(x, y))
+				hole = Vector2i(x, y)
+	return INF if hole.x < 0 else dist(from, hole)
+
 # 擋路的地形（倒木、岩坡、河）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
 func deer_rough(c: Vector2i) -> bool:
 	return terrain(c) in ["l", "r", "w", "s", "d", "c"] and deer_extra(c) > 0.0
@@ -631,6 +679,9 @@ func _spend(key: String) -> void:
 
 # 撲咬：移動到鹿旁邊的一格、同一回合撲上去（追上就撲）。回傳 {格子: 撲咬資訊}；已經相鄰時原地撲（mode "still"）。
 # 鹿還沒在逃時，用小跑或衝刺衝過去撲，牠會先驚覺（rush 扣命中）；潛行或原地撲沒有這個扣分。
+# 撲咬前狼站的格子（pounce_targets 算各個落點時設定；旱獺的 refuge_pounce 看你衝過去之前是不是已經擋在洞口那一側）
+var pounce_origin := Vector2i(-1, -1)
+
 func pounce_targets() -> Dictionary:
 	var out := {}
 	if done or held:
@@ -649,6 +700,7 @@ func pounce_targets() -> Dictionary:
 	if breath < need:
 		return out
 	var keep := wolf_pos
+	pounce_origin = keep
 	for c in cells.keys():
 		wolf_pos = c
 		var info := pounce_chance(str(cells[c]))
@@ -656,6 +708,7 @@ func pounce_targets() -> Dictionary:
 		out[c] = info
 		best_seen = maxf(best_seen, float(info["chance"]))
 	wolf_pos = keep
+	pounce_origin = Vector2i(-1, -1)
 	return out
 
 func can_pounce() -> bool:
@@ -813,6 +866,15 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	if sp().has("pounce"):
 		v += float(sp()["pounce"])
 		factors.append([_tx(str(sp().get("name_key", ""))), float(sp()["pounce"])])
+	# 牠就在洞口邊（species.refuge_pounce：旱獺，Phase 2g）：一縮就進洞，很難撲；撲之前你已經擋在牠和洞口之間（離洞口比牠近）就不算
+	var rp: Dictionary = sp().get("refuge_pounce", {})
+	if not rp.is_empty():
+		var ter: String = str(sp().get("escape_terrain", ""))
+		var hd: float = _nearest_terrain_dist(deer_pos, ter)
+		var origin: Vector2i = pounce_origin if pounce_origin.x >= 0 else wolf_pos
+		if hd <= float(rp["dist"]) and _nearest_hole_dist_from(deer_pos, origin, ter) >= hd:
+			v += float(rp["pounce"])
+			factors.append([_tx("tactical.factor.refuge_near"), float(rp["pounce"])])
 	v += _cond_factor(factors, "pounce")
 	v += _stand_factor(factors, "pounce")
 	v += _age_factor(factors)
@@ -871,7 +933,8 @@ func pounce_at(cell: Vector2i) -> void:
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
-		events.append(_tx("tactical.kick.rear" if side == "rear" else "tactical.kick.hoof").replace("{n}", str(dmg)))
+		# 會咬回來的小獸（species.kick_text：河狸、旱獺）不是用蹄踢
+		events.append(_tx(str(sp().get("kick_text", "tactical.kick.rear" if side == "rear" else "tactical.kick.hoof"))).replace("{n}", str(dmg)))
 	var hit: bool = rng.randf() < float(info["chance"])
 	_practice("skill", hit)
 	if hit:
@@ -886,6 +949,9 @@ func pounce_at(cell: Vector2i) -> void:
 		_deer_turn()
 		return
 	events.append(_tx("tactical.miss"))
+	if _refuge_dive():
+		rounds += 1
+		return
 	if deer_state != "flee" and not _stands():
 		_start_flee("missed")
 	if deer_state == "flee":
@@ -1112,10 +1178,11 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 		damage_taken += dmg
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
-		events.append(_tx("tactical.struggle_kick").replace("{n}", str(dmg)))
+		events.append(_tx(str(sp().get("struggle_text", "tactical.struggle_kick"))).replace("{n}", str(dmg)))
 	if rng.randf() < break_chance(after_throat_miss, hanging):
 		_let_go(_tx("tactical.broke_free").replace("{animal}", label()))
-		_deer_flee()
+		if not _refuge_dive():
+			_deer_flee()
 
 # --- 回合結束：警覺值、鹿行動 ---
 
@@ -1155,14 +1222,15 @@ func wind_side() -> String:
 	return "crosswind"
 
 func has_sight() -> bool:
-	# 兩格之間有密林就擋住視線（端點不算）
+	# 兩格之間有密林就擋住視線（端點不算）；物種可以多加擋住牠視線的地形（species.sight_block：旱獺的岩塊，Phase 2g）
+	var block: Array = ["f"] + (sp().get("sight_block", []) as Array)
 	var a := Vector2(wolf_pos)
 	var b := Vector2(deer_pos)
 	var n: int = int(ceil(a.distance_to(b) * 2.0))
 	for i in range(1, n):
 		var p := a.lerp(b, float(i) / n)
 		var c := Vector2i(roundi(p.x), roundi(p.y))
-		if c != wolf_pos and c != deer_pos and terrain(c) == "f":
+		if c != wolf_pos and c != deer_pos and block.has(terrain(c)):
 			return false
 	return true
 
@@ -1430,11 +1498,13 @@ func flee_options(lead_group: int = -1) -> Array:
 			break
 	if not any_open:
 		limit = -0.2
+	var esc: String = str(sp().get("escape_terrain", "")) if float(sp().get("seek", {}).get("toward", 0.0)) > 0.0 else ""
 	for d in DIRS:
-		if Vector2(d).normalized().dot(away) < limit:
-			continue # 不往狼的方向跑
 		var sim := _run_line(deer_pos, d, budget)
 		var end: Vector2i = sim["end"]
+		# 不往狼的方向跑；但這一下就能鑽進洞的話照跑（seek.toward 的物種：旱獺衝向洞口，Phase 2g；狼擋在路上時 _run_line 會停在狼前面）
+		if Vector2(d).normalized().dot(away) < limit and not (esc != "" and in_bounds(end) and terrain(end) == esc):
+			continue
 		var score: float = dist(end, wolf_pos) * 1.0 + Vector2(d).normalized().dot(away) * 3.0
 		if sim["out"]:
 			score += 8.0
@@ -1451,6 +1521,11 @@ func flee_options(lead_group: int = -1) -> Array:
 			score += min(float(sim["seek"]), float(sk.get("max_cells", 3))) * float(sk.get("per_cell", 1.0))
 			if in_bounds(sim["end"]) and terrain(sim["end"]) == str(sk["terrain"]):
 				score += float(sk.get("end", 0.0))
+			# 往最近的避難處靠近（seek.toward：每近 1 格加分；旱獺的洞口只有一格，直線不一定剛好跑到；你站在那個洞口上就換下一個洞，Phase 2g）
+			if float(sk.get("toward", 0.0)) > 0.0 and in_bounds(sim["end"]):
+				var hole := _open_hole(deer_pos)
+				if hole.x >= 0:
+					score += (dist(deer_pos, hole) - dist(sim["end"], hole)) * float(sk["toward"])
 			if group_push.has(lead_group):
 				score += Vector2(d).normalized().dot(group_push[lead_group]["dir"]) * float(t["herd"]["split_push"])
 		else:
@@ -1721,6 +1796,8 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 	var dir := d
 	var seek := 0 # 經過牠想逃去的地形（騾鹿的岩坡）
 	var seek_t: String = str(sp().get("seek", {}).get("terrain", ""))
+	# 只有逃向一格洞口的物種（seek.toward：旱獺）到了就停；河狸、大角羊照原本的校準
+	var esc: String = str(sp().get("escape_terrain", "")) if float(sp().get("seek", {}).get("toward", 0.0)) > 0.0 else ""
 	var guard := 0
 	var others := deer_cells(di)
 	while left > 0.0 and guard < 20:
@@ -1746,6 +1823,9 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		left -= c
 		moved += c
 		pos = n
+		# 到了避難的地形就停（旱獺的洞口只有一格，跑過頭就沒進洞，Phase 2g）
+		if esc != "" and terrain(pos) == esc:
+			break
 	return {"end": pos, "out": false, "wall": false, "logs": logs, "blocked": blocked, "moved": moved, "seek": seek}
 
 # 幼獸躲到站定的成獸身後（guard_calves 的物種，野牛，2026-10-22：母牛站定時小牛原本自己跑開、跟母牛分散）：

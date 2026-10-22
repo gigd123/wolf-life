@@ -3,14 +3,15 @@
 
 每張 40×16 格，字元：. 開闊、f 密林（樹叢、柳叢、林子）、l 倒木（或岩堆）、r 岩坡（碎石坡、岩壁；騾鹿在上面不減速，Phase 2d）、
 w 河（馴鹿涉水不減速，Phase 2d 第 4 步）、s 淺水、d 深水（河狸的水塘，2026-10-22：淺水河狸稍快、狼稍慢；深水河狸很快、狼很慢，河狸進了深水就潛走）、
-c 峭壁（大角羊的峽谷，2026-10-22：大角羊在上面很穩、一上去就算逃掉，狼幾乎上不去）。
+c 峭壁（大角羊的峽谷，2026-10-22：大角羊在上面很穩、一上去就算逃掉，狼幾乎上不去）、
+b 洞口（旱獺，Phase 2g：旱獺一鑽進去就算逃掉；狼可以站在上面擋住）。
 用簡單的形狀「畫」出來，寫進 data/tactical_hunt.json 的 maps（{id: {name, family, map}}）；
 狼與鹿的起始位置、鹿的目的地由 TacticalHunt.setup_from_game 每場隨機挑。
 
 地形 → 地圖族（GameState.TACTICAL_TERRAIN_FAMILY）：
   open（空地、草原、高山草甸、苔原、丘陵）、edge（林緣、樹線）、dense（密林）、stream（溪、河、柳叢）、logs（倒木）、
   slope（岩石、碎石、崖邊；Phase 2d 第 3 步）、tundra（開闊苔原、冰磧丘）、river（柳叢河谷，有河；Phase 2d 第 4 步）、
-  pond（水塘：深水外圍一圈淺水；河狸一律用這一族，species.family）、cliff（峽谷：峭壁、碎石坡、草地；大角羊）。
+  pond（水塘：深水外圍一圈淺水；河狸一律用這一族，species.family）、cliff（峽谷：峭壁、碎石坡、草地；大角羊）、talus（岩坡草甸：碎石與岩塊、2～3 個洞口；旱獺，Phase 2g）。
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
 """
@@ -237,6 +238,31 @@ def maps():
     blob(g, 6, 12, 2, 1.2, seed=86)
     blob(g, 34, 3, 1.5, 1.0, seed=87)
     out["cliff_3"] = {"name": "草地中間的岩丘", "family": "cliff", "map": g}
+    # --- 岩坡草甸（旱獺，Phase 2g）：r 碎石與岩塊（旱獺在上面快、擋住牠的視線）、b 洞口、. 草甸 ---
+    g = blank()
+    for x in range(W):
+        top = 3 + int(1.3 * math.sin(x / 5.0 + 1.0))
+        for y in range(0, top):
+            g[y][x] = "r"
+    for x, y in [(9, 7), (27, 9)]:
+        blob(g, x, y, 1.5, 1.0, "r", seed=x * 11 + y)
+    for x, y in [(6, 4), (15, 3), (31, 4)]:
+        g[y][x] = "b"
+    out["talus_1"] = {"name": "碎石坡腳的草甸", "family": "talus", "map": g}
+    g = blank()
+    for x, y, rx in [(8, 4, 2.2), (20, 10, 2.6), (32, 5, 2.0)]:
+        blob(g, x, y, rx, 1.4, "r", rough=0.3, seed=x * 3 + y + 90)
+    for x, y in [(10, 6), (17, 11), (33, 7)]:
+        g[y][x] = "b"
+    out["talus_2"] = {"name": "草甸上的岩堆", "family": "talus", "map": g}
+    g = blank()
+    blob(g, 2, 8, 4, 6, "r", rough=0.3, seed=91)
+    blob(g, 37, 8, 4, 6, "r", rough=0.3, seed=92)
+    for x, y in [(20, 4), (14, 12), (26, 11)]:
+        blob(g, x, y, 1.2, 0.8, "r", seed=x + y * 5 + 93)
+    for x, y in [(6, 6), (33, 11), (21, 5)]:
+        g[y][x] = "b"
+    out["talus_3"] = {"name": "兩片碎石坡之間的草甸", "family": "talus", "map": g}
     for k in out:
         out[k]["map"] = ["".join(r) for r in out[k]["map"]]
     return out
@@ -247,7 +273,7 @@ def main():
     s = open(p, encoding="utf-8").read()
     m = maps()
     body = json.dumps(m, ensure_ascii=False, indent=2).replace("\n", "\n  ")
-    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
+    block = '"_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）／talus（旱獺）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",\n  "maps": ' + body
     if '"maps":' in s:
         s = re.sub(r'"_maps_comment": ".*?",\n  "maps": \{.*?\n  \}', lambda _: block, s, count=1, flags=re.S)
     else:

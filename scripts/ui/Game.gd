@@ -1954,6 +1954,8 @@ func _discovery_text(d: Dictionary) -> String:
 				.replace("{animal}", tr("animal." + str(d["animal_id"])))
 		"nothing" when d.get("wind_bad", false):
 			return tr("explore.ridge.wind_bad")
+		"nothing" when d.has("hibernating"):
+			return tr("explore.hibernating." + str(d["hibernating"])).replace("{location}", location)
 		"nothing" when str(d.get("mode", "")) == "water":
 			return tr("explore.water.nothing").replace("{location}", location)
 		"nothing":
