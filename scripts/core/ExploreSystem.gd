@@ -54,6 +54,12 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	var knowledge_mults: Dictionary = ctx.get("prey_knowledge", {})
 	for animal_id in knowledge_mults.keys():
 		mults[animal_id] = float(mults.get(animal_id, 1.0)) * float(knowledge_mults[animal_id])
+	# 未滿 1 歲：小獵物比較常遇到（2026-10-22 使用者選 A：年輕的狼食性比較雜，大量吃小型哺乳類；ctx.youth 由 GameState 給）
+	var youth: Dictionary = ctx.get("youth", {})
+	if not youth.is_empty():
+		for animal_id in GameData.animals.keys():
+			if str(GameData.animals[animal_id].get("size", "small")) == "small" and str(GameData.animals[animal_id].get("type", "")) == "prey":
+				mults[animal_id] = float(mults.get(animal_id, 1.0)) * float(youth.get("small_prey_mult", 1.0))
 	var prey := EncounterSystem.prey_weights(region_id, ctx["season"], ctx["period"],
 		ctx.get("depletion", {}), mults)
 	var weights: Dictionary = prey["weights"]
@@ -79,7 +85,7 @@ static func generate(ctx: Dictionary) -> Dictionary:
 
 	# 別人吃剩的殘骸（骨頭、碎肉）與其他狼的氣味標記（Phase 1.7b 的多樣結果）
 	var scorched_now: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
-	if not scorched_now and RNGService.chance(float(mc.get("remains", 0.0))):
+	if not scorched_now and RNGService.chance(float(mc.get("remains", 0.0)) * float(youth.get("remains_mult", 1.0))):
 		var big: Array = []
 		for animal_id in weights.keys():
 			if str(GameData.animals.get(animal_id, {}).get("size", "small")) != "small":

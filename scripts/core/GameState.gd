@@ -1389,6 +1389,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"lean_nothing": float(lean_effects().get("nothing_mult", 1.0)),
 		"marks": _nearby_marks(),
 		"notables": _notables_here(),
+		"youth": youth_food_mults(),
 	})
 	match current_discovery.get("kind", ""):
 		"mark":
@@ -3090,6 +3091,12 @@ func tactical_context(terrain: String, wind: String, condition: String) -> Dicti
 
 # 這一場狩獵用不用戰術地圖（Phase 2c 第 2 步）：先接白尾鹿（tactical_hunt.json 的 game.animals）；
 # 受傷的個體（簡易流程）、躲在草裡的幼鹿（要先搜尋）照舊走選單。
+# 未滿 1 歲的食物（2026-10-22 使用者選 A）：探索時小獵物的權重、撿到殘骸的機率倍率（balance.youth.food）；1 歲以後是空的
+func youth_food_mults() -> Dictionary:
+	if wolf == null or wolf.age_years >= float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)):
+		return {}
+	return GameData.balance.get("youth", {}).get("food", {})
+
 func tactical_eligible(hunt: HuntSystem) -> bool:
 	var t: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH))
 	var g: Dictionary = t.get("game", {})
@@ -3135,6 +3142,9 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 				th.target = i
 				th.di = i
 				break
+	# 未滿 1 歲盯上成年的大、中型獵物：開場多一句提示（2026-10-22 使用者選 A 加提示）
+	if not youth_food_mults().is_empty() and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
+		th.game_mods["youth_hint"] = true
 	_stat_inc("tactical", "started")
 	return th
 

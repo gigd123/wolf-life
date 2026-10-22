@@ -343,6 +343,13 @@ func _process(_d) -> bool:
 			hid_ok = pth._cheb(pth.herd[calf]["pos"], pth.herd[mom]["pos"]) <= 1 and pth.dist(pth.herd[calf]["pos"], pth.wolf_pos) >= pth.dist(pth.herd[mom]["pos"], pth.wolf_pos)
 			break
 	_check(hid_ok, "小野牛躲到站定的母牛身後")
+	# 未滿 1 歲（2026-10-22 使用者選 A 加提示）：小獵物、殘骸的倍率；盯上成年的大、中型獵物時有提示，幼鹿、成年狼沒有
+	gs.new_game("forest_east")
+	_check(not gs.youth_food_mults().is_empty(), "未滿 1 歲有小獵物、殘骸的倍率")
+	_check(bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("youth_hint", false)), "小狼盯上成年白尾鹿：有提示")
+	_check(not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "juvenile")).game_mods.get("youth_hint", false)), "小狼盯上幼鹿：沒有提示")
+	gs.wolf.age_years = 2.5
+	_check(gs.youth_food_mults().is_empty() and not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("youth_hint", false)), "成年後沒有倍率、沒有提示")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")

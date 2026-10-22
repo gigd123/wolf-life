@@ -1,6 +1,6 @@
 extends SceneTree
 # 戰術狩獵從主遊戲開的畫面檢查（Phase 2c 第 2 步）：開主遊戲、對白尾鹿出手 → 截圖 → 狼放棄 → 截圖 → 按「繼續」→ 截圖。
-# 動物、生命階段、巢穴可以用 ANIMAL、STAGE、DEN 指定（Phase 2f：駝鹿、野牛；預設白尾鹿成鹿、森林東部）。
+# 動物、生命階段、巢穴可以用 ANIMAL、STAGE、DEN 指定；YOUNG=1 時用開局的小狼（未滿 1 歲）（Phase 2f：駝鹿、野牛；預設白尾鹿成鹿、森林東部）。
 # 用法：OUT=<輸出路徑前綴> xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/tactical_game_shot.gd
 var f := 0
 var game
@@ -11,7 +11,8 @@ func _process(_d) -> bool:
 	var out: String = OS.get_environment("OUT")
 	if f == 2:
 		gs.new_game(OS.get_environment("DEN") if OS.get_environment("DEN") != "" else "forest_east")
-		gs.debug_force_transition("adult")
+		if OS.get_environment("YOUNG") == "":
+			gs.debug_force_transition("adult")
 		game = load("res://scenes/Game.tscn").instantiate()
 		root.add_child(game)
 	if f == 6:

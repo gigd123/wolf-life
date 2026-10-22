@@ -147,6 +147,8 @@ func start_from_game(th, done_cb: Callable) -> void:
 	last_wolf_pos = Vector2i(-99, -99)
 	lock_armed = false
 	lines = [tr("tactical.ui.intro")]
+	if bool(h.game_mods.get("youth_hint", false)):
+		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
 	_after_action()
 
 func _option(parent: Node, items: Array) -> OptionButton:
