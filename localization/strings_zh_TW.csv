@@ -465,6 +465,30 @@ salmon.clue.decline.spawned,{location}的淺灘上躺著不少產完卵、奄奄
 salmon.clue.decline.bones,{location}的岸邊堆著發臭的魚骨，魚群已經稀了。
 salmon.clue.decline.bear,{location}的淺灘上有一頭灰熊在慢慢翻找，叼起的多半是快死的魚。
 salmon.go_fish,到河邊捕魚
+salmon.clue.peak.bears,{location}的河邊站著好幾頭灰熊，各自守著一段淺灘，彼此隔得遠遠的。水裡的魚多得數不清。
+river.ui.intro,點亮起的格子移動；站上淺灘按「撲魚」。淺灘上的紅點是魚量，三點最多。
+river.ui.fish,撲魚　{p}%
+river.ui.fish_here,站上淺灘才能撲魚
+river.ui.full,吃不下了
+river.ui.leave,離開河邊
+river.ui.time,過了 {n} 時段
+river.ui.hunger,飽食 {n}/{max}
+river.ui.overfed,吃撐了
+river.ui.caught,吃了 {n} 條
+river.ui.stage.early,洄流：初期
+river.ui.stage.peak,洄流：高峰
+river.ui.stage.decline,洄流：衰退
+river.ui.spot.3,魚很多的淺灘
+river.ui.spot.2,普通的淺灘
+river.ui.spot.1,魚很少的淺灘
+river.ui.deep,深潭：撲不到魚
+river.ui.move,走過去
+river.ui.result,你在河邊待了 {turns} 個時段，吃了 {n} 條鮭魚的頭（飽食度 +{h}）。
+river.catch,你一口叼住一條甩著尾巴的鮭魚，拖上岸咬下魚頭（飽食度 +{n}）。
+river.miss,撲了個空，水花四濺，魚從你腳邊滑走了。
+river.gorged,肚子撐得圓滾滾的，動作慢了下來。
+river.full,再也吃不下了。
+river.timeout,在河邊待了快一整天，你離開了溪邊。
 small_pounce.see.vole,{location}的草叢裡一陣晃動，是一隻田鼠。
 small_pounce.see.vole.snow,{location}的雪面下傳來細細的窸窣聲，是田鼠在雪下的通道裡跑。
 small_pounce.see.ground_squirrel,{location}，一隻地松鼠站起來張望。

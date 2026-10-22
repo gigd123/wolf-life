@@ -816,6 +816,35 @@ func _water_terrain(region_id: String) -> String:
 func salmon_fishing_enabled() -> bool:
 	return bool(_salmon_cfg().get("fishing_enabled", false))
 
+# 到河邊捕魚（Phase 2h 第 2 步）：開一場河岸模式；強度照這次的線索（除錯時可能不是現在的強度）
+func start_salmon_fishing() -> RiverFishing:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	record_decision("salmon.fish")
+	var rf := RiverFishing.new()
+	rf.setup({"stage": str(d.get("stage", salmon_stage())), "seed": RNGService.randi_range(1, 999999), "hunger": wolf.hunger,
+		"hunger_max": float(GameData.balance.get("hunger_max", 150)), "overfed_at": float(GameData.balance.get("overfed_threshold", 120)),
+		"cfg": _salmon_cfg().get("river", {}), "clue": str(d.get("clue", ""))})
+	return rf
+
+# 結算：時間（戰術回合換成遊戲回合）、體力、吃下的飽食度（邊捕邊吃，這裡一次加上）、紀錄
+func finish_salmon_fishing(rf: RiverFishing) -> Dictionary:
+	if not rf.done:
+		rf.leave()
+	var turns: int = rf.game_turns()
+	GameTime.advance_turns(turns)
+	wolf.stamina -= rf.stamina_spent
+	wolf.hunger += rf.eaten
+	_note_food("salmon", rf.eaten)
+	wolf.clamp_stats()
+	var sl: Dictionary = life_log.get_or_add("salmon", {})
+	sl["trips"] = int(sl.get("trips", 0)) + 1
+	sl["fish"] = int(sl.get("fish", 0)) + rf.caught
+	sl["attempts"] = int(sl.get("attempts", 0)) + rf.attempts
+	sl["turns"] = int(sl.get("turns", 0)) + turns
+	state_changed.emit()
+	return {"turns": turns, "caught": rf.caught, "eaten": rf.eaten, "result": rf.result}
+
 # 除錯：這一區有洄流時照現在的強度，沒有的話當成高峰（只看畫面與文字）
 func debug_salmon() -> void:
 	var stage := salmon_stage()

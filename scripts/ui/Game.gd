@@ -3578,12 +3578,23 @@ func _show_salmon(d: Dictionary) -> void:
 	if GameState.salmon_fishing_enabled():
 		_add_encounter_button(tr("salmon.go_fish"), func():
 			encounter_overlay.visible = false
-			_refresh())
+			_open_river())
 	_add_encounter_button(tr("ui.leave"), func():
 		GameState.clear_discovery()
 		encounter_overlay.visible = false
 		_refresh())
 	encounter_overlay.visible = true
+
+# 河岸模式（Phase 2h 第 2 步）：結束時結算時間、體力、吃下的魚
+const RIVER_SCENE := "res://scenes/RiverFishing.tscn"
+
+func _open_river() -> void:
+	var view: Control = load(RIVER_SCENE).instantiate()
+	add_child(view)
+	view.start(GameState.start_salmon_fishing(), func(rf):
+		var res: Dictionary = GameState.finish_salmon_fishing(rf)
+		_log(tr("river.ui.result").replace("{turns}", load("res://scripts/ui/RiverView.gd").periods_text(int(res["turns"]))).replace("{n}", str(int(res["caught"]))).replace("{h}", str(roundi(float(res["eaten"])))))
+		_refresh())
 
 # 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：撲過去或不理牠；結果寫明只是一小口。
 func _small_pounce_text(kind: String, d: Dictionary) -> String:

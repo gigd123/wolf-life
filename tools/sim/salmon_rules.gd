@@ -4,6 +4,9 @@ extends SceneTree
 #   2. 探索時的線索：只在有洄流的區域與日子；守在水邊比一般探索常見；高峰期比初期常見；地點是水邊；是值得停下的發現
 #   3. 線索的種類照強度；文字都有翻譯、衰退期的「已經稀了」只在衰退期
 #   4. 鮭魚溪地圖族 3 張，每張都有好、普通、差的淺灘，fish 層只在淺灘上
+# 第 2 步（河岸模式）：
+#   5. 開場在岸邊；只有站在有魚的淺灘上才能撲；成功率照魚量與強度；撲到就吃（+5）、吃撐時走得比較近、吃到上限就不能撲
+#   6. 離開、待太久；8 個戰術回合＝1 個遊戲回合；結算加上時間、體力、飽食度與紀錄
 # 用法：bash tools/run_sim.sh salmon_rules
 var gs
 var gt
@@ -80,9 +83,71 @@ func _run() -> void:
 						off += 1
 		_check(q.has("1") and q.has("2") and q.has("3") and off == 0, "%s：好、普通、差的淺灘都有，魚只在淺灘上（%s，不在淺灘 %d 格）" % [id, q.keys(), off])
 	_check(fam == 3, "鮭魚溪 3 張（%d）" % fam)
+	# 5. 河岸模式
+	_at("autumn", 2)
+	gs.current_region = "forest_east"
+	gs.wolf.hunger = 60.0
+	gs.debug_salmon()
+	var rf = gs.start_salmon_fishing()
+	_check(gs.current_discovery.is_empty() and rf.terrain(rf.wolf_pos) == "." and not rf.can_fish() and rf.stage == "peak", "開場在岸邊、不能撲、強度是高峰")
+	var spots := {}
+	for y in rf.height:
+		for x in rf.width:
+			var q: int = rf.fish_at(Vector2i(x, y))
+			if q > 0 and not spots.has(q):
+				spots[q] = Vector2i(x, y)
+	var cfg: Dictionary = root.get_node("GameData").balance["salmon"]["river"]
+	for q in [1, 2, 3]:
+		rf.wolf_pos = spots[q]
+		_check(absf(rf.fish_chance() - float(cfg["catch"][str(q)])) < 0.001, "高峰期魚量 %d 的成功率 %.2f" % [q, rf.fish_chance()])
+	rf.stage = "early"
+	_check(absf(rf.fish_chance() - float(cfg["catch"]["3"]) * 0.5) < 0.001, "初期的成功率減半")
+	rf.stage = "peak"
+	var deep := Vector2i(-1, -1)
+	for y in rf.height:
+		for x in rf.width:
+			if rf.terrain(Vector2i(x, y)) == "d" and deep.x < 0:
+				deep = Vector2i(x, y)
+	rf.wolf_pos = deep
+	_check(not rf.can_fish(), "深潭撲不到魚")
+	rf.wolf_pos = spots[3]
+	var h0: float = rf.hunger
+	var tries := 0
+	while rf.caught == 0 and tries < 100:
+		tries += 1
+		rf.fish_once()
+	_check(rf.caught == 1 and absf(rf.hunger - h0 - 5.0) < 0.01 and absf(rf.eaten - 5.0) < 0.01 and absf(rf.stamina_spent - tries) < 0.01, "撲到就吃 +5、每撲一次體力 −1（撲了 %d 次）" % tries)
+	var r0: float = rf.move_range()
+	rf.hunger = 125.0
+	_check(rf.move_range() < r0, "吃撐了走得比較近")
+	rf.hunger = rf.hunger_max
+	_check(not rf.can_fish(), "吃到上限就不能撲")
+	rf.hunger = 100.0
+	# 6. 離開與結算
+	rf.rounds = 17
+	_check(rf.game_turns() == 3, "17 個戰術回合＝3 個遊戲回合（%d）" % rf.game_turns())
+	rf.leave()
+	_check(rf.done and rf.result == "left", "離開")
+	var t0: int = gt.day * 100 + gt.period_index * 10 + gt.turn_in_period
+	gs.wolf.hunger = 60.0
+	gs.wolf.stamina = 80.0
+	var res: Dictionary = gs.finish_salmon_fishing(rf)
+	var t1: int = gt.day * 100 + gt.period_index * 10 + gt.turn_in_period
+	_check(int(res["turns"]) == 3 and t1 != t0 and gs.wolf.hunger > 60.0 and gs.wolf.stamina < 80.0, "結算：時間、飽食度、體力（%s）" % res)
+	_check(int(gs.life_log.get("salmon", {}).get("trips", 0)) == 1 and float(gs.life_log.get("food_by", {}).get("salmon", 0.0)) > 0.0, "紀錄：去了幾次、食物來源")
+	var rf2 = RF_new()
+	rf2.setup({"stage": "peak", "seed": 3, "hunger": 60.0, "cfg": cfg})
+	for i in int(cfg["max_rounds"]):
+		rf2.move_to(rf2.wolf_pos + Vector2i(1, 0) if rf2.in_bounds(rf2.wolf_pos + Vector2i(1, 0)) else rf2.wolf_pos + Vector2i(-1, 0))
+	_check(rf2.done and rf2.result == "timeout", "待太久就離開")
+	for k in ["river.ui.intro", "river.ui.fish", "river.ui.leave", "river.catch", "river.miss", "river.full", "river.ui.result", "salmon.clue.peak.bears"]:
+		_check(TranslationServer.translate(k) != k, "有翻譯：" + k)
 	print("線索次數（300 次探索）：%s" % counts)
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
+
+func RF_new():
+	return load("res://scripts/core/RiverFishing.gd").new()
 
 func _check(ok: bool, what: String) -> void:
 	if not ok:
