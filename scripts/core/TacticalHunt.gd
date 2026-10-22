@@ -1809,9 +1809,9 @@ func _mother_defend() -> bool:
 		kicks += 1
 		if fawn_held:
 			mother_hit_fawn_held = true
-		events.append(_tx("tactical.defend.hit").replace("{n}", str(dmg)))
+		events.append(_tx("tactical.defend.hit").replace("{n}", str(dmg)).replace("{animal}", label(di)))
 	else:
-		events.append(_tx("tactical.defend.miss"))
+		events.append(_tx("tactical.defend.miss").replace("{animal}", label(di)))
 	return true
 
 # 威脅幼獸的同伴（群體狩獵實驗）：咬著幼獸的那隻，或在 trigger 格內、離幼獸比離這隻成獸近、最靠近幼獸的那隻；沒有回傳 0

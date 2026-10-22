@@ -814,7 +814,7 @@
       "herd_slack_dist": 4.0,
       "defend": { "base": 0.12, "still_bonus": 0.04, "held_bonus": 0.08, "max_rounds": 5, "trigger": 2.5, "reach": 3.0, "break_bonus": 0.4, "damage": [10, 22] }
     },
-    "bison_calf": {
+    "bison_calf": { "pack_help": 0.25,
       "name": "小野牛",
       "name_key": "tactical.label.bison_calf",
       "terrain_cost": { "w": 0.0 },

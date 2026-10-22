@@ -1844,8 +1844,8 @@ tactical.flee.close,牠發現你了，拔腿就跑！
 tactical.flee.missed,牠受驚，拔腿就跑！
 tactical.flee.other,牠跑了！
 tactical.herd_runs,整群跟著跑了起來。
-tactical.defend.hit,母鹿轉身朝你衝過來，前蹄踢中了你（血量 −{n}）！
-tactical.defend.miss,母鹿轉身朝你衝過來，你閃開了牠的前蹄。
+tactical.defend.hit,{animal}轉身朝你衝過來，前蹄踢中了你（血量 −{n}）！
+tactical.defend.miss,{animal}轉身朝你衝過來，你閃開了牠的前蹄。
 tactical.separated,幼鹿和母鹿跑散了！
 tactical.regroup,跑散的鹿又聚到了一起。
 tactical.herd.weakest,你看出那隻{animal}步伐有點拖，是群裡最弱的一隻。
