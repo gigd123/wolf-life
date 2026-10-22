@@ -5,6 +5,7 @@ extends RefCounted
 # 主遊戲的「交給本能」按鈕、自動玩家與照常過日子、模擬共用。
 # 策略：chase 猛追、pace 耐力追（鹿跑 3 回合後才衝）、stalk 潛近截角、ambush 伏擊；dumb_sprint／dumb_pounce 是模擬用的對照。
 # 本能（pick_policy）依風向挑：上風 → 耐力追；其他 → 潛近截角（模擬裡下風、林緣、倒木旁都是潛近最好）。
+# hold 等同伴趕（苔原狼的群體狩獵實驗）：潛到 6 格內就停下等，獵物被趕過來時截住。
 # cutoff 截斷退路（旱獺，Phase 2g）：逃向一格洞口的獵物（species.refuge_pounce），先繞到牠和洞口之間、站上洞口，再潛近；本能在牠就在洞口邊時用它，離洞遠時潛近。
 # 本能比自己打差一些（SPEC 2c：約低一成）：交給本能之後，撲咬、壓倒、咬喉扣 game.instinct_penalty（出手比較莽撞）。
 
@@ -109,6 +110,14 @@ static func step(h, pol: String) -> void:
 				_go(h, reach, h.deer_pos, ["trot", "creep"], true)
 			else:
 				_go(h, reach, _behind(h), ["creep"], true)
+		"hold":
+			# 等同伴趕（群體狩獵實驗）：沒察覺時潛到 hold_dist 格內就停下等（同伴繞到另一側把獵物趕過來），逃跑時截住
+			if fleeing:
+				_go(h, reach, _predict(h), ["sprint", "trot", "creep"])
+			elif h.dist(h.wolf_pos, h.deer_pos) > 6.0:
+				_go(h, reach, h.deer_pos, ["creep"], true)
+			else:
+				h.observe()
 		"cutoff":
 			var hole := _refuge_cell(h)
 			if fleeing:

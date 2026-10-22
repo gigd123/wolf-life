@@ -1953,6 +1953,9 @@ tactical.label.bison,野牛
 tactical.label.bison_calf,小野牛
 tactical.label.beaver,河狸
 tactical.label.beaver_kit,小河狸
+tactical.factor.ally,苔原狼咬住了牠的後腿
+tactical.ally.bite,苔原狼追上{animal}，一口咬在後腿上又鬆開——牠跑得慢了。
+tactical.ally.pull_down,苔原狼追上已經跑不動的{animal}，咬住後腿把牠拖倒了。你們一起獵到了。
 tactical.label.marmot,旱獺
 tactical.label.marmot_young,幼獺
 tactical.label.pronghorn,叉角羚
