@@ -303,8 +303,9 @@ func _build_buttons() -> void:
 				var b := Button.new()
 				b.theme_type_variation = &"SmallButton"
 				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
-				if id == "hang":
-					b.text += tr("tactical.ui.breath_cost").replace("{n}", str(roundi(float(opts[id]["breath"]))))
+				# 有苔原狼同伴時每個招式都寫喘（一起咬著時省喘，看得出來）
+				if id == "hang" or (h.wolves.size() > 1 and id != "release"):
+					b.text += tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(opts[id]["breath"]), 0.1)))
 				b.tooltip_text = "、".join((opts[id]["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())

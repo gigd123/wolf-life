@@ -1963,6 +1963,7 @@ tactical.label.beaver_kit,小河狸
 tactical.factor.ally,苔原狼咬住了牠的後腿
 tactical.ally.bite,苔原狼追上{animal}，一口咬在後腿上又鬆開——牠跑得慢了。
 tactical.ally.pull_down,苔原狼追上已經跑不動的{animal}，咬住後腿把牠拖倒了。你們一起獵到了。
+tactical.ally.snap,苔原狼撲上去咬{animal}，沒咬住。
 tactical.ally.hold,苔原狼咬住了{animal}的後腿，死命拖住——牠跑不動了！
 tactical.ally.broke_free,{animal}甩開了苔原狼，帶著傷逃跑！
 tactical.ally.pull_down_pack,苔原狼們一擁而上，把{animal}拖倒了。你們一起獵到了。

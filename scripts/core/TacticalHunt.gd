@@ -675,6 +675,9 @@ func _spend(key: String) -> void:
 	if key == "breath_trot" and tired():
 		return # 累了的小跑：不扣喘也不回喘
 	var v: float = float(t["move"][key])
+	# 苔原狼同伴是耐力型的獵手：跑起來比較省喘（群體狩獵實驗）
+	if wi > 0 and v < 0.0:
+		v *= float(_allies_cfg().get("breath_mult", 1.0))
 	if v < 0.0:
 		breath_used += -v
 	breath = clamp(breath + v, 0.0, breath_max)
@@ -977,6 +980,11 @@ func pounce_at(cell: Vector2i) -> void:
 	if deer_state == "flee":
 		flee_round = maxi(flee_round, 1) # 受驚：下一回合從衝刺開始
 	rounds += 1
+	# 撲空的回合同伴也動（原本只在移動、觀察、咬住的回合動，撲空時牠們停一回合，2026-10-22 試玩回報）
+	if wolves.size() > 1 and allies_moved_round != rounds:
+		_allies_turn()
+		if done:
+			return
 	_herd_alarm()
 	_deer_turn()
 	if not done and rounds >= int(t["max_rounds"]):
@@ -1115,6 +1123,10 @@ func hold_options() -> Dictionary:
 		out["hamstring"] = {"chance": clamp(hc, 0.05, 0.95), "breath": float(hm["breath"]),
 			"factors": [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], [_tx("tactical.factor.tired"), fat * float(hm["tired"])]]}
 	hold_short = {}
+	# 苔原狼在旁邊一起咬著：招式省喘（2026-10-22 使用者：兩三隻狼一起咬住，成功率不一定比較高，但省很多力氣）
+	var bm: float = _ally_breath_mult()
+	for k in out.keys():
+		out[k]["breath"] = float(out[k]["breath"]) * bm
 	for k in out.keys():
 		if breath < float(out[k]["breath"]):
 			hold_short[k] = out[k] # 畫面照樣列出、灰掉（2026-10-22 試玩回報：按鈕直接不見，看不出是喘不夠）
@@ -1347,6 +1359,13 @@ func _allies_adjacent(skip: int = 0) -> int:
 			n += 1
 	return n
 
+# 你咬住時，旁邊有幾隻同伴一起咬著：招式與咬著的喘 × hold_breath_mult[隻數]（沒有同伴時 1）
+func _ally_breath_mult() -> float:
+	if wolves.size() <= 1 or not held:
+		return 1.0
+	var mults: Array = _allies_cfg().get("hold_breath_mult", [1.0])
+	return float(mults[mini(_allies_adjacent(), mults.size() - 1)])
+
 func _ally_hold_help() -> float:
 	if wolves.size() <= 1 or not held:
 		return 0.0
@@ -1382,6 +1401,7 @@ func _ally_step(k: int) -> void:
 	# 自己咬著獵物：不動
 	if _ally_holding() == k:
 		wolves[k]["mode"] = "still"
+		_spend("breath_observe")
 		wolves[k]["intent"] = "holding"
 		wolves[k]["aim"] = deer_pos
 		return
@@ -1418,8 +1438,9 @@ func _ally_step(k: int) -> void:
 			tgt = player + Vector2i(roundi(back.x), roundi(back.y))
 			intent_id = "following"
 	elif fleeing and role == "chase" and not held and _ally_holding() == 0:
+		# 這一步就追得上：直接貼上去咬；追不上才往牠接下來會到的地方跑（2026-10-22 試玩回報：撲空後牠總是差一步）
 		var intent: Array = deer_intent()
-		if not intent.is_empty():
+		if not intent.is_empty() and dist(wolf_pos, deer_pos) > max_move() + 1.0:
 			tgt = deer_pos + Vector2i(intent[0]) * int(_flee_budget())
 	if held or _ally_holding() > 0:
 		intent_id = "helping" if _cheb(wolf_pos, deer_pos) <= 1 else "joining"
@@ -1452,6 +1473,8 @@ func _ally_step(k: int) -> void:
 			best = c
 			best_cost = cost
 	var mode: String = "still" if best == wolf_pos else mode_for_cost(best_cost)
+	if best == wolf_pos:
+		_spend("breath_observe") # 停著也會回喘（和你按觀察一樣）
 	wolves[k]["stuck"] = int(wolves[k].get("stuck", 0)) + 1 if best == wolf_pos and not fleeing else 0
 	if best != wolf_pos:
 		wolves[k]["pos"] = best
@@ -1475,6 +1498,8 @@ func _ally_step(k: int) -> void:
 		elif rng.randf() < float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3)):
 			wounds += 1
 			events.append(_tx("tactical.ally.bite").replace("{animal}", label()))
+		else:
+			events.append(_tx("tactical.ally.snap").replace("{animal}", label()))
 
 # 同伴咬住時獵物的回合：掙扎（越累越甩不掉、旁邊的狼越多越甩不掉）；其他同伴在旁邊時可能一起拖倒
 func _ally_held_struggle() -> void:
@@ -1638,7 +1663,7 @@ func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 		return
 	if held:
 		if not hanging:
-			breath = max(0.0, breath - float(t["hold"]["hold_breath"])) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘）
+			breath = max(0.0, breath - float(t["hold"]["hold_breath"]) * _ally_breath_mult()) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘；苔原狼一起咬著時省喘）
 		_deer_struggle(after_throat_miss, hanging)
 		if not bool(herd[target]["gone"]):
 			di = target

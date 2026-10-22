@@ -3,7 +3,8 @@ extends SceneTree
 #   1. 只有你一隻狼時，新的規則都不作用（逃跑方向、距離、埋伏、同伴咬住）
 #   2. 驅趕：你和驅趕的同伴隔著獵物相對（空地）時，牠往你這邊逃，你藏著時撲有埋伏加成
 #   3. 同伴咬住：獵物不動（除非掙脫）；你撲牠有「苔原狼拖住了牠」加成、被踢的機率減半；撲中就換你咬住
-#   4. 你咬住時：遠處的同伴衝刺過來；旁邊有同伴時牠比較難掙脫
+#   4. 你咬住時：遠處的同伴衝刺過來；旁邊有同伴時牠比較難掙脫；旁邊 1／2 隻同伴時招式的喘 × 0.5／0.3，成功率不變
+#   5. 同伴停著時回喘；你撲空的回合同伴也動
 # 用法：bash tools/run_sim.sh tactical_ally_rules
 var f := 0
 var fails := 0
@@ -99,6 +100,45 @@ func _process(_d) -> bool:
 	var b_far: float = h.break_chance()
 	h.wolves[1]["pos"] = h.deer_pos + Vector2i(1, 1)
 	_check(h.break_chance() < b_far - 0.05, "旁邊有同伴時比較難掙脫（%.2f → %.2f）" % [b_far, h.break_chance()])
+	# 一起咬住省喘、成功率不變
+	h = _new(6)
+	h.held = true
+	h.hold_side = "rear"
+	h.wolves[0]["breath"] = 50.0
+	var solo: Dictionary = h.hold_options()
+	h.add_ally("chase", h.deer_pos + Vector2i(1, 1))
+	var one: Dictionary = h.hold_options()
+	h.add_ally("drive", h.deer_pos + Vector2i(1, -1))
+	h.wolves[2]["pos"] = h.deer_pos + Vector2i(1, -1)
+	var two: Dictionary = h.hold_options()
+	_check(is_equal_approx(float(one["takedown"]["breath"]), float(solo["takedown"]["breath"]) * 0.5) and is_equal_approx(float(two["takedown"]["breath"]), float(solo["takedown"]["breath"]) * 0.3),
+		"旁邊 1／2 隻同伴：壓倒的喘 %.1f → %.1f → %.1f" % [solo["takedown"]["breath"], one["takedown"]["breath"], two["takedown"]["breath"]])
+	_check(is_equal_approx(float(two["takedown"]["chance"]), float(solo["takedown"]["chance"])) and is_equal_approx(float(two["throat"]["chance"]), float(solo["throat"]["chance"])), "一起咬著時壓倒、咬喉的成功率和單狼一樣")
+	# 同伴停著回喘
+	h = _new(7)
+	h.add_ally("chase", h.wolf_pos)
+	h.wolves[1]["breath"] = 10.0
+	h.wolves[1]["pos"] = h.deer_pos + Vector2i(1, 0)
+	h.deer_state = "suspicious"
+	h.held = true
+	h.herd[h.di]["ally_held"] = 1
+	h.held = false
+	h._allies_turn()
+	_check(float(h.wolves[1]["breath"]) > 10.0, "同伴停著（咬著）時回喘（10 → %.0f）" % h.wolves[1]["breath"])
+	# 撲空的回合同伴也動
+	var moved := false
+	for i in 40:
+		h = _new(i)
+		h.add_ally("chase", h.deer_pos + Vector2i(-8, 0))
+		h.deer_state = "flee"
+		h.flee_round = 1
+		h.wolves[0]["pos"] = h.deer_pos + Vector2i(-1, 0)
+		var a0: Vector2i = h.wolves[1]["pos"]
+		h.pounce()
+		if not h.held and not h.done:
+			moved = h.wolves[1]["pos"] != a0
+			break
+	_check(moved, "你撲空的回合同伴也會動")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
