@@ -889,7 +889,7 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		v += amb
 		factors.append([_tx("tactical.factor.ambush"), amb])
 	if _ally_holding() > 0:
-		var ah: float = float(_allies_cfg().get("hold", {}).get("pounce", 0.0))
+		var ah: float = float(_allies_cfg().get("hold", {}).get("pounce", 0.0)) * _pack_help()
 		v += ah
 		factors.append([_tx("tactical.factor.ally_holding"), ah])
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
@@ -1092,10 +1092,7 @@ func hold_options() -> Dictionary:
 	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
 	td += _stand_factor(tf, "takedown")
-	var age_v: float = _age_factor(tf, true)
-	td += age_v
-	# 苔原狼拖倒（群體狩獵實驗，使用者選 C）：一樣的算法，力量換成牠的、不算你的年齡
-	var td_other: float = td - (float(wolf["strength"]) - 50.0) / float(h["divisor"]) - age_v
+	td += _age_factor(tf, true)
 	if hams > 0:
 		tf.append([_tx("tactical.factor.hamstrung"), hams * float(h["hamstring"]["takedown"])])
 	var ally_h: float = _ally_hold_help()
@@ -1119,8 +1116,8 @@ func hold_options() -> Dictionary:
 	# 死咬拖住：用體重掛著不放（每個位置都能用，側面最有效）
 	out["hang"] = {"chance": 1.0, "breath": float(h["hang"]["breath"]),
 		"factors": [[_tx("tactical.factor.break"), float(h["hang"]["break"].get(hold_side, -0.08))]]}
-	# 你死咬拖住的那一回合，旁邊的苔原狼各自試著把牠拖倒（使用者選 C，2026-10-22）
-	var ally_td: Array = _ally_takedown_chances(td_other)
+	# 你死咬拖住的那一回合，旁邊的苔原狼幫你把牠扭倒（使用者選 C，2026-10-22）：看你自己壓倒的機率（方案 2：收尾看你的能力）
+	var ally_td: Array = _ally_takedown_chances(float(out["takedown"]["chance"]))
 	if not ally_td.is_empty():
 		var miss_all := 1.0
 		for c in ally_td:
@@ -1156,7 +1153,7 @@ func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> flo
 	v += float(sp().get("hold", {}).get("break", 0.0))
 	v += cond_mod("break")
 	if wolves.size() > 1:
-		v -= _allies_adjacent() * float(_allies_cfg().get("hold", {}).get("break_per_wolf", 0.0))
+		v -= _allies_adjacent() * float(_allies_cfg().get("hold", {}).get("break_per_wolf", 0.0)) * _pack_help()
 	if mother_hit_fawn_held:
 		# 被母鹿踢得鬆口（母鹿的物種可以覆寫，駝鹿踢得更重）
 		var m: int = int(herd[di].get("mother", -1))
@@ -1384,21 +1381,30 @@ func _ally_breath_mult() -> float:
 	if wolves.size() <= 1 or not held:
 		return 1.0
 	var mults: Array = _allies_cfg().get("hold_breath_mult", [1.0])
-	return float(mults[mini(_allies_adjacent(), mults.size() - 1)])
+	var m: float = float(mults[mini(_allies_adjacent(), mults.size() - 1)])
+	return 1.0 - (1.0 - m) * _pack_help() # 大型獵物（pack_help 小）省得少
 
-# 你咬住時旁邊每隻同伴拖倒的機率（死咬拖住那一回合各擲一次）：壓倒的算法用牠的力量 × hang_takedown.mult，夾在 min～max
-func _ally_takedown_chances(td_other: float) -> Array:
+# 你死咬拖住那一回合，旁邊的同伴幫你扭倒的機率（各擲一次）：你自己壓倒的機率 × hang_takedown.share[第幾隻]（效益遞減）× 物種的 pack_help，夾在 min～max
+func _ally_takedown_chances(your_td: float) -> Array:
 	var out: Array = []
 	if wolves.size() <= 1 or not held:
 		return out
 	var cfg: Dictionary = _allies_cfg().get("hang_takedown", {})
 	if cfg.is_empty():
 		return out
+	var share: Array = cfg.get("share", [0.5])
 	for k in range(1, wolves.size()):
 		if _cheb(wolves[k]["pos"], deer_pos) <= 1:
-			var v: float = (td_other + (float(wolves[k]["stats"]["strength"]) - 50.0) / float(t["hold"]["divisor"])) * float(cfg.get("mult", 0.6))
+			var v: float = your_td * float(share[mini(out.size(), share.size() - 1)]) * _pack_help()
 			out.append(clamp(v, float(cfg.get("min", 0.02)), float(cfg.get("max", 0.5))))
 	return out
+
+# 同伴對這種獵物有多大用（物種 D：species.pack_help，野牛、駝鹿要更多狼才有用）；幼獸旁邊有成獸擋著時再 × allies.guarded_mult
+func _pack_help() -> float:
+	var v: float = float(sp().get("pack_help", 1.0))
+	if is_fawn() and _guarded(di, float(_allies_cfg().get("guarded_dist", 1.5))):
+		v *= float(_allies_cfg().get("guarded_mult", 1.0))
+	return v
 
 func _ally_hold_help() -> float:
 	if wolves.size() <= 1 or not held:
@@ -1432,6 +1438,13 @@ func _ally_step(k: int) -> void:
 	# 你咬住了、咬傷了，或別的同伴咬住了：趕快一起圍上去
 	var allow_sprint := fleeing or held or wounds > 0 or _ally_holding() > 0
 	var flank := false # 繞到另一側：還沒到那一側時不靠近獵物 flank_radius 格內（繞大圈）
+	# 被護幼的成獸踢開：這一回合往後退，不咬
+	if int(wolves[k].get("repelled", -1)) >= rounds:
+		wolves[k]["mode"] = "still"
+		wolves[k]["intent"] = "repelled"
+		wolves[k]["aim"] = wolf_pos
+		_spend("breath_observe")
+		return
 	# 自己咬著獵物：不動
 	if _ally_holding() == k:
 		wolves[k]["mode"] = "still"
@@ -1517,19 +1530,20 @@ func _ally_step(k: int) -> void:
 	# 咬：逃跑中的獵物在旁邊（你或別的同伴咬住時不另外咬，壓倒、咬喉的加成在 hold_options）
 	if fleeing and not held and _ally_holding() == 0 and _cheb(wolf_pos, deer_pos) <= 1:
 		var fat: float = deer_fatigue()
-		if fat >= float(cfg.get("pull_down", {}).get("min_fatigue", 0.75)) and rng.randf() < float(cfg.get("pull_down", {}).get("chance", 0.2)):
+		var ph: float = _pack_help()
+		if fat >= float(cfg.get("pull_down", {}).get("min_fatigue", 0.75)) and rng.randf() < float(cfg.get("pull_down", {}).get("chance", 0.2)) * ph:
 			stats["ally_pull"] = int(stats.get("ally_pull", 0)) + 1
 			_finish("caught", _tx("tactical.ally.pull_down").replace("{animal}", label()))
 			return
 		var hc: Dictionary = cfg.get("hold", {})
-		if not hc.is_empty() and rng.randf() < float(hc.get("base", 0.0)) + fat * float(hc.get("tired", 0.0)):
+		if not hc.is_empty() and rng.randf() < (float(hc.get("base", 0.0)) + fat * float(hc.get("tired", 0.0))) * ph:
 			# 咬住拖住：牠跑不了，你和其他同伴可以圍上去
 			herd[di]["ally_held"] = k
 			wolves[k]["intent"] = "holding"
 			wolves[k]["aim"] = deer_pos
 			stats["ally_hold"] = int(stats.get("ally_hold", 0)) + 1
 			events.append(_tx("tactical.ally.hold").replace("{animal}", label()))
-		elif rng.randf() < float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3)):
+		elif rng.randf() < (float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3))) * ph:
 			wounds += 1
 			events.append(_tx("tactical.ally.bite").replace("{animal}", label()))
 		else:
@@ -1542,13 +1556,16 @@ func _ally_held_struggle() -> void:
 	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
 	var fat: float = deer_fatigue_any()
 	var others: int = _allies_adjacent(k)
-	if others > 0 and rng.randf() < float(cfg.get("pull_base", 0.0)) + others * float(cfg.get("pull_per_ally", 0.0)) + fat * float(cfg.get("pull_tired", 0.0)):
+	var ph: float = _pack_help()
+	# 同伴們自己拖倒：只有獵物已經跑不動時（收尾原則上看你的能力，方案 2）
+	if others > 0 and fat >= float(_allies_cfg().get("pull_down", {}).get("min_fatigue", 0.85)) \
+			and rng.randf() < (float(cfg.get("pull_base", 0.0)) + others * float(cfg.get("pull_per_ally", 0.0)) + fat * float(cfg.get("pull_tired", 0.0))) * ph:
 		stats["pack_pull"] = int(stats.get("pack_pull", 0)) + 1
 		_finish("caught", _tx("tactical.ally.pull_down_pack").replace("{animal}", label()))
 		return
 	var near: int = others + (1 if _cheb(wolf_pos, deer_pos) <= 1 else 0)
 	var br: float = float(cfg.get("break_base", 0.35)) - fat * float(cfg.get("break_tired", 0.3)) - near * float(cfg.get("break_per_wolf", 0.08)) \
-		+ float(sp().get("hold", {}).get("break", 0.0)) + cond_mod("break")
+		+ float(sp().get("hold", {}).get("break", 0.0)) + cond_mod("break") + (1.0 - ph) * float(cfg.get("break_big", 0.0))
 	if rng.randf() < clamp(br, 0.05, 0.95):
 		herd[di]["ally_held"] = 0
 		wounds += 1
@@ -1747,9 +1764,16 @@ func _mother_defend() -> bool:
 	# 狼衝著幼鹿去（離幼鹿比離自己近）才算威脅；狼追的是她自己時，她照常逃
 	var fawn_close: bool = dist(wolf_pos, herd[f]["pos"]) <= float(cfg["trigger"]) and dist(wolf_pos, herd[f]["pos"]) < dist(wolf_pos, deer_pos)
 	var threat: bool = fawn_held or (fawn_close and str(herd[f]["state"]) != "unaware")
+	# 苔原狼同伴也算威脅（群體狩獵實驗，2026-10-22：原本只看你，苔原狼繞過了護幼）：你不是威脅時，看咬著幼獸、或離幼獸最近的那隻同伴
+	var foe: int = 0
+	if not threat and wolves.size() > 1:
+		foe = _ally_threat(f, cfg)
+		threat = foe > 0
 	if not threat:
 		herd[di]["defend_rounds"] = 0
 		return false
+	if foe > 0:
+		return _defend_against_ally(foe, f, cfg)
 	if dist(deer_pos, wolf_pos) > float(cfg["reach"]) or int(herd[di]["defend_rounds"]) >= int(cfg["max_rounds"]):
 		if int(herd[di]["defend_rounds"]) >= int(cfg["max_rounds"]) and deer_state != "flee":
 			deer_state = "flee"
@@ -1788,6 +1812,64 @@ func _mother_defend() -> bool:
 		events.append(_tx("tactical.defend.hit").replace("{n}", str(dmg)))
 	else:
 		events.append(_tx("tactical.defend.miss"))
+	return true
+
+# 威脅幼獸的同伴（群體狩獵實驗）：咬著幼獸的那隻，或在 trigger 格內、離幼獸比離這隻成獸近、最靠近幼獸的那隻；沒有回傳 0
+func _ally_threat(f: int, cfg: Dictionary) -> int:
+	var held_by: int = int(herd[f].get("ally_held", 0))
+	if held_by > 0:
+		return held_by
+	if str(herd[f]["state"]) == "unaware":
+		return 0
+	var best := 0
+	var bd := INF
+	for k in range(1, wolves.size()):
+		var wp: Vector2i = wolves[k]["pos"]
+		var d: float = dist(wp, herd[f]["pos"])
+		if d <= float(cfg["trigger"]) and d < dist(wp, deer_pos) and d < bd:
+			bd = d
+			best = k
+	return best
+
+# 成獸衝向威脅幼獸的同伴：踢中就把牠趕開（咬著的鬆口；同伴不會受傷，實驗階段的簡化）、這一回合和下一回合不靠近幼獸
+func _defend_against_ally(k: int, f: int, cfg: Dictionary) -> bool:
+	var ap: Vector2i = wolves[k]["pos"]
+	if dist(deer_pos, ap) > float(cfg["reach"]) or int(herd[di]["defend_rounds"]) >= int(cfg["max_rounds"]):
+		if int(herd[di]["defend_rounds"]) >= int(cfg["max_rounds"]) and deer_state != "flee":
+			deer_state = "flee"
+		return false
+	if defended_round == rounds:
+		return false
+	defended_round = rounds
+	herd[di]["defend_rounds"] = int(herd[di]["defend_rounds"]) + 1
+	defends += 1
+	deer_state = "flee"
+	flee_round = maxi(flee_round, 1)
+	var occupied := deer_cells(di)
+	var best := deer_pos
+	var bd := INF
+	for d in DIRS:
+		var n: Vector2i = ap + d
+		if in_bounds(n) and not occupied.has(n) and not _wolf_at(n):
+			var dd: float = dist(n, deer_pos)
+			if dd < bd:
+				bd = dd
+				best = n
+	deer_pos = best
+	deer_facing = _dir_toward(deer_pos, ap)
+	var holding: bool = int(herd[f].get("ally_held", 0)) == k
+	var hit: float = float(cfg["base"]) + (float(cfg["held_bonus"]) if holding else 0.0)
+	var who: String = label(di)
+	if rng.randf() < hit:
+		wolves[k]["repelled"] = rounds + 1
+		if holding:
+			herd[f]["ally_held"] = 0
+			herd[f]["wounds"] = int(herd[f]["wounds"]) + 1
+			events.append(_tx("tactical.ally.defend_release").replace("{animal}", who))
+		else:
+			events.append(_tx("tactical.ally.defend_hit").replace("{animal}", who))
+	else:
+		events.append(_tx("tactical.ally.defend_miss").replace("{animal}", who))
 	return true
 
 func _dir_toward(from: Vector2i, to: Vector2i) -> Vector2i:

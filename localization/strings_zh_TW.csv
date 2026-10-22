@@ -1967,6 +1967,9 @@ tactical.ally.takedown,你死死拖住{animal}，苔原狼趁勢咬住牠的腿�
 tactical.ally.takedown_miss,苔原狼撲上來想把{animal}扭倒，被牠撐住了。
 tactical.ui.ally_takedown,（苔原狼拖倒 {p}%）
 tactical.ui.ally_takedown_tip,你死咬拖住的這一回合，旁邊的苔原狼會試著把牠扭倒（{n} 隻，合計 {p}%）。
+tactical.ally.defend_release,{animal}衝過來踢開苔原狼，牠鬆口了。
+tactical.ally.defend_hit,{animal}衝向苔原狼，把牠踢開了。
+tactical.ally.defend_miss,{animal}衝向苔原狼，苔原狼閃開了。
 tactical.ally.snap,苔原狼撲上去咬{animal}，沒咬住。
 tactical.ally.hold,苔原狼咬住了{animal}的後腿，死命拖住——牠跑不動了！
 tactical.ally.broke_free,{animal}甩開了苔原狼，帶著傷逃跑！
@@ -1985,6 +1988,7 @@ tactical.ally.intent.chasing,追上去
 tactical.ally.intent.holding,咬住了
 tactical.ally.intent.joining,圍上去
 tactical.ally.intent.helping,一起咬著
+tactical.ally.intent.repelled,被踢開
 tactical.ally.tip,苔原狼（{role}）：{what}
 tactical.ally.intent_tip.circling,繞大圈到獵物的另一側；你離獵物 7 格內時牠會衝過去，把獵物往你這邊趕。
 tactical.ally.intent_tip.waiting,已經在另一側等著；你離獵物 7 格內時牠就衝過去。
@@ -1993,6 +1997,7 @@ tactical.ally.intent_tip.following,跟在你後面；獵物跑了就追上去。
 tactical.ally.intent_tip.chasing,追著逃跑的獵物，追上了會咬牠的後腿。
 tactical.ally.intent_tip.holding,咬住獵物死命拖住；快撲上去。
 tactical.ally.intent_tip.joining,衝過去一起咬住那隻獵物。
+tactical.ally.intent_tip.repelled,被護著幼獸的成獸踢開了，暫時退開。
 tactical.ally.intent_tip.helping,在旁邊一起咬著：你壓倒、咬喉更容易，牠也比較難掙脫。
 tactical.label.marmot,旱獺
 tactical.label.marmot_young,幼獺
