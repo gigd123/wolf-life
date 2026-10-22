@@ -17,7 +17,7 @@
 | `docs/design-pillars.md` | 設計支柱：核心樂趣、玩家應面對的決策、不想變成的樣子、新系統的檢驗問題、決策分工 | 提案、寫規格、驗證玩法前 |
 | `docs/project-overview.md` | 給其他人或 AI 看的總覽：目前的遊戲內容與後續規劃 | 第一次接觸專案、或要對外說明時 |
 | `docs/pre-2.0-plan.md` | Phase 2 之前的工作清單：順序、待寫的提案、要補的圖、待決定的建議 | 規劃接下來要做什麼時 |
-| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 3a（黑狼的一生） | 每次開發前 |
+| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 2g（旱獺、小撲、悄悄叼走猞猁的雪兔）、Phase 3a（黑狼的一生） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
@@ -45,6 +45,7 @@
 10. **Phase 2d 馬鹿、騾鹿、馴鹿接進戰術地圖**：依 `SPEC.md` 的實作順序做（共 5 步，從鹿群的逃跑改成整群一個方向開始）。提案在 `docs/proposals/tactical-hunt-more-deer.md`，生態資料在 `docs/ecology-reference.md`。
 11. **Phase 2e 藏食物**：依 `SPEC.md` 的實作順序做（共 3 步，從藏肉的狀態與規則開始）。提案在 `docs/proposals/hunt-rhythm-stage2.md`。一季的天數維持 10 天，等試玩數據。
 12. **Phase 2f 會站定的大型獵物**（公馬鹿、駝鹿、野牛）：依 `SPEC.md` 的實作順序做（共 4 步，從共用的站定規則與公馬鹿開始）。提案在 `docs/proposals/standing-prey-tactical.md`。
+13. **Phase 2g 旱獺、小撲、悄悄叼走猞猁的雪兔**：依 `SPEC.md` 的實作順序做（共 4 步，從旱獺開始）。提案在 `docs/proposals/small-prey-marmot-lynx.md`；之前的「全部改成戰術場景、肉量」在 `docs/proposals/all-tactical-and-meat.md`。
 
 ## 工作規則
 
