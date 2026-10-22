@@ -171,7 +171,7 @@
         "elk": { "spring": 3, "summer": 6, "autumn": 2, "winter": 0 },
         "snowshoe_hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 },
         "bighorn_sheep": { "spring": 1, "summer": 3, "autumn": 1, "winter": 0 },
-        "marmot": { "spring": 1, "summer": 4, "autumn": 1, "winter": 0 }
+        "marmot": { "spring": 1, "summer": 2, "autumn": 1, "winter": 0 }
       },
       "competitor_weights": {
         "grizzly_bear": { "spring": 2, "summer": 4, "autumn": 3, "winter": 0 }
@@ -196,7 +196,7 @@
         "mule_deer": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 },
         "snowshoe_hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 },
         "bighorn_sheep": { "spring": 5, "summer": 4, "autumn": 5, "winter": 5 },
-        "marmot": { "spring": 1, "summer": 3, "autumn": 1, "winter": 0 }
+        "marmot": { "spring": 1, "summer": 2, "autumn": 1, "winter": 0 }
       },
       "competitor_weights": {
         "grizzly_bear": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
@@ -404,7 +404,7 @@
       "prey_weights": {
         "snowshoe_hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 },
         "caribou": { "spring": 1, "summer": 3, "autumn": 1, "winter": 0 },
-        "marmot": { "spring": 1, "summer": 2, "autumn": 1, "winter": 0 }
+        "marmot": { "spring": 1, "summer": 1, "autumn": 1, "winter": 0 }
       },
       "competitor_weights": {
         "grizzly_bear": { "spring": 0, "summer": 0, "autumn": 0, "winter": 0 }

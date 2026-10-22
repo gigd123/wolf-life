@@ -816,6 +816,17 @@ func small_pounce_candidates(region_id: String) -> Array:
 				out.append([id, t, float(a.get("weight", 1))])
 	return out
 
+# 平淡的探索結果（可以換成小撲）：什麼都沒發現（冬眠的洞口、逆風、暴風雪除外）、採集物、陳舊的獵物線索
+func _small_pounce_replaceable(d: Dictionary) -> bool:
+	match str(d.get("kind", "")):
+		"nothing":
+			return not d.has("hibernating") and not bool(d.get("wind_bad", false)) and not bool(d.get("blizzard", false))
+		"clue":
+			if d.get("source_kind", "") == "gather":
+				return true
+			return d.get("source_kind", "") == "prey" and not is_notable_discovery(d)
+	return false
+
 func _maybe_small_pounce(mode: String) -> bool:
 	var cfg := _small_pounce_cfg()
 	if cfg.is_empty() or not (cfg.get("modes", []) as Array).has(mode) or not RNGService.chance(float(cfg.get("chance", 0.0))):
@@ -1508,10 +1519,6 @@ func action_explore(mode: String = "trail") -> Dictionary:
 			"location": carcasses[hidden]["terrain"], "frozen": bool(carcasses[hidden].get("frozen", false))}
 		state_changed.emit()
 		return current_discovery
-	# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）
-	if _maybe_small_pounce(mode):
-		state_changed.emit()
-		return current_discovery
 	current_discovery = ExploreSystem.generate({
 		"region_id": current_region,
 		"season": GameTime.current_season(),
@@ -1530,6 +1537,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"notables": _notables_here(),
 		"youth": youth_food_mults(),
 	})
+	# 田鼠與地松鼠的小撲（Phase 2g 第 2 步；2026-10-22 使用者選 A：只取代平淡的結果，不蓋掉獵物、殘骸這些發現）
+	if _small_pounce_replaceable(current_discovery) and _maybe_small_pounce(mode):
+		state_changed.emit()
+		return current_discovery
 	match current_discovery.get("kind", ""):
 		"mark":
 			Growth.learn_flat(wolf, "perception", "explore_perception")

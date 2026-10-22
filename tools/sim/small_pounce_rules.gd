@@ -1,9 +1,9 @@
 extends SceneTree
 # 田鼠與地松鼠的小撲（Phase 2g 第 2 步）的回歸測試：
 #   1. 哪一季、哪種地形有哪種（田鼠全年；地松鼠、金背地松鼠春季與夏季前半）
-#   2. 每次探索約 10%（總機率，不是每種各擲）；守在水邊不會
+#   2. 只取代平淡的探索結果（什麼都沒發現、採集物、陳舊的線索），不蓋掉獵物、殘骸、冬眠的洞口；整體約 10%（草原丘陵春季約 7～8%）；守在水邊不會
 #   3. 成功率：田鼠 50%（冬季雪下 40%）、感知高的加成；地松鼠 40%，看技巧與速度
-#   4. 撲過去：體力 −2、不花時段、成功飽食度 +1／+2、技巧成長約狩獵撲中的三分之一、同一天第二次起遞減
+#   4. 撲過去：體力 −2、不花時段、成功飽食度 +1／+2、技巧成長約狩獵撲中的六分之一、同一天第二次起遞減
 #   5. 自動玩家（照常過日子）：未滿 2 歲撲、成年後不理
 # 用法：bash tools/run_sim.sh small_pounce_rules
 var gs
@@ -54,7 +54,14 @@ func _run() -> void:
 		gs.clear_discovery()
 		if not gs.wolf.alive:
 			break
-	_check(sp >= 36 and sp <= 90, "每次探索約 10%%（%d／%d）" % [sp, n])
+	_check(sp >= 30 and sp <= 90, "整體約 10%%（%d／%d）" % [sp, n])
+	_check(gs._small_pounce_replaceable({"kind": "nothing"}) and gs._small_pounce_replaceable({"kind": "clue", "source_kind": "gather"})
+		and gs._small_pounce_replaceable({"kind": "clue", "source_kind": "prey", "fresh": false, "clue": "track"}), "平淡的結果可以換成小撲")
+	_check(not gs._small_pounce_replaceable({"kind": "clue", "source_kind": "prey", "fresh": true, "clue": "track"})
+		and not gs._small_pounce_replaceable({"kind": "clue", "source_kind": "prey", "clue": "sight"})
+		and not gs._small_pounce_replaceable({"kind": "remains"}) and not gs._small_pounce_replaceable({"kind": "nothing", "hibernating": "marmot"})
+		and not gs._small_pounce_replaceable({"kind": "clue", "source_kind": "threat"}) and not gs._small_pounce_replaceable({"kind": "feature"}),
+		"新鮮的線索、看到的獵物、殘骸、冬眠的洞口、危險、地點不會被換掉")
 	# 3. 成功率
 	gs.wolf.perception = 50.0; gs.wolf.skill = 50.0; gs.wolf.speed = 50.0
 	var base_vole: float = gs.small_pounce_chance({"animal": "vole", "snow": false})
@@ -91,7 +98,7 @@ func _run() -> void:
 			if r2["caught"]:
 				growth_second = gs.wolf.skill - 50.0
 	_check(got >= 8 and got <= 30, "地松鼠 40～60%% 撲到（%d／40）" % got)
-	_check(growth_first > 0.0 and growth_first < 0.2, "撲到一次的技巧成長很小（%.3f）" % growth_first)
+	_check(growth_first > 0.0 and growth_first < 0.1, "撲到一次的技巧成長很小（%.3f）" % growth_first)
 	_check(growth_second > 0.0 and growth_second < growth_first, "同一天第二次撲到的成長遞減（%.3f → %.3f）" % [growth_first, growth_second])
 	gs.current_discovery = {"kind": "small_pounce", "animal": "vole", "location": "prairie", "snow": false}
 	var h0: float = gs.wolf.hunger
