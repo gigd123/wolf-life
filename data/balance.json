@@ -422,13 +422,13 @@
   "feeding": {
     "_comment": "分段進食與搶食（SPEC「狩獵後續事件」）。沒列在 segments 的獵物一次吃完。",
     "segments": {
-      "white_tailed_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
-      "caribou": { "adult": 3, "juvenile": 2 },
-      "moose": { "adult": 5, "juvenile": 2 },
-      "elk": { "adult": 4, "buck": 4, "juvenile": 2 },
-      "mule_deer": { "adult": 3, "buck": 3, "juvenile": 2 },
+      "white_tailed_deer": { "adult": 4, "buck": 4, "juvenile": 2 },
+      "caribou": { "adult": 4, "juvenile": 2 },
+      "moose": { "adult": 7, "juvenile": 3 },
+      "elk": { "adult": 6, "buck": 6, "juvenile": 3 },
+      "mule_deer": { "adult": 4, "buck": 4, "juvenile": 2 },
       "bighorn_sheep": { "adult": 3, "buck": 3 },
-      "bison": { "adult": 6, "juvenile": 2 },
+      "bison": { "adult": 9, "juvenile": 4 },
       "pronghorn": { "adult": 2 }
     },
     "eat_turns": 1,
@@ -436,7 +436,7 @@
     "fox_chance": 0.12,
     "_fox_comment": "1.8 第 6 步：狐狸來偷殘骸的機率倍率。winter_mult 冬季、hare_low_mult 雪兔低谷年（週期倍率 < hare_low）更常來、更大膽；frequent_mult 你常待的區域（這一季待過 frequent_periods 個時段以上）狐狸較少。咬死狐狸通常不吃，飽食度低於 eat_hunger 時才吃（eat_value）。",
     "fox": { "winter_mult": 1.5, "hare_low_mult": 1.5, "hare_low": 0.5, "frequent_mult": 0.6, "frequent_periods": 12, "eat_hunger": 20, "eat_value": 15 },
-    "carcass_days": 4, "carcass_days_winter": 6, "_carcass_loss_comment": "Phase 2b 第 1 步：殘骸逐段被渡鴉、狐狸吃掉（取代原本每個時段 15% 整個不見）。present 你在同一區時每個時段吃掉的段數，absent 不在時；每天最多 max_per_day 段。凍住的乘 blizzard.winter_kill.loss_mult，苔原的狼獾照舊加乘。超過 carcass_days（冬季 carcass_days_winter）天就腐壞。", "carcass_loss": { "present": 0.1, "absent": 0.2, "max_per_day": 1.0 },
+    "carcass_days": 4, "carcass_days_winter": 6, "_carcass_loss_comment": "Phase 2b 第 1 步：殘骸逐段被渡鴉、狐狸吃掉（取代原本每個時段 15% 整個不見）。2026-10-22 肉量 B（使用者同意）改成按肉量算：present_value 你在同一區時每個時段吃掉的飽食度，absent_value 不在時；每天最多 max_value_per_day；程式換算成這具殘骸的段數（大型獵物每段比較多，段數掉得比較慢）。凍住的乘 blizzard.winter_kill.loss_mult，苔原的狼獾照舊加乘。超過 carcass_days（冬季 carcass_days_winter）天就腐壞。", "carcass_loss": { "present_value": 5, "absent_value": 15, "max_value_per_day": 50 },
     "return_turns": 1, "return_bear_chance": 0.1, "return_fox_chance": 0.2
   },
   "start_health_max": 80,

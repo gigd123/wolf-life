@@ -2065,7 +2065,7 @@ func _show_feeding(intro: String = "") -> void:
 		.replace("{fox}", str(int(round(float(chances["fox"]) * 100.0))))
 	# 離開的話：不在時一天大約少幾段（Phase 2b 第 1 步）
 	if int(f["segments_left"]) > 0:
-		encounter_detail.text += "\n" + tr("feeding.leave_loss").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent({"region_id": GameState.current_region, "segments_left": f["segments_left"]}))
+		encounter_detail.text += "\n" + tr("feeding.leave_loss").replace("{n}", "%.1f" % GameState.carcass_loss_per_day_absent({"region_id": GameState.current_region, "segments_left": f["segments_left"], "segment_value": f.get("segment_value", 25.0)}))
 	if float(chances.get("wolverine", 0.0)) > 0.0 and GameState.is_identified("wolverine"):
 		encounter_detail.text += tr("feeding.risk.wolverine").replace("{n}", str(int(round(float(chances["wolverine"]) * 100.0))))
 	elif float(chances.get("wolverine", 0.0)) > 0.0:

@@ -3489,7 +3489,7 @@ func _decay_carcasses() -> void:
 		if int(c.get("loss_day", -1)) != today:
 			c["loss_day"] = today
 			c["loss_today"] = 0.0
-		loss = min(loss, max(0.0, float(cfg.get("carcass_loss", {}).get("max_per_day", 1.0)) - float(c["loss_today"])))
+		loss = min(loss, max(0.0, carcass_loss_max_per_day(c) - float(c["loss_today"])))
 		c["loss_today"] = float(c["loss_today"]) + loss
 		c["eaten"] = float(c.get("eaten", 0.0)) + loss
 		while float(c["eaten"]) >= 1.0 and int(c["segments_left"]) > 0:
@@ -3501,10 +3501,12 @@ func _decay_carcasses() -> void:
 	carcasses = kept
 
 # 這具殘骸每個時段大約被吃掉幾段（畫面上「離開時大約會少多少」也用這個）。
+# 2026-10-22 肉量 B（使用者同意）：渡鴉、狐狸吃掉的是固定的肉量（飽食度），不是固定的段數：大型獵物每段比較多，
+# 所以一樣吃掉的肉換成段數比較少；設定在 carcass_loss.present_value／absent_value／max_value_per_day，換算成這具殘骸的段數。
 func carcass_loss_per_period(c: Dictionary, present: Variant = null) -> float:
 	var lc: Dictionary = _feeding_cfg().get("carcass_loss", {})
 	var here: bool = (str(c.get("region_id", "")) == current_region) if present == null else bool(present)
-	var loss: float = float(lc.get("present" if here else "absent", 0.2))
+	var loss: float = float(lc.get("present_value" if here else "absent_value", 15.0)) / _carcass_seg_value(c)
 	if bool(c.get("frozen", false)):
 		loss *= float(_blizzard_cfg().get("winter_kill", {}).get("loss_mult", 0.3))
 	# 苔原的殘骸還會被狼獾偷吃
@@ -3514,7 +3516,14 @@ func carcass_loss_per_period(c: Dictionary, present: Variant = null) -> float:
 
 # 你不在時，這具殘骸一天大約少幾段（有每天的上限）。
 func carcass_loss_per_day_absent(c: Dictionary) -> float:
-	return min(carcass_loss_per_period(c, false) * GameTime.PERIODS.size(), float(_feeding_cfg().get("carcass_loss", {}).get("max_per_day", 1.0)))
+	return min(carcass_loss_per_period(c, false) * GameTime.PERIODS.size(), carcass_loss_max_per_day(c))
+
+# 每天最多被吃掉幾段（max_value_per_day 換算成這具殘骸的段數）
+func carcass_loss_max_per_day(c: Dictionary) -> float:
+	return float(_feeding_cfg().get("carcass_loss", {}).get("max_value_per_day", 50.0)) / _carcass_seg_value(c)
+
+func _carcass_seg_value(c: Dictionary) -> float:
+	return max(1.0, float(c.get("segment_value", 25.0)))
 
 func carcass_here() -> Dictionary:
 	var idx := carcass_index_here()

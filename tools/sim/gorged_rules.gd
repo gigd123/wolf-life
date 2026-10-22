@@ -55,12 +55,16 @@ func _process(_d) -> bool:
 	var here: Dictionary = gs.carcasses[0]; var away: Dictionary = gs.carcasses[1]
 	for i in 5:
 		gs._decay_carcasses()
-	_check(absf(float(here.get("eaten", 0.0)) + (3 - int(here["segments_left"])) - 0.5) < 0.01, "在場：一天（5 個時段）少約 0.5 段")
-	_check(int(away["segments_left"]) == 2 and float(away.get("eaten", 0.0)) < 0.01, "不在場：一天少 1 段（剩 %d 段）" % int(away["segments_left"]))
+	# 2026-10-22 肉量 B：按肉量算（每段 25 的殘骸）：在場每個時段 5 → 一天 25 = 1 段；不在 15 → 一天 75，上限 50 = 2 段
+	_check(absf(float(here.get("eaten", 0.0)) + (3 - int(here["segments_left"])) - 1.0) < 0.01, "在場：一天（5 個時段）少約 1 段（飽食度 25）")
+	_check(int(away["segments_left"]) == 1 and float(away.get("eaten", 0.0)) < 0.01, "不在場：一天少 2 段（飽食度上限 50，剩 %d 段）" % int(away["segments_left"]))
 	for i in 3:
 		gs._decay_carcasses()
-	_check(int(away["segments_left"]) == 2, "每天最多少 1 段（同一天再過幾個時段不再減少）")
-	_check(absf(gs.carcass_loss_per_day_absent(away) - 1.0) < 0.01, "畫面寫的「不在時一天大約少」= 1 段")
+	_check(int(away["segments_left"]) == 1, "每天最多少飽食度 50（同一天再過幾個時段不再減少）")
+	_check(absf(gs.carcass_loss_per_day_absent(away) - 2.0) < 0.01, "畫面寫的「不在時一天大約少」= 2 段")
+	# 大型獵物每段比較多：一樣的肉量換成段數比較少（駝鹿每段約 31）
+	var big := {"region_id": "forest_west", "segments_left": 7, "segment_value": 220.0 / 7.0}
+	_check(gs.carcass_loss_per_day_absent(big) < 2.0, "駝鹿的殘骸一天少的段數比白尾鹿少（%.2f 段）" % gs.carcass_loss_per_day_absent(big))
 	gs.life_log["days_lived"] = today + 10
 	gs._decay_carcasses()
 	_check(gs.carcasses.is_empty(), "放太久就腐壞")
