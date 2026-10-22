@@ -3195,6 +3195,7 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 		stage_key = "young" if wolf.age_years < float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)) else "yearling"
 	_stat_inc("tactical_by_stage", stage_key + "." + th.result)
 	_stat_inc("tactical_by_species", hunt.animal_id + "." + th.result)
+	_stat_inc("tactical_by_species_stage", hunt.animal_id + "." + stage_key + "." + th.result)
 	var st0: float = wolf.stamina
 	finish_hunt(hunt)
 	_stat_inc("tactical_stamina", stage_key, roundi(max(0.0, st0 - wolf.stamina)))

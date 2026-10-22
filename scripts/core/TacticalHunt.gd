@@ -789,7 +789,8 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 	if tired > 0.0:
 		v += tired
 		factors.append([_tx("tactical.factor.tired"), tired])
-	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - float(t["deer"]["speed"])) / float(p["ability_divisor"])
+	# 物種可以減少能力的影響（兔子，2026-10-22 使用者：未成年的狼也要抓得到六到七成）
+	var ab: float = ((float(wolf["speed"]) + float(wolf["skill"])) * 0.5 - float(t["deer"]["speed"])) / float(p["ability_divisor"]) * float(sp().get("ability_mult", 1.0))
 	v += ab
 	factors.append([_tx("tactical.factor.ability"), ab])
 	if terrain(deer_pos) == "l":

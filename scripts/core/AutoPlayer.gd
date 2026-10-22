@@ -398,6 +398,26 @@ func _routine_notable(d: Dictionary) -> bool:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
+# 戰術狩獵值不值得追（2026-10-22 使用者選 B：自動玩家比真人笨，會一直追幾乎追不到的獵物，模擬高估難度；照常過日子也用這個）：
+# 看出健康又不太餓（同 Phase 2b）；健康的站定大型獵物、成羚群（game.judge.skip_healthy）除非快餓死（desperate_hunger）都不追；
+# 虛弱以外的成羚（skip_unless_weak）也一樣；離避難處近的（skip_near_refuge：大角羊離峭壁近）不太餓時不追。
+func _tactical_not_worth(hunt: HuntSystem, th: TacticalHunt) -> bool:
+	var jc: Dictionary = th.t.get("game", {}).get("judge", {})
+	var hunger: float = GameState.wolf.hunger
+	var species: String = str(th.herd[th.target].get("species", ""))
+	var desperate: bool = hunger < float(jc.get("desperate_hunger", 20.0))
+	if th.condition_known and th.condition == "healthy" and hunger >= JUDGE_HUNGER:
+		return true
+	if desperate:
+		return false
+	if th.condition_known and th.condition == "healthy" and (jc.get("skip_healthy", []) as Array).has(species):
+		return true
+	if (jc.get("skip_unless_weak", []) as Array).has(species) and not (th.condition_known and th.condition == "weak"):
+		return true
+	if hunt.refuge_near and (jc.get("skip_near_refuge", []) as Array).has(species) and hunger >= JUDGE_HUNGER:
+		return true
+	return false
+
 func _play_hunt(hunt: HuntSystem) -> void:
 	# 白尾鹿用戰術地圖（Phase 2c 第 3 步）：交給本能打；會判斷的狼先觀察，看出是健康的成鹿又還不太餓就放棄（同 Phase 2b）
 	if tactical and GameState.tactical_eligible(hunt) and (tactical_only.is_empty() or tactical_only.has(hunt.animal_id)):
@@ -406,7 +426,7 @@ func _play_hunt(hunt: HuntSystem) -> void:
 		if judge and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
 			th.observe()
 			TacticalInstinct.pick_target(th)
-			if th.condition_known and th.condition == "healthy" and GameState.wolf.hunger >= JUDGE_HUNGER:
+			if _tactical_not_worth(hunt, th):
 				th.give_up()
 		if not th.done:
 			TacticalInstinct.play(th)

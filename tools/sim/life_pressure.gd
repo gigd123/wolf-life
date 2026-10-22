@@ -58,6 +58,7 @@ func _process(_d):
 	var sub_hungry := {}
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
 	var tac_sp := {} # 物種.結果 -> 次數（Phase 2d）
+	var tac_sps := {} # 物種.年齡.結果 -> 次數（2026-10-22：雪兔各年齡的捕捉率）
 	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
 	var tac_st := {}
 	var meet_count := {} # 撞上黑狼一家（第 3 步）：kind.outcome -> 次數
@@ -170,6 +171,8 @@ func _process(_d):
 			tac[k] = int(tac.get(k, 0)) + int(tstats["tactical_by_stage"][k])
 		for k in tstats.get("tactical_species_cost", {}).keys():
 			tac_spx[k] = int(tac_spx.get(k, 0)) + int(tstats["tactical_species_cost"][k])
+		for k in tstats.get("tactical_by_species_stage", {}).keys():
+			tac_sps[k] = int(tac_sps.get(k, 0)) + int(tstats["tactical_by_species_stage"][k])
 		for k in tstats.get("tactical_by_species", {}).keys():
 			tac_sp[k] = int(tac_sp.get(k, 0)) + int(tstats["tactical_by_species"][k])
 		for k in tstats.get("tactical_stamina", {}).keys():
@@ -265,6 +268,20 @@ func _process(_d):
 		if n > 0:
 			print("  戰術狩獵 %-18s %d 場：獵到 %d%%、放棄 %d%%，出手後 %d%%；每場扣體力 %.1f、遊戲回合 %.1f" % [sp, n, roundi(100.0 * ok / n), roundi(100.0 * gave / n), roundi(100.0 * ok / max(1, n - gave)),
 				float(tac_spx.get(sp + ".stamina", 0)) / n, float(tac_spx.get(sp + ".turns", 0)) / n])
+	# 小獵物各年齡的獵到比例（2026-10-22 使用者：未成年的狼抓雪兔約六到七成）
+	for sp in ["snowshoe_hare", "hare", "beaver"]:
+		var line := "  %s 各年齡獵到：" % sp
+		for st in ["young", "yearling", "adult", "elder"]:
+			var n := 0
+			var ok := 0
+			for k in tac_sps.keys():
+				if str(k).begins_with(sp + "." + st + "."):
+					n += int(tac_sps[k])
+					if str(k).ends_with(".caught"):
+						ok += int(tac_sps[k])
+			if n > 0:
+				line += " %s %d%%（%d 場）" % [st, roundi(100.0 * ok / n), n]
+		print(line)
 	quit()
 	return true
 

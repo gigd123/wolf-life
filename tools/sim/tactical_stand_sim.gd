@@ -3,7 +3,7 @@ extends "res://tools/sim/tactical_hunt_sim.gd"
 # 狼（普通、快）× 體況（健康、虛弱），四種打法取最好的、交給本能；另外列：目標站定過的比例、站定過的獵到幾成、
 # 牠不理你走開（放棄）的比例、被衝撞或踢的場次。季節固定春季（秋季公馬鹿站定 ×0.5）。
 # 目標：對齊選單式 hunt_levels（公馬鹿：健康 一般成年約 22%、虛弱約 64%）；健康站定的單狼成功率個位數。
-# WATER_NEAR=1／0：河狸離水近／遠（2026-10-22）。WOUNDS=n：目標帶著 n 道傷出場（受傷的個體，2026-10-22）。
+# YOUNG=1：多一隻未成年的狼（約 1 歲）。WATER_NEAR=1／0：河狸離水近／遠（2026-10-22）。WOUNDS=n：目標帶著 n 道傷出場（受傷的個體，2026-10-22）。
 # 用法：bash tools/run_sim.sh tactical_stand_sim 0 40；SPECIES=moose FAMILIES=dense,edge,stream,logs
 const WINDS := ["headwind", "crosswind", "tailwind"]
 
@@ -17,10 +17,12 @@ func _process(_d) -> bool:
 	var herd_n: int = int(OS.get_environment("HERD")) if OS.get_environment("HERD") != "" else 3
 	var h = TH.new()
 	var wolves := {"normal": {"speed": 60, "skill": 55, "strength": 55, "perception": 55, "stamina": 80, "health": 100, "health_max": 100},
-		"fast": {"speed": 85, "skill": 60, "strength": 60, "perception": 60, "stamina": 80, "health": 100, "health_max": 100}}
+		"fast": {"speed": 85, "skill": 60, "strength": 60, "perception": 60, "stamina": 80, "health": 100, "health_max": 100},
+		# 未成年（2026-10-22）：約 1 歲的平均能力（life_pressure：力量 52、技巧 45、速度 48、血量上限 90）
+		"young": {"speed": 48, "skill": 45, "strength": 52, "perception": 50, "stamina": 70, "health": 90, "health_max": 90}}
 	print("== %s（每格 %d 場 × %d 個地圖族）：最好的打法（哪一種）／交給本能；本能那一輪：站定過、站定過獵到、放棄（含牠走開）、被撞或踢" % [species, runs, fams.size()])
-	for n_deer in [1, herd_n]:
-		for wk in ["normal", "fast"]:
+	for n_deer in ([1] if herd_n == 1 else [1, herd_n]):
+		for wk in (["young", "normal", "fast"] if OS.get_environment("YOUNG") != "" else ["normal", "fast"]):
 			var line := "%-4s %-6s" % ["單隻" if n_deer == 1 else "%d 隻" % n_deer, wk]
 			for cond in ["healthy", "weak"]:
 				var by_pol := {}
