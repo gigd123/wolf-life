@@ -1273,7 +1273,8 @@ func add_ally(role: String, pos: Vector2i) -> void:
 				break
 		if found:
 			break
-	wolves.append({"pos": cell, "stats": st, "breath": bmax, "breath_max": bmax, "breath_used": 0.0, "ally": true, "role": role, "mode": "still"})
+	wolves.append({"pos": cell, "stats": st, "breath": bmax, "breath_max": bmax, "breath_used": 0.0, "ally": true, "role": role, "mode": "still",
+		"intent": "circling" if role == "drive" else "following", "aim": cell})
 
 func _wolf_at(c: Vector2i) -> bool:
 	for w in wolves:
@@ -1377,7 +1378,11 @@ func _ally_step(k: int) -> void:
 	# 自己咬著獵物：不動
 	if _ally_holding() == k:
 		wolves[k]["mode"] = "still"
+		wolves[k]["intent"] = "holding"
+		wolves[k]["aim"] = deer_pos
 		return
+	# 牠現在在做什麼（畫面用：tactical.ally.intent.*）與要去的格子
+	var intent_id: String = "chasing"
 	if not fleeing and not held and _ally_holding() == 0:
 		if role == "drive":
 			var axis := Vector2(deer_pos - player).normalized()
@@ -1395,7 +1400,9 @@ func _ally_step(k: int) -> void:
 			# 到位、你也夠近了：衝過去把獵物往你這邊趕
 			# 到位＝在另一側（偏離不到約 60°）、離獵物 drive_dist + 1.5 格內
 			var placed: bool = dist(wolf_pos, tgt) <= 1.5 or (rel.normalized().dot(axis) >= 0.5 and dist(wolf_pos, deer_pos) <= float(cfg.get("drive_dist", 3)) + 1.5)
+			intent_id = "waiting" if placed else "circling"
 			if placed and dist(player, deer_pos) <= float(cfg.get("rush_when", 7.0)):
+				intent_id = "driving"
 				tgt = deer_pos
 				allow_sprint = true
 				if drive_ally != k or rounds > drive_until:
@@ -1405,10 +1412,15 @@ func _ally_step(k: int) -> void:
 		else:
 			var back := Vector2(player - deer_pos).normalized() * float(cfg.get("follow_dist", 2))
 			tgt = player + Vector2i(roundi(back.x), roundi(back.y))
+			intent_id = "following"
 	elif fleeing and role == "chase" and not held and _ally_holding() == 0:
 		var intent: Array = deer_intent()
 		if not intent.is_empty():
 			tgt = deer_pos + Vector2i(intent[0]) * int(_flee_budget())
+	if held or _ally_holding() > 0:
+		intent_id = "joining"
+	wolves[k]["intent"] = intent_id
+	wolves[k]["aim"] = tgt
 	var blocks := deer_cells()
 	for w in wolves:
 		blocks[w["pos"]] = true

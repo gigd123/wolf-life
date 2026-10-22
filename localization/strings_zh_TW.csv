@@ -1961,6 +1961,25 @@ tactical.ally.broke_free,{animal}甩開了苔原狼，帶著傷逃跑！
 tactical.ally.pull_down_pack,苔原狼們一擁而上，把{animal}拖倒了。你們一起獵到了。
 tactical.factor.ambush,牠被趕著往你這邊跑
 tactical.factor.ally_holding,苔原狼拖住了牠
+tactical.ally.role.drive,驅趕：
+tactical.ally.role.chase,追擊：
+tactical.ally.name.drive,驅趕
+tactical.ally.name.chase,追擊
+tactical.ally.intent.circling,繞過去
+tactical.ally.intent.waiting,等你靠近
+tactical.ally.intent.driving,衝過去趕
+tactical.ally.intent.following,跟著你
+tactical.ally.intent.chasing,追上去
+tactical.ally.intent.holding,咬住了
+tactical.ally.intent.joining,圍上去
+tactical.ally.tip,苔原狼（{role}）：{what}
+tactical.ally.intent_tip.circling,繞大圈到獵物的另一側；你離獵物 7 格內時牠會衝過去，把獵物往你這邊趕。
+tactical.ally.intent_tip.waiting,已經在另一側等著；你離獵物 7 格內時牠就衝過去。
+tactical.ally.intent_tip.driving,正衝向獵物，把牠往你這邊趕。藏著別動，等牠跑過來再撲。
+tactical.ally.intent_tip.following,跟在你後面；獵物跑了就追上去。
+tactical.ally.intent_tip.chasing,追著逃跑的獵物，追上了會咬牠的後腿。
+tactical.ally.intent_tip.holding,咬住獵物死命拖住；快撲上去。
+tactical.ally.intent_tip.joining,衝過去一起咬住那隻獵物。
 tactical.label.marmot,旱獺
 tactical.label.marmot_young,幼獺
 tactical.label.pronghorn,叉角羚

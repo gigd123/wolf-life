@@ -7,6 +7,8 @@ extends Control
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
 # 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是有白點的小鹿，細線連到生母。
 # 動物與地塊用 data/art.json 的 tactical（Phase 2c，程式畫的佔位圖，tools/make_tactical_art.py）；沒有圖時退回色塊。
+# 苔原狼同伴（群體狩獵實驗，docs/proposals/tundra-joint-tactical.md）：設定列選同伴；K～N 是用主遊戲地圖的群體狩獵情境。
+# 同伴畫成偏淡的狼，角落的點是角色（藍：驅趕、橘：追擊），虛線指向牠要去的地方；滑鼠停在同伴上看牠在做什麼。
 
 const TH := preload("res://scripts/core/TacticalHunt.gd")
 const CELL := 14
@@ -20,6 +22,15 @@ const COLORS := {
 }
 const SCENARIOS := ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 const WOLVES := {"slow": "慢（速度 40）", "normal": "普通（60）", "fast": "快（85）"}
+# 群體狩獵實驗的情境：主遊戲的地圖（每局隨機），秋季
+const EXTRA := [
+	{"name": "K 馴鹿群、苔原", "family": "tundra", "species": "caribou", "herd": 6, "condition": "average"},
+	{"name": "L 白尾鹿群、空地", "family": "open", "species": "deer", "herd": 4, "condition": "average"},
+	{"name": "M 健康駝鹿、密林", "family": "dense", "species": "moose", "herd": 1, "condition": "healthy"},
+	{"name": "N 虛弱駝鹿、密林", "family": "dense", "species": "moose", "herd": 1, "condition": "weak"},
+]
+const ALLIES := [[], ["drive", "chase"], ["drive"], ["chase"]]
+const ALLY_COLORS := {"drive": Color("#7fc8ff"), "chase": Color("#ffb060")}
 
 var h = TH.new()
 var map: Control
@@ -34,6 +45,8 @@ var scenario_pick: OptionButton
 var wolf_pick: OptionButton
 var stamina_pick: OptionButton
 var special_pick: OptionButton # 會不會前截鎖喉（特殊招式，2026-10-16）
+var ally_pick: OptionButton # 苔原狼同伴（群體狩獵實驗）
+var ally_last := {} # 同伴的編號 -> [上一個位置, 面向]
 var lock_armed: bool = false # 按了「前截鎖喉」，下一次點紫框就出手
 var hover := Vector2i(-1, -1)
 var game_seed: int = 0
@@ -79,11 +92,12 @@ func _ready() -> void:
 	setup_row.position = Vector2(4, 232)
 	setup_row.add_theme_constant_override("separation", 4)
 	add_child(setup_row)
-	scenario_pick = _option(setup_row, SCENARIOS.map(func(s): return s + " " + str(h.t["scenarios"][s]["name"])))
-	wolf_pick = _option(setup_row, WOLVES.values())
+	scenario_pick = _option(setup_row, SCENARIOS.map(func(s): return s + " " + str(h.t["scenarios"][s]["name"])) + EXTRA.map(func(e): return e["name"]), 104)
+	wolf_pick = _option(setup_row, WOLVES.values(), 76)
 	wolf_pick.selected = 1
-	stamina_pick = _option(setup_row, ["體力滿", "體力一半"])
-	special_pick = _option(setup_row, ["無招式", "鎖喉"])
+	stamina_pick = _option(setup_row, ["體力滿", "體力一半"], 62)
+	special_pick = _option(setup_row, ["無招式", "鎖喉"], 58)
+	ally_pick = _option(setup_row, ["無同伴", "苔原狼 2", "驅趕 1", "追擊 1"], 66)
 	var restart := Button.new()
 	restart.text = "新局"
 	restart.theme_type_variation = &"SmallButton"
@@ -151,9 +165,14 @@ func start_from_game(th, done_cb: Callable) -> void:
 		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
 	_after_action()
 
-func _option(parent: Node, items: Array) -> OptionButton:
+# width：選單的寬度（設定列放不下時文字截斷，展開的清單照舊完整；群體狩獵實驗多一個選單後，2026-10-22）
+func _option(parent: Node, items: Array, width: float = 0.0) -> OptionButton:
 	var o := OptionButton.new()
 	o.theme_type_variation = &"SmallButton"
+	if width > 0.0:
+		o.fit_to_longest_item = false
+		o.clip_text = true
+		o.custom_minimum_size.x = width
 	for it in items:
 		o.add_item(str(it))
 	parent.add_child(o)
@@ -162,11 +181,35 @@ func _option(parent: Node, items: Array) -> OptionButton:
 func _new_hunt(new_seed: bool) -> void:
 	if new_seed or game_seed == 0:
 		game_seed = randi() % 100000 + 1
-	h.setup(SCENARIOS[scenario_pick.selected], WOLVES.keys()[wolf_pick.selected], game_seed, 1.0 if stamina_pick.selected == 0 else 0.5)
+	var stamina_mult: float = 1.0 if stamina_pick.selected == 0 else 0.5
+	var sc_name: String
+	if scenario_pick.selected < SCENARIOS.size():
+		h.setup(SCENARIOS[scenario_pick.selected], WOLVES.keys()[wolf_pick.selected], game_seed, stamina_mult)
+		sc_name = str(h.t["scenarios"][h.scenario_id]["name"])
+	else:
+		var e: Dictionary = EXTRA[scenario_pick.selected - SCENARIOS.size()]
+		var w: Dictionary = (h.t["wolves"][WOLVES.keys()[wolf_pick.selected]] as Dictionary).duplicate()
+		w["stamina"] = float(w["stamina"]) * stamina_mult
+		w["health"] = 100.0
+		w["health_max"] = 100.0
+		var ctx := {"family": e["family"], "seed": game_seed, "condition": e["condition"], "wolf": w, "species": e["species"], "season": "autumn",
+			"wind_relation": ["headwind", "crosswind", "tailwind"][game_seed % 3]}
+		if int(e["herd"]) > 1:
+			var conds: Array = []
+			for i in int(e["herd"]):
+				conds.append(e["condition"])
+			ctx["herd"] = {"conditions": conds, "calves": 0}
+		h.setup_from_game(ctx)
+		sc_name = str(e["name"]).substr(2)
+	for role in ALLIES[ally_pick.selected]:
+		h.add_ally(role, h.wolf_pos)
+	ally_last = {}
 	last_wolf_pos = Vector2i(-99, -99)
 	h.knows_front_lock = special_pick.selected == 1
 	lock_armed = false
-	lines = ["情境 %s，種子 %d。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。" % [h.t["scenarios"][h.scenario_id]["name"], game_seed]]
+	lines = ["情境 %s，種子 %d。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。" % [sc_name, game_seed]]
+	if h.wolves.size() > 1:
+		lines.append("苔原狼同伴：藍點的驅趕會繞到獵物另一側，你離獵物 7 格內就衝過去把牠往你這邊趕（你藏著不動或潛行時撲有埋伏加成）；橘點的追擊跟在你後面，獵物跑了就追。牠們咬住獵物時你撲上去更容易；你咬住時牠們會圍過來。")
 	if h.herd.size() > 1:
 		lines.append("鹿群：點一隻鹿設為目標（黃框）。身上有白點的小鹿是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
 	_after_action()
@@ -302,7 +345,7 @@ func _refresh() -> void:
 	detail_panel.visible = long
 	log_box.visible = not long
 	detail_box.text = ht if long else ""
-	hover_box.text = "" if long else ht
+	hover_box.text = "" if long else (ht if ht != "" else _ally_text())
 
 # --- 右側資訊 ---
 
@@ -344,6 +387,19 @@ func _info_text() -> String:
 		t.append(tr("tactical.ui.condition").replace("{condition}", tr("tactical.condition." + h.condition)))
 	return "\n".join(t)
 
+# 苔原狼同伴（群體狩獵實驗）：角色與現在在做什麼，一行；被趕過來時第二行提示。右側資訊欄放不下，滑鼠沒停在格子上時寫在右下角
+func _ally_text() -> String:
+	if h.wolves.size() <= 1 or h.done:
+		return ""
+	var parts: Array[String] = []
+	for k in range(1, h.wolves.size()):
+		var role: String = str(h.wolves[k]["role"])
+		parts.append("[color=#%s]%s[/color]%s" % [ALLY_COLORS[role].to_html(false), tr("tactical.ally.role." + role), tr("tactical.ally.intent." + str(h.wolves[k].get("intent", "following")))])
+	var out: String = "　".join(parts)
+	if h._driven() and h.deer_state == "flee":
+		out += "\n[color=#9fe08a]%s[/color]" % tr("tactical.factor.ambush")
+	return out
+
 # 滑鼠所在的格子：移動方式，或撲咬的命中率與因素
 func _hover_text() -> String:
 	if h.done or hover.x < 0:
@@ -369,6 +425,11 @@ func _hover_text() -> String:
 		s += tr("tactical.ui.kick_risk").replace("{p}", str(roundi(float(p["kick"]) * 100.0))) if float(p["kick"]) > 0.0 else ""
 		s += "\n" + "、".join(parts)
 		return s
+	# 滑鼠停在苔原狼同伴上：牠在做什麼（群體狩獵實驗）
+	for k in range(1, h.wolves.size()):
+		if Vector2i(h.wolves[k]["pos"]) == hover:
+			return tr("tactical.ally.tip").replace("{role}", tr("tactical.ally.name." + str(h.wolves[k]["role"]))) \
+				.replace("{what}", tr("tactical.ally.intent_tip." + str(h.wolves[k].get("intent", "following"))))
 	# 滑鼠停在一隻鹿上：寫出牠是誰（母鹿、幼鹿分得出來，2026-10-22 試玩回報）
 	for i in h.active_deer():
 		if Vector2i(h.herd[i]["pos"]) == hover and h.herd.size() > 1:
@@ -473,5 +534,29 @@ func _draw_map() -> void:
 	if not _draw_animal("wolf", h.wolf_pos, wolf_facing):
 		var wc: Vector2 = Vector2(h.wolf_pos) * CELL + Vector2(CELL, CELL) * 0.5
 		map.draw_circle(wc, CELL * 0.42, COLORS["wolf"])
+	_draw_allies()
 	if hover.x >= 0:
 		map.draw_rect(_cell_rect(hover), Color(1, 1, 1, 0.6), false, 1.0)
+
+# 苔原狼同伴（群體狩獵實驗）：偏淡的狼、角落的角色點、指向要去的地方的虛線；咬住獵物時獵物外圈紅框
+func _draw_allies() -> void:
+	for k in range(1, h.wolves.size()):
+		var w: Dictionary = h.wolves[k]
+		var pos: Vector2i = w["pos"]
+		var role: String = str(w["role"])
+		var col: Color = ALLY_COLORS.get(role, Color.WHITE)
+		var last: Array = ally_last.get(k, [Vector2i(-99, -99), h.deer_pos - pos])
+		if pos != last[0]:
+			last = [pos, (pos - Vector2i(last[0])) if Vector2i(last[0]).x > -99 else h.deer_pos - pos]
+			ally_last[k] = last
+		var center: Vector2 = Vector2(pos) * CELL + Vector2(CELL, CELL) * 0.5
+		if not h.done:
+			var aim0: Vector2i = w.get("aim", pos)
+			var aim := Vector2i(clampi(aim0.x, 0, h.width - 1), clampi(aim0.y, 0, h.height - 1)) # 預測的位置可能在地圖外
+			if aim != pos:
+				map.draw_dashed_line(center, Vector2(aim) * CELL + Vector2(CELL, CELL) * 0.5, Color(col, 0.7), 1.0, 3.0)
+		if not _draw_animal("wolf", pos, last[1], Color(0.85, 0.92, 1.0)):
+			map.draw_circle(center, CELL * 0.38, Color("#e0e6ee"))
+		map.draw_circle(Vector2(pos) * CELL + Vector2(CELL - 3, 3), 2.5, col)
+		if str(w.get("intent", "")) == "holding":
+			map.draw_rect(_cell_rect(h.deer_pos).grow(1), Color("#ff6050"), false, 1.5)
