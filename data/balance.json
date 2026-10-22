@@ -426,11 +426,11 @@
     "segments": {
       "white_tailed_deer": { "adult": 4, "buck": 4, "juvenile": 2 },
       "caribou": { "adult": 4, "juvenile": 2 },
-      "moose": { "adult": 7, "juvenile": 3 },
+      "moose": { "adult": 8, "juvenile": 3 },
       "elk": { "adult": 6, "buck": 6, "juvenile": 3 },
       "mule_deer": { "adult": 4, "buck": 4, "juvenile": 2 },
       "bighorn_sheep": { "adult": 3, "buck": 3 },
-      "bison": { "adult": 9, "juvenile": 4 },
+      "bison": { "adult": 11, "juvenile": 4 },
       "pronghorn": { "adult": 2 }
     },
     "eat_turns": 1,
