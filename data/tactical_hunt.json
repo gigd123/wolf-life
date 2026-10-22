@@ -12,8 +12,10 @@
       "r": 2.0,
       "w": 2.0,
       "s": 1.0,
-      "d": 4.0
+      "d": 4.0,
+      "c": 8.0
     },
+    "_cliff_comment": "c 峭壁（大角羊的峽谷，2026-10-22）：狼每步 +8（幾乎上不去）；大角羊用 species.terrain_cost 覆寫。",
     "_water_comment": "s 淺水、d 深水（河狸的水塘，2026-10-22）：狼在淺水每步 +1、深水 +4（游泳）；其他動物一樣，河狸用 species.terrain_cost 覆寫成負的（比在陸上快）。",
     "creep_range": 1.0,
     "trot_range_slow": 3.0,
@@ -528,17 +530,18 @@
       "hold": { "break": 0.12 },
       "meat": 2
     },
-    "_beaver_comment": "河狸（2026-10-22 使用者的構想）：一律用水塘地圖（family pond）；開局離深水近 1～3 格（岸邊或淺水裡）或遠 5～8 格（spawn_water，照主遊戲 HuntSystem.refuge_near 的季節機率）；陸上慢（flee_profile），淺水稍快（terrain_cost s −0.3）、深水很快（d −0.6），被追時直奔深水（seek），一進深水就潛走（dive）；淺水裡難撲；咬住後幾乎甩不掉（hold.break −0.3）、會咬你一口（kick）。數值為初始值，tactical_beaver_sim 校準到選單式（一般的狼約 70%）。",
+    "_beaver_comment": "河狸（2026-10-22 使用者的構想）：一律用水塘地圖（family pond）；開局離深水近 1～3 格（岸邊或淺水裡）或遠 5～8 格（spawn_refuge，照主遊戲 HuntSystem.refuge_near 的季節機率）；陸上慢（flee_profile），淺水稍快（terrain_cost s −0.3）、深水很快（d −0.6），被追時直奔深水（seek），一進深水就潛走（escape_terrain）；淺水裡難撲；咬住後幾乎甩不掉（hold.break −0.3）、會咬你一口（kick）。數值為初始值，tactical_beaver_sim 校準到選單式（一般的狼約 70%）。",
     "beaver": {
       "name": "河狸",
       "name_key": "tactical.label.beaver",
       "family": "pond",
-      "spawn_water": { "near": [1, 3], "far": [5, 8] },
+      "spawn_refuge": { "terrain": "d", "on": ["s"], "near": [1, 3], "far": [5, 8] },
       "flee_profile": { "healthy": [2, 3, 2, 2, 2, 2], "average": [2, 3, 2, 2, 2, 2], "weak": [2, 2, 2, 2, 2, 2] },
       "terrain_cost": { "s": -0.3, "d": -0.6, "f": 0.5 },
       "seek": { "terrain": "d", "per_cell": 2.0, "max_cells": 4, "end": 12.0 },
       "terrain_pounce": { "s": -0.15 },
-      "dive": true,
+      "escape_terrain": "d",
+      "escape_text": "tactical.dive",
       "pounce": 0.0,
       "kick_mult": 0.3,
       "kick_damage": [2, 6],
@@ -549,12 +552,13 @@
       "name": "小河狸",
       "name_key": "tactical.label.beaver_kit",
       "family": "pond",
-      "spawn_water": { "near": [1, 3], "far": [4, 7] },
+      "spawn_refuge": { "terrain": "d", "on": ["s"], "near": [1, 3], "far": [4, 7] },
       "flee_profile": { "healthy": [2, 2, 2, 2, 2], "average": [2, 2, 2, 2, 2], "weak": [2, 2, 2, 2, 1] },
       "terrain_cost": { "s": -0.3, "d": -0.6, "f": 0.5 },
       "seek": { "terrain": "d", "per_cell": 2.0, "max_cells": 4, "end": 12.0 },
       "terrain_pounce": { "s": -0.15 },
-      "dive": true,
+      "escape_terrain": "d",
+      "escape_text": "tactical.dive",
       "kick_mult": 0.0,
       "hold": { "takedown": 0.3, "throat": 0.2, "break": -0.35 },
       "meat": 1
@@ -579,6 +583,63 @@
       "pounce": 0.12,
       "kick_mult": 0.0,
       "hold": { "takedown": 0.2, "throat": 0.1, "break": -0.1 },
+      "meat": 1
+    },
+    "_bighorn_comment": "大角羊（2026-10-22，全部改成戰術場景的第 3 種）：一律用峽谷地圖（family cliff）；開局離峭壁近 1～3 格或遠 5～8 格（spawn_refuge，照主遊戲 refuge_near 的地形機率）；碎石坡上比狼快（terrain_cost r −0.3）、在上面難撲；被追時往峭壁跑（seek），一上峭壁就算逃掉（escape_terrain）；視力好（alert_mult）。母羊成群、夏秋帶小羊（母羊護幼）；公羊小群、偶爾站定用頭撞（stand，選單式 stand 0.2）。數值為初始值，tactical_stand_sim 校準到選單式（母羊 一般 29%、巔峰 49%；公羊 40%、58%）。",
+    "bighorn_sheep": {
+      "name": "母大角羊",
+      "name_key": "tactical.label.bighorn_ewe",
+      "family": "cliff",
+      "spawn_refuge": { "terrain": "c", "on": ["r"], "near": [1, 3], "far": [5, 8] },
+      "terrain_cost": { "r": -0.3, "c": 0.0 },
+      "seek": { "terrain": "c", "per_cell": 1.5, "max_cells": 3, "end": 12.0 },
+      "terrain_pounce": { "r": -0.2 },
+      "escape_terrain": "c",
+      "escape_text": "tactical.cliff",
+      "flee_profile": { "healthy": [4, 5, 5, 4, 4, 3], "average": [4, 5, 4, 4, 3, 3], "weak": [3, 4, 4, 3, 3, 2] },
+      "alert_mult": 1.15,
+      "kick_mult": 0.8,
+      "hold": { "takedown": 0.0, "throat": 0.0, "break": 0.05, "kick": 0.0, "hamstring": 0.0 },
+      "meat": 3
+    },
+    "bighorn_ram": {
+      "name": "公大角羊",
+      "name_key": "tactical.label.bighorn_ram",
+      "family": "cliff",
+      "spawn_refuge": { "terrain": "c", "on": ["r"], "near": [1, 3], "far": [5, 8] },
+      "terrain_cost": { "r": -0.3, "c": 0.0 },
+      "seek": { "terrain": "c", "per_cell": 1.5, "max_cells": 3, "end": 12.0 },
+      "terrain_pounce": { "r": -0.2 },
+      "escape_terrain": "c",
+      "escape_text": "tactical.cliff",
+      "flee_profile": { "healthy": [4, 5, 4, 4, 3, 3], "average": [4, 4, 4, 3, 3, 3], "weak": [3, 4, 3, 3, 3, 2] },
+      "alert_mult": 0.95,
+      "season_alert": { "autumn": 0.8 },
+      "kick_mult": 1.2,
+      "kick_damage": [6, 14],
+      "hold": { "takedown": -0.05, "throat": -0.05, "break": 0.1, "kick": 0.05, "hamstring": 0.0 },
+      "stand": {
+        "healthy": 0.3, "average": 0.2, "weak": 0.05,
+        "break": { "healthy": 0.1, "average": 0.2, "weak": 0.35 },
+        "startle": 0.15,
+        "ignore_dist": 8.0,
+        "charge": 0.3,
+        "charge_damage": [8, 18],
+        "kick_mult": 1.2
+      },
+      "stand_mods": {
+        "healthy": { "pounce": -0.15, "takedown": -0.15, "throat": -0.1 },
+        "average": { "pounce": -0.1, "takedown": -0.1, "throat": -0.05 },
+        "weak": { "pounce": 0.0, "takedown": 0.0, "throat": 0.0 }
+      },
+      "meat": 3
+    },
+    "bighorn_sheep_calf": {
+      "name": "小羊",
+      "name_key": "tactical.label.bighorn_lamb",
+      "terrain_cost": { "r": -0.2, "c": 0.0 },
+      "escape_terrain": "c",
+      "escape_text": "tactical.cliff",
       "meat": 1
     },
     "_bison_comment": "野牛（Phase 2f 第 3 步）：一律成群（game.herd_juvenile：獵小牛時也是整群）；健康的幾乎都站定（stand 照選單式 stand_by_condition），單狼的機會是小牛與掉隊的老弱；踢、衝撞的傷害 × 2.2（選單式 counter_damage_mult）；guard_calves：你盯上小牛時，附近的成牛（不只牠媽媽）都會擋（defend 覆寫 herd.defend）；小牛旁邊有成牛時撲咬減（bison_calf.guarded，選單式 protect_penalty）；小牛往水裡逃（seek，選單式 water_refuge）、跟得上牛群（calf_flee）、比白尾鹿的幼鹿難壓倒（hold）；深雪時更慢（snow_slow，選單式 deep +0.25）。數值為初始值，tactical_stand_sim／tactical_calf_sim（SPECIES=bison）校準。",
@@ -654,8 +715,8 @@
   },
   "_game_comment": "Phase 2c 接進主遊戲（setup_from_game、GameState.finish_tactical_hunt）：animals 用戰術地圖的獵物；時間 = 戰術回合 ÷ round_div（進位，最多 max_turns 個遊戲回合）；交給本能之後撲咬、壓倒、咬喉 − instinct_penalty（比自己打約低一成）；age_scope = pounce：年齡減成只扣撲咬（咬住後交給已經隨年齡下降的力量、技巧，避免重複計算；使用者 2026-10-20 同意）；吃撐時喘的上限 × gorged_breath_mult、不能衝刺；清晨、黃昏時看見你的警覺 × twilight_alert_mult；深雪時鹿每回合少跑 deep_snow_flee_less 格。",
   "_game_herd_comment": "Phase 2d 第 2 步：exclude_stages：這些生命階段照舊走選單（公馬鹿會站定，之後和駝鹿、野牛一起做）；species：主遊戲的動物 → 戰術的物種；herd_size：主遊戲遇到鹿群時，地圖上放幾隻成鹿；herd_calves：各季鹿群裡跟著幾隻小鹿。",
-  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "pronghorn"], "no_mother": ["beaver", "pronghorn"], "herd_juvenile": ["bison"], "lone_calf_alone": { "bison": 0.3 }, "injured_tactical": ["bison"], "injured_wounds": 1, "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison", "beaver": "beaver", "pronghorn": "pronghorn" }, "species_stage": { "elk": { "buck": "elk_bull" }, "beaver": { "juvenile": "beaver_kit" }, "pronghorn": { "juvenile": "pronghorn_kid" } }, "herd_size_stage": { "elk": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10], "pronghorn": [4, 8] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": {}, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
-  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
+  "game": { "animals": ["white_tailed_deer", "elk", "mule_deer", "caribou", "moose", "bison", "beaver", "pronghorn", "bighorn_sheep"], "no_mother": ["beaver", "pronghorn"], "herd_juvenile": ["bison"], "lone_calf_alone": { "bison": 0.3 }, "injured_tactical": ["bison"], "injured_wounds": 1, "exclude_stages": {}, "species": { "elk": "elk", "mule_deer": "mule_deer", "caribou": "caribou", "moose": "moose", "bison": "bison", "beaver": "beaver", "pronghorn": "pronghorn", "bighorn_sheep": "bighorn_sheep" }, "species_stage": { "elk": { "buck": "elk_bull" }, "beaver": { "juvenile": "beaver_kit" }, "pronghorn": { "juvenile": "pronghorn_kid" }, "bighorn_sheep": { "buck": "bighorn_ram" } }, "herd_size_stage": { "elk": { "buck": [2, 4] }, "bighorn_sheep": { "buck": [2, 4] } }, "herd_size": { "elk": [4, 7], "mule_deer": [3, 5], "caribou": [5, 8], "bison": [6, 10], "pronghorn": [4, 8], "bighorn_sheep": [3, 6] }, "herd_calves": { "elk": { "summer": 2, "autumn": 1 }, "mule_deer": { "summer": 1, "autumn": 1 }, "caribou": { "spring": 1, "summer": 2, "autumn": 2 }, "bison": { "spring": 2, "summer": 3, "autumn": 2 }, "bighorn_sheep": { "summer": 1, "autumn": 1 } }, "gorged_breath_mult": 0.6, "twilight_alert_mult": 0.85, "deep_snow_flee_less": 1.0, "round_div": 5, "max_turns": 3, "instinct_penalty": 0.08, "instinct_wear_down": 0.3, "herd_observe_sample": 0, "cost_mult": {}, "start_dist": [10.0, 13.0], "age_scope": "pounce" },
+  "_maps_comment": "Phase 2c 第 4 步：每種地形的地圖（tools/make_tactical_maps.py 產生）。family：open／edge／dense／stream／logs／slope／tundra／river（Phase 2d）／pond（河狸）／cliff（大角羊）；起始位置與目的地每場隨機（TacticalHunt.setup_from_game）。",
   "maps": {
     "open_1": {
       "name": "空地、兩叢灌木",
@@ -1182,6 +1243,72 @@
         "..................f.....................",
         ".................fff....................",
         "..................f.....................",
+        "........................................"
+      ]
+    },
+    "cliff_1": {
+      "name": "峭壁下的草坡",
+      "family": "cliff",
+      "map": [
+        "cccccccccccccccccccccccccccccccccccccccc",
+        "cccccccccccccccccrrrrrcccccccccccccccccc",
+        "rrrrcccccrrrrrrrrrrrrrrrrrrrrrccccrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrr.....rrrrrrrrrrrrrrrrrr",
+        "....rrrrr.....................rrrr......",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        ".............................fff........",
+        "............................fffff.......",
+        ".............................fff........",
+        "........................................",
+        "........................................",
+        "........................................"
+      ]
+    },
+    "cliff_2": {
+      "name": "兩側峭壁的峽谷",
+      "family": "cliff",
+      "map": [
+        "cccccccccccccccccccccccccccccccccccccccc",
+        "cccccccccccccccccccccccccccccccccccccccc",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "........................................",
+        "...........rrr..........................",
+        ".........rrrrrrr........................",
+        "...........rrr..........................",
+        "........................................",
+        "........................................",
+        "...........................rrr..........",
+        ".........................rrrrrrr........",
+        "...........................rrr..........",
+        "........................................",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "cccccccccccccccccccccccccccccccccccccccc",
+        "cccccccccccccccccccccccccccccccccccccccc"
+      ]
+    },
+    "cliff_3": {
+      "name": "草地中間的岩丘",
+      "family": "cliff",
+      "map": [
+        "........................................",
+        "........................................",
+        "..................................f.....",
+        "...................rrr...........fff....",
+        "...............rrrcccccrr.........f.....",
+        "...............rrcccccccrrr.............",
+        "...............rrrccccccrrr.............",
+        "...............rrrrcrrrrrr..............",
+        "...............rrrrrrrrrr...............",
+        "....................rrrr................",
+        "........................................",
+        ".....fff................................",
+        "....fffff...............................",
+        ".....fff................................",
+        "........................................",
         "........................................"
       ]
     }

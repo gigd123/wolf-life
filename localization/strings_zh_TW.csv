@@ -1777,6 +1777,7 @@ tactical.lost,{animal}鑽進密林，不見了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
 tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。
+tactical.cliff,{animal}幾個跳躍就上了峭壁，你上不去。
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
@@ -1866,6 +1867,9 @@ tactical.label.beaver,河狸
 tactical.label.beaver_kit,小河狸
 tactical.label.pronghorn,叉角羚
 tactical.label.pronghorn_kid,小叉角羚
+tactical.label.bighorn_ewe,母羊
+tactical.label.bighorn_ram,公羊
+tactical.label.bighorn_lamb,小羊
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。

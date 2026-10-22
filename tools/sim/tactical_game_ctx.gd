@@ -410,6 +410,40 @@ func _process(_d) -> bool:
 	_check(not gs.tactical_eligible(gs.start_hunt("pronghorn", "juvenile", -1, false, "", false, true)), "躲在草裡的小羚照舊走選單")
 	phth.game_mods["snow_slow"] = 1.0
 	_check(phth._snow_slow(phth.target) == 3.0, "深雪：叉角羚每回合少跑 3 格")
+	# 大角羊（2026-10-22）：峽谷地圖、離峭壁近或遠、母羊成群、公羊小群、小羊跟著母羊、上了峭壁就逃掉、狼在峭壁上幾乎走不動
+	gs.new_game("mountain_canyon")
+	gs.wolf.age_years = 2.5
+	var bha = gs.start_hunt("bighorn_sheep", "adult")
+	bha.set_herd(true)
+	var bhth = gs.start_tactical(bha)
+	var has_cliff := false
+	for cy in bhth.height:
+		for cx in bhth.width:
+			if bhth.terrain(Vector2i(cx, cy)) == "c":
+				has_cliff = true
+	_check(gs.tactical_eligible(bha) and has_cliff and bhth.herd.size() >= 3 and bhth.herd.size() <= 6, "母大角羊：峽谷地圖、成群 3～6 隻（%d）" % bhth.herd.size())
+	var bhr = gs.start_hunt("bighorn_sheep", "buck")
+	bhr.set_herd(true)
+	var bhrth = gs.start_tactical(bhr)
+	_check(bhrth.herd.all(func(d): return str(d["species"]) == "bighorn_ram") and bhrth.herd.size() >= 2 and bhrth.herd.size() <= 4, "公大角羊小群 2～4 隻")
+	var bhl = gs.start_tactical(gs.start_hunt("bighorn_sheep", "juvenile"))
+	_check(bhl.is_fawn(bhl.target) and bhl.label(bhl.target) == "小羊" and bhl.herd.size() == 2, "小羊跟著母羊（%s）" % bhl.label(bhl.target))
+	var climbed := false
+	for i in 10:
+		var chh = gs.start_tactical(gs.start_hunt("bighorn_sheep", "adult"))
+		chh.deer_state = "flee"
+		for cy in chh.height:
+			for cx in chh.width:
+				if cy + 1 < chh.height and chh.terrain(Vector2i(cx, cy)) == "c" and chh.terrain(Vector2i(cx, cy + 1)) != "c" and not climbed:
+					chh.herd[chh.target]["pos"] = Vector2i(cx, cy + 1)
+		chh.wolf_pos = Vector2i(chh.width / 2, chh.height - 1)
+		chh.di = chh.target
+		chh._deer_flee()
+		if (chh.done or bool(chh.herd[chh.target]["gone"])) and str(chh.events).contains("峭壁"):
+			climbed = true
+			break
+	_check(climbed, "大角羊上了峭壁就逃掉")
+	_check(float(bhth.t["move"]["terrain_extra"]["c"]) >= 6.0, "狼在峭壁上幾乎走不動")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")

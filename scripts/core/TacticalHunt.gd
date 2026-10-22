@@ -287,21 +287,21 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		if open_at.call(c):
 			deer = c
 			break
-	# 離水的距離（species.spawn_water：near／far 各一個 [最近, 最遠] 格數，河狸）：離最近的深水幾格（河狸要到深水才潛得走）；
-	# 可以在岸上或淺水裡
-	var sw: Dictionary = t.get("species", {}).get(species, {}).get("spawn_water", {})
+	# 離避難處的距離（species.spawn_refuge：terrain 避難的地形、on 也可以站在上面的地形、near／far 各一個 [最近, 最遠] 格數）：
+	# 河狸離深水、大角羊離峭壁幾格（主遊戲的 refuge_near，2026-10-22）
+	var sw: Dictionary = t.get("species", {}).get(species, {}).get("spawn_refuge", {})
 	if not sw.is_empty():
 		var water: Array = []
 		for y in h:
 			for x in w:
-				if String(rows[y])[x] == "d":
+				if String(rows[y])[x] == str(sw.get("terrain", "d")):
 					water.append(Vector2i(x, y))
 		var rng_w: Array = sw["near" if bool(herd_cfg.get("water_near", pick.randf() < 0.5)) else "far"]
 		var cands: Array = []
 		for y in range(1, h - 1):
 			for x in range(1, w - 1):
 				var c := Vector2i(x, y)
-				if not (open_at.call(c) or String(rows[y])[x] == "s"):
+				if not (open_at.call(c) or (sw.get("on", []) as Array).has(String(rows[y])[x])):
 					continue
 				var wd := 99.0
 				for wc in water:
@@ -315,7 +315,7 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		var ang: float = pick.randf() * TAU
 		var r: float = pick.randf_range(float(t.get("game", {}).get("start_dist", [8.0, 11.0])[0]), float(t.get("game", {}).get("start_dist", [8.0, 11.0])[1]))
 		var c := deer + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r * 0.6))
-		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d"]:
+		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d", "c"]:
 			wolf = c
 			break
 	var goals: Array = []
@@ -480,7 +480,7 @@ func deer_extra(c: Vector2i) -> float:
 
 # 擋路的地形（倒木、岩坡、河）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
 func deer_rough(c: Vector2i) -> bool:
-	return terrain(c) in ["l", "r", "w", "s", "d"] and deer_extra(c) > 0.0
+	return terrain(c) in ["l", "r", "w", "s", "d", "c"] and deer_extra(c) > 0.0
 
 func deer_step_cost(from: Vector2i, to: Vector2i) -> float:
 	var d := to - from
@@ -1177,6 +1177,8 @@ func alert_gain(mode: String) -> Dictionary:
 	sight *= float(game_mods.get("alert_mult", 1.0))
 	# 物種的警覺（馴鹿在開闊的苔原上看得遠，Phase 2d 第 4 步）
 	sight *= float(sp().get("alert_mult", 1.0))
+	# 季節的警覺倍率（秋季繁殖期的公大角羊比較不警覺，2026-10-22；選單式 season_detection）
+	sight *= float(sp().get("season_alert", {}).get(str(game_mods.get("season", "")), 1.0))
 	return {"gain": sight + scent, "scent": scent, "noise": sight}
 
 func _band(table: Array, d: float) -> float:
@@ -1819,9 +1821,10 @@ func _deer_flee() -> void:
 		_deer_gone("escaped", _escape_reason())
 		return
 	deer_pos = sim["end"]
-	# 潛進深水（species.dive，河狸，2026-10-22）：一下深水就不見了
-	if bool(sp().get("dive", false)) and terrain(deer_pos) == "d":
-		_deer_gone("escaped", _tx("tactical.dive").replace("{animal}", label()))
+	# 逃進避難的地形（species.escape_terrain：河狸潛進深水、大角羊跳上峭壁，2026-10-22）：一到那裡就不見了
+	var esc: String = str(sp().get("escape_terrain", ""))
+	if esc != "" and terrain(deer_pos) == esc:
+		_deer_gone("escaped", _tx(str(sp().get("escape_text", "tactical.dive"))).replace("{animal}", label()), true)
 		return
 	# 和狼拉開到 escape_dist 格以上，或已經跑了 max_flee_rounds 回合（狼不會無限追下去）：逃脫
 	if dist(deer_pos, wolf_pos) >= float(t["deer"]["escape_dist"]) or flee_round >= int(t["deer"]["max_flee_rounds"]):
@@ -1857,13 +1860,14 @@ func _escape_reason() -> String:
 	return _tx("tactical.escape.open")
 
 # 一隻鹿逃掉了：只有一隻時整場結束；鹿群裡就是這一隻離場，全部離場才結束
-func _deer_gone(kind: String, text: String) -> void:
+# own_text：群裡的這一隻也寫自己的句子（上了峭壁、潛進深水），不寫「跑遠了」
+func _deer_gone(kind: String, text: String, own_text: bool = false) -> void:
 	if herd.size() <= 1:
 		_finish(kind, text)
 		return
 	herd[di]["gone"] = true
 	herd[di]["held"] = false
-	events.append(_tx("tactical.ran_far").replace("{animal}", label()) if kind == "escaped" else text)
+	events.append(_tx("tactical.ran_far").replace("{animal}", label()) if kind == "escaped" and not own_text else text)
 	if active_deer().is_empty():
 		_finish(kind, _tx("tactical.herd_gone"))
 

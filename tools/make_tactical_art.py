@@ -2,9 +2,9 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
-- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸）。
+- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1,cliff_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸；cliff 峭壁，大角羊）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
 
 用法：python3 tools/make_tactical_art.py
@@ -135,6 +135,24 @@ PRONGHORN_KID = [  # 小叉角羚：淡灰褐、縮成一團
     ("ellipse", "#b8a07a", (9.6, 7, 1.0, 0.8)),
     ("poly", "#8a7458", [(9.4, 6.2), (9.1, 5.1), (9.9, 6.0)]),
     ("poly", "#8a7458", [(9.4, 7.8), (9.1, 8.9), (9.9, 8.0)]),
+]
+
+BIGHORN_EWE = [  # 母大角羊（2026-10-22）：灰褐的身體、白色的臀部、短而細的角
+    ("ellipse", "#8a7462", (6.4, 7, 4.0, 2.2)),
+    ("ellipse", "#f0e8d8", (2.6, 7, 1.1, 1.3)),
+    ("ellipse", "#7c6654", (10.4, 7, 1.2, 1.0)),
+    ("ellipse", "#958070", (11.8, 7, 1.2, 0.95)),
+    ("poly", "#cfc2a6", [(11.4, 6.1), (10.6, 5.0), (11.8, 5.8)]),
+    ("poly", "#cfc2a6", [(11.4, 7.9), (10.6, 9.0), (11.8, 8.2)]),
+]
+BIGHORN_RAM = BIGHORN_EWE[:4] + [  # 公大角羊：兩側往後捲的大角
+    ("poly", "#d8cba8", [(11.8, 6.0), (10.4, 3.6), (8.8, 3.8), (9.0, 5.2), (10.4, 5.0), (11.2, 6.2)]),
+    ("poly", "#d8cba8", [(11.8, 8.0), (10.4, 10.4), (8.8, 10.2), (9.0, 8.8), (10.4, 9.0), (11.2, 7.8)]),
+]
+BIGHORN_LAMB = [  # 小羊：淡灰褐、白臀
+    ("ellipse", "#a8947e", (6.8, 7, 3.0, 1.6)),
+    ("ellipse", "#f0e8d8", (4.0, 7, 0.8, 0.9)),
+    ("ellipse", "#b09c86", (9.8, 7, 1.0, 0.85)),
 ]
 
 
@@ -276,6 +294,19 @@ def tile_deep(seed):
     return img
 
 
+def tile_cliff(seed):
+    """峭壁（大角羊的峽谷，2026-10-22）：深灰的岩壁、幾道裂縫與陰影"""
+    rnd = random.Random(seed + 800)
+    img = Image.new("RGBA", (CELL, CELL), "#55524c")
+    d = ImageDraw.Draw(img)
+    for _ in range(2):
+        x = rnd.randrange(2, CELL - 2)
+        d.line([(x, 0), (x + rnd.choice([-2, -1, 1, 2]), CELL - 1)], fill="#2f2d29")
+    for _ in range(10):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), rnd.choice(["#6a665e", "#45423d"]))
+    return img
+
+
 def _save(name, img):
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(OUT_4X, exist_ok=True)
@@ -299,6 +330,9 @@ def main():
     make_sprite("beaver_kit", BEAVER_KIT, "#1a120c")
     make_sprite("pronghorn", PRONGHORN, "#2e1a0c")
     make_sprite("pronghorn_kid", PRONGHORN_KID, "#3a2a18")
+    make_sprite("bighorn_sheep", BIGHORN_EWE, "#2a2018")
+    make_sprite("bighorn_ram", BIGHORN_RAM, "#2a2018")
+    make_sprite("bighorn_sheep_calf", BIGHORN_LAMB, "#3a2e22")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):
@@ -311,6 +345,7 @@ def main():
     for i in range(2):
         _save("tile_shallow_%d" % i, tile_shallow(i))
         _save("tile_deep_%d" % i, tile_deep(i))
+        _save("tile_cliff_%d" % i, tile_cliff(i))
     print("完成：", sorted(os.listdir(OUT)))
 
 
