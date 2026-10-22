@@ -81,7 +81,7 @@
     "rush_bolt": 0.3,
     "unaware": 0.15
   },
-  "deer": {
+  "deer": { "chase_help": 0.4,
     "speed": 60,
     "flee_profile": {
       "healthy": [3, 6, 6, 5, 4, 3],
@@ -432,7 +432,7 @@
   "_special_comment": "特殊招式（2026-10-16 使用者：全遊戲 3～5 招，要在特殊情況下才學得到；原型先做「前截鎖喉」，參考黃石的母狼 06）。front_lock：目標是逃跑中的成鹿、你這一回合能小跑或衝刺到牠正前方相鄰的格子時可用；成功直接咬死，失敗容易被正面撞踢、用掉很多喘。需要速度與技巧門檻。數值為初始值。",
   "_species_comment": "其他獵物（2026-10-16，驗證特殊招式「前截鎖喉」對大型獵物的價值）：沒寫的物種就是白尾鹿。馬鹿：體型大、耐跑，比較難壓倒、咬住後更常被甩開或踢傷，肉多（主遊戲 4 段）。數值為初始值【假設】。",
   "species": {
-    "elk": {
+    "elk": { "chase_help": 0.4,
       "name": "母馬鹿",
       "name_key": "tactical.label.elk_doe",
       "flee_profile": { "healthy": [3, 6, 5, 4, 3], "average": [3, 5, 5, 4, 3], "weak": [3, 5, 5, 3, 2] },
@@ -443,7 +443,7 @@
       "meat": 4
     },
     "_elk_bull_comment": "公馬鹿（Phase 2f 第 1 步）：會站定（stand：察覺你時照體況站定的機率，秋季繁殖期 ×0.5；break 每回合改成逃跑；startle 你突然逼近、退開時加；ignore_dist 你退到這麼遠兩回合，牠不理你走開；charge 你在正面 2 格內時衝撞；kick_mult 站定時正面踢的倍率）；stand_mods：站定（或站定時被咬住）時的加減，照生態健康的幾乎打不下來。數值為初始值，tactical_stand_sim 校準。",
-    "elk_bull": {
+    "elk_bull": { "chase_help": 0.4,
       "name": "公馬鹿",
       "name_key": "tactical.label.elk_bull",
       "flee_profile": { "healthy": [3, 6, 5, 4, 3], "average": [3, 5, 5, 4, 3], "weak": [3, 5, 5, 3, 2] },
@@ -456,13 +456,13 @@
         "startle": 0.15, "ignore_dist": 8.0, "charge": 0.25, "charge_damage": [10, 22], "kick_mult": 1.3 },
       "stand_mods": { "healthy": { "pounce": -0.3, "takedown": -0.35, "throat": -0.25 }, "average": { "pounce": -0.15, "takedown": -0.15, "throat": -0.1 }, "weak": { "pounce": -0.05, "takedown": -0.05, "throat": 0.0 } }
     },
-    "elk_calf": {
+    "elk_calf": { "chase_help": 0.4,
       "name": "小馬鹿",
       "name_key": "tactical.label.elk_calf",
       "meat": 3
     },
     "_mule_deer_comment": "騾鹿（Phase 2d 第 3 步）：比白尾鹿重、平地跑不快，被追時彈跳往岩坡跑；在岩坡（r）不減速（terrain_cost），逃跑時往岩坡（seek：每經過一格岩坡 +per_cell、最多 max_cells 格，停在岩坡上 +end），在岩坡上比較難撲（terrain_pounce）。數值為初始值，tactical_mule_sim 校準。",
-    "mule_deer": {
+    "mule_deer": { "chase_help": 0.4,
       "name": "騾鹿",
       "name_key": "tactical.label.mule_deer",
       "flee_profile": { "healthy": [3, 6, 5, 5, 4, 3], "average": [3, 5, 5, 4, 3, 3], "weak": [3, 5, 4, 3, 3] },
@@ -472,7 +472,7 @@
       "meat": 3
     },
     "_caribou_comment": "馴鹿（Phase 2d 第 4 步）：比狼快、耐跑（逃跑格數高、後段才掉），開闊苔原上看得遠（alert_mult）；涉水不減速、往河逃（seek）、在水裡難撲；岩坡比狼好走一點；母鹿不護幼（no_defend，ecology-reference：馴鹿母鹿沒有有效救援）。數值為初始值，tactical_caribou_sim 校準。",
-    "caribou": {
+    "caribou": { "chase_help": 0.4,
       "name": "馴鹿",
       "name_key": "tactical.label.caribou",
       "flee_profile": { "healthy": [4, 5, 5, 5, 4, 3], "average": [4, 5, 5, 4, 3, 3], "weak": [3, 5, 4, 3, 3, 2] },
@@ -483,13 +483,13 @@
       "no_defend": true,
       "meat": 3
     },
-    "caribou_calf": {
+    "caribou_calf": { "chase_help": 0.4,
       "name": "小馴鹿",
       "name_key": "tactical.label.caribou_calf",
       "terrain_cost": { "w": 0.0, "r": 1.0 },
       "meat": 2
     },
-    "mule_deer_calf": {
+    "mule_deer_calf": { "chase_help": 0.4,
       "name": "騾鹿幼鹿",
       "name_key": "tactical.label.mule_deer_fawn",
       "terrain_cost": { "r": 0.0 },

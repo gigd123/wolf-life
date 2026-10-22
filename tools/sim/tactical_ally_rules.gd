@@ -76,7 +76,7 @@ func _process(_d) -> bool:
 	for fa in info["factors"]:
 		if fa[0] == h._tx("tactical.factor.ally_holding"):
 			has_f = true
-	_check(has_f and info["chance"] > c0 + 0.1, "撲被拖住的獵物有加成（%.2f → %.2f）" % [c0, info["chance"]])
+	_check(has_f and info["chance"] > c0 + 0.03, "撲被拖住的獵物有加成（%.2f → %.2f）" % [c0, info["chance"]])
 	_check(is_equal_approx(h.kick_chance(), k0 * 0.5), "被拖住時踢中的機率減半")
 	var transferred := false
 	for i in 40:

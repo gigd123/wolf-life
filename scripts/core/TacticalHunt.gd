@@ -889,7 +889,7 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		v += amb
 		factors.append([_tx("tactical.factor.ambush"), amb])
 	if _ally_holding() > 0:
-		var ah: float = float(_allies_cfg().get("hold", {}).get("pounce", 0.0)) * _pack_help()
+		var ah: float = float(_allies_cfg().get("hold", {}).get("pounce", 0.0)) * _pack_help() * _chase_help()
 		v += ah
 		factors.append([_tx("tactical.factor.ally_holding"), ah])
 	# 牠還沒發現你（沒察覺）就撲到：最好的機會
@@ -1332,10 +1332,13 @@ func _away_dir() -> Vector2:
 		if dv.length() > 0.0:
 			return dv.normalized()
 	var v := Vector2.ZERO
-	for w in wolves:
+	var ch: float = _chase_help()
+	for wk in wolves.size():
+		var w: Dictionary = wolves[wk]
 		var d := Vector2(deer_pos - Vector2i(w["pos"]))
 		var l: float = maxf(1.0, d.length())
-		v += d.normalized() / (l * l) if d.length() > 0.0 else Vector2.ZERO
+		# 同伴的推力 × 物種的 chase_help（鹿類比較不會被同伴逼得轉向，方案 B）
+		v += (d.normalized() / (l * l) if d.length() > 0.0 else Vector2.ZERO) * (1.0 if wk == 0 else ch)
 	return v.normalized() if v.length() > 0.0 else Vector2(deer_pos - wolf_pos).normalized()
 
 var drive_ally: int = -1 # 正在驅趕的同伴（衝向沒察覺的獵物那一隻）
@@ -1405,6 +1408,13 @@ func _pack_help() -> float:
 	if is_fawn() and _guarded(di, float(_allies_cfg().get("guarded_dist", 1.5))):
 		v *= float(_allies_cfg().get("guarded_mult", 1.0))
 	return v
+
+# 同伴幫追逐的效果（咬傷、咬住、逼獵物轉向）有多大（species.chase_help，預設 1；鹿類 0.4，2026-10-22 使用者選 B：
+# 鹿類的加成主要來自追逐，同伴讓速度的差距幾乎消失）
+func _chase_help() -> float:
+	if sp().is_empty():
+		return float(t["deer"].get("chase_help", 1.0)) # 白尾鹿沒有物種設定，用共用的 deer
+	return float(sp().get("chase_help", 1.0))
 
 func _ally_hold_help() -> float:
 	if wolves.size() <= 1 or not held:
@@ -1530,7 +1540,7 @@ func _ally_step(k: int) -> void:
 	# 咬：逃跑中的獵物在旁邊（你或別的同伴咬住時不另外咬，壓倒、咬喉的加成在 hold_options）
 	if fleeing and not held and _ally_holding() == 0 and _cheb(wolf_pos, deer_pos) <= 1:
 		var fat: float = deer_fatigue()
-		var ph: float = _pack_help()
+		var ph: float = _pack_help() * _chase_help()
 		if fat >= float(cfg.get("pull_down", {}).get("min_fatigue", 0.75)) and rng.randf() < float(cfg.get("pull_down", {}).get("chance", 0.2)) * ph:
 			stats["ally_pull"] = int(stats.get("ally_pull", 0)) + 1
 			_finish("caught", _tx("tactical.ally.pull_down").replace("{animal}", label()))
