@@ -2629,10 +2629,10 @@ func metrics_summary() -> Dictionary:
 		# 吃撐：一次平均幾個時段（Phase 2b 第 1 步，目標約 5～10 個時段＝1～2 天）
 		"gorged_avg_periods": snapped(float(m.get("gorged_periods", 0)) / max(1, int(m.get("gorged_spells", 0))), 0.1),
 		# 戰術狩獵：各年齡 場數、交給本能、自己撲的平均命中率（當下能選到的最高）、怎麼結束的
-		"tactical_detail": (m.get("tactical_detail", {}) as Dictionary).keys().map(func(k): return "%s %d場 本能%d 撲%d次 平均命中%.2f（可選最高%.2f） 結束%s" % [k,
+		"tactical_detail": (m.get("tactical_detail", {}) as Dictionary).keys().map(func(k): return "%s %d場 本能%d 撲%d次 平均命中%.2f（可選最高%.2f） 結束%s 放棄%s" % [k,
 			int(m["tactical_detail"][k]["hunts"]), int(m["tactical_detail"][k]["instinct"]), int(m["tactical_detail"][k]["pounces"]),
 			float(m["tactical_detail"][k]["chosen"]) / max(1, int(m["tactical_detail"][k]["pounces"])), float(m["tactical_detail"][k]["best"]) / max(1, int(m["tactical_detail"][k]["pounces"])),
-			JSON.stringify(m["tactical_detail"][k]["end"])]),
+			JSON.stringify(m["tactical_detail"][k]["end"]), JSON.stringify(m["tactical_detail"][k].get("give_up", {}))]),
 		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0]),
 		"text_issues": (m.get("text_issues", {}) as Dictionary).keys().map(func(k): return "%s %s @ %s「%s」" % [m["text_issues"][k]["kind"], k,
 			m["text_issues"][k]["where"], m["text_issues"][k]["text"]])}
@@ -2656,6 +2656,11 @@ func _metric_tactical(th: TacticalHunt) -> void:
 		row["best"] = float(row["best"]) + float(p[1])
 	var cause: String = th.end_cause()
 	row["end"][cause] = int(row["end"].get(cause, 0)) + 1
+	# 放棄的三種（2026-10-22）：看出體況才撤（known）、有過撲的機會但不到兩成五（low）、從頭到尾沒有撲的機會（none）；其他算 other
+	if th.result == "gave_up":
+		var gk: String = "known" if th.condition_known else ("none" if th.best_seen <= 0.0 else ("low" if th.best_seen < 0.25 else "other"))
+		var gu: Dictionary = row.get_or_add("give_up", {})
+		gu[gk] = int(gu.get(gk, 0)) + 1
 
 func _stat_total(stat_key: String) -> int:
 	var total := 0

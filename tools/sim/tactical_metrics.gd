@@ -38,6 +38,8 @@ func _run() -> void:
 	gs.finish_tactical_hunt(hunt2, th2)
 	row = gs.metrics()["tactical_detail"]["young"]
 	_check(int(row["hunts"]) == 2 and int(row["instinct"]) == 1 and int(row["pounces"]) == 1, "交給本能的那場：本能 +1、撲的次數不變（%s）" % row)
+	var gu: Dictionary = row.get("give_up", {})
+	_check(int(gu.get("known", 0)) + int(gu.get("none", 0)) + int(gu.get("low", 0)) + int(gu.get("other", 0)) == int(row["end"].get("gave_up", 0)) + int(row["end"].get("gave_up_after_pounce", 0)), "放棄都分到三種之一（%s／%s）" % [gu, row["end"]])
 	var line: String = str(gs.metrics_summary()["tactical_detail"])
 	print("  摘要：", line)
 	_check(line.contains("young 2場 本能1 撲1次"), "摘要有這一行")

@@ -124,6 +124,8 @@ var practice: Array = []
 var pounce_log: Array = []
 var was_held: bool = false
 var pounced: bool = false
+# 這一場畫面上出現過的最高撲咬命中率（試玩紀錄：放棄時是「看清楚才撤」還是「還沒機會就撤」，2026-10-22 ChatGPT 建議）
+var best_seen: float = 0.0
 
 func _init() -> void:
 	t = JSON.parse_string(FileAccess.get_file_as_string(TUNING_PATH))
@@ -138,6 +140,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	pounce_log = []
 	was_held = false
 	pounced = false
+	best_seen = 0.0
 	scenario_id = p_scenario
 	var sc: Dictionary = t["scenarios"][p_scenario]
 	var map_src: Dictionary = t["scenarios"][sc["map_from"]] if sc.has("map_from") else sc
@@ -616,6 +619,7 @@ func pounce_targets() -> Dictionary:
 		var info := pounce_chance(str(cells[c]))
 		info["mode"] = cells[c]
 		out[c] = info
+		best_seen = maxf(best_seen, float(info["chance"]))
 	wolf_pos = keep
 	return out
 
