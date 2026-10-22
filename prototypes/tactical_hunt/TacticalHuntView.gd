@@ -326,6 +326,17 @@ func _build_buttons() -> void:
 		fl.tooltip_text = tr("tactical.ui.front_lock_tip")
 		fl.toggled.connect(func(on): lock_armed = on; _refresh())
 		buttons.add_child(fl)
+	# 苔原狼咬住、你還沒咬住（群體狩獵實驗）：壓倒、咬喉要你先撲上去咬住才有（2026-10-22 試玩回報：看起來像咬住了，招式卻不見）
+	# 喘不夠連撲都撲不了：同樣寫出來（不然紅框直接不見）
+	var short_pounce: bool = h.breath < -float(h.t["move"]["breath_pounce"]) and h._cheb(h.wolf_pos, h.deer_pos) <= 2
+	if h._ally_holding() > 0 or short_pounce:
+		var hint := Button.new()
+		hint.theme_type_variation = &"SmallButton"
+		hint.text = tr("tactical.ui.no_breath_pounce") if short_pounce else tr("tactical.ui.ally_held_hint")
+		hint.disabled = true
+		hint.tooltip_text = tr("tactical.ui.no_breath_pounce_tip").replace("{n}", str(roundi(-float(h.t["move"]["breath_pounce"])))).replace("{have}", str(floori(h.breath))) \
+			if short_pounce else tr("tactical.ui.ally_held_tip")
+		buttons.add_child(hint)
 	var obs := Button.new()
 	obs.theme_type_variation = &"SmallButton"
 	obs.text = tr("tactical.ui.observe")
@@ -379,7 +390,7 @@ func _info_text() -> String:
 	if h.herd.size() <= 1:
 		var nk: String = str(h.sp().get("name_key", ""))
 		prefix = tr("tactical.ui.animal_prefix").replace("{animal}", tr(nk)) if nk != "" else tr("tactical.ui.deer_prefix")
-	t.append(prefix + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else ""))
+	t.append(prefix + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else (tr("tactical.ui.ally_held") if h._ally_holding() > 0 else "")))
 	if h.held:
 		t.append(tr("tactical.ui.hold_at." + h.hold_side))
 	if int(h.herd[h.target].get("hamstrung", 0)) > 0:

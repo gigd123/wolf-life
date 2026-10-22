@@ -1886,6 +1886,8 @@ tactical.ui.release,鬆口
 tactical.ui.breath_cost,（{n} 喘）
 tactical.ui.no_breath,（喘不夠）
 tactical.ui.no_breath_tip,要 {n} 喘，你現在只剩 {have}。可以死咬拖住把牠拖累，或鬆口退開喘一下。
+tactical.ui.no_breath_pounce,喘不夠，撲不上去
+tactical.ui.no_breath_pounce_tip,撲一下要 {n} 喘，你現在只剩 {have}。先「觀察」原地回喘。
 tactical.ui.instinct,交給本能
 tactical.ui.instinct_tip,依風向挑一種打法（潛近或耐力追），一路打完這一場。出手比自己打莽撞一些。
 tactical.ui.front_lock,前截鎖喉
@@ -1912,6 +1914,9 @@ tactical.ui.state.suspicious,起疑
 tactical.ui.state.flee,逃跑
 tactical.ui.state.stand,站定
 tactical.ui.held,（咬住）
+tactical.ui.ally_held,（苔原狼咬住）
+tactical.ui.ally_held_hint,壓倒、咬喉：先撲上去
+tactical.ui.ally_held_tip,現在是苔原狼咬住牠。點紅框撲上去（比平常好撲、不太會被踢），換你咬住後才能壓倒、咬喉。
 tactical.ui.hold_at.rear,咬在後腿
 tactical.ui.hold_at.side,咬在側腹
 tactical.ui.hold_at.front,咬在頸部

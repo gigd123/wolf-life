@@ -1468,6 +1468,8 @@ func _ally_step(k: int) -> void:
 		if not hc.is_empty() and rng.randf() < float(hc.get("base", 0.0)) + fat * float(hc.get("tired", 0.0)):
 			# 咬住拖住：牠跑不了，你和其他同伴可以圍上去
 			herd[di]["ally_held"] = k
+			wolves[k]["intent"] = "holding"
+			wolves[k]["aim"] = deer_pos
 			stats["ally_hold"] = int(stats.get("ally_hold", 0)) + 1
 			events.append(_tx("tactical.ally.hold").replace("{animal}", label()))
 		elif rng.randf() < float(cfg.get("grab", {}).get("base", 0.08)) + fat * float(cfg.get("grab", {}).get("tired", 0.3)):
