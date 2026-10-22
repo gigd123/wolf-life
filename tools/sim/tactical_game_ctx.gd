@@ -350,6 +350,54 @@ func _process(_d) -> bool:
 	_check(not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "juvenile")).game_mods.get("youth_hint", false)), "小狼盯上幼鹿：沒有提示")
 	gs.wolf.age_years = 2.5
 	_check(gs.youth_food_mults().is_empty() and not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("youth_hint", false)), "成年後沒有倍率、沒有提示")
+	# 河狸（2026-10-22）：走戰術地圖、一律水塘地圖、離深水近（1～3 格）或遠（5～8 格）、小河狸單獨出場、進深水就潛走、淺水比陸上快
+	gs.new_game("forest_east")
+	gs.wolf.age_years = 2.5
+	_check(gs.tactical_eligible(gs.start_hunt("beaver", "adult")) and gs.tactical_eligible(gs.start_hunt("beaver", "juvenile")), "河狸、小河狸走戰術地圖")
+	var near_ok := 0
+	var far_ok := 0
+	for i in 40:
+		var bh2 = gs.start_hunt("beaver", "adult", -1, false, "stream")
+		var bth2 = gs.start_tactical(bh2)
+		var dd := 99
+		for by in bth2.height:
+			for bx in bth2.width:
+				if bth2.terrain(Vector2i(bx, by)) == "d":
+					dd = mini(dd, bth2._cheb(Vector2i(bx, by), bth2.deer_pos))
+		_check(bth2.herd.size() == 1 and str(bth2.herd[0]["species"]) == "beaver" and dd < 99, "河狸單獨一隻、地圖上有深水（水塘）")
+		if bh2.refuge_near and dd >= 1 and dd <= 3:
+			near_ok += 1
+		elif not bh2.refuge_near and dd >= 5 and dd <= 8:
+			far_ok += 1
+	_check(near_ok + far_ok >= 36, "河狸離深水的距離照近／遠（近 %d、遠 %d／40）" % [near_ok, far_ok])
+	var kth = gs.start_tactical(gs.start_hunt("beaver", "juvenile"))
+	_check(kth.herd.size() == 1 and kth.label(kth.target) == "牠" and str(kth.herd[0]["species"]) == "beaver_kit", "小河狸單獨出場（沒有母親）")
+	var bvh = gs.start_tactical(gs.start_hunt("beaver", "adult"))
+	var shallow := Vector2i(-1, -1)
+	var deep := Vector2i(-1, -1)
+	for by in bvh.height:
+		for bx in bvh.width:
+			var tt: String = bvh.terrain(Vector2i(bx, by))
+			if tt == "s" and shallow.x < 0:
+				shallow = Vector2i(bx, by)
+			if tt == "d" and deep.x < 0:
+				deep = Vector2i(bx, by)
+	_check(shallow.x >= 0 and deep.x >= 0 and bvh.deer_extra(deep) < bvh.deer_extra(shallow) and bvh.deer_extra(shallow) < 0.0, "河狸：深水比淺水快、淺水比陸上快")
+	_check(bvh.step_cost(deep + Vector2i(0, 0), deep) >= 0.0 and float(bvh.t["move"]["terrain_extra"]["d"]) > float(bvh.t["move"]["terrain_extra"]["s"]), "狼：深水比淺水慢")
+	var dove := false
+	for i in 10:
+		var dvh = gs.start_tactical(gs.start_hunt("beaver", "adult"))
+		dvh.deer_state = "flee"
+		for by in dvh.height:
+			for bx in dvh.width:
+				if dvh.terrain(Vector2i(bx, by)) == "d" and not dove:
+					dvh.herd[0]["pos"] = Vector2i(bx, by)
+		dvh.wolf_pos = Vector2i(0, 0)
+		dvh._deer_flee()
+		if dvh.done and dvh.result == "escaped" and str(dvh.reason).contains("深水"):
+			dove = true
+			break
+	_check(dove, "河狸進了深水就潛走")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")

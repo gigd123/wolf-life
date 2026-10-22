@@ -3,7 +3,7 @@ extends "res://tools/sim/tactical_hunt_sim.gd"
 # 狼（普通、快）× 體況（健康、虛弱），四種打法取最好的、交給本能；另外列：目標站定過的比例、站定過的獵到幾成、
 # 牠不理你走開（放棄）的比例、被衝撞或踢的場次。季節固定春季（秋季公馬鹿站定 ×0.5）。
 # 目標：對齊選單式 hunt_levels（公馬鹿：健康 一般成年約 22%、虛弱約 64%）；健康站定的單狼成功率個位數。
-# WOUNDS=n：目標帶著 n 道傷出場（受傷的個體，2026-10-22）。
+# WATER_NEAR=1／0：河狸離水近／遠（2026-10-22）。WOUNDS=n：目標帶著 n 道傷出場（受傷的個體，2026-10-22）。
 # 用法：bash tools/run_sim.sh tactical_stand_sim 0 40；SPECIES=moose FAMILIES=dense,edge,stream,logs
 const WINDS := ["headwind", "crosswind", "tailwind"]
 
@@ -37,6 +37,8 @@ func _process(_d) -> bool:
 						for i in runs:
 							var ctx := {"family": fam, "seed": i * 7919 + 17, "condition": cond, "wolf": wolves[wk], "wind_relation": WINDS[i % 3], "species": species, "season": "spring",
 									"wounds": int(OS.get_environment("WOUNDS")) if OS.get_environment("WOUNDS") != "" else 0}
+							if OS.get_environment("WATER_NEAR") != "":
+								ctx["water_near"] = OS.get_environment("WATER_NEAR") == "1"
 							if n_deer > 1:
 								var conds: Array = []
 								for k in n_deer:

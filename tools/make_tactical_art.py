@@ -2,9 +2,9 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
-- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d）。
+- assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
 
 用法：python3 tools/make_tactical_art.py
@@ -107,6 +107,18 @@ BISON_CALF = [  # 小野牛：橘褐色（俗稱 red dog）、還沒有駝峰
     ("ellipse", "#c0743a", (6.6, 7, 3.4, 1.9)),
     ("ellipse", "#b0662e", (9.6, 7, 1.2, 1.3)),
     ("ellipse", "#c88048", (11.0, 7, 1.1, 0.9)),
+]
+
+BEAVER = [  # 河狸（2026-10-22）：圓滾的褐色身體、扁平的黑色大尾巴
+    ("ellipse", "#2e2620", (3.6, 7, 1.8, 1.4)),           # 扁平的尾巴
+    ("ellipse", "#7a4e2c", (7.4, 7, 3.0, 2.3)),           # 身體
+    ("ellipse", "#6a4224", (10.6, 7, 1.4, 1.3)),          # 頭
+    ("ellipse", "#3a2a1c", (11.8, 7, 0.5, 0.5)),          # 鼻子
+]
+BEAVER_KIT = [  # 小河狸：小一號
+    ("ellipse", "#2e2620", (4.6, 7, 1.2, 1.0)),
+    ("ellipse", "#8a5a34", (7.6, 7, 2.2, 1.7)),
+    ("ellipse", "#7a4e2c", (10.0, 7, 1.1, 1.0)),
 ]
 
 
@@ -222,6 +234,32 @@ def tile_water(seed):
     return img
 
 
+def tile_shallow(seed):
+    """淺水（河狸的水塘，2026-10-22）：淺藍綠、看得到底下的泥色"""
+    rnd = random.Random(seed + 600)
+    img = Image.new("RGBA", (CELL, CELL), "#5f8f8a")
+    d = ImageDraw.Draw(img)
+    for _ in range(2):
+        x, y = rnd.randrange(0, CELL - 4), rnd.randrange(1, CELL - 1)
+        d.line([(x, y), (x + 3, y)], fill="#8fbcb4")
+    for _ in range(8):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), rnd.choice(["#6f8f6a", "#557f7a"]))
+    return img
+
+
+def tile_deep(seed):
+    """深水：深藍、少少的波紋"""
+    rnd = random.Random(seed + 700)
+    img = Image.new("RGBA", (CELL, CELL), "#1f3f5c")
+    d = ImageDraw.Draw(img)
+    for _ in range(2):
+        x, y = rnd.randrange(0, CELL - 4), rnd.randrange(1, CELL - 1)
+        d.line([(x, y), (x + 3, y)], fill="#3d6488")
+    for _ in range(6):
+        _px(img, rnd.randrange(CELL), rnd.randrange(CELL), rnd.choice(["#1a3550", "#26496a"]))
+    return img
+
+
 def _save(name, img):
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(OUT_4X, exist_ok=True)
@@ -241,6 +279,8 @@ def main():
     make_sprite("moose_calf", MOOSE_CALF, "#2e1a0c")
     make_sprite("bison", BISON, "#100a04")
     make_sprite("bison_calf", BISON_CALF, "#3a1e0a")
+    make_sprite("beaver", BEAVER, "#1a120c")
+    make_sprite("beaver_kit", BEAVER_KIT, "#1a120c")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):
@@ -250,6 +290,9 @@ def main():
         _save("tile_rock_%d" % i, tile_rock(i))
     for i in range(2):
         _save("tile_water_%d" % i, tile_water(i))
+    for i in range(2):
+        _save("tile_shallow_%d" % i, tile_shallow(i))
+        _save("tile_deep_%d" % i, tile_deep(i))
     print("完成：", sorted(os.listdir(OUT)))
 
 

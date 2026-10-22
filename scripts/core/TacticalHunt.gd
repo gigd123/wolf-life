@@ -199,7 +199,13 @@ func setup_from_game(ctx: Dictionary) -> void:
 	var scenario: String = str(ctx.get("map", "A"))
 	var herd_cfg: Dictionary = ctx.get("herd", {})
 	if ctx.has("family"):
-		scenario = _build_game_scenario(str(ctx["family"]), bool(ctx.get("fawn", false)), int(ctx.get("seed", 1)), str(ctx.get("species", "deer")), herd_cfg)
+		# 物種固定用某一族地圖（河狸一律用水塘，2026-10-22）
+		var fam: String = str(t.get("species", {}).get(str(ctx.get("species", "deer")), {}).get("family", ctx["family"]))
+		# 河狸離水近或遠（主遊戲的 HuntSystem.refuge_near）
+		if ctx.has("water_near"):
+			herd_cfg = herd_cfg.duplicate()
+			herd_cfg["water_near"] = bool(ctx["water_near"])
+		scenario = _build_game_scenario(fam, bool(ctx.get("fawn", false)), int(ctx.get("seed", 1)), str(ctx.get("species", "deer")), herd_cfg)
 	setup(scenario, "normal", int(ctx.get("seed", 1)))
 	var w: Dictionary = ctx.get("wolf", {})
 	for k in ["speed", "skill", "strength", "perception", "health", "health_max"]:
@@ -281,12 +287,35 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 		if open_at.call(c):
 			deer = c
 			break
+	# 離水的距離（species.spawn_water：near／far 各一個 [最近, 最遠] 格數，河狸）：離最近的深水幾格（河狸要到深水才潛得走）；
+	# 可以在岸上或淺水裡
+	var sw: Dictionary = t.get("species", {}).get(species, {}).get("spawn_water", {})
+	if not sw.is_empty():
+		var water: Array = []
+		for y in h:
+			for x in w:
+				if String(rows[y])[x] == "d":
+					water.append(Vector2i(x, y))
+		var rng_w: Array = sw["near" if bool(herd_cfg.get("water_near", pick.randf() < 0.5)) else "far"]
+		var cands: Array = []
+		for y in range(1, h - 1):
+			for x in range(1, w - 1):
+				var c := Vector2i(x, y)
+				if not (open_at.call(c) or String(rows[y])[x] == "s"):
+					continue
+				var wd := 99.0
+				for wc in water:
+					wd = minf(wd, float(maxi(absi(wc.x - x), absi(wc.y - y))))
+				if wd >= float(rng_w[0]) and wd <= float(rng_w[1]):
+					cands.append(c)
+		if not cands.is_empty():
+			deer = cands[pick.randi_range(0, cands.size() - 1)]
 	var wolf := deer - Vector2i(9, 0)
 	for i in 200:
 		var ang: float = pick.randf() * TAU
 		var r: float = pick.randf_range(float(t.get("game", {}).get("start_dist", [8.0, 11.0])[0]), float(t.get("game", {}).get("start_dist", [8.0, 11.0])[1]))
 		var c := deer + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r * 0.6))
-		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w"]:
+		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d"]:
 			wolf = c
 			break
 	var goals: Array = []
@@ -451,11 +480,12 @@ func deer_extra(c: Vector2i) -> float:
 
 # 擋路的地形（倒木、岩坡、河）對這隻鹿是不是障礙：鹿閒晃時避開、逃跑時少走（密林只是慢一點，不算）
 func deer_rough(c: Vector2i) -> bool:
-	return terrain(c) in ["l", "r", "w"] and deer_extra(c) > 0.0
+	return terrain(c) in ["l", "r", "w", "s", "d"] and deer_extra(c) > 0.0
 
 func deer_step_cost(from: Vector2i, to: Vector2i) -> float:
 	var d := to - from
-	return (float(t["move"]["diag_cost"]) if d.x != 0 and d.y != 0 else 1.0) + deer_extra(to)
+	# 物種在某些地形上比平地快（河狸在水裡，terrain_cost 是負的）：每步最少 0.3
+	return maxf(0.3, (float(t["move"]["diag_cost"]) if d.x != 0 and d.y != 0 else 1.0) + deer_extra(to))
 
 func dist(a: Vector2i, b: Vector2i) -> float:
 	return Vector2(a - b).length()
@@ -1789,6 +1819,10 @@ func _deer_flee() -> void:
 		_deer_gone("escaped", _escape_reason())
 		return
 	deer_pos = sim["end"]
+	# 潛進深水（species.dive，河狸，2026-10-22）：一下深水就不見了
+	if bool(sp().get("dive", false)) and terrain(deer_pos) == "d":
+		_deer_gone("escaped", _tx("tactical.dive").replace("{animal}", label()))
+		return
 	# 和狼拉開到 escape_dist 格以上，或已經跑了 max_flee_rounds 回合（狼不會無限追下去）：逃脫
 	if dist(deer_pos, wolf_pos) >= float(t["deer"]["escape_dist"]) or flee_round >= int(t["deer"]["max_flee_rounds"]):
 		_deer_gone("escaped", _escape_reason())

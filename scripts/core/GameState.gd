@@ -3111,7 +3111,12 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 
 func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var ctx := tactical_context(hunt.terrain, hunt.wind_state(), hunt.condition)
-	ctx["fawn"] = hunt.life_stage == "juvenile"
+	var g0: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
+	# 幼體不跟著母親出場的物種（河狸，2026-10-22：小河狸自己就是目標）
+	ctx["fawn"] = hunt.life_stage == "juvenile" and not (g0.get("no_mother", []) as Array).has(hunt.animal_id)
+	# 有避難處的獵物（河狸的水）：離水近或遠照這一場擲的結果
+	if not hunt.refuge.is_empty():
+		ctx["water_near"] = hunt.refuge_near
 	# Phase 2d 第 2 步：物種與鹿群（成鹿的體況照主遊戲的季節比例各擲一次，第一隻是遇到的那一隻）
 	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
 	ctx["species"] = str(g.get("species_stage", {}).get(hunt.animal_id, {}).get(hunt.life_stage, g.get("species", {}).get(hunt.animal_id, "deer")))

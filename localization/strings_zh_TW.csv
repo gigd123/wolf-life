@@ -1771,10 +1771,12 @@ tactical.factor.terrain_r,牠在岩坡上，你站不穩
 tactical.label.caribou,馴鹿
 tactical.label.caribou_calf,小馴鹿
 tactical.factor.terrain_w,牠在水裡，你使不上力
+tactical.factor.terrain_s,牠在淺水裡，你踩不穩
 tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
+tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
@@ -1813,6 +1815,7 @@ tactical.ui.target,目標 {animal}
 tactical.ui.target_mark,目標
 tactical.ui.herd_count,場上 {n} 隻
 tactical.ui.deer_prefix,鹿：
+tactical.ui.animal_prefix,{animal}：
 tactical.ui.state.unaware,沒察覺
 tactical.ui.state.suspicious,起疑
 tactical.ui.state.flee,逃跑
@@ -1859,6 +1862,8 @@ tactical.label.moose,駝鹿
 tactical.label.moose_calf,小駝鹿
 tactical.label.bison,野牛
 tactical.label.bison_calf,小野牛
+tactical.label.beaver,河狸
+tactical.label.beaver_kit,小河狸
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。

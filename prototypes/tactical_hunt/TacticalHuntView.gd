@@ -12,7 +12,7 @@ const TH := preload("res://scripts/core/TacticalHunt.gd")
 const CELL := 14
 const MAP_ORIGIN := Vector2(4, 4)
 const COLORS := {
-	".": Color("#5f7a3a"), "f": Color("#2d4a2a"), "l": Color("#6b4f33"), "r": Color("#8a877e"), "w": Color("#3f6478"),
+	".": Color("#5f7a3a"), "f": Color("#2d4a2a"), "l": Color("#6b4f33"), "r": Color("#8a877e"), "w": Color("#3f6478"), "s": Color("#5f8f8a"), "d": Color("#1f3f5c"),
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"wolf": Color("#c9c9c9"), "deer": Color("#b07a44"), "deer_held": Color("#d04a3a"), "intent": Color(1, 1, 1, 0.75),
 	"target": Color("#ff4040"), "goal": Color(0.7, 0.9, 1.0, 0.5),
@@ -323,7 +323,12 @@ func _info_text() -> String:
 	if h.herd.size() > 1:
 		t.append(tr("tactical.ui.target").replace("{animal}", h.label()))
 		t.append(tr("tactical.ui.herd_count").replace("{n}", str(h.active_deer().size())))
-	t.append(("" if h.herd.size() > 1 else tr("tactical.ui.deer_prefix")) + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else ""))
+	# 單隻時前面寫是什麼動物（原本一律寫「鹿：」，河狸、駝鹿也是，2026-10-22）
+	var prefix: String = ""
+	if h.herd.size() <= 1:
+		var nk: String = str(h.sp().get("name_key", ""))
+		prefix = tr("tactical.ui.animal_prefix").replace("{animal}", tr(nk)) if nk != "" else tr("tactical.ui.deer_prefix")
+	t.append(prefix + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else ""))
 	if h.held:
 		t.append(tr("tactical.ui.hold_at." + h.hold_side))
 	if int(h.herd[h.target].get("hamstrung", 0)) > 0:
