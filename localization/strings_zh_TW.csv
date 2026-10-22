@@ -202,6 +202,7 @@ debug.event.howl,狼嚎
 debug.event.pack_meet,撞上黑狼一家
 debug.event.pack_young,落單的年輕狼
 debug.event.pack_remains,黑狼一家的殘骸
+debug.event.small_pounce,小撲（田鼠、地松鼠）
 debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
@@ -453,6 +454,20 @@ explore.clue.sight_herd,{location}，你看見一小群{animal}
 explore.gather,{location}，你發現了{item}
 explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
 explore.hibernating.marmot,{location}的岩塊下有幾個洞口，都被雪封住了。旱獺在洞裡冬眠，要等春天才會出來。
+small_pounce.see.vole,{location}的草叢裡一陣晃動，是一隻田鼠。
+small_pounce.see.vole.snow,{location}的雪面下傳來細細的窸窣聲，是田鼠在雪下的通道裡跑。
+small_pounce.see.ground_squirrel,{location}，一隻地松鼠站起來張望。
+small_pounce.see.golden_mantled,{location}，一隻金背地松鼠從石縫邊探出頭。
+small_pounce.go,撲過去
+small_pounce.ignore,不理牠
+small_pounce.got.vole,你跳起來往下一撲，按住了牠。嚼兩口就沒了，只是一小口（飽食度 +{n}）。
+small_pounce.got.vole.snow,你跳起來，頭朝下往雪裡一扎，叼出一隻田鼠。嚼兩口就沒了，只是一小口（飽食度 +{n}）。
+small_pounce.got.ground_squirrel,你一個箭步撲上去，咬住了牠。兩三口就吃完了，只夠墊墊肚子（飽食度 +{n}）。
+small_pounce.got.golden_mantled,你一個箭步撲上去，咬住了牠。兩三口就吃完了，只夠墊墊肚子（飽食度 +{n}）。
+small_pounce.miss.vole,撲下去只壓到一把草，牠鑽回草根底下不見了。
+small_pounce.miss.vole.snow,你往雪裡一扎，只啃到一嘴雪。雪下的聲音停了。
+small_pounce.miss.ground_squirrel,牠吱的一聲，鑽回洞裡。
+small_pounce.miss.golden_mantled,牠一溜煙鑽進石縫。
 explore.feature,{location}，你發現了{feature}
 explore.fresh,新鮮的
 explore.stale,陳舊的

@@ -791,6 +791,93 @@ func start_lynx_combat() -> Combat:
 	c.set_meta("lynx_kill", bool(d.get("has_kill", false)))
 	return c
 
+# --- 田鼠與地松鼠的小撲（Phase 2g 第 2 步，balance.small_pounce）---
+# 不是食物來源，是小狼的練習與世界的細節：一小口、很小的技巧成長、體力 −2、不花時段。
+func _small_pounce_cfg() -> Dictionary:
+	return GameData.balance.get("small_pounce", {})
+
+# 這一季、這一區的地形有哪些小動物：[[動物, 地形, 權重]]
+func small_pounce_candidates(region_id: String) -> Array:
+	var cfg := _small_pounce_cfg()
+	var season: String = GameTime.current_season()
+	var early: bool = season == "summer" and GameTime.day <= int(cfg.get("summer_early_until_day", 5))
+	var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+	var out: Array = []
+	var animals: Dictionary = cfg.get("animals", {})
+	for id in animals.keys():
+		var a: Dictionary = animals[id]
+		var seasons: Array = a.get("seasons", [])
+		if not (seasons.has(season) or (early and seasons.has("summer_early"))):
+			continue
+		for t in terrains:
+			if (a.get("terrains", []) as Array).has(t):
+				out.append([id, t, float(a.get("weight", 1))])
+	return out
+
+func _maybe_small_pounce(mode: String) -> bool:
+	var cfg := _small_pounce_cfg()
+	if cfg.is_empty() or not (cfg.get("modes", []) as Array).has(mode) or not RNGService.chance(float(cfg.get("chance", 0.0))):
+		return false
+	var cands := small_pounce_candidates(current_region)
+	if cands.is_empty():
+		return false
+	var weights := {}
+	for i in cands.size():
+		weights[str(i)] = cands[i][2]
+	var pick: Array = cands[int(RNGService.weighted_pick(weights))]
+	current_discovery = {"kind": "small_pounce", "animal": str(pick[0]), "location": str(pick[1]), "snow": GameTime.current_season() == "winter"}
+	return true
+
+# 撲過去的成功率：基礎（冬季雪下的田鼠另外一個）＋ 能力（田鼠看感知，地松鼠看技巧與速度）
+func small_pounce_chance(d: Dictionary = current_discovery) -> float:
+	var cfg := _small_pounce_cfg()
+	var a: Dictionary = cfg.get("animals", {}).get(str(d.get("animal", "")), {})
+	var c: float = float(a.get("snow_chance", a.get("chance", 0.4)) if bool(d.get("snow", false)) else a.get("chance", 0.4))
+	for stat in a.get("stats", []):
+		var v: float = 50.0
+		match str(stat):
+			"perception":
+				v = wolf.effective_perception()
+			"skill":
+				v = wolf.effective_skill()
+			"speed":
+				v = wolf.effective_speed()
+		c += (v - 50.0) / float(cfg.get("stat_divisor", 200.0))
+	return clampf(c, float(cfg.get("min", 0.15)), float(cfg.get("max", 0.85)))
+
+# 撲過去（go）或不理牠。回傳 {caught, gain, animal, snow}；不理牠回傳空的。
+func resolve_small_pounce(go: bool) -> Dictionary:
+	var d: Dictionary = current_discovery
+	clear_discovery()
+	record_decision("small_pounce." + ("go" if go else "ignore"))
+	if not go:
+		state_changed.emit()
+		return {}
+	var cfg := _small_pounce_cfg()
+	var a: Dictionary = cfg.get("animals", {}).get(str(d.get("animal", "")), {})
+	var caught: bool = RNGService.chance(small_pounce_chance(d))
+	wolf.stamina -= float(cfg.get("stamina", 2))
+	var gain: float = float(a.get("hunger", 1)) if caught else 0.0
+	if caught:
+		wolf.hunger += gain
+		_note_food("small_pounce", gain)
+	wolf.clamp_stats()
+	# 同一天重複的效果遞減（沿用狩獵的 repeat_decay）
+	var log_sp: Dictionary = life_log.get_or_add("small_pounce", {"tries": 0, "caught": 0, "day": -1, "today": 0})
+	var today: int = int(life_log.get("days_lived", 1))
+	if int(log_sp.get("day", -1)) != today:
+		log_sp["day"] = today
+		log_sp["today"] = 0
+	var mult: float = pow(float(Growth.cfg().get("repeat_decay", 0.7)), max(0, int(log_sp["today"]) - int(cfg.get("repeat_free", 1)) + 1))
+	log_sp["today"] = int(log_sp["today"]) + 1
+	log_sp["tries"] = int(log_sp["tries"]) + 1
+	if caught:
+		log_sp["caught"] = int(log_sp["caught"]) + 1
+	var units: float = float(cfg.get("skill_units", 0.33)) * (1.0 if caught else float(Growth.cfg().get("fail_mult", 0.25)))
+	Growth.learn(wolf, "skill", units * mult)
+	state_changed.emit()
+	return {"caught": caught, "gain": gain, "animal": str(d.get("animal", "")), "snow": bool(d.get("snow", false))}
+
 # 遷徙的足跡：秋季後半往低處、春季前段往高處
 func _maybe_migration_tracks() -> bool:
 	var cfg := _migration_cfg()
@@ -1373,6 +1460,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 			"location": carcasses[hidden]["terrain"], "frozen": bool(carcasses[hidden].get("frozen", false))}
 		state_changed.emit()
 		return current_discovery
+	# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）
+	if _maybe_small_pounce(mode):
+		state_changed.emit()
+		return current_discovery
 	current_discovery = ExploreSystem.generate({
 		"region_id": current_region,
 		"season": GameTime.current_season(),
@@ -1705,6 +1796,9 @@ func is_notable_discovery(d: Dictionary) -> bool:
 	match str(d.get("kind", "")):
 		"nothing":
 			return false
+		"small_pounce":
+			# 成年後只是世界的細節，不打斷「探索到有發現為止」
+			return wolf.age_years < float(_small_pounce_cfg().get("auto", {}).get("max_age", 2.0))
 		"clue":
 			if d.get("source_kind", "") == "gather":
 				return false
@@ -3041,6 +3135,12 @@ func debug_pack_remains() -> void:
 	_debug_ensure_pack()
 	var zone: String = pack_zone(current_region)
 	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": 3, "zone": zone if zone != "" else "border"}
+
+# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：這一區這一季有的就挑一種，沒有的話用田鼠
+func debug_small_pounce() -> void:
+	var cands := small_pounce_candidates(current_region)
+	var pick: Array = cands[RNGService.randi_range(0, cands.size() - 1)] if not cands.is_empty() else ["vole", _random_terrain(current_region), 1.0]
+	current_discovery = {"kind": "small_pounce", "animal": str(pick[0]), "location": str(pick[1]), "snow": GameTime.current_season() == "winter"}
 
 func debug_pack_meet(lone: String = "") -> void:
 	_debug_ensure_pack()

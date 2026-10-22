@@ -296,6 +296,11 @@ func _explore_once() -> void:
 					break
 		GameState.clear_discovery()
 		return
+	if d.get("kind", "") == "small_pounce":
+		# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：未滿 2 歲、體力夠才撲（練習），成年後不理
+		var spa: Dictionary = GameData.balance.get("small_pounce", {}).get("auto", {})
+		GameState.resolve_small_pounce(GameState.wolf.age_years < float(spa.get("max_age", 2.0)) and GameState.wolf.stamina >= float(spa.get("min_stamina", 30)))
+		return
 	if d.get("kind", "") == "lynx":
 		if d.get("has_kill", false) and style != "cautious":
 			play_combat(GameState.start_lynx_combat())

@@ -751,6 +751,12 @@ func _build_debug_overlay() -> void:
 		_show_discovery(GameState.current_discovery)
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.small_pounce"), func():
+		debug_overlay.visible = false
+		GameState.debug_small_pounce()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.pack_young"), func():
 		debug_overlay.visible = false
 		GameState.debug_pack_meet("young")
@@ -1704,6 +1710,9 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") == "lynx":
 		_show_lynx(d)
 		return
+	if d.get("kind", "") == "small_pounce":
+		_show_small_pounce(d)
+		return
 	if d.get("kind", "") == "migration":
 		_show_migration(d)
 		return
@@ -1954,6 +1963,8 @@ func _discovery_text(d: Dictionary) -> String:
 				.replace("{animal}", tr("animal." + str(d["animal_id"])))
 		"nothing" when d.get("wind_bad", false):
 			return tr("explore.ridge.wind_bad")
+		"small_pounce":
+			return _small_pounce_text("see", d)
 		"nothing" when d.has("hibernating"):
 			return tr("explore.hibernating." + str(d["hibernating"])).replace("{location}", location)
 		"nothing" when str(d.get("mode", "")) == "water":
@@ -3518,6 +3529,37 @@ func _show_lynx(d: Dictionary) -> void:
 			_begin_combat(GameState.start_lynx_combat(), "move"))
 	_add_encounter_button(tr("ui.leave"), func():
 		GameState.clear_discovery()
+		encounter_overlay.visible = false
+		_refresh())
+	encounter_overlay.visible = true
+
+# 田鼠與地松鼠的小撲（Phase 2g 第 2 步）：撲過去或不理牠；結果寫明只是一小口。
+func _small_pounce_text(kind: String, d: Dictionary) -> String:
+	var key: String = "small_pounce.%s.%s" % [kind, str(d.get("animal", "vole"))]
+	if bool(d.get("snow", false)) and TranslationServer.translate(key + ".snow") != key + ".snow":
+		key += ".snow"
+	return tr(key).replace("{location}", tr("explore.location." + str(d.get("location", ""))))
+
+func _show_small_pounce(d: Dictionary) -> void:
+	var text := _small_pounce_text("see", d)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("small_pounce.go") + "　" + tr("chance_label.success") + " " + _chance_text(GameState.small_pounce_chance(d), str(d.get("animal", ""))), func():
+		var res: Dictionary = GameState.resolve_small_pounce(true)
+		var out: String = _small_pounce_text("got" if res["caught"] else "miss", d).replace("{n}", str(int(res["gain"])))
+		_log(out)
+		encounter_message.text = out
+		_clear_children(encounter_buttons_box)
+		_add_encounter_button(tr("ui.continue"), func():
+			encounter_overlay.visible = false
+			_refresh())
+		_refresh())
+	_add_encounter_button(tr("small_pounce.ignore"), func():
+		GameState.resolve_small_pounce(false)
 		encounter_overlay.visible = false
 		_refresh())
 	encounter_overlay.visible = true

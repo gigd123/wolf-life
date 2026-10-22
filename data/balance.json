@@ -383,6 +383,18 @@
   "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
     "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
   "_lynx_comment": "加拿大猞猁（Phase 2 第 6 步）：北方森林、山腳、林線的獨行貓科，主食雪兔，很少和狼衝突、多半退讓。探索時 chance × 區域倍率 × 這一年的雪兔倍率（雪兔低谷年猞猁變少）看到牠；kill_chance 的機率牠剛抓到一隻雪兔，可以把牠趕走、搶下雪兔（hare_value）。",
+  "_small_pounce_comment": "田鼠與地松鼠的小撲（Phase 2g 第 2 步，探索事件、不進戰術地圖）：每次探索（trail、ridge、border）先擲 chance 遇不遇到小動物，再從這一區有的地形、這一季有的動物裡挑（weight）；地點換成那個地形。夏季前半＝夏季第 summer_early_until_day 天以前。成功率 = chance（冬季的田鼠在雪下 snow_chance）+ Σ（能力 − 50）÷ stat_divisor，夾在 min～max。撲過去：體力 −stamina，不花時段；成功飽食度 +hunger（一小口）；技巧成長 = learn_per_unit × skill_units（失敗再 × growth.fail_mult），同一天第 repeat_free 次之後每次再 × growth.repeat_decay。照常過日子：未滿 auto.max_age 歲、體力 ≥ auto.min_stamina 才撲。",
+  "small_pounce": {
+    "chance": 0.1, "modes": ["trail", "ridge", "border"], "summer_early_until_day": 5,
+    "stamina": 2, "skill_units": 0.33, "repeat_free": 1,
+    "stat_divisor": 200.0, "min": 0.15, "max": 0.85,
+    "animals": {
+      "vole": { "weight": 3, "seasons": ["spring", "summer", "autumn", "winter"], "terrains": ["clearing", "prairie", "rolling_hills", "forest_edge", "alpine_meadow", "open_tundra"], "chance": 0.5, "snow_chance": 0.4, "stats": ["perception"], "hunger": 1 },
+      "ground_squirrel": { "weight": 2, "seasons": ["spring", "summer_early"], "terrains": ["prairie", "rolling_hills", "alpine_meadow"], "chance": 0.4, "stats": ["skill", "speed"], "hunger": 2 },
+      "golden_mantled": { "weight": 2, "seasons": ["spring", "summer_early"], "terrains": ["clearing", "scree"], "chance": 0.4, "stats": ["skill", "speed"], "hunger": 2 }
+    },
+    "auto": { "max_age": 2.0, "min_stamina": 30 }
+  },
   "lynx": { "regions": { "forest_north": 1.0, "forest_west": 0.5, "mountain_foothills": 0.8, "mountain_headwaters": 0.6, "tundra_south": 0.8 },
     "chance": 0.04, "kill_chance": 0.5, "hare_value": 12 },
   "_migration_comment": "季節遷徙（Phase 2 第 6 步）：秋季後半（autumn_from_day 之後）與春季前段（spring_until_day 之前），在這些區域探索時 track_chance 看到馬鹿、騾鹿遷徙的足跡，指向牠們要去的區域（regions）；可以跟著走。嚴冬的年份，秋季高山草甸的鹿 × severe_meadow_mult、山腳 × severe_foothills_mult（更早下山）。bison：野牛群每天 move_chance 換一區（herd_weights），在牠們那一區野牛 × here_mult、草原其他區 × elsewhere_mult，那一區的郊狼 × coyote_mult。",
