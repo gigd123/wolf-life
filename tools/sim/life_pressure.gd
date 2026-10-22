@@ -74,8 +74,16 @@ func _process(_d):
 		var sampled := {}
 		var snapped_at := {}
 		var stuck := 0 # 一步之後遊戲日沒有前進的次數（Phase 2f 第 4 步：發現有一隻狼一直停在 0.7 歲）
+		# YOUNG_PREY=small_only：未滿 1 歲只獵小獵物（殘骸照吃），1 歲後照常（2026-10-22：小狼「先吃小的」能不能活）；
+		# MAX_AGE：到這個年紀就停（只看前半生時省時間）
+		var young_prey: String = OS.get_environment("YOUNG_PREY")
+		var max_age: float = float(OS.get_environment("MAX_AGE")) if OS.get_environment("MAX_AGE") != "" else 99.0
 		while not ap.done() and guard < 2000:
 			guard += 1
+			if young_prey != "":
+				ap.prey = young_prey if GS.wolf.age_years < 1.0 else "all"
+			if GS.wolf.age_years >= max_age:
+				break
 			for a in duel_ages:
 				if not dueled.has(a) and GS.wolf.age_years >= a:
 					dueled[a] = true
