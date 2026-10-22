@@ -2628,9 +2628,34 @@ func metrics_summary() -> Dictionary:
 			float(m["by_context"][k][1]) / max(1, int(m["by_context"][k][0])), float(m["by_context"][k][2]) / max(1, int(m["by_context"][k][0]))]),
 		# 吃撐：一次平均幾個時段（Phase 2b 第 1 步，目標約 5～10 個時段＝1～2 天）
 		"gorged_avg_periods": snapped(float(m.get("gorged_periods", 0)) / max(1, int(m.get("gorged_spells", 0))), 0.1),
+		# 戰術狩獵：各年齡 場數、交給本能、自己撲的平均命中率（當下能選到的最高）、怎麼結束的
+		"tactical_detail": (m.get("tactical_detail", {}) as Dictionary).keys().map(func(k): return "%s %d場 本能%d 撲%d次 平均命中%.2f（可選最高%.2f） 結束%s" % [k,
+			int(m["tactical_detail"][k]["hunts"]), int(m["tactical_detail"][k]["instinct"]), int(m["tactical_detail"][k]["pounces"]),
+			float(m["tactical_detail"][k]["chosen"]) / max(1, int(m["tactical_detail"][k]["pounces"])), float(m["tactical_detail"][k]["best"]) / max(1, int(m["tactical_detail"][k]["pounces"])),
+			JSON.stringify(m["tactical_detail"][k]["end"])]),
 		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0]),
 		"text_issues": (m.get("text_issues", {}) as Dictionary).keys().map(func(k): return "%s %s @ %s「%s」" % [m["text_issues"][k]["kind"], k,
 			m["text_issues"][k]["where"], m["text_issues"][k]["text"]])}
+
+# 戰術狩獵的細節（2026-10-22 試玩討論第 1 項：區分「能力不夠」和「還不熟」）：依年齡（未滿 1 歲、1～2 歲、成年、老年）記
+# 場數、交給本能的場數、自己撲的次數、選的命中率與當下能選到的最高命中率的總和、怎麼結束的。
+func _metric_tactical(th: TacticalHunt) -> void:
+	if auto_playing:
+		return
+	var stage: String = ["subadult", "adult", "elder"][wolf.life_stage()]
+	if stage == "subadult":
+		stage = "young" if wolf.age_years < float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)) else "yearling"
+	var all: Dictionary = metrics().get_or_add("tactical_detail", {})
+	var row: Dictionary = all.get_or_add(stage, {"hunts": 0, "instinct": 0, "pounces": 0, "chosen": 0.0, "best": 0.0, "end": {}})
+	row["hunts"] = int(row["hunts"]) + 1
+	if float(th.game_mods.get("instinct_penalty", 0.0)) > 0.0:
+		row["instinct"] = int(row["instinct"]) + 1
+	for p in th.pounce_log:
+		row["pounces"] = int(row["pounces"]) + 1
+		row["chosen"] = float(row["chosen"]) + float(p[0])
+		row["best"] = float(row["best"]) + float(p[1])
+	var cause: String = th.end_cause()
+	row["end"][cause] = int(row["end"].get(cause, 0)) + 1
 
 func _stat_total(stat_key: String) -> int:
 	var total := 0
@@ -3117,6 +3142,7 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	hunt.practice.append_array(th.practice)
 	hunt.condition_known = hunt.condition_known or th.condition_known
 	hunt.decisions.append("tactical." + th.result)
+	_metric_tactical(th)
 	# 獵到的是哪一隻（鹿群裡換過目標）：小鹿 → juvenile、成鹿 → 原本是小鹿的話改成 adult；體況照那一隻
 	if th.result == "caught":
 		if th.caught_kind == "fawn":

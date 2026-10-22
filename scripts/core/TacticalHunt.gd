@@ -118,6 +118,11 @@ var game_mods := {}
 # 接回主遊戲用（Phase 2c 第 2 步）：每一下受到的傷害、這一場的鍛鍊（同 HuntSystem.practice 的格式，Growth.apply_practice）
 var hits_taken: Array = []
 var practice: Array = []
+# 試玩紀錄用（2026-10-22：區分「能力不夠」和「還不熟」）：玩家自己撲的每一下 [選的命中率, 那一刻能選到的最高命中率]；
+# 這一場有沒有咬住過、有沒有交給本能（game_mods.instinct_penalty）
+var pounce_log: Array = []
+var was_held: bool = false
+var pounced: bool = false
 
 func _init() -> void:
 	t = JSON.parse_string(FileAccess.get_file_as_string(TUNING_PATH))
@@ -129,6 +134,9 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	game_mods = {}
 	hits_taken = []
 	practice = []
+	pounce_log = []
+	was_held = false
+	pounced = false
 	scenario_id = p_scenario
 	var sc: Dictionary = t["scenarios"][p_scenario]
 	var map_src: Dictionary = t["scenarios"][sc["map_from"]] if sc.has("map_from") else sc
@@ -794,6 +802,12 @@ func pounce_at(cell: Vector2i) -> void:
 	if not targets.has(cell):
 		return
 	var info: Dictionary = targets[cell]
+	pounced = true
+	if float(game_mods.get("instinct_penalty", 0.0)) <= 0.0:
+		var best := 0.0
+		for c in targets.keys():
+			best = maxf(best, float(targets[c]["chance"]))
+		pounce_log.append([float(info["chance"]), best])
 	wolf_from = wolf_pos
 	if str(info["mode"]) != "still":
 		wolf_pos = cell
@@ -815,6 +829,7 @@ func pounce_at(cell: Vector2i) -> void:
 	if hit:
 		# 咬住了：不是馬上獵到，接下來要壓倒或咬喉，牠會掙扎（2026-10-15 使用者同意的兩步）
 		held = true
+		was_held = true
 		hold_side = side
 		if deer_state == "stand":
 			herd[di]["stood"] = true # 站定時被咬住：咬住後的加減照站定（Phase 2f）
@@ -1753,6 +1768,18 @@ func _finish(p_result: String, text: String) -> void:
 		caught_kind = "fawn" if is_fawn(target) else "adult"
 		meat = int(sp(target).get("meat", t["herd"]["meat"][caught_kind]))
 	events.append(text)
+
+# 這一場怎麼結束的（試玩紀錄用）：獵到、沒出手就放棄、出手後放棄、還沒撲就跑掉、撲空後跑掉、咬住後被甩開
+func end_cause() -> String:
+	match result:
+		"caught":
+			return "caught"
+		"gave_up":
+			return "gave_up_after_pounce" if pounced else "gave_up"
+		_:
+			if was_held:
+				return "broke_free"
+			return "missed" if pounced else "never_close"
 
 # --- 結算（接進主遊戲時用）---
 
