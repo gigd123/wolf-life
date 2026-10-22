@@ -155,6 +155,8 @@ func _refresh() -> void:
 
 # 遊戲回合換成時段（4 回合一個時段），寫成「¼」「½」「1」「1¾」
 static func periods_text(turns: int) -> String:
+	if turns <= 0:
+		return "0"
 	var whole: int = turns / GameTime.TURNS_PER_PERIOD
 	var frac: String = ["", "¼", "½", "¾"][turns % GameTime.TURNS_PER_PERIOD]
 	return (str(whole) if whole > 0 or frac == "" else "") + frac
@@ -170,7 +172,7 @@ func _info_text() -> String:
 	var t: Array[String] = []
 	t.append(tr("river.ui.stage." + rf.stage))
 	t.append(tr("tactical.ui.round").replace("{n}", str(rf.rounds)))
-	t.append(tr("river.ui.time").replace("{n}", _periods(rf.game_turns())))
+	t.append(tr("river.ui.time").replace("{n}", _periods(int(ceil(float(rf.rounds) / float(rf.cfg.get("rounds_per_turn", 8)))))))
 	t.append("")
 	t.append(tr("river.ui.hunger").replace("{n}", str(roundi(rf.hunger))).replace("{max}", str(roundi(rf.hunger_max))))
 	t.append(_bar(rf.hunger, rf.hunger_max, "#e0a070"))

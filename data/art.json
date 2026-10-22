@@ -14,6 +14,10 @@
       "buck": { "sheet": "res://assets/art/sprites/animals/bighorn_ram_sheet.png", "rows": { "idle": 0, "move": 1 }, "poses": { "herd": "res://assets/art/sprites/animals/bighorn_ram_herd.png" } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/bighorn_lamb_sheet.png", "rows": { "idle": 0, "move": 1 } }
     },
+    "salmon": { "display_scale": {"adult": 0.5, "juvenile": 0.5}, "_comment": "佔位圖：程式畫的（tools/make_salmon_sheet.py，Phase 2h）；遭遇畫面的鮭魚洄流線索用",
+      "adult": { "sheet": "res://assets/art/sprites/animals/salmon_sheet.png", "rows": { "idle": 0, "move": 1 } },
+      "juvenile": { "sheet": "res://assets/art/sprites/animals/salmon_sheet.png", "rows": { "idle": 0, "move": 1 } }
+    },
     "marmot": { "display_scale": {"adult": 0.6, "juvenile": 0.5}, "_comment": "佔位圖：河狸換色（tools/make_marmot_sheet.py，Phase 2g）",
       "adult": { "sheet": "res://assets/art/sprites/animals/marmot_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/marmot_young_sheet.png", "rows": { "idle": 0, "move": 1 } }

@@ -3571,10 +3571,11 @@ func _show_salmon(d: Dictionary) -> void:
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	if str(d.get("clue", "")) == "bear":
+	# 看到熊的線索畫熊；其他畫鮭魚（高峰期在跳，其他在水裡擺尾）
+	if str(d.get("clue", "")) in ["bear", "bears"]:
 		_set_creature(encounter_sprite, "grizzly_bear", "adult", "idle")
 	else:
-		_set_wolf_pose(encounter_sprite, "idle")
+		_set_creature(encounter_sprite, "salmon", "adult", "move" if str(d.get("stage", "")) == "peak" else "idle")
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	if GameState.salmon_fishing_enabled():
