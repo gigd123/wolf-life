@@ -30,6 +30,7 @@ func _process(_d) -> bool:
 				var ignored := 0
 				var hurt := 0
 				var dmg := 0.0
+				var rounds_sum := 0
 				var n := 0
 				for pol in ["chase", "pace", "stalk", "ambush", ""]:
 					var ok := 0
@@ -57,6 +58,7 @@ func _process(_d) -> bool:
 									if str(h.herd[h.target]["state"]) == "stand":
 										did_stand = true
 								n += 1
+								rounds_sum += int(h.rounds)
 								if did_stand:
 									stood += 1
 									if h.result == "caught":
@@ -78,7 +80,7 @@ func _process(_d) -> bool:
 				for k in by_pol.keys():
 					if float(by_pol[k]) > float(by_pol[best_pol]):
 						best_pol = k
-				line += "  %s 最好 %d%%（%s）本能 %d%%｜站定 %d%%、站定獵到 %d%%、放棄 %d%%、受傷 %d%%（平均 %.0f）" % [cond, roundi(100.0 * float(by_pol[best_pol])), best_pol,
-					roundi(100.0 * inst / max(1, n)), roundi(100.0 * stood / max(1, n)), roundi(100.0 * stood_caught / max(1, stood)), roundi(100.0 * ignored / max(1, n)), roundi(100.0 * hurt / max(1, n)), dmg / max(1, hurt)]
+				line += "  %s 最好 %d%%（%s）本能 %d%%｜站定 %d%%、站定獵到 %d%%、放棄 %d%%、受傷 %d%%（平均 %.0f）、%.1f 回合" % [cond, roundi(100.0 * float(by_pol[best_pol])), best_pol,
+					roundi(100.0 * inst / max(1, n)), roundi(100.0 * stood / max(1, n)), roundi(100.0 * stood_caught / max(1, stood)), roundi(100.0 * ignored / max(1, n)), roundi(100.0 * hurt / max(1, n)), dmg / max(1, hurt), float(rounds_sum) / max(1, n)]
 			print(line)
 	return true

@@ -16,7 +16,8 @@ const PREY := [["white_tailed_deer", "juvenile"], ["white_tailed_deer", "adult"]
 	["caribou", "juvenile"], ["caribou", "adult"], ["moose", "juvenile"], ["moose", "adult"],
 	["elk", "juvenile"], ["elk", "adult"], ["elk", "buck"], ["mule_deer", "adult"], ["mule_deer", "buck"],
 	["bighorn_sheep", "adult"], ["bighorn_sheep", "buck"], ["beaver", "adult"],
-	["bison", "adult"], ["bison", "juvenile"], ["pronghorn", "adult"], ["pronghorn", "juvenile"]]
+	["bison", "adult"], ["bison", "juvenile"], ["pronghorn", "adult"], ["pronghorn", "juvenile"],
+	["hare", "adult"], ["hare", "juvenile"], ["snowshoe_hare", "adult"], ["snowshoe_hare", "juvenile"]]
 
 func _env_int(key: String, fallback: int) -> int:
 	var v := OS.get_environment(key)

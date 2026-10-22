@@ -313,8 +313,13 @@ func _build_game_scenario(family: String, fawn: bool, seed: int, species: String
 	var wolf := deer - Vector2i(9, 0)
 	for i in 200:
 		var ang: float = pick.randf() * TAU
-		var r: float = pick.randf_range(float(t.get("game", {}).get("start_dist", [8.0, 11.0])[0]), float(t.get("game", {}).get("start_dist", [8.0, 11.0])[1]))
+		# 物種可以覆寫起始距離（小獵物的短版：兔子 3～5 格，2026-10-22）
+		var sd: Array = t.get("species", {}).get(species, {}).get("start_dist", t.get("game", {}).get("start_dist", [8.0, 11.0]))
+		var r: float = pick.randf_range(float(sd[0]), float(sd[1]))
 		var c := deer + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r * 0.6))
+		# 物種自訂起始距離時，實際距離也要在範圍內（縱向乘 0.6 會壓得太近；其他動物照原本的算法，校準不變）
+		if t.get("species", {}).get(species, {}).has("start_dist") and (Vector2(c - deer).length() < float(sd[0]) - 0.5 or Vector2(c - deer).length() > float(sd[1]) + 0.5):
+			continue
 		if c.x >= 1 and c.y >= 1 and c.x < w - 1 and c.y < h - 1 and not String(rows[c.y])[c.x] in ["l", "w", "s", "d", "c"]:
 			wolf = c
 			break
@@ -1376,6 +1381,9 @@ func _deer_wander() -> void:
 			deer_pos += fb
 			deer_facing = fb
 		return
+	# 趴著不動（兔子，2026-10-22）：沒察覺、起疑時都不動，等你很近才竄出去
+	if bool(sp().get("freeze", false)):
+		return
 	if rng.randf() < float(t["deer"]["graze_idle"]):
 		return
 	var goal: Vector2i = deer_goal()
@@ -1793,7 +1801,8 @@ func _deer_flee() -> void:
 		events.append(_tx("tactical.cornered"))
 		return
 	# 從最好的二到三個方向隨機選一個；在密林裡有機會急轉成第二好的
-	var weights: Array = t["deer"]["pick_weights"]
+	# 之字形跑（兔子，2026-10-22）：物種可以覆寫，最好的二到三個方向機率比較平均
+	var weights: Array = sp().get("pick_weights", t["deer"]["pick_weights"])
 	var n: int = mini(3, opts.size())
 	var pick: int = 0
 	var r := rng.randf() * (float(weights[0]) + (float(weights[1]) if n > 1 else 0.0) + (float(weights[2]) if n > 2 else 0.0))
@@ -1827,7 +1836,7 @@ func _deer_flee() -> void:
 		_deer_gone("escaped", _tx(str(sp().get("escape_text", "tactical.dive"))).replace("{animal}", label()), true)
 		return
 	# 和狼拉開到 escape_dist 格以上，或已經跑了 max_flee_rounds 回合（狼不會無限追下去）：逃脫
-	if dist(deer_pos, wolf_pos) >= float(t["deer"]["escape_dist"]) or flee_round >= int(t["deer"]["max_flee_rounds"]):
+	if dist(deer_pos, wolf_pos) >= float(sp().get("escape_dist", t["deer"]["escape_dist"])) or flee_round >= int(t["deer"]["max_flee_rounds"]):
 		_deer_gone("escaped", _escape_reason())
 		return
 	if dist(deer_pos, wolf_pos) < before - 0.01:

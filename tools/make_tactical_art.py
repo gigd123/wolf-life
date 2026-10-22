@@ -2,7 +2,7 @@
 """戰術地圖的佔位圖（Phase 2c，2026-10-20 使用者選 B＋1）：程式畫的俯視小圖，之後換正式素材時檔名與尺寸不變。
 
 輸出（每格 14×14，和戰術地圖的格子一樣大）：
-- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
+- assets/art/tactical/{wolf,deer,fawn,elk,elk_bull,mule_deer,caribou,moose,moose_calf,bison,bison_calf,beaver,beaver_kit,pronghorn,pronghorn_kid,bighorn_sheep,bighorn_ram,bighorn_sheep_calf,hare,hare_young,snowshoe_hare(_young)(_winter)}.png：8 個方向的橫條（112×14），順序同 TacticalHunt.DIRS：
   右、右下、下、左下、左、左上、上、右上。
 - assets/art/tactical/tile_{open_0..2,forest_0..1,logs_0,rock_0..1,water_0..1,shallow_0..1,deep_0..1,cliff_0..1}.png：地塊（14×14；rock 岩坡、water 河，Phase 2d；shallow 淺水、deep 深水，河狸；cliff 峭壁，大角羊）。
 - arts/tactical_placeholder/：同樣的圖放大 4 倍（只給人看，程式不讀）。
@@ -154,6 +154,27 @@ BIGHORN_LAMB = [  # 小羊：淡灰褐、白臀
     ("ellipse", "#f0e8d8", (4.0, 7, 0.8, 0.9)),
     ("ellipse", "#b09c86", (9.8, 7, 1.0, 0.85)),
 ]
+
+
+def _hare(body, ear, tail, scale=1.0):
+    """兔子（2026-10-22）：小小的身體、往後貼的長耳朵、白色的短尾巴；scale 小兔縮小"""
+    def sc(cx, r):
+        return 7 + (cx - 7) * scale, r * scale
+    bx, brx = sc(6.6, 2.6)
+    hx, hrx = sc(9.4, 1.2)
+    tx, trx = sc(3.9, 0.6)
+    return [
+        ("ellipse", tail, (tx, 7, trx, trx)),
+        ("ellipse", body, (bx, 7, brx, 1.8 * scale)),
+        ("ellipse", body, (hx, 7, hrx, 1.0 * scale)),
+        ("poly", ear, [(hx - 0.2, 6.6), (hx - 3.2 * scale, 5.8), (hx - 0.6, 6.3)]),
+        ("poly", ear, [(hx - 0.2, 7.4), (hx - 3.2 * scale, 8.2), (hx - 0.6, 7.7)]),
+    ]
+
+
+HARE = _hare("#8a7458", "#5a4a38", "#f2ead8")
+SNOWSHOE = _hare("#7a5e44", "#4e3c2c", "#f2ead8")
+SNOWSHOE_WINTER = _hare("#f4f4ee", "#2a2622", "#ffffff")  # 冬季：白毛、耳尖黑
 
 
 def _rot(x, y, ang):
@@ -333,6 +354,12 @@ def main():
     make_sprite("bighorn_sheep", BIGHORN_EWE, "#2a2018")
     make_sprite("bighorn_ram", BIGHORN_RAM, "#2a2018")
     make_sprite("bighorn_sheep_calf", BIGHORN_LAMB, "#3a2e22")
+    make_sprite("hare", HARE, "#2a2018")
+    make_sprite("hare_young", _hare("#9a8468", "#6a5a48", "#f2ead8", 0.75), "#2a2018")
+    make_sprite("snowshoe_hare", SNOWSHOE, "#2a2018")
+    make_sprite("snowshoe_hare_young", _hare("#8a6e54", "#5e4c3c", "#f2ead8", 0.75), "#2a2018")
+    make_sprite("snowshoe_hare_winter", SNOWSHOE_WINTER, "#6a6a66")
+    make_sprite("snowshoe_hare_young_winter", _hare("#f4f4ee", "#2a2622", "#ffffff", 0.75), "#6a6a66")
     for i in range(3):
         _save("tile_open_%d" % i, tile_open(i))
     for i in range(2):

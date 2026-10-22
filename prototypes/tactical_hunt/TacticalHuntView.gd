@@ -414,6 +414,9 @@ func _deer_kind(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i):
 		return sp if art_sprites.has(sp) else "fawn"
+	# 冬季換毛的動物有冬季的圖（雪兔變白，2026-10-22）
+	if str(h.game_mods.get("season", "")) == "winter" and art_sprites.has(sp + "_winter"):
+		return sp + "_winter"
 	return sp if art_sprites.has(sp) else "deer"
 
 func _draw_map() -> void:

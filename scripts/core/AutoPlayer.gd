@@ -402,7 +402,8 @@ func _play_hunt(hunt: HuntSystem) -> void:
 	# 白尾鹿用戰術地圖（Phase 2c 第 3 步）：交給本能打；會判斷的狼先觀察，看出是健康的成鹿又還不太餓就放棄（同 Phase 2b）
 	if tactical and GameState.tactical_eligible(hunt) and (tactical_only.is_empty() or tactical_only.has(hunt.animal_id)):
 		var th := GameState.start_tactical(hunt)
-		if judge and not th.is_fawn(th.target):
+		# 同選單式：只對中大型獵物（2026-10-22：兔子進戰術地圖後，健康的兔子也被放棄，一生模擬的挨餓大增）
+		if judge and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
 			th.observe()
 			TacticalInstinct.pick_target(th)
 			if th.condition_known and th.condition == "healthy" and GameState.wolf.hunger >= JUDGE_HUNGER:

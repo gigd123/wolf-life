@@ -76,7 +76,8 @@ static func step(h, pol: String) -> void:
 			if sc > bs:
 				bs = sc
 				best = c
-		if pol.begins_with("dumb") or pol == "chase" or h.deer_state == "flee" or float(targets[best]["chance"]) >= 0.6:
+		# 出手的門檻：物種可以覆寫（趴著不動的兔子撲咬機率本來就不高，等下去只會讓牠發現，2026-10-22）
+		if pol.begins_with("dumb") or pol == "chase" or h.deer_state == "flee" or float(targets[best]["chance"]) >= float(h.sp().get("instinct_pounce_at", 0.6)):
 			h.pounce_at(best)
 			return
 	var reach: Dictionary = h.reachable()

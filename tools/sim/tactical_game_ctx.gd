@@ -444,6 +444,26 @@ func _process(_d) -> bool:
 			break
 	_check(climbed, "大角羊上了峭壁就逃掉")
 	_check(float(bhth.t["move"]["terrain_extra"]["c"]) >= 6.0, "狼在峭壁上幾乎走不動")
+	# 兔子（2026-10-22，小獵物的短版）：走戰術地圖、單隻、開局 3～5 格、沒察覺時趴著不動、幼兔單獨、雪兔冬季換白毛的圖
+	gs.new_game("forest_east")
+	gs.wolf.age_years = 2.5
+	for hsp in ["hare", "snowshoe_hare"]:
+		_check(gs.tactical_eligible(gs.start_hunt(hsp, "adult")) and gs.tactical_eligible(gs.start_hunt(hsp, "juvenile")), "%s：成兔、幼兔走戰術地圖" % hsp)
+	var hok := 0
+	for i in 30:
+		var hth = gs.start_tactical(gs.start_hunt("snowshoe_hare", "adult"))
+		var d0: float = hth.dist(hth.wolf_pos, hth.deer_pos)
+		if hth.herd.size() == 1 and d0 >= 2.5 and d0 <= 6.0:
+			hok += 1
+	_check(hok >= 27, "雪兔單隻、開局 3～5 格（%d／30）" % hok)
+	var fz = gs.start_tactical(gs.start_hunt("snowshoe_hare", "adult"))
+	var p0: Vector2i = fz.deer_pos
+	fz.di = fz.target
+	for i in 5:
+		fz._deer_wander()
+	_check(fz.deer_pos == p0, "沒察覺的雪兔趴著不動")
+	var hy = gs.start_tactical(gs.start_hunt("snowshoe_hare", "juvenile"))
+	_check(hy.herd.size() == 1 and str(hy.herd[0]["species"]) == "snowshoe_hare_young", "小雪兔單獨出場")
 	_check(bjth._snow_slow(bjth.target) == 2.0 and bjth._snow_slow(0 if bjth.target != 0 else 1) == 2.0, "深雪：野牛、小牛每回合少跑 2 格（白尾鹿 1 格）")
 	pol.free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")

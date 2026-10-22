@@ -3157,7 +3157,8 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 # 時間：戰術回合 ÷ round_div，進位，1～max_turns 個遊戲回合；被踢的每一下各算一次傷（不會直接致死）；鍛鍊照這一場的動作。
 func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	var g: Dictionary = th.t.get("game", {})
-	var turns: int = clampi(ceili(float(th.rounds) / float(g.get("round_div", 5))), 1, int(g.get("max_turns", 3)))
+	# 物種可以覆寫幾個戰術回合算一個遊戲回合（小獵物的短版：兔子一場約 1 個遊戲回合，2026-10-22）
+	var turns: int = clampi(ceili(float(th.rounds) / float(th.sp(th.target).get("round_div", g.get("round_div", 5)))), 1, int(th.sp(th.target).get("max_turns", g.get("max_turns", 3))))
 	var free: int = int(GameData.balance.get("burst", {}).get("extra_turns_max", 2))
 	if turns > free:
 		GameTime.advance_turns(turns - free)

@@ -1870,6 +1870,10 @@ tactical.label.pronghorn_kid,小叉角羚
 tactical.label.bighorn_ewe,母羊
 tactical.label.bighorn_ram,公羊
 tactical.label.bighorn_lamb,小羊
+tactical.label.hare,野兔
+tactical.label.hare_young,小野兔
+tactical.label.snowshoe_hare,雪兔
+tactical.label.snowshoe_hare_young,小雪兔
 tactical.stand.start,{animal}停下來，轉身面對你，低下頭擺出架勢。
 tactical.stand.bolt,{animal}突然轉身跑了起來！
 tactical.stand.ignored,{animal}看你退開了，不再理你，慢慢走遠。
