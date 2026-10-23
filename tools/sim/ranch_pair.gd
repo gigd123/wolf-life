@@ -2,7 +2,7 @@ extends SceneTree
 # 牧場的配對比較（Phase 4a 第 5 步）：ranch_life 各組的狼不同，一生的挨餓差異被個體差異蓋過（同一組兩輪差 2～3 天）。
 # 這裡讓同一隻狼在 OPEN_AGE 歲時牧場開放（候選照規則挑），存一份；之後同一份存檔、同一個種子分別用 POLICIES 的打法玩到死，
 # 比較開放後的每年挨餓（成年、老年）、壽命、食物從哪裡來、牧場的事件。
-# 用法：bash tools/run_sim.sh ranch_pair 0 24（RUNS 隻狼）；POLICIES=never,sometimes,often；OPEN_AGE=2.5；DENS_ONLY=forest_east
+# 用法：bash tools/run_sim.sh ranch_pair 0 24（RUNS 隻狼）；POLICIES=never,sometimes,often；OPEN_AGE=2.5；DENS_ONLY=forest_east；RANCH_SET='{...}' 覆寫 ranch.json
 
 const DENS := ["forest_east", "grassland_riverwoods", "tundra_south", "mountain_canyon"]
 
@@ -29,6 +29,9 @@ func _process(_d):
 	var open_age: float = float(OS.get_environment("OPEN_AGE")) if OS.get_environment("OPEN_AGE") != "" else 2.5
 	var dpy: float = 4.0 * float(GT._season_day_count())
 	GD.ranch_def["enabled"] = false # 不自然出現；到 open_age 由這裡打開
+	# RANCH_SET='{"attention": {...}}'：覆寫 ranch.json 的部分設定（字典逐層合併；校準用）
+	if OS.get_environment("RANCH_SET") != "":
+		_merge(GD.ranch_def, JSON.parse_string(OS.get_environment("RANCH_SET")))
 	var agg := {} # 打法 -> 合計
 	var by_den := {} # 巢穴 -> 打法 -> [成年天數, 成年挨餓]
 	for pol in policies:
@@ -105,3 +108,10 @@ func _process(_d):
 		print("  %s 成年每年挨餓：%s" % [den, "、".join(parts)])
 	quit()
 	return true
+
+func _merge(dst: Dictionary, src: Dictionary) -> void:
+	for k in src.keys():
+		if dst.get(k) is Dictionary and src[k] is Dictionary:
+			_merge(dst[k], src[k])
+		else:
+			dst[k] = src[k]
