@@ -986,6 +986,21 @@ func ranch_add_attention(event: String, region_id: String = "") -> float:
 	rl["peak_attention"] = maxf(float(rl.get("peak_attention", 0.0)), ranch_attention())
 	return v
 
+# 在牧場獵家畜（Phase 4a 第 3 步）：獵到加那一種的注意；出手但沒獵到（走到潛近以後）算被看到
+func _ranch_hunt_attention(hunt: HuntSystem) -> void:
+	var ev: String = str(_ranch_cfg().get("livestock", {}).get(hunt.animal_id + "." + hunt.life_stage, ""))
+	if ev == "" or ranch_state() != "open":
+		return
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	if hunt.result == HuntSystem.Result.SUCCESS:
+		ranch_add_attention(ev)
+		rl["kills"] = int(rl.get("kills", 0)) + 1
+		var by: Dictionary = rl.get_or_add("kills_by", {})
+		by[ev] = int(by.get(ev, 0)) + 1
+	elif hunt.stage_reached_stalk():
+		ranch_add_attention("seen")
+		rl["failed"] = int(rl.get("failed", 0)) + 1
+
 # 每天消退（約 20 天減半）
 func _decay_ranch_attention() -> void:
 	if ranch_attention() <= 0.0:
@@ -2954,6 +2969,7 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	FightRules.danger_to_heavy(wolf, hunt.fight_state.get("parts", {"leg": 0.5, "shoulder": 0.5}), hunt.animal_id + ".hunt")
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
+	_ranch_hunt_attention(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
 			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)

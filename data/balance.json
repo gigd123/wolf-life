@@ -474,7 +474,9 @@
       "mule_deer": { "adult": 4, "buck": 4, "juvenile": 2 },
       "bighorn_sheep": { "adult": 3, "buck": 3 },
       "bison": { "adult": 11, "juvenile": 4 },
-      "pronghorn": { "adult": 2 }
+      "pronghorn": { "adult": 2 },
+      "cattle": { "adult": 6, "buck": 8, "juvenile": 3 },
+      "sheep": { "adult": 3 }
     },
     "eat_turns": 1,
     "bear_base": 0.1, "bear_per_turn": 0.1, "night_bonus": 0.05, "dense_forest_bonus": 0.05,

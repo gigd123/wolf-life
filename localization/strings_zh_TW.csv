@@ -2051,3 +2051,9 @@ ranch.watch.patrol,你伏在柵欄外往裡看。幾個人帶著狗在放牧地�
 ranch.watch.hunt,你伏在柵欄外往裡看。人牽著一群狗往外頭的林子去了，狗興奮地拉著繩子，鼻子貼著地面。
 debug.event.ranch_attention,牧場注意 +20
 debug.ranch.attention,除錯：牧場的注意 {n}，這一區的人類活動度 {act}。
+animal.cattle,牛
+animal.sheep,羊
+prey_name.cattle.juvenile,牛犢
+prey_name.cattle.adult,一歲牛
+prey_name.cattle.buck,成牛
+prey_name.sheep.adult,羊

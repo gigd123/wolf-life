@@ -38,11 +38,13 @@
     "gap": [ { "days": 0, "mult": 2.0 }, { "days": 2, "mult": 1.6 }, { "days": 5, "mult": 1.3 } ],
     "decay": 0.966
   },
+  "_livestock_comment": "家畜（第 3 步）：動物.生命階段 → 注意的事件（attention.events）。獵到的話加那一種；在牧場出手但沒獵到（走到潛近以後）算被看到（seen）。",
+  "livestock": { "cattle.juvenile": "calf", "cattle.adult": "yearling", "cattle.buck": "cow", "sheep.adult": "sheep" },
   "map": { "ranch": { "name_key": "map.ranch", "layout": ["ranch_pasture", "ranch_yard", "ranch_edge"], "fire": false } },
   "_regions_comment": "牧場的三個區域：放牧地（主要的食物、開闊）、屋舍與畜欄（人最多）、牧場邊緣（過渡區，連到原本的地圖）。家畜在第 3 步加；地形先用現有的（背景與區域圖在第 6 步）。不能築巢。",
   "regions": {
-    "ranch_pasture": { "name_key": "region.ranch_pasture", "map": "ranch", "terrains": ["prairie"], "main_feature": "ranch_pasture", "secondary_features": [], "adjacent": ["ranch_yard", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.2, "prey_weights": { "hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": {} },
-    "ranch_yard": { "name_key": "region.ranch_yard", "map": "ranch", "terrains": ["clearing"], "main_feature": "ranch_yard", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.05, "prey_weights": {}, "competitor_weights": {}, "gather_weights": {} },
-    "ranch_edge": { "name_key": "region.ranch_edge", "map": "ranch", "terrains": ["forest_edge", "stream"], "main_feature": "ranch_edge", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_yard"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.45, "prey_weights": { "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 } }, "competitor_weights": {}, "gather_weights": { "berries": { "summer": 1, "autumn": 1 } } }
+    "ranch_pasture": { "name_key": "region.ranch_pasture", "map": "ranch", "terrains": ["prairie"], "main_feature": "ranch_pasture", "secondary_features": [], "adjacent": ["ranch_yard", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.2, "prey_weights": { "cattle": { "spring": 8, "summer": 8, "autumn": 7, "winter": 5 }, "hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": {} },
+    "ranch_yard": { "name_key": "region.ranch_yard", "map": "ranch", "terrains": ["clearing"], "main_feature": "ranch_yard", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.05, "prey_weights": { "sheep": { "spring": 6, "summer": 6, "autumn": 6, "winter": 0 } }, "competitor_weights": {}, "gather_weights": {} },
+    "ranch_edge": { "name_key": "region.ranch_edge", "map": "ranch", "terrains": ["forest_edge", "stream"], "main_feature": "ranch_edge", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_yard"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.45, "prey_weights": { "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }, "cattle": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": { "berries": { "summer": 1, "autumn": 1 } } }
   }
 }

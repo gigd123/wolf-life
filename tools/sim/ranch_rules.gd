@@ -12,6 +12,9 @@ extends SceneTree
 #   9. 注意：事件 × 屋舍 × 白天 × 間隔太短；每天消退（約 20 天減半）；上限 100
 #  10. 人類的痕跡：照活動度出現；種類照注意的層級（低注意沒有獵犬、槍聲）
 #  11. 在牧場邊緣觀察：看得出警戒的層級，夜裡有夜裡的寫法；別的地方不能觀察
+# 第 3 步：
+#  12. 家畜：放牧地探索看到牛（牛犢只在春夏）、屋舍與畜欄看到羊（冬天沒有）、邊緣偶爾走散的牛；牧場外沒有家畜
+#  13. 獵到家畜加那一種的注意；出手沒獵到算被看到（+5）；沒開放時不加
 # 用法：bash tools/run_sim.sh ranch_rules
 var gs
 var gd
@@ -171,6 +174,7 @@ func _run() -> void:
 		gs.wolf.hunger = 100.0
 	_check(ok, "在牧場探索不會出錯")
 	_step2()
+	_step3()
 	gd.set_ranch("")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
@@ -265,3 +269,82 @@ func _step2() -> void:
 		gs.clear_discovery()
 		gs.wolf.stamina = 100.0
 	_check(gs.can_watch_ranch() and seen.has("calm") and seen.has("calm.night") and seen.has("wary") and seen.has("patrol") and seen.has("hunt"), "牧場邊緣觀察：看得出四層，夜裡有夜裡的寫法（%s）" % str(seen.keys()))
+
+func _explore_sources(region: String, season_idx: int, n: int) -> Dictionary:
+	var gt = root.get_node("GameTime")
+	gt.season_index = season_idx
+	var out := {}
+	for i in n:
+		gs.current_region = region
+		gs.wolf.stamina = 100.0
+		gs.wolf.hunger = 100.0
+		gs.ranch["attention"] = 0.0
+		var d: Dictionary = gs.action_explore()
+		if str(d.get("source_kind", "")) == "prey":
+			var k: String = str(d["source"]) + "." + str(d.get("life_stage", "adult"))
+			out[k] = int(out.get(k, 0)) + 1
+		gs.clear_discovery()
+	return out
+
+func _step3() -> void:
+	gs.new_game("forest_east")
+	gs.pending_events.clear()
+	gs.ranch = {"state": "open", "candidate": "A"}
+	gd.set_ranch("A")
+	# 12. 家畜在哪裡、哪一季
+	var summer_p: Dictionary = _explore_sources("ranch_pasture", 1, 150)
+	var winter_p: Dictionary = _explore_sources("ranch_pasture", 3, 150)
+	_check(int(summer_p.get("cattle.juvenile", 0)) > 0 and int(summer_p.get("cattle.adult", 0)) > 0 and int(summer_p.get("cattle.buck", 0)) > 0, "夏季的放牧地：牛犢、一歲牛、成牛（%s）" % str(summer_p))
+	_check(int(winter_p.get("cattle.juvenile", 0)) == 0 and int(winter_p.get("cattle.adult", 0)) > 0, "冬季沒有牛犢（%s）" % str(winter_p))
+	var summer_y: Dictionary = _explore_sources("ranch_yard", 1, 150)
+	var winter_y: Dictionary = _explore_sources("ranch_yard", 3, 100)
+	_check(int(summer_y.get("sheep.adult", 0)) > 0 and int(winter_y.get("sheep.adult", 0)) == 0 and not summer_y.has("sheep.juvenile"), "屋舍與畜欄：夏季有羊、冬季沒有（%s／%s）" % [str(summer_y), str(winter_y)])
+	var edge: Dictionary = _explore_sources("ranch_edge", 1, 200)
+	var edge_cattle: int = 0
+	for k in edge.keys():
+		if k.begins_with("cattle"):
+			edge_cattle += int(edge[k])
+	_check(edge_cattle > 0 and edge_cattle < int(summer_p.get("cattle.adult", 0)) + int(summer_p.get("cattle.juvenile", 0)) + int(summer_p.get("cattle.buck", 0)), "牧場邊緣偶爾有走散的牛（%d）" % edge_cattle)
+	var outside: Dictionary = _explore_sources("forest_south", 1, 200)
+	_check(not outside.keys().any(func(k): return k.begins_with("cattle") or k.begins_with("sheep")), "牧場外沒有家畜")
+	# 13. 注意
+	var gt = root.get_node("GameTime")
+	gt.period_index = 3
+	gs.current_region = "ranch_pasture"
+	var cases := [["cattle", "juvenile", 12.0], ["cattle", "adult", 15.0], ["cattle", "buck", 20.0]]
+	var ok := true
+	for c in cases:
+		gs.ranch = {"state": "open", "candidate": "A"}
+		var h = gs.start_hunt(c[0], c[1], -1, false, "prairie")
+		h.result = 1 # SUCCESS
+		gs._ranch_hunt_attention(h)
+		if absf(gs.ranch_attention() - float(c[2])) > 0.01:
+			ok = false
+		gs.clear_discovery()
+	gs.current_region = "ranch_yard"
+	gs.ranch = {"state": "open", "candidate": "A"}
+	var hs = gs.start_hunt("sheep", "adult", -1, false, "clearing")
+	hs.result = 1
+	gs._ranch_hunt_attention(hs)
+	_check(ok and absf(gs.ranch_attention() - 37.5) < 0.01, "夜裡獵到：牛犢 +12、一歲牛 +15、成牛 +20；屋舍的羊 25 × 1.5（%.1f）" % gs.ranch_attention())
+	gs.clear_discovery()
+	gs.current_region = "ranch_pasture"
+	gs.ranch = {"state": "open", "candidate": "A"}
+	var hf = gs.start_hunt("cattle", "adult", -1, false, "prairie")
+	hf.result = 2
+	hf.decisions.append("stalk.creep")
+	gs._ranch_hunt_attention(hf)
+	var seen_v: float = gs.ranch_attention()
+	gs.clear_discovery()
+	gs.ranch = {"state": "open", "candidate": "A"}
+	var h0 = gs.start_hunt("cattle", "adult", -1, false, "prairie")
+	h0.result = 2
+	gs._ranch_hunt_attention(h0)
+	_check(absf(seen_v - 5.0) < 0.01 and gs.ranch_attention() == 0.0, "出手沒獵到 +5（%.1f）；還沒出手就走不算" % seen_v)
+	gs.clear_discovery()
+	gs.ranch = {"state": "clues", "candidate": "A"}
+	var hc = gs.start_hunt("cattle", "adult", -1, false, "prairie")
+	hc.result = 1
+	gs._ranch_hunt_attention(hc)
+	_check(gs.ranch_attention() == 0.0, "沒開放時不加")
+	gs.clear_discovery()

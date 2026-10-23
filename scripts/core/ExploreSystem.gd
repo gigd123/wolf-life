@@ -194,6 +194,9 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	# 幼體的機率依季節（1.8 第 5 步：產仔季幼體多、早冬的小馬鹿…）
 	var juv_chance: float = float(cfg.get("juvenile_season", {}).get(source, {}).get(ctx["season"], cfg.get("juvenile_chance", 0.3)))
 	var life_stage: String = "juvenile" if RNGService.chance(juv_chance) else "adult"
+	# 沒有幼體的動物（羊，Phase 4a）一律成體
+	if life_stage == "juvenile" and not GameData.animals.get(source, {}).has("juvenile"):
+		life_stage = "adult"
 	if bugling and clue == "sound":
 		life_stage = str(bugle.get("stage", "buck"))
 	# 成體的變體（例如白尾鹿雄鹿），狩獵深度不同。

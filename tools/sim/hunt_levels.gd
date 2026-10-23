@@ -7,6 +7,7 @@ func GameData_cond(c: String) -> float:
 # 印出：整體成功率、進入搏鬥的比例、搏鬥第一口的平均成功率、平均受傷。
 # 用法：bash tools/run_sim.sh hunt_levels 0 300　　CHASE=follow bash tools/run_sim.sh hunt_levels 0 300
 # 1.8：COND=healthy／average／weak 固定大型獵物的體況；SNOW=none／deep… 固定雪況（預設無雪）。
+# PREY=cattle:juvenile,cattle:adult 只跑這幾種（Phase 4a 第 3 步驗算家畜用）。
 
 const STAGE_DONE := 5
 const STAGE_CHASE := 2
@@ -33,10 +34,13 @@ func _process(_d):
 	var snow := OS.get_environment("SNOW")
 	GS.snow = {"forest": snow if snow != "" else "none", "tundra": snow if snow != "" else "none"}
 	print("== hunt_levels：每格 %d 次，追擊方式 %s，體況 %s，雪況 %s" % [runs, chase_mode if chase_mode != "" else "最高成功率", cond if cond != "" else "依季節", GS.snow["forest"]])
+	var prey_list: Array = PREY
+	if OS.get_environment("PREY") != "":
+		prey_list = Array(OS.get_environment("PREY").split(",")).map(func(x): return x.split(":"))
 	for lv in LEVELS:
 		var line := "[%s %d]" % [lv[0], int(lv[1])]
 		print(line)
-		for spec in PREY:
+		for spec in prey_list:
 			var wins := 0; var fights := 0; var first_bite := 0.0; var dmg := 0.0; var chase_rounds := 0
 			for i in runs:
 				var v: float = lv[1]
@@ -48,6 +52,8 @@ func _process(_d):
 					terrains = ["cliff", "scree", "alpine_meadow"]
 				if spec[0] in ["bison", "pronghorn"]:
 					terrains = ["prairie", "rolling_hills"] if OS.get_environment("SNOW") == "" else ["prairie"]
+				if spec[0] in ["cattle", "sheep"]:
+					terrains = ["prairie", "clearing"]
 				if spec[0] == "beaver":
 					terrains = ["stream", "river_willow"]
 				if spec[0] == "mule_deer":
