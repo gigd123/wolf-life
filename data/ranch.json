@@ -1,0 +1,24 @@
+{
+  "_comment": "Phase 4a 牧場（人類第一階段，SPEC「Phase 4a：牧場」）。牧場沒出現的局完全不載入這裡的地圖、區域、連接（GameData.set_ranch）。數值都是初始值。",
+  "_appear_comment": "出現：狼 age_from～age_to 歲之間，每次換季擲一次 chance（4 次約 68%）；挑候選時連到你巢穴區的候選權重 × den_link_mult。出現的那一季只有線索（state clues），下一次換季才開放（state open）；到 age_to 還沒出現，這一局就沒有（state never）。",
+  "_enabled_comment": "enabled：主遊戲會不會擲牧場出現。家畜（第 3 步）與人類的反應（第 4 步）做好之前先關著，避免試玩時出現一張空的牧場；除錯選單的「牧場出現」「牧場開放」不受影響，回歸測試會打開。",
+  "enabled": false,
+  "appear": { "age_from": 2.0, "age_to": 3.0, "chance": 0.25, "den_link_mult": 0.5 },
+  "_candidates_comment": "候選位置：牧場邊緣（link_region）連到兩個區域；turns、stamina 和其他跨地圖的連接一樣。苔原、山地永遠不連。",
+  "link_region": "ranch_edge",
+  "candidates": {
+    "A": { "weight": 1, "links": [ { "region": "forest_south", "turns": 2, "stamina": 6 }, { "region": "grassland_hills", "turns": 2, "stamina": 6 } ] },
+    "B": { "weight": 1, "links": [ { "region": "grassland_plains", "turns": 2, "stamina": 6 }, { "region": "grassland_river", "turns": 2, "stamina": 6 } ] },
+    "C": { "weight": 1, "links": [ { "region": "forest_west", "turns": 2, "stamina": 6 }, { "region": "forest_south", "turns": 2, "stamina": 6 } ] },
+    "D": { "weight": 1, "links": [ { "region": "grassland_riverwoods", "turns": 2, "stamina": 6 }, { "region": "grassland_river", "turns": 2, "stamina": 6 } ] }
+  },
+  "_clues_comment": "出現的那一季（state clues）：在連到牧場的區域探索，有 find 的機率找到人類開墾的線索（取代這次探索的結果），weights 挑哪一種。開放後的線索照人類活動度（第 2 步）。",
+  "clues": { "find": 0.25, "weights": { "cattle_smell": 3, "smoke": 2, "axe": 2, "fence_posts": 2 } },
+  "map": { "ranch": { "name_key": "map.ranch", "layout": ["ranch_pasture", "ranch_yard", "ranch_edge"], "fire": false } },
+  "_regions_comment": "牧場的三個區域：放牧地（主要的食物、開闊）、屋舍與畜欄（人最多）、牧場邊緣（過渡區，連到原本的地圖）。家畜在第 3 步加；地形先用現有的（背景與區域圖在第 6 步）。不能築巢。",
+  "regions": {
+    "ranch_pasture": { "name_key": "region.ranch_pasture", "map": "ranch", "terrains": ["prairie"], "main_feature": "ranch_pasture", "secondary_features": [], "adjacent": ["ranch_yard", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.2, "prey_weights": { "hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": {} },
+    "ranch_yard": { "name_key": "region.ranch_yard", "map": "ranch", "terrains": ["clearing"], "main_feature": "ranch_yard", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.05, "prey_weights": {}, "competitor_weights": {}, "gather_weights": {} },
+    "ranch_edge": { "name_key": "region.ranch_edge", "map": "ranch", "terrains": ["forest_edge", "stream"], "main_feature": "ranch_edge", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_yard"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.45, "prey_weights": { "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 } }, "competitor_weights": {}, "gather_weights": { "berries": { "summer": 1, "autumn": 1 } } }
+  }
+}

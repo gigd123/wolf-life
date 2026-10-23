@@ -13,6 +13,8 @@ var events: Dictionary = {}
 var tendency: Dictionary = {}
 var art: Dictionary = {}
 var notices: Dictionary = {}
+var ranch_def: Dictionary = {} # Phase 4a 牧場（data/ranch.json）；開放時才把地圖、區域、連接加進世界（set_ranch）
+var ranch_links: Array = [] # 牧場開放時的跨地圖連接（同 regions.json links 的格式）
 
 func _ready() -> void:
 	balance = _load_json("res://data/balance.json")
@@ -29,6 +31,7 @@ func _ready() -> void:
 	tendency = _load_json("res://data/tendency.json")
 	art = _load_json("res://data/art.json")
 	notices = _load_json("res://data/notices.json")
+	ranch_def = _load_json("res://data/ranch.json")
 
 func regions() -> Dictionary:
 	return regions_root.get("regions", {})
@@ -46,12 +49,35 @@ func map_regions(map_id: String) -> Array:
 # 從某個區域出發的跨地圖連接（雙向）：[{to, turns, stamina}]。
 func links_from(region_id: String) -> Array:
 	var list: Array = []
-	for link in regions_root.get("links", []):
+	for link in regions_root.get("links", []) + ranch_links:
 		if str(link["from"]) == region_id:
 			list.append({"to": str(link["to"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
 		elif str(link["to"]) == region_id:
 			list.append({"to": str(link["from"]), "turns": int(link.get("turns", 3)), "stamina": float(link.get("stamina", 0))})
 	return list
+
+# 牧場（Phase 4a）：candidate 是開放的候選位置（"" 表示沒有牧場）。沒有牧場時世界裡完全沒有牧場的地圖、區域、連接；
+# 開放時加進 maps、regions，牧場邊緣連到候選的兩個區域。新局、讀檔、開放時呼叫。
+func set_ranch(candidate: String) -> void:
+	var map_table: Dictionary = maps()
+	var region_table: Dictionary = regions()
+	for map_id in ranch_def.get("map", {}).keys():
+		map_table.erase(map_id)
+	for region_id in ranch_def.get("regions", {}).keys():
+		region_table.erase(region_id)
+	ranch_links = []
+	var c: Dictionary = ranch_def.get("candidates", {}).get(candidate, {})
+	if c.is_empty():
+		return
+	for map_id in ranch_def.get("map", {}).keys():
+		map_table[map_id] = (ranch_def["map"][map_id] as Dictionary).duplicate(true)
+	for region_id in ranch_def.get("regions", {}).keys():
+		region_table[region_id] = (ranch_def["regions"][region_id] as Dictionary).duplicate(true)
+	for l in c.get("links", []):
+		ranch_links.append({"from": str(ranch_def.get("link_region", "ranch_edge")), "to": str(l["region"]), "turns": int(l.get("turns", 2)), "stamina": float(l.get("stamina", 6))})
+
+func ranch_open() -> bool:
+	return not ranch_links.is_empty()
 
 func region_features() -> Dictionary:
 	return regions_root.get("features", {})

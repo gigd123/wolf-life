@@ -81,6 +81,8 @@ var carcasses: Array = []
 # 藏起來的肉（Phase 2e）：區域 -> {segments, segment_value, animal_id, life_stage, day（藏的那天；加進去時取比較早的）,
 #   dig_day（今天擲過被挖走沒）, lost（"grizzly"／"fox"／"wolverine"／"rotten"：下次回到那一區才知道）}
 var caches: Dictionary = {}
+# 牧場（Phase 4a）：{state: ""（還沒出現）／clues（出現的那一季，只有線索）／open／never, candidate, last_roll（擲過的季：年齡 × 4）, rolls, appear_age, open_age, card, seen}
+var ranch: Dictionary = {}
 
 var life_log: Dictionary = {}
 # 自動遊玩（除錯「模擬到死亡」）期間不產生提示卡片。
@@ -102,6 +104,8 @@ func new_game(start_den: String) -> void:
 	current_feeding = {}
 	carcasses = []
 	caches = {}
+	ranch = {}
+	GameData.set_ranch("")
 	knowledge = {}
 	identified = GameData.knowledge.get("identified_at_start", []).duplicate()
 	avoid_bear = {}
@@ -256,6 +260,7 @@ func _on_season_changed(_season_index: int) -> void:
 		Growth.settle_season(wolf, fed_ratio)
 		_apply_age_decay()
 		_check_life_stage_transition(prev_stage)
+		_update_ranch()
 		var review: Dictionary = _season_review(fed_ratio)
 		_start_season_review()
 		log_message.emit(tr("log.season_changed"))
@@ -341,6 +346,14 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 				hint = "hare_low_rising"
 	if hint != "normal":
 		lines.append({"key": "year.hint.%s.%s" % [season, hint]})
+	# 牧場（Phase 4a）：出現的那一季寫線索、開放的那一季寫柵欄；人在連到牧場的地圖才寫（不在的話，走到那一區時跳一張）
+	var rc: String = str(ranch.get("card", ""))
+	if rc != "":
+		ranch.erase("card")
+		if ranch_near_map():
+			lines.append({"key": "ranch.season." + rc, "region": ranch_near_region()})
+			if rc == "open" and ranch_linked_regions().has(current_region):
+				ranch["seen"] = true
 	# 黑狼家族的變化（Phase 3a 第 2 步）：人在森林才寫，不在就留到回森林的那一季
 	if current_map() == "forest" and life_log.has("pack_news"):
 		var known: String = "known" if is_identified("stranger_wolf") else "unknown"
@@ -789,6 +802,118 @@ func salmon_stage(region_id: String = "") -> String:
 		if str(st["season"]) == season and GameTime.day >= int(st["from"]) and GameTime.day <= int(st["to"]):
 			return str(st["stage"])
 	return ""
+
+# --- 牧場（Phase 4a，data/ranch.json）---
+func _ranch_cfg() -> Dictionary:
+	return GameData.ranch_def
+
+func ranch_state() -> String:
+	return str(ranch.get("state", ""))
+
+# 連到牧場的兩個區域（還沒出現時是空的）
+func ranch_linked_regions() -> Array:
+	var out: Array = []
+	for l in _ranch_cfg().get("candidates", {}).get(str(ranch.get("candidate", "")), {}).get("links", []):
+		out.append(str(l["region"]))
+	return out
+
+# 連到牧場、而且在你現在這張地圖上的區域（文字裡的「從哪一頭」）；都不在就第一個
+func ranch_near_region() -> String:
+	var linked: Array = ranch_linked_regions()
+	for r in linked:
+		if GameData.map_of(str(r)) == current_map():
+			return str(r)
+	return str(linked[0]) if not linked.is_empty() else ""
+
+# 你現在在連到牧場的區域所在的地圖（或牧場本身）
+func ranch_near_map() -> bool:
+	if ranch_state() not in ["clues", "open"]:
+		return false
+	if current_map() == "ranch":
+		return true
+	for r in ranch_linked_regions():
+		if GameData.map_of(str(r)) == current_map():
+			return true
+	return false
+
+# 換季時：出現的那一季過了就開放；還沒出現、在年齡窗口裡、這一季還沒擲過 → 擲一次（SPEC Phase 4a「什麼時候出現」）
+func _update_ranch() -> void:
+	var ap: Dictionary = _ranch_cfg().get("appear", {})
+	match ranch_state():
+		"clues":
+			ranch["state"] = "open"
+			ranch["open_age"] = wolf.age_years
+			ranch["card"] = "open"
+			GameData.set_ranch(str(ranch["candidate"]))
+			return
+		"":
+			pass
+		_:
+			return
+	if not bool(_ranch_cfg().get("enabled", true)):
+		return
+	if wolf.age_years >= float(ap.get("age_to", 3.0)) - 0.001:
+		ranch["state"] = "never"
+		return
+	var key: int = roundi(wolf.age_years * 4.0)
+	if wolf.age_years < float(ap.get("age_from", 2.0)) - 0.001 or int(ranch.get("last_roll", -1)) == key:
+		return
+	ranch["last_roll"] = key
+	ranch["rolls"] = int(ranch.get("rolls", 0)) + 1
+	if not RNGService.chance(float(ap.get("chance", 0.25))):
+		return
+	ranch["candidate"] = _pick_ranch_candidate()
+	ranch["state"] = "clues"
+	ranch["appear_age"] = wolf.age_years
+	ranch["card"] = "clues"
+
+# 挑候選位置：不看你現在在哪一區；連到你巢穴區的候選權重 × den_link_mult
+func _pick_ranch_candidate() -> String:
+	var w: Dictionary = {}
+	for id in _ranch_cfg().get("candidates", {}).keys():
+		var c: Dictionary = _ranch_cfg()["candidates"][id]
+		var v: float = float(c.get("weight", 1))
+		for l in c.get("links", []):
+			if str(l["region"]) == den_region:
+				v *= float(_ranch_cfg().get("appear", {}).get("den_link_mult", 0.5))
+				break
+		w[id] = v
+	return str(RNGService.weighted_pick(w))
+
+# 出現的那一季：在連到牧場的區域探索，有機會找到人類開墾的線索（取代這次探索的結果）
+func _maybe_ranch_clue() -> bool:
+	if ranch_state() != "clues" or not ranch_linked_regions().has(current_region):
+		return false
+	var cl: Dictionary = _ranch_cfg().get("clues", {})
+	if not RNGService.chance(float(cl.get("find", 0.25))):
+		return false
+	current_discovery = {"kind": "nothing", "ranch_clue": str(RNGService.weighted_pick(cl.get("weights", {"smoke": 1}))), "location": _random_terrain(current_region)}
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	rl["clues"] = int(rl.get("clues", 0)) + 1
+	return true
+
+# 牧場開放後第一次走到連到牧場的區域（或牧場本身）：跳一張卡片
+func _maybe_ranch_arrival() -> void:
+	if ranch_state() != "open" or bool(ranch.get("seen", false)):
+		return
+	if current_map() != "ranch" and not ranch_linked_regions().has(current_region):
+		return
+	ranch["seen"] = true
+	_queue_notice({"type": "ranch_news", "region": current_region if current_map() != "ranch" else ranch_near_region()})
+
+# 除錯：stage "clues" 讓牧場現在出現（這一季只有線索）、"open" 直接開放；候選照規則挑
+func debug_ranch(stage: String) -> void:
+	if ranch_state() not in ["clues", "open"]:
+		ranch["candidate"] = _pick_ranch_candidate()
+		ranch["appear_age"] = wolf.age_years
+	ranch["state"] = stage
+	if stage == "open":
+		ranch["open_age"] = wolf.age_years
+		GameData.set_ranch(str(ranch["candidate"]))
+	else:
+		GameData.set_ranch("")
+	ranch.erase("seen")
+	state_changed.emit()
 
 func _maybe_salmon(mode: String) -> bool:
 	var stage := salmon_stage()
@@ -1539,6 +1664,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		_apply_env_perception()
 		_check_blizzard_here()
 		_maybe_map_season_card()
+		_maybe_ranch_arrival()
 		_maybe_blizzard_aftermath()
 		if big_river != "":
 			_after_big_river(big_river)
@@ -1583,6 +1709,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		return current_discovery
 	# 苔原狼：在牠們這陣子待的區域探索，有機會撞見牠們圍攻狼獾，或遇上牠們
 	# 猞猁、遷徙的足跡（Phase 2 第 6 步）
+	# 牧場出現的那一季：人類開墾的線索（Phase 4a 第 1 步）
+	if _maybe_ranch_clue():
+		state_changed.emit()
+		return current_discovery
 	# 鮭魚洄流的線索（Phase 2h 第 1 步）
 	if _maybe_salmon(mode):
 		state_changed.emit()
@@ -6328,6 +6458,7 @@ func to_dict() -> Dictionary:
 		"region_knowledge": region_knowledge,
 		"carcasses": carcasses,
 		"caches": caches,
+		"ranch": ranch,
 		"knowledge": knowledge,
 		"identified": identified,
 		"stranger_territory": stranger_territory,
@@ -6375,6 +6506,8 @@ func load_from_dict(data: Dictionary) -> void:
 	current_feeding = {}
 	carcasses = data.get("carcasses", [])
 	caches = data.get("caches", {})
+	ranch = data.get("ranch", {})
+	GameData.set_ranch(str(ranch.get("candidate", "")) if ranch_state() == "open" else "")
 	knowledge = data.get("knowledge", {})
 	identified = data.get("identified", GameData.knowledge.get("identified_at_start", []).duplicate())
 	stranger_territory = str(data.get("stranger_territory", "forest_north"))

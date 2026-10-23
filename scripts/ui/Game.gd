@@ -757,6 +757,19 @@ func _build_debug_overlay() -> void:
 		_show_discovery(GameState.current_discovery)
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.ranch_clues"), func():
+		debug_overlay.visible = false
+		GameState.debug_ranch("clues")
+		_log(tr("debug.ranch.done").replace("{state}", tr("debug.ranch.clues")).replace("{a}", tr("region." + str(GameState.ranch_linked_regions()[0]))).replace("{b}", tr("region." + str(GameState.ranch_linked_regions()[1]))))
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.ranch_open"), func():
+		debug_overlay.visible = false
+		GameState.debug_ranch("open")
+		_log(tr("debug.ranch.done").replace("{state}", tr("debug.ranch.open")).replace("{a}", tr("region." + str(GameState.ranch_linked_regions()[0]))).replace("{b}", tr("region." + str(GameState.ranch_linked_regions()[1]))))
+		rendered_map = ""
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
 		debug_overlay.visible = false
 		GameState.debug_lynx_kill()
@@ -1982,6 +1995,8 @@ func _discovery_text(d: Dictionary) -> String:
 			return _small_pounce_text("see", d)
 		"salmon":
 			return tr("salmon.clue.%s.%s" % [str(d.get("stage", "peak")), str(d.get("clue", "shadows"))]).replace("{location}", tr("explore.location." + str(d.get("location", ""))))
+		"nothing" when d.has("ranch_clue"):
+			return tr("ranch.clue." + str(d["ranch_clue"])).replace("{location}", location)
 		"nothing" when d.has("hibernating"):
 			return tr("explore.hibernating." + str(d["hibernating"])).replace("{location}", location)
 		"nothing" when str(d.get("mode", "")) == "water":
@@ -2389,6 +2404,10 @@ func _process_events() -> void:
 			return
 		"season_card":
 			_show_season_card(event)
+			return
+		"ranch_news":
+			_show_event_message(tr("ranch.news").replace("{region}", tr("region." + str(event.get("region", "")))), "")
+			encounter_sprite.show_static(null) # 牧場的圖還沒有（第 6 步），不畫動物
 			return
 		"sleep_summary":
 			_show_sleep_summary(event.get("summary", {}))
