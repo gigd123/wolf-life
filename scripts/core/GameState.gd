@@ -4309,7 +4309,8 @@ func action_cache_segment() -> bool:
 	wolf.clamp_stats()
 	var c: Dictionary = caches.get(current_region, {"pieces": []})
 	var pieces: Array = c["pieces"]
-	if status == "replace":
+	# 過回合時藏肉可能被挖走、壞光（2026-10-23 牧場模擬發現）：還滿著才換掉最舊的
+	if status == "replace" and pieces.size() >= int(cfg.get("max_segments", 2)):
 		var oldest := 0
 		for i in pieces.size():
 			if int(pieces[i]["day"]) < int(pieces[oldest]["day"]):
