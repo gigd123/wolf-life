@@ -31,12 +31,12 @@
     "patrol": { "min": 40, "weight": 3, "kinds": ["hound_tracks", "gunshot"] },
     "hunt": { "min": 70, "weight": 4, "kinds": ["searching"] }
   },
-  "_attention_comment": "注意（第 2 步，0～100，存檔）：牧場對狼的警戒，不是犯罪紀錄。事件的基礎值（第 3、4 步用：獵到牛犢 12、一歲牛 15、成牛 20、羊 25、被看到但沒獵 5）× 在屋舍與畜欄 yard_mult × 白天（day_periods）day_mult × 間隔太短（離上一次事件 gap：同一天 2.0、1～2 天 1.6、3～5 天 1.3）；每天 × decay（約 20 天減半、2 季）。watch：在牧場邊緣觀察看得出的警戒，照注意分 calm／wary／patrol／hunt（同 signs 的門檻），夜裡 calm、wary 有夜裡的寫法。",
+  "_attention_comment": "注意（第 2 步，0～100，存檔）：牧場對狼的警戒，不是犯罪紀錄。事件的基礎值（第 3、4 步用：獵到牛犢 6、一歲牛 8、成牛 10、羊 12、被看到但沒獵 3）× 在屋舍與畜欄 yard_mult × 白天（day_periods）day_mult × 間隔太短（離上一次事件 gap：同一天 1.5、1～2 天 1.3、3～5 天 1.1）；每天 × decay（約 13.5 天減半）。第 5 步校準（2026-10-23 使用者同意）：原本 12／15／20／25／5、2.0／1.6／1.3、0.966（約 20 天減半），注意累積太快，一個月只獵得到一隻，牧場打平或吃虧；改後安靜地偶爾去的狼牧場約佔兩成食物、挨餓最少。watch：在牧場邊緣觀察看得出的警戒，照注意分 calm／wary／patrol／hunt（同 signs 的門檻），夜裡 calm、wary 有夜裡的寫法。",
   "attention": {
-    "events": { "calf": 12, "yearling": 15, "cow": 20, "sheep": 25, "seen": 5 },
+    "events": { "calf": 6, "yearling": 8, "cow": 10, "sheep": 12, "seen": 3 },
     "yard_mult": 1.5, "day_mult": 1.3, "day_periods": ["day"],
-    "gap": [ { "days": 0, "mult": 2.0 }, { "days": 2, "mult": 1.6 }, { "days": 5, "mult": 1.3 } ],
-    "decay": 0.966
+    "gap": [ { "days": 0, "mult": 1.5 }, { "days": 2, "mult": 1.3 }, { "days": 5, "mult": 1.1 } ],
+    "decay": 0.95
   },
   "_livestock_comment": "家畜（第 3 步）：動物.生命階段 → 注意的事件（attention.events）。獵到的話加那一種；在牧場出手但沒獵到（走到潛近以後）算被看到（seen）。",
   "livestock": { "cattle.juvenile": "calf", "cattle.adult": "yearling", "cattle.buck": "cow", "sheep.adult": "sheep" },

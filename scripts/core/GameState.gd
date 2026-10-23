@@ -1003,7 +1003,7 @@ func _ranch_hunt_attention(hunt: HuntSystem) -> void:
 		ranch_add_attention("seen")
 		rl["failed"] = int(rl.get("failed", 0)) + 1
 
-# 每天消退（約 20 天減半）
+# 每天消退（約 14 天減半，ranch.json attention.decay）
 func _decay_ranch_attention() -> void:
 	if ranch_attention() <= 0.0:
 		return
