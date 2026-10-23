@@ -770,6 +770,12 @@ func _build_debug_overlay() -> void:
 		rendered_map = ""
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.ranch_attention"), func():
+		debug_overlay.visible = false
+		GameState.ranch["attention"] = minf(100.0, GameState.ranch_attention() + 20.0)
+		_log(tr("debug.ranch.attention").replace("{n}", str(roundi(GameState.ranch_attention()))).replace("{act}", str(snappedf(GameState.ranch_activity(), 0.01))))
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
 		debug_overlay.visible = false
 		GameState.debug_lynx_kill()
@@ -1960,6 +1966,12 @@ func _show_explore_modes() -> void:
 		if last is Button and ArtLibrary.icon("explore." + mode) != null:
 			(last as Button).icon = ArtLibrary.icon("explore." + mode)
 			(last as Button).alignment = HORIZONTAL_ALIGNMENT_LEFT
+	# 牧場邊緣：望向柵欄裡，看人在做什麼（Phase 4a 第 2 步）
+	if GameState.can_watch_ranch():
+		_add_encounter_button(tr("explore.mode.watch_ranch"), func():
+			encounter_overlay.visible = false
+			_show_discovery(GameState.action_watch_ranch())
+		)
 	_add_encounter_button(tr("explore.mode.until"), func():
 		encounter_overlay.visible = false
 		var res := GameState.action_explore_until()
@@ -1995,6 +2007,10 @@ func _discovery_text(d: Dictionary) -> String:
 			return _small_pounce_text("see", d)
 		"salmon":
 			return tr("salmon.clue.%s.%s" % [str(d.get("stage", "peak")), str(d.get("clue", "shadows"))]).replace("{location}", tr("explore.location." + str(d.get("location", ""))))
+		"nothing" when d.has("ranch_sign"):
+			return tr("ranch.sign." + str(d["ranch_sign"])).replace("{location}", location)
+		"nothing" when d.has("ranch_watch"):
+			return tr("ranch.watch." + str(d["ranch_watch"]))
 		"nothing" when d.has("ranch_clue"):
 			return tr("ranch.clue." + str(d["ranch_clue"])).replace("{location}", location)
 		"nothing" when d.has("hibernating"):

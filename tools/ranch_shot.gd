@@ -1,5 +1,5 @@
 extends SceneTree
-# 牧場（Phase 4a 第 1 步）的畫面檢查：除錯開放牧場 → 走到連到牧場的區域（第一次的卡片）→ 關掉看「前往牧場」→ 走進牧場邊緣，各截一張。
+# 牧場（Phase 4a）的畫面檢查：除錯開放牧場 → 走到連到牧場的區域（第一次的卡片）→ 關掉看「前往牧場」→ 走進牧場邊緣 → 線索 → 探索方式（望向柵欄裡）→ 觀察的結果，各截一張。
 # 用法：OUT=<輸出路徑前綴> xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/ranch_shot.gd
 var f := 0
 var game
@@ -42,5 +42,17 @@ func _process(_d) -> bool:
 		game._show_discovery(gs.current_discovery)
 	if f == 32:
 		root.get_viewport().get_texture().get_image().save_png(out + "_4.png")
+		game.encounter_overlay.visible = false
+		gs.ranch = {"state": "open", "candidate": "A", "attention": 45.0, "seen": true}
+		root.get_node("GameData").set_ranch("A")
+		gs.current_region = "ranch_edge"
+		game._show_explore_modes()
+		game.encounter_overlay.visible = true
+	if f == 38:
+		root.get_viewport().get_texture().get_image().save_png(out + "_5.png")
+		game.encounter_overlay.visible = false
+		game._show_discovery(gs.action_watch_ranch())
+	if f == 44:
+		root.get_viewport().get_texture().get_image().save_png(out + "_6.png")
 		return true
 	return false

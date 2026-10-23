@@ -218,6 +218,7 @@ func _on_day_changed(_day: int) -> void:
 	_update_marks()
 	_move_bison()
 	_update_sleep_spots()
+	_decay_ranch_attention()
 	_heal_npcs()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
@@ -900,6 +901,135 @@ func _maybe_ranch_arrival() -> void:
 		return
 	ranch["seen"] = true
 	_queue_notice({"type": "ranch_news", "region": current_region if current_map() != "ranch" else ranch_near_region()})
+
+# --- 人類活動度與注意（Phase 4a 第 2 步）---
+
+func ranch_attention() -> float:
+	return float(ranch.get("attention", 0.0))
+
+# 這一區的人類活動度 0～1（SPEC Phase 4a「人類活動度與線索」）：牧場的區域、連到牧場的區域、再隔一個連接；
+# 乘地形的可達性（牧場本身不乘）、季節；注意讓牧場與連到牧場的區域暫時提高
+func ranch_activity(region_id: String = "") -> float:
+	if region_id == "":
+		region_id = current_region
+	if ranch_state() != "open":
+		return 0.0
+	var ac: Dictionary = _ranch_cfg().get("activity", {})
+	var map_id: String = GameData.map_of(region_id)
+	if (ac.get("no_maps", []) as Array).has(map_id):
+		return 0.0
+	var linked: Array = ranch_linked_regions()
+	var v := 0.0
+	var close := false
+	if map_id == "ranch":
+		v = float(ac.get("ranch", {}).get(region_id, 0.5))
+		close = true
+	else:
+		if linked.has(region_id):
+			v = float(ac.get("linked", 0.3))
+			close = true
+		elif _ranch_near(region_id, linked):
+			v = float(ac.get("near", 0.1))
+		if v <= 0.0:
+			return 0.0
+		var terrains: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+		v *= float(ac.get("access", {}).get(str(terrains[0]) if not terrains.is_empty() else "", 0.8))
+	v *= float(ac.get("season", {}).get(GameTime.current_season(), 1.0))
+	if close:
+		v += float(ac.get("attention_bonus", 0.4)) * ranch_attention() / 100.0
+	return clamp(v, 0.0, 1.0)
+
+# 再隔一個連接：和連到牧場的區域相鄰（同地圖）或有跨地圖的連接（牧場本身不算）
+func _ranch_near(region_id: String, linked: Array) -> bool:
+	for r in linked:
+		if (EncounterSystem.region_data(str(r)).get("adjacent", []) as Array).has(region_id):
+			return true
+		for l in GameData.links_from(str(r)):
+			if str(l["to"]) == region_id:
+				return true
+	return false
+
+# 注意的層級（線索、在牧場邊緣看到的）：calm／wary／patrol／hunt
+func ranch_alert_tier() -> String:
+	var tier := "calm"
+	var best := -1.0
+	var signs: Dictionary = _ranch_cfg().get("signs", {})
+	for k in signs.keys():
+		var m: float = float(signs[k].get("min", 0))
+		if ranch_attention() >= m and m > best:
+			best = m
+			tier = str(k)
+	return tier
+
+# 牧場的注意增加（第 3、4 步的事件呼叫）：基礎值 × 屋舍 × 白天 × 間隔太短；回傳實際加了多少
+func ranch_add_attention(event: String, region_id: String = "") -> float:
+	if ranch_state() != "open":
+		return 0.0
+	if region_id == "":
+		region_id = current_region
+	var at: Dictionary = _ranch_cfg().get("attention", {})
+	var v: float = float(at.get("events", {}).get(event, 0.0))
+	if region_id == "ranch_yard":
+		v *= float(at.get("yard_mult", 1.5))
+	if (at.get("day_periods", ["day"]) as Array).has(GameTime.current_period()):
+		v *= float(at.get("day_mult", 1.3))
+	var today: int = int(life_log.get("days_lived", 0))
+	if ranch.has("last_event_day"):
+		var gap: int = today - int(ranch["last_event_day"])
+		for g in at.get("gap", []):
+			if gap <= int(g["days"]):
+				v *= float(g["mult"])
+				break
+	ranch["attention"] = minf(100.0, ranch_attention() + v)
+	ranch["last_event_day"] = today
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	rl["peak_attention"] = maxf(float(rl.get("peak_attention", 0.0)), ranch_attention())
+	return v
+
+# 每天消退（約 20 天減半）
+func _decay_ranch_attention() -> void:
+	if ranch_attention() <= 0.0:
+		return
+	ranch["attention"] = ranch_attention() * float(_ranch_cfg().get("attention", {}).get("decay", 0.966))
+	if ranch_attention() < 0.5:
+		ranch["attention"] = 0.0
+
+# 探索時看到人類的痕跡：活動度 × sign_chance；種類照注意的層級（越高的層權重越大）
+func _maybe_ranch_sign() -> bool:
+	var act: float = ranch_activity()
+	if act <= 0.0 or not RNGService.chance(act * float(_ranch_cfg().get("activity", {}).get("sign_chance", 0.35))):
+		return false
+	var w: Dictionary = {}
+	var signs: Dictionary = _ranch_cfg().get("signs", {})
+	for k in signs.keys():
+		if ranch_attention() >= float(signs[k].get("min", 0)):
+			for kind in signs[k].get("kinds", []):
+				w[str(kind)] = float(signs[k].get("weight", 1))
+	current_discovery = {"kind": "nothing", "ranch_sign": str(RNGService.weighted_pick(w)), "location": _random_terrain(current_region)}
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	rl["signs"] = int(rl.get("signs", 0)) + 1
+	return true
+
+# 在牧場邊緣觀察柵欄裡（SPEC Phase 4a：看得出牧場現在的警戒，不顯示數字）；花一次探索的時間
+func action_watch_ranch() -> Dictionary:
+	_record_action("explore")
+	record_decision("ranch.watch")
+	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
+	GameTime.advance_turns(int(costs.get("explore", 1)))
+	if not wolf.alive:
+		return {}
+	_spend_action_stamina("explore")
+	wolf.clamp_stats()
+	var tier := ranch_alert_tier()
+	var night: bool = GameTime.current_period() in ["night", "predawn"] and tier in ["calm", "wary"]
+	current_discovery = {"kind": "nothing", "ranch_watch": tier + (".night" if night else ""), "location": _random_terrain(current_region)}
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	rl["watches"] = int(rl.get("watches", 0)) + 1
+	state_changed.emit()
+	return current_discovery
+
+func can_watch_ranch() -> bool:
+	return ranch_state() == "open" and current_region == str(_ranch_cfg().get("link_region", "ranch_edge"))
 
 # 除錯：stage "clues" 讓牧場現在出現（這一季只有線索）、"open" 直接開放；候選照規則挑
 func debug_ranch(stage: String) -> void:
@@ -1711,6 +1841,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	# 猞猁、遷徙的足跡（Phase 2 第 6 步）
 	# 牧場出現的那一季：人類開墾的線索（Phase 4a 第 1 步）
 	if _maybe_ranch_clue():
+		state_changed.emit()
+		return current_discovery
+	# 牧場開放後：人類的痕跡（Phase 4a 第 2 步）
+	if _maybe_ranch_sign():
 		state_changed.emit()
 		return current_discovery
 	# 鮭魚洄流的線索（Phase 2h 第 1 步）
