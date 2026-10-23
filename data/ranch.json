@@ -40,7 +40,7 @@
   },
   "_livestock_comment": "家畜（第 3 步）：動物.生命階段 → 注意的事件（attention.events）。獵到的話加那一種；在牧場出手但沒獵到（走到潛近以後）算被看到（seen）。",
   "livestock": { "cattle.juvenile": "calf", "cattle.adult": "yearling", "cattle.buck": "cow", "sheep.adult": "sheep" },
-  "_encounters_comment": "人類遭遇（第 4 步，RanchEncounter）。cover：地形的遮蔽（沒列的 0.3）。escape：三種躲法的成功率 = base + 遮蔽 × cover + (速度 − 50) × speed + (感知 − 50) × perception（夾在 5～95%）；往開闊地跑一定被看到。patrol：注意 min_attention 以上，在牧場或連到牧場的區域每個時段 chance × 活動度遇到巡查；失敗時開槍的機率 shot_chance、傷 damage（不會死）。eating：在牧場吃殘骸時每吃一段 chance × 活動度被巡查打斷（注意 40 以上）。hunt：注意 min_attention 以上，先有一次預警，之後每個時段 chance × 活動度被追；被追之後 tracking_days 天內同一張地圖每個時段 tracking_chance（換地圖就甩掉）；獵犬 dogs 隻、騎馬的人 rider_rounds 回合後趕到，之後每回合 shot_chance × (1 − 遮蔽 × cover_shot) 開槍、傷 damage（可能致死）；dog_penalty：獵犬聞得到，三種躲法各減多少。dogs：被狗追上的搏鬥，咬退一隻 = base + (力量 − 50) × strength + (血量比例 − 0.5) × health；掙脫逃跑 = base + (速度 − 50) × speed + (體力 ÷ 100 − 0.5) × stamina − 每多一隻狗 per_dog；每回合每隻狗 bite.chance 咬一口 bite.damage。heavy_at：一槍的傷到這麼多就算重傷（3～5 天，部位照 parts）。",
+  "_encounters_comment": "人類遭遇（第 4 步，RanchEncounter）。cover：地形的遮蔽（沒列的 0.3）。escape：三種躲法的成功率 = base + 遮蔽 × cover + (速度 − 50) × speed + (感知 − 50) × perception（夾在 5～95%）；往開闊地跑一定被看到。patrol：注意 min_attention 以上，在牧場或連到牧場的區域每個時段 chance × 活動度遇到巡查；失敗時開槍的機率 shot_chance、傷 damage（不會死；2026-10-23 使用者選 B：巡查多半只是被看到、被趕走，危險集中在追獵，原本 0.7／0.6／0.5）；沒中槍時 missed_share 是開了槍沒打中、其餘是被吆喝著趕走。eating：在牧場吃殘骸時每吃一段 chance × 活動度被巡查打斷（注意 40 以上）。hunt：注意 min_attention 以上，先有一次預警，之後每個時段 chance × 活動度被追；被追之後 tracking_days 天內同一張地圖每個時段 tracking_chance（換地圖就甩掉）；獵犬 dogs 隻、騎馬的人 rider_rounds 回合後趕到，之後每回合 shot_chance × (1 − 遮蔽 × cover_shot) 開槍、傷 damage（可能致死）；dog_penalty：獵犬聞得到，三種躲法各減多少。dogs：被狗追上的搏鬥，咬退一隻 = base + (力量 − 50) × strength + (血量比例 − 0.5) × health；掙脫逃跑 = base + (速度 − 50) × speed + (體力 ÷ 100 − 0.5) × stamina − 每多一隻狗 per_dog；每回合每隻狗 bite.chance 咬一口 bite.damage。heavy_at：一槍的傷到這麼多就算重傷（3～5 天，部位照 parts）。",
   "encounters": {
     "cover": { "dense_forest": 0.75, "fallen_logs": 0.7, "forest_edge": 0.55, "river_willow": 0.55, "stream": 0.45, "rolling_hills": 0.3, "river": 0.3, "clearing": 0.25, "prairie": 0.2 },
     "escape": {
@@ -48,7 +48,7 @@
       "retreat": { "base": 0.3, "cover": 0.4, "speed": 0.005 },
       "run": { "base": 0.45, "speed": 0.008 }
     },
-    "patrol": { "min_attention": 40, "chance": 0.25, "shot_chance": { "hide": 0.7, "retreat": 0.6, "run": 0.5 }, "damage": [10, 30] },
+    "patrol": { "min_attention": 40, "chance": 0.25, "shot_chance": { "hide": 0.25, "retreat": 0.2, "run": 0.2 }, "missed_share": 0.4, "damage": [10, 30] },
     "eating": { "chance": 0.3 },
     "hunt": { "min_attention": 70, "chance": 0.25, "tracking_chance": 0.45, "tracking_days": 1, "dogs": [2, 3], "rider_rounds": 4,
       "dog_penalty": { "hide": 0.3, "retreat": 0.1, "run": 0.05 }, "shot_chance": 0.3, "cover_shot": 0.5, "damage": [20, 40] },

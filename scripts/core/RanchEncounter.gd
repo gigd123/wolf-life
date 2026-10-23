@@ -123,7 +123,8 @@ func _choose_escape(id: String) -> void:
 		_shoot(_c("patrol").get("damage", [10, 30]), false)
 		_end("shot")
 	else:
-		events.append({"key": "patrol.missed"})
+		# 沒中槍：開了槍沒打中，或只是被吆喝著趕走（使用者選 B：巡查多半只是警告）
+		events.append({"key": "patrol.missed" if rng.randf() < float(_c("patrol").get("missed_share", 0.4)) else "patrol.chased"})
 		_end("escaped")
 
 func _choose_dogs(id: String) -> void:

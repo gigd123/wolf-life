@@ -2075,6 +2075,7 @@ ranch.enc.patrol.hide.fail,騎馬的人勒住馬，直直地朝你這邊看—�
 ranch.enc.patrol.retreat.fail,你還沒退到林子邊，騎馬的人就看見了你。
 ranch.enc.patrol.run.fail,你在開闊地上跑，騎馬的人一下子就看見了你。
 ranch.enc.patrol.missed,「砰」的一聲，子彈打在你身邊的土裡。你沒命地跑，總算跑遠了。
+ranch.enc.patrol.chased,騎馬的人吆喝著朝你衝過來，揮著手裡的鞭子。你轉身就跑，他追了一段就勒住了馬。
 ranch.enc.eating.hide.ok,你伏在獵物旁一動也不動。馬蹄聲走近、停下，又慢慢走遠了。
 ranch.enc.eating.hide.fail,馬蹄聲停在不遠處，有人大聲吆喝——你被發現了。你丟下獵物就跑。
 ranch.enc.shot.hit,「砰」的一聲，你身上一陣劇痛（血量 −{n}）。
