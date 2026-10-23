@@ -2014,7 +2014,7 @@ func _show_ranch_encounter(enc: RanchEncounter, last_events: Array = []) -> void
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	encounter_sprite.show_static(null) # 人、狗、馬的圖在第 6 步
+	encounter_sprite.show_static(ArtLibrary.ranch_image("encounters", "dogs" if enc.stage == "dogs" else enc.kind))
 	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
 	if enc.done:
@@ -2127,6 +2127,13 @@ func _discovery_text(d: Dictionary) -> String:
 
 # 發現畫面的圖：目擊到的動物用動物圖，採集物用物品圖示，其他用線索圖示。
 func _show_discovery_sprite(d: Dictionary) -> void:
+	# 牧場的線索、痕跡、觀察（Phase 4a 第 6 步）
+	for rk in [["ranch_clue", "clues"], ["ranch_sign", "signs"], ["ranch_watch", "watch"]]:
+		if d.has(rk[0]):
+			var rtex: Texture2D = ArtLibrary.ranch_image(rk[1], str(d[rk[0]]).trim_suffix(".night"))
+			if rtex != null:
+				encounter_sprite.show_static(rtex)
+				return
 	var kind: String = d.get("kind", "")
 	var source_kind: String = d.get("source_kind", "")
 	if kind == "clue" and d.get("clue", "") == "sight" and source_kind == "prey":
@@ -2472,15 +2479,14 @@ func _process_events() -> void:
 			_show_season_card(event)
 			return
 		"ranch_warning":
-			_show_event_message(tr("ranch.warning"), "")
-			encounter_sprite.show_static(null)
+			_show_event_message(tr("ranch.warning"), "", "ranch_hunt")
 			return
 		"ranch_humans":
 			_show_ranch_encounter(GameState.start_ranch_encounter(str(event.get("kind", "patrol"))))
 			return
 		"ranch_news":
 			_show_event_message(tr("ranch.news").replace("{region}", tr("region." + str(event.get("region", "")))), "")
-			encounter_sprite.show_static(null) # 牧場的圖還沒有（第 6 步），不畫動物
+			encounter_sprite.show_static(ArtLibrary.icon("clue.fence"))
 			return
 		"sleep_summary":
 			_show_sleep_summary(event.get("summary", {}))

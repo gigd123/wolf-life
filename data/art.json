@@ -56,6 +56,12 @@
     },
     "elk": {"display_scale": {"adult": 1.0, "buck": 0.94, "juvenile": 0.846}, "adult": {"sheet": "res://assets/art/sprites/animals/elk_cow_sheet.png", "frame": [88, 64], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/elk_herd.png", "attack": "res://assets/art/sprites/animals/elk_cow_attack.png", "hurt": "res://assets/art/sprites/animals/elk_cow_hurt.png"}}, "buck": {"sheet": "res://assets/art/sprites/animals/elk_bull_sheet.png", "frame": [96, 84], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/elk_herd.png", "attack": "res://assets/art/sprites/animals/elk_bull_attack.png", "hurt": "res://assets/art/sprites/animals/elk_bull_hurt.png"}}, "juvenile": {"sheet": "res://assets/art/sprites/animals/elk_calf_sheet.png", "frame": [56, 44], "rows": {"idle": 0, "move": 1}}},
     "bison": {"display_scale": {"adult": 1.053, "juvenile": 1.239}, "adult": {"sheet": "res://assets/art/sprites/animals/bison_sheet.png", "frame": [104, 64], "rows": {"idle": 0, "move": 1}, "poses": {"herd": "res://assets/art/sprites/animals/bison_herd.png", "attack": "res://assets/art/sprites/animals/bison_attack.png", "hurt": "res://assets/art/sprites/animals/bison_hurt.png"}}, "juvenile": {"sheet": "res://assets/art/sprites/animals/bison_calf_sheet.png", "frame": [56, 40], "rows": {"idle": 0, "move": 1}}},
+    "cattle": {"_comment": "佔位圖：小野牛換色成赫里福德牛（tools/make_ranch_art.py，Phase 4a 第 6 步）；大小已經畫在圖裡（牛犢 56×40、一歲牛 80×56、成牛 100×70）", "display_scale": {"adult": 1.0, "buck": 1.0, "juvenile": 1.0},
+      "juvenile": {"sheet": "res://assets/art/sprites/animals/cattle_calf_sheet.png", "frame": [56, 40], "rows": {"idle": 0, "move": 1}},
+      "adult": {"sheet": "res://assets/art/sprites/animals/cattle_yearling_sheet.png", "frame": [80, 56], "rows": {"idle": 0, "move": 1}},
+      "buck": {"sheet": "res://assets/art/sprites/animals/cattle_cow_sheet.png", "frame": [100, 70], "rows": {"idle": 0, "move": 1}}},
+    "sheep": {"_comment": "佔位圖：大角羊母羊換成米白羊毛（tools/make_ranch_art.py）", "display_scale": {"adult": 1.0},
+      "adult": {"sheet": "res://assets/art/sprites/animals/sheep_sheet.png", "rows": {"idle": 0, "move": 1}}},
     "pronghorn": { "display_scale": {"adult": 1.078, "juvenile": 1.026},
       "adult": { "sheet": "res://assets/art/sprites/animals/pronghorn_sheet.png", "rows": { "idle": 0, "move": 1 } },
       "juvenile": { "sheet": "res://assets/art/sprites/animals/pronghorn_fawn_sheet.png", "rows": { "idle": 0, "move": 1 } }
@@ -204,6 +210,12 @@
     "grassland_riverwoods@winter": "res://assets/art/backgrounds/regions/grassland_riverwoods_winter.png",
     "grassland_river": "res://assets/art/backgrounds/regions/grassland_river.png",
     "grassland_river@winter": "res://assets/art/backgrounds/regions/grassland_river_winter.png",
+    "ranch_pasture": "res://assets/art/backgrounds/regions/ranch_pasture.png",
+    "ranch_pasture@winter": "res://assets/art/backgrounds/regions/ranch_pasture_winter.png",
+    "ranch_yard": "res://assets/art/backgrounds/regions/ranch_yard.png",
+    "ranch_yard@winter": "res://assets/art/backgrounds/regions/ranch_yard_winter.png",
+    "ranch_edge": "res://assets/art/backgrounds/regions/ranch_edge.png",
+    "ranch_edge@winter": "res://assets/art/backgrounds/regions/ranch_edge_winter.png",
     "mountain_foothills": "res://assets/art/backgrounds/regions/mountain_foothills.png",
     "mountain_foothills@winter": "res://assets/art/backgrounds/regions/mountain_foothills_winter.png",
     "mountain_meadow": "res://assets/art/backgrounds/regions/mountain_meadow.png",
@@ -238,7 +250,10 @@
     "blizzard_sign": "res://assets/art/events/blizzard_sign.png",
     "fire_sign": "res://assets/art/events/fire_sign.png",
     "wolverine_mobbed": "res://assets/art/events/wolverine_mobbed.png",
-    "tundra_joint_hunt": "res://assets/art/events/tundra_joint_hunt.png"
+    "tundra_joint_hunt": "res://assets/art/events/tundra_joint_hunt.png",
+    "ranch_patrol": "res://assets/art/events/ranch_patrol.png",
+    "ranch_hunt": "res://assets/art/events/ranch_hunt.png",
+    "ranch_dogs": "res://assets/art/events/ranch_dogs.png"
   },
   "terrain_backgrounds": {
     "prairie": "res://assets/art/backgrounds/terrain/prairie.png",
@@ -282,6 +297,13 @@
     "clearing@burned": "res://assets/art/backgrounds/terrain/clearing_burned.png",
     "clearing@winter": "res://assets/art/backgrounds/terrain/clearing_winter.png"
   },
+  "_ranch_comment": "牧場（Phase 4a 第 6 步）的線索、痕跡、觀察用哪個圖（icons 的鍵；clue_* 是 discovery.json 的線索圖示 clue_{type}），人類遭遇用哪張 events 的圖（被狗追上時用 dogs）。",
+  "ranch": {
+    "clues": { "cattle_smell": "clue.cattle", "smoke": "clue.smoke", "axe": "clue.axe", "fence_posts": "clue.fence" },
+    "signs": { "fence": "clue.fence", "cattle": "clue.cattle", "smoke": "clue.smoke", "hoofprints": "clue.horseshoe", "barking": "clue_sound", "hound_tracks": "clue_track", "gunshot": "clue.gunshot", "searching": "event.ranch_hunt" },
+    "watch": { "calm": "clue.fence", "wary": "event.ranch_patrol", "patrol": "event.ranch_patrol", "hunt": "event.ranch_hunt" },
+    "encounters": { "patrol": "ranch_patrol", "eating": "ranch_patrol", "hunt": "ranch_hunt", "dogs": "ranch_dogs" }
+  },
   "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",
   "carcasses": {
     "bighorn_sheep": "res://assets/art/sprites/animals/carcass_bighorn.png",
@@ -289,7 +311,9 @@
     "white_tailed_deer": "res://assets/art/sprites/animals/carcass_deer.png",
     "caribou": "res://assets/art/sprites/animals/carcass_caribou.png",
     "elk": "res://assets/art/sprites/animals/carcass_elk.png",
-    "moose": "res://assets/art/sprites/animals/carcass_moose.png"
+    "moose": "res://assets/art/sprites/animals/carcass_moose.png",
+    "cattle": "res://assets/art/sprites/animals/carcass_cattle.png",
+    "sheep": "res://assets/art/sprites/animals/carcass_sheep.png"
   },
   "icons": {
     "status.injury": "res://assets/art/icons/status_injury.png",
@@ -334,7 +358,15 @@
     "region_tile.mountain_meadow": "res://assets/art/icons/region_tile_mountain_meadow.png",
     "region_tile.mountain_canyon": "res://assets/art/icons/region_tile_mountain_canyon.png",
     "region_tile.mountain_headwaters": "res://assets/art/icons/region_tile_mountain_headwaters.png",
+    "region_tile.ranch_pasture": "res://assets/art/icons/region_tile_ranch_pasture.png",
+    "region_tile.ranch_yard": "res://assets/art/icons/region_tile_ranch_yard.png",
+    "region_tile.ranch_edge": "res://assets/art/icons/region_tile_ranch_edge.png",
     "clue.smoke": "res://assets/art/icons/clue_smoke.png",
+    "clue.fence": "res://assets/art/icons/clue_fence.png",
+    "clue.cattle": "res://assets/art/icons/clue_cattle.png",
+    "clue.horseshoe": "res://assets/art/icons/clue_horseshoe.png",
+    "clue.axe": "res://assets/art/icons/clue_axe.png",
+    "clue.gunshot": "res://assets/art/icons/clue_gunshot.png",
     "stat.health_max": "res://assets/art/icons/stat_health.png",
     "stat.stamina": "res://assets/art/icons/stat_stamina.png",
     "cost.turns": "res://assets/art/icons/cost_turns.png",
