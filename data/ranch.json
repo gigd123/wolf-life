@@ -1,8 +1,8 @@
 {
   "_comment": "Phase 4a 牧場（人類第一階段，SPEC「Phase 4a：牧場」）。牧場沒出現的局完全不載入這裡的地圖、區域、連接（GameData.set_ranch）。數值都是初始值。",
   "_appear_comment": "出現：狼 age_from～age_to 歲之間，每次換季擲一次 chance（4 次約 68%）；挑候選時連到你巢穴區的候選權重 × den_link_mult。出現的那一季只有線索（state clues），下一次換季才開放（state open）；到 age_to 還沒出現，這一局就沒有（state never）。",
-  "_enabled_comment": "enabled：主遊戲會不會擲牧場出現。家畜（第 3 步）與人類的反應（第 4 步）做好之前先關著，避免試玩時出現一張空的牧場；除錯選單的「牧場出現」「牧場開放」不受影響，回歸測試會打開。",
-  "enabled": false,
+  "_enabled_comment": "enabled：主遊戲會不會擲牧場出現。第 5 步校準後打開（2026-10-23）；關掉時除錯選單的「牧場出現」「牧場開放」仍可用，模擬 ranch_life 的 none 組會關掉做對照。",
+  "enabled": true,
   "appear": { "age_from": 2.0, "age_to": 3.0, "chance": 0.25, "den_link_mult": 0.5 },
   "_candidates_comment": "候選位置：牧場邊緣（link_region）連到兩個區域；turns、stamina 和其他跨地圖的連接一樣。苔原、山地永遠不連。",
   "link_region": "ranch_edge",
