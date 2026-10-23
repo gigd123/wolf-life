@@ -406,6 +406,11 @@ func _explore_once() -> void:
 	if prey == "deer_focus" and not big and GameState.wolf.hunger > 40:
 		GameState.clear_discovery()
 		return
+	# 牧場的成牛（Phase 4a 第 5 步）：難、會受傷、沒獵到也讓牧場更警戒；快餓死才打（ranch.json auto.skip：動物.階段 → 飽食度低於多少才打）
+	var skip_below = _ranch_auto().get("skip", {}).get(animal + "." + str(d.get("life_stage", "adult")))
+	if skip_below != null and GameState.wolf.hunger >= float(skip_below):
+		GameState.clear_discovery()
+		return
 	# 太累不能開始狩獵（1.7 QA-55）；還飽的時候不出獵（Phase 2b 第 1 步）
 	if GameState.too_tired_to_hunt() or GameState.wolf.hunger >= 90.0:
 		GameState.clear_discovery()

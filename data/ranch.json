@@ -59,9 +59,10 @@
     },
     "heavy_at": 20, "heavy_days": [3, 5], "parts": { "leg": 0.5, "shoulder": 0.5 }
   },
-  "_auto_comment": "自動玩家與照常過日子（第 5 步，AutoPlayer）。policy：never 不去（謹慎型、照常過日子）、sometimes 飽食度 < hunger_below 而且注意 < attention_below 才去（平均型）、often 注意 < attention_below 就去（強攻型，飽食度 < 90）；離牧場超過 max_steps 個區域不去。在牧場或連到牧場的區域、注意到了 leave_at 就離開（never、sometimes 40，often 70），巢穴在那一帶時先睡在最近的另一區；move_at 以上、巢穴就在牧場一帶（連到牧場的區域）時，搬到那一帶以外最近、能築巢的區域（SPEC「70 以上換地圖」的做法：危險只在牧場一帶，離開就安全）。",
+  "_auto_comment": "自動玩家與照常過日子（第 5 步，AutoPlayer）。policy：never 不去（謹慎型、照常過日子）、sometimes 飽食度 < hunger_below 而且注意 < attention_below 才去（平均型）、often 注意 < attention_below 就去（強攻型，飽食度 < 90）；離牧場超過 max_steps 個區域不去。在牧場或連到牧場的區域、注意到了 leave_at 就離開（never、sometimes 40，often 70），巢穴在那一帶時先睡在最近的另一區；move_at 以上、巢穴就在牧場一帶（連到牧場的區域）時，搬到那一帶以外最近、能築巢的區域（SPEC「70 以上換地圖」的做法：危險只在牧場一帶，離開就安全）。skip：動物.階段 → 飽食度低於這個值才打（成牛難、會受傷、沒獵到也加注意，快餓死才打）。",
   "auto": {
     "max_steps": 3, "move_at": 70, "min_health": 0.5,
+    "skip": { "cattle.buck": 20 },
     "policies": {
       "never": { "leave_at": 40 },
       "sometimes": { "hunger_below": 60, "attention_below": 40, "leave_at": 40 },
