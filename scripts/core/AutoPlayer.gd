@@ -31,6 +31,12 @@ const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
 var roam: bool = false
+# 牧場（Phase 4a 第 5 步，ranch.json auto）：never 不去、sometimes 餓了而且注意不高才去、often 注意 < 70 就去；預設照打法
+var ranch_policy: String = ""
+var ranch_moves: int = 0 # 因為牧場的注意搬巢穴的次數（模擬記錄用）
+var _relocate_to: String = ""
+var _ranch_hunting: bool = false # 這一步留在放牧地找家畜（不回巢穴）
+var explores: int = 0 # 探索次數（模擬記錄用：牧場出現後探索有沒有萎縮）
 # 「照常過日子」（Phase 1.7b，提案之十 E）：代為行動 routine_days 天，遇到值得注意的事就停下、交還給玩家。
 # routine_style："small" 在附近獵小獵物、"big" 找大型獵物、"heal" 養傷（待在巢穴休息）。
 var routine: bool = false
@@ -60,6 +66,7 @@ const AVOID := {
 func _init(prey_policy: String, style_policy: String) -> void:
 	prey = prey_policy
 	style = style_policy
+	ranch_policy = str(_ranch_auto().get("styles", {}).get(style_policy, "sometimes"))
 
 func start(den: String) -> void:
 	GameState.auto_playing = true
@@ -105,6 +112,7 @@ func start_routine(days: int, style_policy: String) -> void:
 	routine_style = style_policy
 	prey = "small_only" if style_policy != "big" else "deer_focus"
 	style = "cautious"
+	ranch_policy = "never"
 	routine_end_day = int(GameState.life_log.get("days_lived", 1)) + days
 	routine_start_injury = GameState.wolf.injury
 	routine_start_season = GameTime.season_index
@@ -157,6 +165,8 @@ func _play_day() -> void:
 		if GameTime.current_period() == "predawn":
 			GameState.action_sleep()
 			continue
+		if _ranch_step():
+			continue
 		# 吃撐、太累、或守著殘骸還不餓：休息（Phase 2b 第 1 步：吃一頓大型獵物撐好幾天）
 		if GameState.wolf.hunger > 110 or GameState.wolf.stamina < 35 \
 				or (GameState.carcass_index_here() >= 0 and GameState.wolf.hunger >= 95.0):
@@ -187,7 +197,7 @@ func _play_day() -> void:
 				if not adj.is_empty() and RNGService.chance(0.5):
 					GameState.action_move(adj[RNGService.randi_range(0, adj.size() - 1)])
 					continue
-		elif _go_home():
+		elif not _ranch_hunting and _go_home():
 			continue
 		_explore_once()
 
@@ -217,8 +227,10 @@ func _handle_pending() -> void:
 			"driven_off":
 				GameState.apply_drive_off()
 			"fire_here":
-				# 巢穴濃煙竄入時會再選一次（提案之十一）
+				# 巢穴濃煙竄入時會再選一次（提案之十一）；火已經熄了就不用選
 				for attempt in 3:
+					if GameState.fire.is_empty():
+						break
 					var best: Dictionary = {}
 					for o in GameState.fire_escape_options():
 						if best.is_empty() or float(o["safe"]) > float(best["safe"]):
@@ -272,6 +284,7 @@ func _handle_pending() -> void:
 	GameState.pending_events.append_array(kept)
 
 func _explore_once() -> void:
+	explores += 1
 	var d: Dictionary = GameState.action_explore()
 	# 照常過日子：值得注意的發現（危險的線索、其他狼、殘骸、地點、記著的那頭…）留給玩家
 	if routine and _routine_notable(d):
@@ -561,16 +574,129 @@ func _go_cache() -> bool:
 	return false
 
 func _go_home() -> bool:
-	if GameState.current_region == GameState.den_region or GameState.burn_state(GameState.den_region) == "burning":
+	var home: String = _home_region()
+	if GameState.current_region == home or GameState.burn_state(home) == "burning":
 		return false
 	# 照常過日子是在附近過日子：巢穴在別的地圖時不一路走回去（試玩回報 21；養傷例外，那個選項就是回巢休息）
-	if routine and routine_style != "heal" and GameData.map_of(GameState.den_region) != GameState.current_map():
+	if routine and routine_style != "heal" and GameData.map_of(home) != GameState.current_map():
 		return false
-	var step := GameState.next_step_toward(GameState.den_region)
+	var step := GameState.next_step_toward(home)
 	if step == "":
 		return false
 	GameState.action_move(step)
 	return true
+
+# --- 牧場（Phase 4a 第 5 步，SPEC「照常過日子與自動玩家」；數值在 ranch.json auto）---
+func _ranch_auto() -> Dictionary:
+	return GameData.ranch_def.get("auto", {})
+
+func _ranch_pol() -> Dictionary:
+	return _ranch_auto().get("policies", {}).get(ranch_policy, {})
+
+# 從 start 走到各區域要幾步（同地圖相鄰、跨地圖連接都算一步）
+func _dist_from(start: String) -> Dictionary:
+	var dist: Dictionary = {start: 0}
+	var frontier: Array = [start]
+	while not frontier.is_empty():
+		var next: Array = []
+		for r in frontier:
+			var nb: Array = EncounterSystem.region_data(str(r)).get("adjacent", []).duplicate()
+			for l in GameData.links_from(str(r)):
+				nb.append(l["to"])
+			for n in nb:
+				if not dist.has(n):
+					dist[n] = int(dist[r]) + 1
+					next.append(n)
+		frontier = next
+	return dist
+
+# 離牧場邊緣幾步（走不到 99）
+func _ranch_dist(region_id: String) -> int:
+	return int(_dist_from(str(GameData.ranch_def.get("link_region", "ranch_edge"))).get(region_id, 99))
+
+func _in_ranch_area(region_id: String) -> bool:
+	return GameData.map_of(region_id) == "ranch" or GameState.ranch_linked_regions().has(region_id)
+
+func _ranch_leave_at() -> float:
+	return float(_ranch_pol().get("leave_at", 40))
+
+# 離目前位置最近、符合 ok 的區域（沒有就空字串）
+func _nearest(ok: Callable) -> String:
+	var dist := _dist_from(GameState.current_region)
+	var best := ""
+	for r in dist.keys():
+		if ok.call(str(r)) and (best == "" or int(dist[r]) < int(dist[best])):
+			best = str(r)
+	return best
+
+# 回去的地方：巢穴；巢穴在牧場一帶、注意又到了該離開的程度，先待在同一張地圖最近的另一區（不搬巢穴）
+func _home_region() -> String:
+	var den: String = GameState.den_region
+	if GameState.ranch_state() != "open" or not _in_ranch_area(den) or GameState.ranch_attention() < _ranch_leave_at():
+		return den
+	var away := _nearest(func(r): return not _in_ranch_area(r) and GameData.map_of(r) == GameData.map_of(den))
+	return away if away != "" else den
+
+# 要不要去牧場（放牧地）：照策略看飽食度與注意；受傷、太累、這裡有殘骸或藏肉、離太遠都不去
+func _want_ranch(att: float) -> bool:
+	if routine or ranch_policy == "never":
+		return false
+	var pol := _ranch_pol()
+	if att >= float(pol.get("attention_below", 40)) or GameState.wolf.hunger >= float(pol.get("hunger_below", 60)):
+		return false
+	if GameState.wolf.injury != Wolf.Injury.NONE or GameState.wolf.health < GameState.wolf.health_max * float(_ranch_auto().get("min_health", 0.5)):
+		return false
+	if GameState.too_tired_to_hunt() or GameState.carcass_index_here() >= 0 or GameState.can_eat_cache():
+		return false
+	return _ranch_dist(GameState.current_region) <= int(_ranch_auto().get("max_steps", 3))
+
+# 搬到哪裡：牧場一帶以外、能築巢、最近的區域
+func _relocate_target() -> String:
+	return _nearest(func(r: String) -> bool:
+		return bool(EncounterSystem.region_data(r).get("can_den", false)) and not _in_ranch_area(r) and GameState.burn_state(r) != "burning")
+
+# 每個行動前：搬巢穴、離開牧場一帶、去牧場。回傳這一步有沒有行動
+func _ranch_step() -> bool:
+	_ranch_hunting = false
+	if GameState.ranch_state() != "open":
+		return false
+	var ac := _ranch_auto()
+	var att: float = GameState.ranch_attention()
+	# 注意到 move_at、巢穴就在牧場一帶：搬走（照常過日子不搬，留給玩家）；巢穴不在那一帶的照 leave_at 離開就好
+	if _relocate_to == "" and not routine and att >= float(ac.get("move_at", 70)) and _in_ranch_area(GameState.den_region):
+		_relocate_to = _relocate_target()
+	if _relocate_to != "":
+		if GameState.current_region == _relocate_to:
+			_relocate_to = ""
+			if GameState.can_make_den_here():
+				GameState.action_make_den()
+				ranch_moves += 1
+				return true
+			return false
+		var st := GameState.next_step_toward(_relocate_to)
+		if st != "":
+			GameState.action_move(st)
+			return true
+		_relocate_to = ""
+	var here: String = GameState.current_region
+	# 在牧場一帶、注意到了該離開的程度（不去牧場的狼在牧場裡就走）：往回去的地方走
+	if _in_ranch_area(here) and (att >= _ranch_leave_at() or (ranch_policy == "never" and GameData.map_of(here) == "ranch")):
+		var target: String = _home_region()
+		if _in_ranch_area(target):
+			target = _nearest(func(r): return not _in_ranch_area(r))
+		var st := GameState.next_step_toward(target) if target != "" else ""
+		if st != "":
+			GameState.action_move(st)
+			return true
+	if _want_ranch(att):
+		if here == "ranch_pasture":
+			_ranch_hunting = true
+			return false
+		var st := GameState.next_step_toward("ranch_pasture")
+		if st != "":
+			GameState.action_move(st)
+			return true
+	return false
 
 # 戰鬥：強攻型會打（灰熊搶食時守住），打到瀕危就撤退；其他打法對灰熊退讓（叼走一塊或放棄），
 # 對狐狸先威嚇再咬。

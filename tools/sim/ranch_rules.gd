@@ -20,6 +20,10 @@ extends SceneTree
 #  15. 只在牧場一帶、注意 40 以上才有巡查；70 以上先預警才追獵；追獵後換地圖就甩掉，注意不變
 #  16. 追獵可能被打死（死因 human）；能咬退狗、掙脫；狗咬、騎馬的人趕到開槍
 #  17. 在牧場吃到一半被打斷：叼一段跑（多吃一段、殘骸沒了）、丟下、趴著躲（成功就繼續吃）
+# 第 5 步（自動玩家，AutoPlayer）：
+#  18. 策略照打法（謹慎 never、平均 sometimes、強攻 often；照常過日子 never）；沒開放時不動
+#  19. sometimes 餓了、注意低才往放牧地走；不餓或注意 40 以上不去；在放牧地留下來找家畜；never 在牧場裡就離開
+#  20. 注意到 leave_at 離開牧場一帶（sometimes 40、often 70）；巢穴在那一帶時先待在同地圖的另一區；70 以上巢穴在那一帶就搬走
 # 用法：bash tools/run_sim.sh ranch_rules
 var gs
 var gd
@@ -181,6 +185,7 @@ func _run() -> void:
 	_step2()
 	_step3()
 	_step4()
+	_step5()
 	gd.set_ranch("")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
@@ -537,3 +542,72 @@ func _step4() -> void:
 			gs.start_feeding("white_tailed_deer", "adult", "forest_edge")
 	gs.current_feeding = {}
 	_check(outside == 0, "牧場外吃東西不會被巡查打斷")
+
+func _ap_ready(ap, region: String, hunger: float, att: float) -> void:
+	gs.current_region = region
+	gs.wolf.hunger = hunger
+	gs.wolf.stamina = 100.0
+	gs.wolf.health = gs.wolf.health_max
+	gs.wolf.clear_injury()
+	gs.ranch["attention"] = att
+	ap._relocate_to = ""
+
+func _step5() -> void:
+	var AP = load("res://scripts/core/AutoPlayer.gd")
+	gs.new_game("forest_east")
+	gs.pending_events.clear()
+	gs.debug_force_transition("adult")
+	# 18. 策略
+	var ok_pol: bool = AP.new("all", "cautious").ranch_policy == "never" and AP.new("all", "average").ranch_policy == "sometimes" \
+		and AP.new("all", "assault").ranch_policy == "often"
+	var rt = AP.new("all", "average")
+	rt.start_routine(3, "big")
+	rt.finish()
+	gs.auto_playing = false
+	_check(ok_pol and rt.ranch_policy == "never", "牧場策略照打法：謹慎 never、平均 sometimes、強攻 often；照常過日子 never")
+	var ap = AP.new("all", "average")
+	gs.ranch = {}
+	gd.set_ranch("")
+	_ap_ready(ap, "forest_east", 40.0, 0.0)
+	_check(not ap._ranch_step() and gs.current_region == "forest_east", "牧場沒開放時不動")
+	gs.ranch = {"state": "open", "candidate": "A"}
+	gd.set_ranch("A")
+	# 19. 去不去
+	_ap_ready(ap, "forest_east", 50.0, 0.0)
+	var d0: int = ap._ranch_dist("forest_east")
+	var went: bool = ap._ranch_step() and ap._ranch_dist(gs.current_region) < d0
+	_ap_ready(ap, "forest_east", 80.0, 0.0)
+	var full_stay: bool = not ap._ranch_step() and gs.current_region == "forest_east"
+	_ap_ready(ap, "forest_east", 50.0, 45.0)
+	var att_stay: bool = not ap._ranch_step() and gs.current_region == "forest_east"
+	_ap_ready(ap, "ranch_pasture", 50.0, 0.0)
+	var hunt_here: bool = not ap._ranch_step() and ap._ranch_hunting and gs.current_region == "ranch_pasture"
+	_check(went and full_stay and att_stay and hunt_here, "sometimes：餓了、注意低才往牧場走（離牧場 %d 步）；不餓、注意 45 不去；在放牧地留下來找家畜" % d0)
+	var nv = AP.new("all", "cautious")
+	_ap_ready(nv, "ranch_pasture", 50.0, 0.0)
+	_check(nv._ranch_step() and gs.current_region != "ranch_pasture", "never：在牧場裡就離開")
+	# 20. 離開、搬巢穴
+	_ap_ready(ap, "forest_south", 80.0, 45.0)
+	var left: bool = ap._ranch_step() and not ap._in_ranch_area(gs.current_region)
+	var oft = AP.new("all", "assault")
+	_ap_ready(oft, "forest_south", 80.0, 45.0)
+	oft._ranch_step() # often 注意 45 還會去（往放牧地走），不會離開牧場一帶
+	var often_stays: bool = oft._in_ranch_area(gs.current_region)
+	_ap_ready(oft, "forest_south", 80.0, 72.0)
+	var often_left: bool = oft._ranch_step() and not oft._in_ranch_area(gs.current_region)
+	_check(left and often_stays and often_left, "注意到了就離開牧場一帶：sometimes 45 離開、often 45 不走、often 72 離開")
+	gs.den_region = "forest_south"
+	_ap_ready(ap, "forest_east", 80.0, 45.0)
+	var home: String = ap._home_region()
+	var temp_home: bool = home != "forest_south" and not ap._in_ranch_area(home) and gd.map_of(home) == "forest"
+	_ap_ready(oft, "forest_south", 80.0, 75.0)
+	for i in 12:
+		if gs.den_region != "forest_south":
+			break
+		gs.ranch["attention"] = 75.0
+		oft._ranch_step()
+	var moved: bool = gs.den_region != "forest_south" and not oft._in_ranch_area(gs.den_region) and oft.ranch_moves == 1
+	_ap_ready(ap, "forest_east", 80.0, 75.0)
+	gs.den_region = "forest_east"
+	ap._ranch_step()
+	_check(temp_home and moved and ap._relocate_to == "", "巢穴在牧場一帶：注意 45 先待在 %s；75 搬到 %s；巢穴不在那一帶不搬" % [home, gs.den_region])

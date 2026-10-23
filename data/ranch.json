@@ -59,6 +59,16 @@
     },
     "heavy_at": 20, "heavy_days": [3, 5], "parts": { "leg": 0.5, "shoulder": 0.5 }
   },
+  "_auto_comment": "自動玩家與照常過日子（第 5 步，AutoPlayer）。policy：never 不去（謹慎型、照常過日子）、sometimes 飽食度 < hunger_below 而且注意 < attention_below 才去（平均型）、often 注意 < attention_below 就去（強攻型，飽食度 < 90）；離牧場超過 max_steps 個區域不去。在牧場或連到牧場的區域、注意到了 leave_at 就離開（never、sometimes 40，often 70），巢穴在那一帶時先睡在最近的另一區；move_at 以上、巢穴就在牧場一帶（連到牧場的區域）時，搬到那一帶以外最近、能築巢的區域（SPEC「70 以上換地圖」的做法：危險只在牧場一帶，離開就安全）。",
+  "auto": {
+    "max_steps": 3, "move_at": 70, "min_health": 0.5,
+    "policies": {
+      "never": { "leave_at": 40 },
+      "sometimes": { "hunger_below": 60, "attention_below": 40, "leave_at": 40 },
+      "often": { "hunger_below": 90, "attention_below": 70, "leave_at": 70 }
+    },
+    "styles": { "cautious": "never", "average": "sometimes", "pursuit": "sometimes", "stealth": "sometimes", "assault": "often" }
+  },
   "map": { "ranch": { "name_key": "map.ranch", "layout": ["ranch_pasture", "ranch_yard", "ranch_edge"], "fire": false } },
   "_regions_comment": "牧場的三個區域：放牧地（主要的食物、開闊）、屋舍與畜欄（人最多）、牧場邊緣（過渡區，連到原本的地圖）。家畜在第 3 步加；地形先用現有的（背景與區域圖在第 6 步）。不能築巢。",
   "regions": {

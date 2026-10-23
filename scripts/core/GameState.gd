@@ -5074,6 +5074,9 @@ func _fire_outcome_probs(danger: float) -> Dictionary:
 
 # 執行逃生。回傳 {"result": "safe"|"light"|"heavy"|"death", "kind", "region"}。
 func fire_escape(id: String) -> Dictionary:
+	# 大火已經結束（例如巢穴濃煙竄入後火剛好熄了）：不能再逃生，否則會寫出一個沒有 phase 的 fire（2026-10-23 牧場模擬發現）
+	if fire.is_empty():
+		return {}
 	var opt: Dictionary = {}
 	for o in fire_escape_options():
 		if o["id"] == id:
@@ -5145,6 +5148,8 @@ func fire_escape(id: String) -> Dictionary:
 # 躲在燃燒中的區域（溪流、巢穴）：一回合一回合過到這一區的火燒完或大火結束（照常扣飽食度，不回體力、不能做別的事）。
 # 巢穴每過一個時段有機率濃煙竄入：停下來回傳 "smoke"（第二次逃生選擇）；繼續躲（den_stay）就不再判定。
 func _hide_until_fire_passes(kind: String) -> String:
+	if fire.is_empty():
+		return ""
 	fire["sheltered"] = current_region
 	var cfg: Dictionary = _fire_cfg().get("hide", {})
 	var smoke_chance: float = float(cfg.get("den_smoke_per_period", 0.3)) if kind == "den" else 0.0

@@ -5,6 +5,7 @@ extends SceneTree
 #   2. 存檔 → 讀檔後一樣
 #   3. 走進區域時的描述和火況一致（燒過才寫焦黑或新芽、正在燒才跳逃生、平常不寫）
 #   4. 「火熄了」卡片列的區域，當下都是焦黑
+#   5. 大火結束後再選逃生不會寫壞 fire
 # 走法：留在巢穴、每個時段換一個相鄰區域，兩種都跑；起火點輪流。
 # 用法：bash tools/run_sim.sh fire_paths
 var f := 0
@@ -28,6 +29,12 @@ func _process(_d) -> bool:
 				runs += 1
 				_run(gt, forest, origin, walk, seed)
 	print("大火跨路徑：%d 場（起火點 4 × 留在原地／到處走 × 3 種子）；涵蓋：%s" % [runs, seen])
+	# 5. 大火結束後再選逃生（巢穴濃煙竄入、火剛好熄了）：不會寫出沒有 phase 的 fire（2026-10-23 牧場模擬發現，之後每個時段報錯）
+	gs.new_game("forest_east")
+	gs.fire = {}
+	var r: Dictionary = gs.fire_escape("den")
+	gs._hide_until_fire_passes("den")
+	_check(r.is_empty() and gs.fire.is_empty(), "大火結束後選逃生：fire 維持空的（%s）" % str(gs.fire))
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
