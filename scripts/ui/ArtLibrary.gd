@@ -150,18 +150,18 @@ static func icon(key: String) -> Texture2D:
 	return texture(str(_cfg().get("icons", {}).get(key, "")))
 
 # 牧場（Phase 4a 第 6 步，art.json ranch）：group 是 clues／signs／watch／encounters，key 是種類。
-# 值 "event.xxx" 用 events 的圖、"clue_xxx" 用線索圖示的檔案、其他是 icons 的鍵（encounters 的值直接是 events 的鍵）。
+# 值 "event:xxx" 用 events 的圖、"file:xxx" 用 assets/art/icons/xxx.png、"icon:xxx" 用 icons 的鍵（encounters 的值直接是 events 的鍵）。
 static func ranch_image(group: String, key: String) -> Texture2D:
 	var v: String = str(_cfg().get("ranch", {}).get(group, {}).get(key, ""))
 	if v == "":
 		return null
 	if group == "encounters":
 		return event_image(v)
-	if v.begins_with("event."):
+	if v.begins_with("event:"):
 		return event_image(v.substr(6))
-	if v.begins_with("clue_"):
-		return texture("res://assets/art/icons/%s.png" % v)
-	return icon(v)
+	if v.begins_with("file:"):
+		return texture("res://assets/art/icons/%s.png" % v.substr(5))
+	return icon(v.trim_prefix("icon:"))
 
 # 圖示的路徑（給 RichTextLabel 的 [img] 用）；檔案不存在時回傳空字串。
 static func icon_path(key: String) -> String:

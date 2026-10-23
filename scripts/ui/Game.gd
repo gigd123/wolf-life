@@ -784,6 +784,14 @@ func _build_debug_overlay() -> void:
 			_refresh()
 			_process_events()
 		)
+	# 在放牧地吃一歲牛吃到一半，巡查的人過來（Phase 4a 第 7 步：事件結局矩陣走得到這條路）
+	_debug_button(event_row2, tr("debug.event.ranch_eating"), func():
+		debug_overlay.visible = false
+		GameState.debug_ranch_eating()
+		rendered_map = ""
+		_refresh()
+		_show_scavenger("ranch_patrol", false)
+	)
 	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
 		debug_overlay.visible = false
 		GameState.debug_lynx_kill()

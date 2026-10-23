@@ -1190,6 +1190,14 @@ func debug_ranch_humans(kind: String) -> void:
 	else:
 		pending_events.append({"type": "ranch_humans", "kind": kind})
 
+# 除錯：在放牧地吃一歲牛吃到一半（注意至少 40），之後由畫面跳出巡查（吃到一半被打斷）
+func debug_ranch_eating() -> void:
+	if ranch_state() != "open":
+		debug_ranch("open")
+	current_region = "ranch_pasture"
+	ranch["attention"] = maxf(ranch_attention(), 45.0)
+	start_feeding("cattle", "adult", "prairie")
+
 # 除錯：stage "clues" 讓牧場現在出現（這一季只有線索）、"open" 直接開放；候選照規則挑
 func debug_ranch(stage: String) -> void:
 	if ranch_state() not in ["clues", "open"]:

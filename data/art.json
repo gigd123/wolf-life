@@ -297,11 +297,11 @@
     "clearing@burned": "res://assets/art/backgrounds/terrain/clearing_burned.png",
     "clearing@winter": "res://assets/art/backgrounds/terrain/clearing_winter.png"
   },
-  "_ranch_comment": "牧場（Phase 4a 第 6 步）的線索、痕跡、觀察用哪個圖（icons 的鍵；clue_* 是 discovery.json 的線索圖示 clue_{type}），人類遭遇用哪張 events 的圖（被狗追上時用 dogs）。",
+  "_ranch_comment": "牧場（Phase 4a 第 6 步）的線索、痕跡、觀察用哪個圖（icon:icons 的鍵、event:events 的鍵、file:assets/art/icons 裡的檔名；不寫成 clue.xxx 是避免被 check_keys 當成翻譯鍵），人類遭遇用哪張 events 的圖（被狗追上時用 dogs）。",
   "ranch": {
-    "clues": { "cattle_smell": "clue.cattle", "smoke": "clue.smoke", "axe": "clue.axe", "fence_posts": "clue.fence" },
-    "signs": { "fence": "clue.fence", "cattle": "clue.cattle", "smoke": "clue.smoke", "hoofprints": "clue.horseshoe", "barking": "clue_sound", "hound_tracks": "clue_track", "gunshot": "clue.gunshot", "searching": "event.ranch_hunt" },
-    "watch": { "calm": "clue.fence", "wary": "event.ranch_patrol", "patrol": "event.ranch_patrol", "hunt": "event.ranch_hunt" },
+    "clues": { "cattle_smell": "icon:clue.cattle", "smoke": "icon:clue.smoke", "axe": "icon:clue.axe", "fence_posts": "icon:clue.fence" },
+    "signs": { "fence": "icon:clue.fence", "cattle": "icon:clue.cattle", "smoke": "icon:clue.smoke", "hoofprints": "icon:clue.horseshoe", "barking": "file:clue_sound", "hound_tracks": "file:clue_track", "gunshot": "icon:clue.gunshot", "searching": "event:ranch_hunt" },
+    "watch": { "calm": "icon:clue.fence", "wary": "event:ranch_patrol", "patrol": "event:ranch_patrol", "hunt": "event:ranch_hunt" },
     "encounters": { "patrol": "ranch_patrol", "eating": "ranch_patrol", "hunt": "ranch_hunt", "dogs": "ranch_dogs" }
   },
   "_carcasses_comment": "倒在地上的屍體（探索時發現凍死的動物）。",

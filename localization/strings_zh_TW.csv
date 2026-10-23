@@ -2101,3 +2101,4 @@ death.card.human,狗的吠叫、馬蹄聲，還有那一聲巨響。你倒在地
 debug.event.ranch_patrol,牧場巡查
 debug.event.ranch_warning,牧場預警
 debug.event.ranch_hunt,牧場追獵
+debug.event.ranch_eating,牧場吃到一半被打斷
