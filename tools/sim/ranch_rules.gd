@@ -15,6 +15,11 @@ extends SceneTree
 # 第 3 步：
 #  12. 家畜：放牧地探索看到牛（牛犢只在春夏）、屋舍與畜欄看到羊（冬天沒有）、邊緣偶爾走散的牛；牧場外沒有家畜
 #  13. 獵到家畜加那一種的注意；出手沒獵到算被看到（+5）；沒開放時不加
+# 第 4 步：
+#  14. 巡查不會死；一槍夠重是重傷；躲的成功率看遮蔽與感知、跑看速度；往開闊地跑一定被看到（+5）
+#  15. 只在牧場一帶、注意 40 以上才有巡查；70 以上先預警才追獵；追獵後換地圖就甩掉，注意不變
+#  16. 追獵可能被打死（死因 human）；能咬退狗、掙脫；狗咬、騎馬的人趕到開槍
+#  17. 在牧場吃到一半被打斷：叼一段跑（多吃一段、殘骸沒了）、丟下、趴著躲（成功就繼續吃）
 # 用法：bash tools/run_sim.sh ranch_rules
 var gs
 var gd
@@ -175,6 +180,7 @@ func _run() -> void:
 	_check(ok, "在牧場探索不會出錯")
 	_step2()
 	_step3()
+	_step4()
 	gd.set_ranch("")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
@@ -348,3 +354,186 @@ func _step3() -> void:
 	gs._ranch_hunt_attention(hc)
 	_check(gs.ranch_attention() == 0.0, "沒開放時不加")
 	gs.clear_discovery()
+
+func _step4() -> void:
+	var gt = root.get_node("GameTime")
+	gs.new_game("forest_east")
+	gs.pending_events.clear()
+	gs.debug_force_transition("adult")
+	gs.ranch = {"state": "open", "candidate": "A"}
+	gd.set_ranch("A")
+	gs.current_region = "ranch_pasture"
+	# 14. 巡查
+	var never_dead := true
+	var heavy := 0
+	var shot := 0
+	for i in 600:
+		gs.wolf.health = 6.0
+		gs.wolf.hunger = 100.0 # 跑很多次、時間會過：不讓牠餓死
+		gs.wolf.clear_injury()
+		gs.ranch["attention"] = 45.0
+		gs.start_ranch_encounter("patrol")
+		gs.ranch_encounter_choose(["hide", "retreat", "run"][i % 3])
+		if not gs.wolf.alive or gs.wolf.health < 1.0:
+			never_dead = false
+			break
+	_check(never_dead, "巡查不會死（血量 6 的狼 600 次）")
+	gs.wolf.health = gs.wolf.health_max
+	for i in 600:
+		gs.wolf.health = gs.wolf.health_max
+		gs.wolf.clear_injury()
+		gs.wolf.hunger = 100.0
+		gs.start_ranch_encounter("patrol")
+		var enc = gs.ranch_enc
+		gs.ranch_encounter_choose("hide")
+		if enc.shots.size() > 0:
+			shot += 1
+			if float(enc.shots[0]) >= 20.0:
+				_check(gs.wolf.injury == 2, "一槍 %d 是重傷" % int(enc.shots[0])) if heavy == 0 else null
+				heavy += 1
+	_check(shot > 100 and heavy > 0, "在放牧地趴下躲常被打中（%d／600，其中重傷 %d）" % [shot, heavy])
+	var e1 := RanchEncounter.new()
+	e1.setup("patrol", gs._ranch_enc_cfg(), {"speed": 60, "perception": 60}, gs.ranch_cover("prairie"), 1)
+	var e2 := RanchEncounter.new()
+	e2.setup("patrol", gs._ranch_enc_cfg(), {"speed": 60, "perception": 60}, gs.ranch_cover("forest_edge"), 1)
+	var e3 := RanchEncounter.new()
+	e3.setup("patrol", gs._ranch_enc_cfg(), {"speed": 85, "perception": 60}, gs.ranch_cover("prairie"), 1)
+	_check(e2.escape_chance("hide") > e1.escape_chance("hide") + 0.2 and e3.escape_chance("run") > e1.escape_chance("run") + 0.15,
+		"躲：林緣 %.0f%% 比草原 %.0f%% 好；跑：速度 85 %.0f%% 比 60 %.0f%% 好" % [e2.escape_chance("hide") * 100, e1.escape_chance("hide") * 100, e3.escape_chance("run") * 100, e1.escape_chance("run") * 100])
+	gs.ranch["attention"] = 30.0
+	gs.start_ranch_encounter("patrol")
+	gs.ranch_enc.rng.seed = 7
+	var e_run = gs.ranch_enc
+	e_run.cover = 0.0
+	gs.ranch_encounter_choose("run")
+	_check(e_run.seen and gs.ranch_attention() > 30.0, "往開闊地跑一定被看到（注意 30 → %.1f）" % gs.ranch_attention())
+	# 15. 觸發
+	gs.pending_events.clear()
+	gs.ranch["attention"] = 30.0
+	var any_low := false
+	for i in 300:
+		gs._maybe_ranch_humans()
+		if not gs.pending_events.is_empty():
+			any_low = true
+			gs.pending_events.clear()
+	gs.ranch["attention"] = 50.0
+	gs.current_region = "forest_north"
+	var any_far := false
+	for i in 300:
+		gs._maybe_ranch_humans()
+		if not gs.pending_events.is_empty():
+			any_far = true
+			gs.pending_events.clear()
+	gs.current_region = "ranch_pasture"
+	var patrols := 0
+	for i in 300:
+		gs._maybe_ranch_humans()
+		if not gs.pending_events.is_empty():
+			patrols += 1
+			gs.pending_events.clear()
+	_check(not any_low and not any_far and patrols > 10, "巡查只在注意 40 以上、牧場一帶（%d／300 個時段）" % patrols)
+	gs.ranch["attention"] = 80.0
+	gs.ranch["warned"] = false
+	gs._maybe_ranch_humans()
+	var first: String = str(gs.pending_events[0]["type"]) if not gs.pending_events.is_empty() else ""
+	gs.pending_events.clear()
+	var hunts := 0
+	for i in 200:
+		gs._maybe_ranch_humans()
+		if gs.pending_events.any(func(e): return str(e.get("kind", "")) == "hunt"):
+			hunts += 1
+		gs.pending_events.clear()
+	_check(first == "ranch_warning" and hunts > 10, "注意 70 以上：先預警，之後才追獵（%s，%d／200）" % [first, hunts])
+	gs.start_ranch_encounter("hunt")
+	gs.ranch_enc = null
+	var tracked: bool = gs.ranch_tracking()
+	gs.current_region = "ranch_edge"
+	gs.wolf.stamina = 100.0
+	gs.action_move("forest_south")
+	_check(tracked and not gs.ranch_tracking() and gs.ranch_attention() > 70.0, "追獵後換地圖就甩掉，注意不變（%.0f）" % gs.ranch_attention())
+	# 16. 追獵
+	gs.current_region = "ranch_pasture"
+	var dead := 0
+	var repelled := 0
+	var broke := 0
+	var caught := 0
+	var n := 400
+	for i in n:
+		gs.wolf.alive = true
+		gs.wolf.health = gs.wolf.health_max
+		gs.wolf.stamina = 80.0
+		gs.wolf.clear_injury()
+		gs.wolf.hunger = 100.0
+		gs.start_ranch_encounter("hunt")
+		var enc = gs.ranch_enc
+		gs.ranch_auto_play()
+		if enc.result == "killed":
+			dead += 1
+		if enc.result == "repelled":
+			repelled += 1
+		if enc.rounds > 1:
+			caught += 1
+		if enc.events.any(func(e): return str(e["key"]) == "hunt.dog.broke_free"):
+			broke += 1
+	_check(dead > 0 and dead < n * 0.2 and repelled + broke > 0, "追獵（放牧地、健康的成年狼、照本能）：被狗追上 %d、咬退狗 %d、掙脫 %d、被打死 %d／%d" % [caught, repelled, broke, dead, n])
+	var rep2 := 0
+	for i in 200:
+		gs.wolf.alive = true
+		gs.wolf.health = gs.wolf.health_max
+		gs.wolf.hunger = 100.0
+		gs.start_ranch_encounter("hunt")
+		var enc2 = gs.ranch_enc
+		var g := 0
+		while not enc2.done and g < 30:
+			g += 1
+			gs.ranch_encounter_choose("run" if enc2.stage == "escape" else "fight_dog")
+		if enc2.result == "repelled":
+			rep2 += 1
+	_check(rep2 > 0, "一直咬退狗也走得通（%d／200 把狗全咬退）" % rep2)
+	gs.wolf.alive = true
+	gs.wolf.health = 20.0
+	var killed := false
+	for i in 200:
+		gs.wolf.alive = true
+		gs.wolf.health = 20.0
+		gs.start_ranch_encounter("hunt")
+		gs.ranch_auto_play()
+		if not gs.wolf.alive:
+			killed = gs.wolf.death_cause == "human"
+			break
+	_check(killed, "受傷的狼被追獵可能被打死（死因 human）")
+	# 17. 吃到一半
+	gs.wolf.alive = true
+	gs.wolf.health = gs.wolf.health_max
+	gs.current_region = "ranch_pasture"
+	gs.ranch["attention"] = 50.0
+	var interrupts := 0
+	for i in 200:
+		gs.start_feeding("cattle", "adult", "prairie")
+		gs.wolf.hunger = 20.0
+		var r: Dictionary = gs.feed_once()
+		if str(r.get("event", "")) == "ranch_patrol":
+			interrupts += 1
+		gs.current_feeding = {}
+	gs.start_feeding("cattle", "adult", "prairie")
+	gs.wolf.hunger = 20.0
+	var seg: float = float(gs.current_feeding["segment_value"])
+	gs.start_ranch_encounter("eating", "prairie")
+	gs.ranch_encounter_choose("grab")
+	var grabbed_ok: bool = not gs.is_feeding() and absf(gs.wolf.hunger - 20.0 - seg) < 0.1
+	gs.start_feeding("cattle", "adult", "prairie")
+	gs.start_ranch_encounter("eating", "prairie")
+	gs.ranch_encounter_choose("drop")
+	var dropped_ok: bool = not gs.is_feeding()
+	_check(interrupts > 10 and grabbed_ok and dropped_ok, "牧場吃到一半被打斷（%d／200 段）；叼一段跑多吃一段、殘骸沒了；丟下就沒了" % interrupts)
+	gs.current_region = "forest_south"
+	gs.start_feeding("white_tailed_deer", "adult", "forest_edge")
+	var outside := 0
+	for i in 100:
+		var r2: Dictionary = gs.feed_once()
+		if str(r2.get("event", "")) == "ranch_patrol":
+			outside += 1
+		if not gs.is_feeding():
+			gs.start_feeding("white_tailed_deer", "adult", "forest_edge")
+	gs.current_feeding = {}
+	_check(outside == 0, "牧場外吃東西不會被巡查打斷")

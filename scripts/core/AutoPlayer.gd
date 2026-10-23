@@ -247,6 +247,10 @@ func _handle_pending() -> void:
 					GameState.stranger_yield_territory()
 			"bear_passing":
 				GameState.resolve_bear_passing(event, "leave")
+			"ranch_humans":
+				# 牧場的人類遭遇（Phase 4a 第 4 步）：照本能，每一步挑成功率最高的
+				GameState.start_ranch_encounter(str(event.get("kind", "patrol")))
+				GameState.ranch_auto_play()
 			"blizzard_here":
 				_pick_safest(GameState.blizzard_options(), "safe", func(id): GameState.blizzard_choose(id))
 			"tundra_howl":
@@ -491,6 +495,10 @@ func _feed_loop() -> void:
 			_scavenger(ev)
 
 func _scavenger(ev: String) -> void:
+	if ev == "ranch_patrol":
+		GameState.start_ranch_encounter("eating", str(GameState.current_feeding.get("terrain", "")))
+		GameState.ranch_auto_play()
+		return
 	if ev in ["cougar", "black_bear", "coyote"]:
 		play_combat(GameState.start_combat(ev, "adult", "carcass"))
 		return

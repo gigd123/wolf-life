@@ -776,6 +776,14 @@ func _build_debug_overlay() -> void:
 		_log(tr("debug.ranch.attention").replace("{n}", str(roundi(GameState.ranch_attention()))).replace("{act}", str(snappedf(GameState.ranch_activity(), 0.01))))
 		_refresh()
 	)
+	for hk in ["patrol", "warning", "hunt"]:
+		var k: String = hk
+		_debug_button(event_row2, tr("debug.event.ranch_" + k), func():
+			debug_overlay.visible = false
+			GameState.debug_ranch_humans(k)
+			_refresh()
+			_process_events()
+		)
 	_debug_button(event_row2, tr("debug.event.lynx_kill"), func():
 		debug_overlay.visible = false
 		GameState.debug_lynx_kill()
@@ -1993,6 +2001,45 @@ func _show_explore_modes() -> void:
 	_add_encounter_button(tr("ui.leave"), func(): encounter_overlay.visible = false)
 	encounter_overlay.visible = true
 
+# 牧場的人類遭遇（Phase 4a 第 4 步）：開頭一段、這一回合發生的事、選項（成功率用百分比）；結束時寫結果，按「繼續」
+func _show_ranch_encounter(enc: RanchEncounter, last_events: Array = []) -> void:
+	var lines: Array[String] = []
+	if last_events.is_empty() and enc.rounds == 0:
+		lines.append(tr("ranch.enc.%s.intro" % enc.kind).replace("{n}", str(enc.dogs)))
+	for e in last_events:
+		lines.append(tr("ranch.enc." + str(e["key"])).replace("{n}", str(int(e.get("n", 0)))))
+	if not enc.done and enc.stage == "dogs":
+		lines.append(tr("ranch.enc.hunt.dogs_left").replace("{n}", str(enc.dogs)))
+	var text: String = "".join(lines)
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	encounter_sprite.show_static(null) # 人、狗、馬的圖在第 6 步
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	if enc.done:
+		_add_encounter_button(tr("ui.continue"), func():
+			encounter_overlay.visible = false
+			_refresh()
+			if GameState.wolf != null and not GameState.wolf.alive:
+				_on_wolf_died(GameState.wolf.death_cause)
+			elif GameState.is_feeding():
+				_show_feeding()
+			else:
+				_process_events()
+		)
+	else:
+		for o in enc.options():
+			var id: String = str(o["id"])
+			var label: String = tr("ranch.enc.opt." + id)
+			if not id in ["grab", "drop"]:
+				label += "　%s %d%%" % [tr("chance_label.success"), roundi(float(o["chance"]) * 100.0)]
+			_add_encounter_button(label, func():
+				GameState.ranch_encounter_choose(id)
+				_show_ranch_encounter(enc, enc.events.duplicate())
+			)
+	encounter_overlay.visible = true
+
 func _discovery_text(d: Dictionary) -> String:
 	var location: String = tr("explore.location." + str(d.get("location", "")))
 	match d.get("kind", ""):
@@ -2207,6 +2254,9 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 		_show_challenger({"first": int(GameState.life_log.get("challenger_visits", 0)) == 0}, true)
 		return
 	# 美洲獅回來找牠的獵物、黑熊被氣味引來（Phase 2 第 3 步）
+	if event == "ranch_patrol":
+		_show_ranch_encounter(GameState.start_ranch_encounter("eating", str(GameState.current_feeding.get("terrain", ""))))
+		return
 	if event in ["cougar", "black_bear", "coyote"]:
 		var known: bool = GameState.is_identified(event)
 		if not intro_logged:
@@ -2420,6 +2470,13 @@ func _process_events() -> void:
 			return
 		"season_card":
 			_show_season_card(event)
+			return
+		"ranch_warning":
+			_show_event_message(tr("ranch.warning"), "")
+			encounter_sprite.show_static(null)
+			return
+		"ranch_humans":
+			_show_ranch_encounter(GameState.start_ranch_encounter(str(event.get("kind", "patrol"))))
 			return
 		"ranch_news":
 			_show_event_message(tr("ranch.news").replace("{region}", tr("region." + str(event.get("region", "")))), "")

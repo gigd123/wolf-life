@@ -83,6 +83,7 @@ var carcasses: Array = []
 var caches: Dictionary = {}
 # 牧場（Phase 4a）：{state: ""（還沒出現）／clues（出現的那一季，只有線索）／open／never, candidate, last_roll（擲過的季：年齡 × 4）, rolls, appear_age, open_age, card, seen}
 var ranch: Dictionary = {}
+var ranch_enc: RanchEncounter = null # 進行中的人類遭遇（Phase 4a 第 4 步；不存檔，畫面上一次處理完）
 
 var life_log: Dictionary = {}
 # 自動遊玩（除錯「模擬到死亡」）期間不產生提示卡片。
@@ -193,6 +194,7 @@ func _on_period_changed(_period_index: int) -> void:
 		_update_territory()
 		_update_fire()
 		_update_tundra_events()
+		_maybe_ranch_humans()
 	# 平常每個時段 15% 機率轉變；暴雨時每回合都可能改變（暴雨尚未實作）。
 	if RNGService.chance(float(balance.get("wind_change_chance_per_period", 0.15))):
 		wind_dir = posmod(wind_dir + (1 if RNGService.chance(0.5) else -1), 4)
@@ -1046,6 +1048,148 @@ func action_watch_ranch() -> Dictionary:
 func can_watch_ranch() -> bool:
 	return ranch_state() == "open" and current_region == str(_ranch_cfg().get("link_region", "ranch_edge"))
 
+# --- 人類遭遇（Phase 4a 第 4 步，RanchEncounter）---
+
+func _ranch_enc_cfg() -> Dictionary:
+	return _ranch_cfg().get("encounters", {})
+
+# 你在牧場或連到牧場的區域（人類遭遇只在這裡發生）
+func in_ranch_area() -> bool:
+	return ranch_state() == "open" and (current_map() == "ranch" or ranch_linked_regions().has(current_region))
+
+func ranch_cover(terrain: String = "") -> float:
+	if terrain == "":
+		var ts: Array = EncounterSystem.region_data(current_region).get("terrains", [])
+		terrain = str(ts[0]) if not ts.is_empty() else ""
+	return float(_ranch_enc_cfg().get("cover", {}).get(terrain, 0.3))
+
+# 正在被追（換地圖就甩掉；過了 tracking_days 也停）
+func ranch_tracking() -> bool:
+	return str(ranch.get("tracking_map", "")) == current_map() and int(ranch.get("tracking_until", -1)) >= int(life_log.get("days_lived", 0))
+
+# 每個時段：巡查、預警、追獵（不在牧場一帶、注意不夠、已經有遭遇時不會）
+func _maybe_ranch_humans() -> void:
+	if not in_ranch_area() or ranch_enc != null or pending_events.any(func(e): return str(e.get("type", "")).begins_with("ranch_")):
+		return
+	var ec: Dictionary = _ranch_enc_cfg()
+	var att: float = ranch_attention()
+	var act: float = ranch_activity()
+	var hc: Dictionary = ec.get("hunt", {})
+	if att < float(hc.get("min_attention", 70)):
+		ranch["warned"] = false
+	if att >= float(hc.get("min_attention", 70)) or ranch_tracking():
+		# 追獵之前一定先有預警（SPEC：「牠們在找你」）
+		if not bool(ranch.get("warned", false)) and not ranch_tracking():
+			ranch["warned"] = true
+			_queue_ranch_event({"type": "ranch_warning"})
+			return
+		var p: float = float(hc.get("tracking_chance", 0.45)) if ranch_tracking() else float(hc.get("chance", 0.25)) * act
+		if RNGService.chance(p):
+			_queue_ranch_event({"type": "ranch_humans", "kind": "hunt"})
+			return
+	if att >= float(ec.get("patrol", {}).get("min_attention", 40)) and RNGService.chance(float(ec.get("patrol", {}).get("chance", 0.25)) * act):
+		_queue_ranch_event({"type": "ranch_humans", "kind": "patrol"})
+
+# 自動玩家（模擬、照常過日子之外）直接照本能結算；一般遊戲排進事件佇列
+func _queue_ranch_event(e: Dictionary) -> void:
+	if auto_playing and not routine_running:
+		if str(e["type"]) == "ranch_humans":
+			start_ranch_encounter(str(e["kind"]))
+			ranch_auto_play()
+		return
+	_queue_event(e)
+
+func start_ranch_encounter(kind: String, terrain: String = "") -> RanchEncounter:
+	var enc := RanchEncounter.new()
+	enc.setup(kind, _ranch_enc_cfg(), {"speed": wolf.effective_speed(), "strength": wolf.effective_strength(), "perception": wolf.effective_perception(),
+		"stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max}, ranch_cover(terrain), RNGService.randi_range(1, 999999))
+	ranch_enc = enc
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	rl[kind + "s"] = int(rl.get(kind + "s", 0)) + 1
+	if kind == "hunt":
+		ranch["tracking_map"] = current_map()
+		ranch["tracking_until"] = int(life_log.get("days_lived", 0)) + int(_ranch_enc_cfg().get("hunt", {}).get("tracking_days", 1))
+	return enc
+
+func ranch_encounter_choose(id: String) -> void:
+	if ranch_enc == null:
+		return
+	record_decision("ranch.%s.%s" % [ranch_enc.kind, id])
+	ranch_enc.choose(id)
+	if ranch_enc.done:
+		_finish_ranch_encounter()
+
+# 本能：每一步挑成功率最高的（吃到一半時：躲得過就躲，躲不過就叼一段跑）
+func ranch_auto_play() -> void:
+	var guard := 0
+	while ranch_enc != null and not ranch_enc.done and guard < 30:
+		guard += 1
+		var best: String = ""
+		var bp := -1.0
+		for o in ranch_enc.options():
+			var p: float = float(o["chance"])
+			if ranch_enc.kind == "eating" and str(o["id"]) == "grab":
+				p = 0.5
+			if ranch_enc.kind == "eating" and str(o["id"]) == "drop":
+				p = 0.0
+			if p > bp:
+				bp = p
+				best = str(o["id"])
+		ranch_encounter_choose(best)
+
+# 結算：時間、傷（一槍夠重就是重傷）、被看到、吃到一半的獵物、死亡
+func _finish_ranch_encounter() -> void:
+	var enc := ranch_enc
+	ranch_enc = null
+	GameTime.advance_turns(1)
+	var ec: Dictionary = _ranch_enc_cfg()
+	var rl: Dictionary = life_log.get_or_add("ranch", {})
+	if enc.damage > 0.0:
+		wolf.health -= enc.damage
+		rl["damage"] = snappedf(float(rl.get("damage", 0.0)) + enc.damage, 0.1)
+		rl["shots"] = int(rl.get("shots", 0)) + enc.shots.size()
+		if enc.shots.any(func(d): return float(d) >= float(ec.get("heavy_at", 20))) and wolf.health > 0.0:
+			var part: String = str(RNGService.weighted_pick(ec.get("parts", {"leg": 1})))
+			var hd: Array = ec.get("heavy_days", [3, 5])
+			wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(hd[0]), int(hd[1])), "speed" if part == "leg" else "strength", part, "human")
+	if enc.kind == "patrol" and wolf.health < 1.0:
+		wolf.health = 1.0 # 巡查不會死（SPEC）
+	if enc.seen:
+		ranch_add_attention("seen")
+	if enc.kind == "eating":
+		match enc.result:
+			"grabbed":
+				var gain: float = float(current_feeding.get("segment_value", 0.0))
+				wolf.hunger += gain
+				_note_food("kill:" + str(current_feeding.get("animal_id", "")), gain)
+				current_feeding = {}
+			"continue":
+				pass
+			_:
+				current_feeding = {}
+	if enc.result == "repelled":
+		rl["dogs_repelled"] = int(rl.get("dogs_repelled", 0)) + 1
+	wolf.clamp_stats()
+	if enc.result == "killed" or (enc.lethal and wolf.health <= 0.0):
+		life_log["death_detail"] = {"animal": "human", "context": "ranch_hunt", "age": snapped(wolf.age_years, 0.1)}
+		_die("human")
+	state_changed.emit()
+
+# 換地圖就甩掉追獵（SPEC：注意照常保留）
+func _ranch_left_map(old_map: String) -> void:
+	if str(ranch.get("tracking_map", "")) == old_map and current_map() != old_map:
+		ranch.erase("tracking_map")
+		ranch.erase("tracking_until")
+
+# 除錯：牧場的人類遭遇（巡查、預警、追獵）
+func debug_ranch_humans(kind: String) -> void:
+	if ranch_state() != "open":
+		debug_ranch("open")
+	if kind == "warning":
+		pending_events.append({"type": "ranch_warning"})
+	else:
+		pending_events.append({"type": "ranch_humans", "kind": kind})
+
 # 除錯：stage "clues" 讓牧場現在出現（這一季只有線索）、"open" 直接開放；候選照規則挑
 func debug_ranch(stage: String) -> void:
 	if ranch_state() not in ["clues", "open"]:
@@ -1762,7 +1906,9 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 		if str(fire.get("sheltered", "")) == current_region and target_region != current_region:
 			fire["sheltered"] = ""
 		fire["alerted"].erase(target_region)
+	var old_map: String = current_map()
 	current_region = target_region
+	_ranch_left_map(old_map)
 	# 跨地圖（例如森林北部 ↔ 苔原南部）：回合較多、額外消耗體力（SPEC 1.6「苔原」6a）
 	if link.is_empty():
 		_spend_action_stamina("move_region")
@@ -3922,8 +4068,12 @@ func feed_once() -> Dictionary:
 	current_feeding["turns_stayed"] = int(current_feeding["turns_stayed"]) + 1
 	var event: String = ""
 	if int(current_feeding["segments_left"]) > 0:
+		# 在牧場吃到一半，巡查的人過來（Phase 4a 第 4 步）
+		if current_map() == "ranch" and ranch_attention() >= float(_ranch_enc_cfg().get("patrol", {}).get("min_attention", 40)) \
+				and RNGService.chance(float(_ranch_enc_cfg().get("eating", {}).get("chance", 0.3)) * ranch_activity()):
+			event = "ranch_patrol"
 		# 美洲獅回來找牠藏的獵物；黑熊被氣味引來（Phase 2 第 3 步）
-		if bool(current_feeding.get("cougar", false)) and RNGService.chance(float(_cougar_cfg().get("return_chance", 0.25))):
+		elif bool(current_feeding.get("cougar", false)) and RNGService.chance(float(_cougar_cfg().get("return_chance", 0.25))):
 			event = "cougar"
 		elif RNGService.chance(float(_black_bear_cfg().get("feed_chance", 0.06)) * black_bear_mult()):
 			event = "black_bear"
