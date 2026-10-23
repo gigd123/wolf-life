@@ -11,7 +11,8 @@ extends SceneTree
 #   NOT_TRIGGERED  除錯觸發後什麼都沒發生（只列出，不算失敗）
 # 用法：bash tools/run_sim.sh encounter_matrix（headless，約 6 分鐘）；環境變數 ONLY=名稱片段（只跑符合的情境）、POLICIES=first,last,r1,r2、
 #   TRACE=1（印出每一步）。有戰鬥動畫的版本：ANIM=fast xvfb-run -a godot --path . --rendering-driver opengl3 -s tools/sim/encounter_matrix.gd
-const MAX_STEPS := 140
+# 140 → 220（2026-10-23）：一直按「觀察」時，戰術狩獵 30 回合逾時 → 獵物逃走留下足跡 →「追蹤」再開一場，可以連四、五場才跟丟（不是卡住）
+const MAX_STEPS := 220
 var issues := {} # 問題 -> 第一次的情境
 var stats := {"runs": 0, "combat": 0, "died": 0, "not_triggered": []}
 var rng := RandomNumberGenerator.new()
