@@ -99,6 +99,9 @@ func _process(_d):
 	if OS.get_environment("NO_SALMON") != "":
 		GS.get_node("/root/GameData").balance["salmon"]["find"] = {}
 		GS.get_node("/root/GameData").balance["salmon"]["fishing_enabled"] = false
+	# TACTICAL_SET='{"allies": {"game": {...}}}'：覆寫 tactical_hunt.json 的部分設定（Phase 2i 校準用）
+	if OS.get_environment("TACTICAL_SET") != "":
+		GS.tactical_overrides = JSON.parse_string(OS.get_environment("TACTICAL_SET"))
 	var dens: Array = Array(OS.get_environment("DENS_ONLY").split(",")) if OS.get_environment("DENS_ONLY") != "" else DENS
 	for r in runs:
 		var ap = AP.new("all", "average")

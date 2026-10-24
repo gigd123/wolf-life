@@ -1321,7 +1321,7 @@ func join_allies_chasing(n: int) -> void:
 		if deer_state in ["unaware", "suspicious"]:
 			_start_flee("ally")
 			if deer_state == "flee":
-				flee_round = 1
+				flee_round = int(gc.get("join_flee_round", 1))
 	di = keep
 	events = []
 	var tp: Vector2i = herd[target]["pos"]

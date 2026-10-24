@@ -2,7 +2,7 @@ extends SceneTree
 # Phase 2i 第 3 步：苔原狼一起狩獵的主遊戲開法校準（GameState.start_hunt + start_tactical，體況照季節擲）。
 # 同一隻成年狼（一般、快）在苔原（SEASON，預設 autumn），比較：
 #   單狼（觀察、挑最弱的再交給本能，同自動玩家）／單狼本能／跟上來（本能）／加入（本能）／加入（選單式，改版前的對照）
-# 獵物：馴鹿（主遊戲照季節成群）、駝鹿。每格 RUNS 場（預設 60）。
+# 獵物：馴鹿（主遊戲照季節成群）、駝鹿。每格 RUNS 場（預設 60）。括號裡「小」是獵到的其中小鹿的比例（交給本能沒觀察時會改追群裡的小鹿，春夏才有）。
 # 用法：bash tools/run_sim.sh tundra_joint_calib；RUNS=100；SET='{"join_dist": 3}' 覆寫 tactical_hunt.json allies.game（校準用）
 var f := 0
 
@@ -15,6 +15,8 @@ func _process(_d) -> bool:
 	var AP = load("res://scripts/core/AutoPlayer.gd")
 	var HS = load("res://scripts/core/HuntSystem.gd")
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 60
+	if OS.get_environment("SET") != "":
+		gs.tactical_overrides = {"allies": {"game": JSON.parse_string(OS.get_environment("SET"))}}
 	gs.new_game("tundra_south")
 	gs.debug_force_transition("adult")
 	var season: String = OS.get_environment("SEASON") if OS.get_environment("SEASON") != "" else "autumn"
@@ -28,6 +30,7 @@ func _process(_d) -> bool:
 			var line := "  %-4s %-8s" % [wk, animal]
 			for mode in ["solo_best", "solo", "follow", "join", "join_menu"]:
 				var ok := 0
+				var fawn := 0
 				var rounds := 0
 				for i in runs:
 					for st in wolves[wk].keys():
@@ -58,9 +61,11 @@ func _process(_d) -> bool:
 					rounds += th.rounds
 					if th.result == "caught":
 						ok += 1
+						if th.caught_kind == "fawn":
+							fawn += 1
 				line += "  %s %3d%%" % [{"solo_best": "單狼觀察", "solo": "單狼本能", "follow": "跟上來", "join": "加入", "join_menu": "加入(選單)"}[mode], roundi(100.0 * ok / runs)]
 				if mode != "join_menu":
-					line += "（%.1f）" % (float(rounds) / runs)
+					line += "（小 %d%%，%.1f）" % [roundi(100.0 * fawn / runs), float(rounds) / runs]
 			print(line)
 	quit()
 	return true

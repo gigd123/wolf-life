@@ -3810,6 +3810,16 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 
 # 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
+# 模擬校準用：覆寫 tactical_hunt.json 的部分設定（字典逐層合併；遊戲裡永遠是空的）
+var tactical_overrides: Dictionary = {}
+
+static func _merge_dict(dst: Dictionary, src: Dictionary) -> void:
+	for k in src.keys():
+		if dst.get(k) is Dictionary and src[k] is Dictionary:
+			_merge_dict(dst[k], src[k])
+		else:
+			dst[k] = src[k]
+
 func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var ctx := tactical_context(hunt.terrain, hunt.wind_state(), hunt.condition)
 	var g0: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
@@ -3842,6 +3852,8 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 		ctx["wounds"] = int(g.get("injured_wounds", 1))
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
+	if not tactical_overrides.is_empty():
+		_merge_dict(th.t, tactical_overrides)
 	if hunt.life_stage == "juvenile":
 		for i in th.herd.size():
 			if th.is_fawn(i):
@@ -5633,6 +5645,9 @@ func _steps_to_exit(start: String) -> int:
 
 # 執行選擇。回傳 {"result": "safe"|"light"|"heavy", "kind", "region", "lost"}。
 func blizzard_choose(id: String) -> Dictionary:
+	# 風雪已經結束（事件排在佇列裡、處理時風雪剛好停了）：不能再選，否則會寫出一個沒有 phase 的 blizzard（2026-10-24 一生模擬發現，同大火）
+	if blizzard.is_empty():
+		return {}
 	var opt: Dictionary = {}
 	for o in blizzard_options():
 		if o["id"] == id:

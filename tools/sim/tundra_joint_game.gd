@@ -52,11 +52,11 @@ func _process(_d) -> bool:
 		if str(th.herd[th.target]["state"]) != "flee":
 			fleeing = false
 		for w in al:
-			if th.dist(w["pos"], th.herd[th.target]["pos"]) > 4.5:
+			if th.dist(w["pos"], th.herd[th.target]["pos"]) > float(th.t["allies"]["game"]["join_dist"]) + 2.5:
 				near = false
 	_check(ok_join, "加入：走戰術地圖、上場 2 隻（成狼 2～4 隻時）、都是追擊")
 	_check(fleeing, "加入：開局目標已經在逃")
-	_check(near, "加入：苔原狼在目標附近（4.5 格內）")
+	_check(near, "加入：苔原狼在目標附近（join_dist ＋ 2.5 格內）")
 	# 2. 跟上來
 	var h2 = _hunt("caribou", 2, false)
 	var th2 = gs.start_tactical(h2)

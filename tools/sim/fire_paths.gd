@@ -6,6 +6,7 @@ extends SceneTree
 #   3. 走進區域時的描述和火況一致（燒過才寫焦黑或新芽、正在燒才跳逃生、平常不寫）
 #   4. 「火熄了」卡片列的區域，當下都是焦黑
 #   5. 大火結束後再選逃生不會寫壞 fire
+#   6. 暴風雪結束後再選也不會寫壞 blizzard
 # 走法：留在巢穴、每個時段換一個相鄰區域，兩種都跑；起火點輪流。
 # 用法：bash tools/run_sim.sh fire_paths
 var f := 0
@@ -35,6 +36,10 @@ func _process(_d) -> bool:
 	var r: Dictionary = gs.fire_escape("den")
 	gs._hide_until_fire_passes("den")
 	_check(r.is_empty() and gs.fire.is_empty(), "大火結束後選逃生：fire 維持空的（%s）" % str(gs.fire))
+	# 6. 暴風雪同樣的情況（2026-10-24 苔原的一生模擬發現）：風雪結束後再選躲或退，不會寫出沒有 phase 的 blizzard
+	gs.blizzard = {}
+	var rb: Dictionary = gs.blizzard_choose("dig")
+	_check(rb.is_empty() and gs.blizzard.is_empty(), "暴風雪結束後再選：blizzard 維持空的（%s）" % str(gs.blizzard))
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
 
