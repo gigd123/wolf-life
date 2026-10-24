@@ -2602,7 +2602,7 @@ func _show_prey_nearby(event: Dictionary) -> void:
 	_add_encounter_button(tr("hunt.option.pounce"), func():
 		encounter_overlay.visible = false
 		current_hunt = GameState.hunt_nearby_prey(event)
-		_render_hunt_stage()
+		_enter_hunt()
 	)
 	_add_encounter_button(tr("ui.ignore"), func():
 		encounter_overlay.visible = false
@@ -2815,7 +2815,7 @@ func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> v
 
 # 開始狩獵畫面：白尾鹿、馬鹿、騾鹿、馴鹿走戰術地圖，其他走選單。看到獵物、追蹤到獵物、發現足跡都經過這裡
 # （2026-10-20 試玩：看到一群白尾鹿選「狩獵」沒有進戰術地圖——目擊、追蹤原本直接走選單）。
-# 獵物靠近（撲抓）照舊走選單；和苔原狼一起狩獵也走戰術地圖（Phase 2i）。
+# 獵物靠近（短版開場）、和苔原狼一起狩獵、受傷的個體也走戰術地圖（Phase 2i）。
 func _enter_hunt() -> void:
 	if GameState.tactical_eligible(current_hunt):
 		_open_tactical()

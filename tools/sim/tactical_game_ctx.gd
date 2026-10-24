@@ -325,7 +325,7 @@ func _process(_d) -> bool:
 	_check(gs.tactical_eligible(ih), "受傷的野牛走戰術地圖")
 	var ith = gs.start_tactical(ih)
 	_check(int(ith.herd[ith.target]["wounds"]) == 1 and ith.herd.size() == 1, "受傷的野牛帶著 1 道傷、單獨一頭")
-	_check(not gs.tactical_eligible(gs.start_hunt("white_tailed_deer", "adult", -1, false, "", true)), "受傷的白尾鹿照舊走選單")
+	_check(gs.tactical_eligible(gs.start_hunt("white_tailed_deer", "adult", -1, false, "", true)), "受傷的白尾鹿也走戰術地圖（Phase 2i 第 5 步起；原本照舊走選單）")
 	# 小牛躲到站定的母牛身後：母牛站定、小牛在逃，下一步小牛到母牛旁邊、離狼比母牛遠
 	var hid_ok := false
 	for i in 30:

@@ -242,6 +242,9 @@ func setup_from_game(ctx: Dictionary) -> void:
 	# 受傷的個體（之前被咬傷逃掉的，2026-10-22 野牛受傷的也走戰術地圖）：第一隻帶著傷出場（每道傷少跑 wound_slow 格、比較好壓倒）
 	if int(ctx.get("wounds", 0)) > 0:
 		herd[0]["wounds"] = int(ctx["wounds"])
+	# 主遊戲受傷的個體（Phase 2i 第 5 步）：同選單式，跑得比較慢（每回合的逃跑格數 × game.injured_speed_mult）
+	if bool(ctx.get("injured", false)):
+		herd[0]["injured"] = true
 	if float(ctx.get("age_penalty", 0.0)) > 0.0:
 		game_mods["age_penalty"] = float(ctx["age_penalty"])
 	if ctx.has("season"):
@@ -1310,6 +1313,21 @@ func add_ally(role: String, pos: Vector2i) -> void:
 	wolves.append({"pos": cell, "stats": st, "breath": bmax, "breath_max": bmax, "breath_used": 0.0, "ally": true, "role": role, "mode": "still",
 		"intent": "circling" if role == "drive" else "following", "aim": cell})
 
+# 獵物靠近（Phase 2i 第 5 步）：把你放在目標旁邊 dmin～dmax 格（走得到的地形、不在鹿身上）；牠還沒察覺
+func place_wolf_near(dmin: float, dmax: float) -> void:
+	var tp: Vector2i = herd[target]["pos"]
+	var cands: Array = []
+	for y in height:
+		for x in width:
+			var c := Vector2i(x, y)
+			var d: float = dist(c, tp)
+			if d >= dmin and d <= dmax + 0.5 and not str(terrain(c)) in ["l", "w", "s", "d", "c", "b"] and not deer_cells().has(c):
+				cands.append(c)
+	if cands.is_empty():
+		return
+	wolf_pos = cands[rng.randi_range(0, cands.size() - 1)]
+	wolf_from = wolf_pos
+
 # --- 主遊戲的苔原狼（Phase 2i，SPEC「苔原狼一起狩獵（方案 B）」）---
 
 # 加入苔原狼的狩獵：獵物已經在逃（會站定的照牠的規則），n 隻苔原狼在目標後方（你這一側）追
@@ -2267,6 +2285,9 @@ func _flee_budget(i: int = -1) -> float:
 	var prof: Array = sp(k).get("calf_flee", t["herd"]["fawn_flee"]) if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
 	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - _snow_slow(k))
+	if bool(h.get("injured", false)):
+		var g: Dictionary = t.get("game", {})
+		b = max(1.0, b * float(g.get("injured_speed_by", {}).get(str(h.get("species", "")), g.get("injured_speed_mult", 1.0))))
 	# 生母放慢等幼鹿：最多比幼鹿多跑 mother_slack 格（幼鹿還在附近、沒跑散時）
 	if not is_fawn(k):
 		var f: int = fawn_of(k)

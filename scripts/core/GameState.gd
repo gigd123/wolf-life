@@ -3804,9 +3804,8 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 	# 公馬鹿照舊走選單（Phase 2d：會站定，之後和駝鹿、野牛一起做）
 	if hunt != null and (g.get("exclude_stages", {}).get(hunt.animal_id, []) as Array).has(hunt.life_stage):
 		return false
-	# 受傷的個體照舊走選單；game.injured_tactical 的物種（野牛，2026-10-22）帶著傷走戰術地圖
-	var injured_ok: bool = hunt != null and (g.get("injured_tactical", []) as Array).has(hunt.animal_id)
-	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and (not hunt.injured or injured_ok) and not hunt.hiding
+	# 受傷的個體也走戰術地圖（Phase 2i 第 5 步；原本只有野牛，game.injured_tactical）：帶傷、跑得比較慢（game.injured_*）
+	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and not hunt.hiding
 
 # 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
@@ -3827,7 +3826,8 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	ctx["fawn"] = hunt.life_stage == "juvenile" and not (g0.get("no_mother", []) as Array).has(hunt.animal_id)
 	# 有避難處的獵物（河狸的水）：離水近或遠照這一場擲的結果
 	if not hunt.refuge.is_empty():
-		ctx["water_near"] = hunt.refuge_near
+		# 受傷的個體（Phase 2i 第 5 步）：game.injured_refuge_far 的物種（旱獺、大角羊：靠洞口、峭壁逃，跑多慢都差不多）被你撞見時落在離避難處遠的地方
+		ctx["water_near"] = hunt.refuge_near and not (hunt.injured and (g0.get("injured_refuge_far", []) as Array).has(hunt.animal_id))
 	# Phase 2d 第 2 步：物種與鹿群（成鹿的體況照主遊戲的季節比例各擲一次，第一隻是遇到的那一隻）
 	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
 	ctx["species"] = str(g.get("species_stage", {}).get(hunt.animal_id, {}).get(hunt.life_stage, g.get("species", {}).get(hunt.animal_id, "deer")))
@@ -3848,12 +3848,22 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	# 落單的幼獸（野牛 15% 落單時，game.lone_calf_alone 的機率旁邊沒有母親；其餘是一對母子）
 	elif hunt.life_stage == "juvenile" and RNGService.chance(float(g.get("lone_calf_alone", {}).get(hunt.animal_id, 0.0))):
 		ctx["herd"] = {"calf_alone": true}
+	# 受傷的個體帶幾處傷（Phase 2i 第 5 步：依物種、物種.階段覆寫，校準到選單式受傷的成功率）
+	# 獵物靠近（Phase 2i 第 5 步）：走近的幼鹿身邊沒有母鹿、不成群
+	if hunt.nearby:
+		ctx["herd"] = {"calf_alone": true} if hunt.life_stage == "juvenile" and bool(g0.get("nearby_calf_alone", true)) else {}
 	if hunt.injured:
-		ctx["wounds"] = int(g.get("injured_wounds", 1))
+		var iw: Dictionary = g.get("injured_wounds_by", {})
+		ctx["wounds"] = int(iw.get(hunt.animal_id + "." + hunt.life_stage, iw.get(hunt.animal_id, g.get("injured_wounds", 1))))
+		ctx["injured"] = true
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if not tactical_overrides.is_empty():
 		_merge_dict(th.t, tactical_overrides)
+	# 獵物靠近：短版開場，你就在牠旁邊 2～3 格、牠還沒察覺
+	if hunt.nearby:
+		var nd: Array = th.t.get("game", {}).get("nearby_dist", [2, 3])
+		th.place_wolf_near(float(nd[0]), float(nd[1]))
 	if hunt.life_stage == "juvenile":
 		for i in th.herd.size():
 			if th.is_fawn(i):
@@ -3955,7 +3965,9 @@ func _nearby_prey_pick(cfg: Dictionary) -> String:
 	return str(RNGService.weighted_pick(candidates))
 
 func hunt_nearby_prey(event: Dictionary) -> HuntSystem:
-	return start_hunt(event["animal_id"], event["life_stage"], -1, false, str(event.get("terrain", "")))
+	var h := start_hunt(event["animal_id"], event["life_stage"], -1, false, str(event.get("terrain", "")))
+	h.nearby = true
+	return h
 
 # 灰熊路過：在巢穴或睡處休息時。保持不動（看技巧）或立刻離開（失去這次休息的回復）。
 # 機率依那一區灰熊的多寡（權重 ÷ ref_weight，最多 1 倍），巢穴 × den_mult（2026-10-15 試玩回報 24）。

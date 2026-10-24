@@ -82,6 +82,7 @@ var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」�
 var herd_weak: float = 0.0
 var in_herd: bool = false
 var tundra_help: int = 0
+var nearby: bool = false # 獵物靠近（休息時走到旁邊）：戰術地圖用短版開場（Phase 2i 第 5 步）
 var tundra_joined: bool = false # 加入苔原狼正在進行的狩獵（true）或牠們跟上來（false）；戰術地圖的開場照這個（Phase 2i）
 var refuge_near: bool = false # Phase 2 第 2 步：獵物離牠的避難處（岩壁、水）近不近
 var refuge: Dictionary = {} # 1.8 第 9 步：一起狩獵的苔原狼隻數 # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
