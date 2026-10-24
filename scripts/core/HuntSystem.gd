@@ -82,6 +82,7 @@ var decisions: Array[String] = [] # 這次狩獵的決策（「階段.選項」�
 var herd_weak: float = 0.0
 var in_herd: bool = false
 var tundra_help: int = 0
+var tundra_joined: bool = false # 加入苔原狼正在進行的狩獵（true）或牠們跟上來（false）；戰術地圖的開場照這個（Phase 2i）
 var refuge_near: bool = false # Phase 2 第 2 步：獵物離牠的避難處（岩壁、水）近不近
 var refuge: Dictionary = {} # 1.8 第 9 步：一起狩獵的苔原狼隻數 # 1.8 第 5 步：成群（潛近較難，可以先觀察鹿群挑出最弱的）
 # 大型獵物的體況（1.8 第 3 步）："healthy" 健康、"average" 普通、"weak" 虛弱（老、病、傷、營養不良）；小型獵物與幼體是 ""。
@@ -199,6 +200,7 @@ func _roll_reaction() -> void:
 # 駝鹿：一隻從側面牽制，踢擊分散到不同的狼，你比較容易從後方咬。
 func apply_tundra_help(count: int, already_chasing: bool) -> void:
 	tundra_help = count
+	tundra_joined = already_chasing
 	var j: Dictionary = NpcWolf.cfg("tundra_wolf").get("interaction", {}).get("joint", {})
 	if in_herd:
 		_pick_weakest()

@@ -116,6 +116,7 @@ var stats := {"stuck": 0, "toward_wolf": 0}
 # 主遊戲帶進來的狀態（Phase 2c 第 1 步，setup_from_game）：age_penalty（撲咬、壓倒、咬喉的年齡減成）、
 # no_sprint（吃撐不能衝刺）、alert_mult（晨昏時鹿的警覺值漲得慢）、snow_slow（深雪時鹿每回合少跑幾格）
 var game_mods := {}
+var pending_allies: Array = [] # 友善時跟上來的苔原狼（Phase 2i）：[{role, round}]，到那一回合從你身後出現
 # 接回主遊戲用（Phase 2c 第 2 步）：每一下受到的傷害、這一場的鍛鍊（同 HuntSystem.practice 的格式，Growth.apply_practice）
 var hits_taken: Array = []
 var practice: Array = []
@@ -1309,6 +1310,47 @@ func add_ally(role: String, pos: Vector2i) -> void:
 	wolves.append({"pos": cell, "stats": st, "breath": bmax, "breath_max": bmax, "breath_used": 0.0, "ally": true, "role": role, "mode": "still",
 		"intent": "circling" if role == "drive" else "following", "aim": cell})
 
+# --- 主遊戲的苔原狼（Phase 2i，SPEC「苔原狼一起狩獵（方案 B）」）---
+
+# 加入苔原狼的狩獵：獵物已經在逃（會站定的照牠的規則），n 隻苔原狼在目標後方（你這一側）追
+func join_allies_chasing(n: int) -> void:
+	var gc: Dictionary = _allies_cfg().get("game", {})
+	var keep := di
+	for i in active_deer():
+		di = i
+		if deer_state in ["unaware", "suspicious"]:
+			_start_flee("ally")
+			if deer_state == "flee":
+				flee_round = 1
+	di = keep
+	events = []
+	var tp: Vector2i = herd[target]["pos"]
+	var dir := Vector2(wolf_pos - tp).normalized()
+	var side := Vector2(-dir.y, dir.x)
+	for k in n:
+		var off: Vector2 = dir * float(gc.get("join_dist", 2)) + side * (float(k) - (n - 1) * 0.5) * 2.0
+		add_ally("chase", _clamp_cell(Vector2i((Vector2(tp) + off).round())))
+	events.append(_tx("tactical.ally.joined" + ("" if n > 1 else ".single")).replace("{animal}", label(target)))
+
+# 跟上來的苔原狼：回合到了就從你身後（背對目標的那一側）出現
+func _arrive_allies() -> void:
+	if pending_allies.is_empty():
+		return
+	var gc: Dictionary = _allies_cfg().get("game", {})
+	var arrived := 0
+	for pa in pending_allies.duplicate():
+		if rounds < int(pa["round"]):
+			continue
+		var back := Vector2(wolf_pos - herd[target]["pos"]).normalized()
+		add_ally(str(pa["role"]), _clamp_cell(Vector2i((Vector2(wolf_pos) + back * float(gc.get("behind_dist", 2))).round())))
+		pending_allies.erase(pa)
+		arrived += 1
+	if arrived > 0:
+		events.append(_tx("tactical.ally.arrived" + ("" if arrived > 1 else ".single")))
+
+func _clamp_cell(c: Vector2i) -> Vector2i:
+	return Vector2i(clampi(c.x, 0, width - 1), clampi(c.y, 0, height - 1))
+
 func _wolf_at(c: Vector2i) -> bool:
 	for w in wolves:
 		if w["pos"] == c:
@@ -1700,6 +1742,7 @@ func _herd_alarm() -> void:
 func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 	if done:
 		return
+	_arrive_allies()
 	# 同伴每一回合都動（撲咬、咬住的回合也是；移動、觀察的回合在 _end_wolf_turn 已經動過）
 	if wolves.size() > 1 and allies_moved_round != rounds:
 		_allies_turn()

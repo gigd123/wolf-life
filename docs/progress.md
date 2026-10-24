@@ -3,7 +3,7 @@
 最後更新：2026-10-20
 
 ## 目前階段
-（2026-10-24）Phase 2i 第 1 步：主遊戲開場帶苔原狼。Phase 4a 牧場七步完成（待試玩，試玩清單 M 區），主遊戲的牧場打開（ranch.json enabled true）；SPEC 已更新。苔原狼一起狩獵的實驗：原型畫面與方案 2、B 完成，待使用者試玩（試玩清單 K4）。
+（2026-10-24）Phase 2i 第 2 步：主遊戲的戰術畫面顯示苔原狼、交給本能與自動玩家。Phase 4a 牧場七步完成（待試玩，試玩清單 M 區），主遊戲的牧場打開（ranch.json enabled true）；SPEC 已更新。苔原狼一起狩獵的實驗：原型畫面與方案 2、B 完成，待使用者試玩（試玩清單 K4）。
 （2026-10-22）Phase 2h 鮭魚洄流季（SPEC 已寫入，使用者同意）：6 步完成（SPEC 已照校準後的天數、熊數、線索頻率更新，使用者同意），待試玩與目視確認。Phase 2g 4 步完成，待試玩。
 （2026-10-21）Phase 2e（藏食物）、Phase 2f（會站定的大型獵物：公馬鹿、駝鹿、野牛）實作完成，待試玩（試玩清單「其他最近的改動」）；Phase 2f 一生模擬的挨餓偏高（成年 4.5～5.4、1～2 歲 8.3 天），使用者選 A 接受，等試玩再調。
 （2026-10-20）Phase 2c、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）實作完成，待試玩（`docs/playtest-checklist.md` 最上面 30 分鐘版與「其他最近的改動」）。
@@ -88,7 +88,7 @@
   - [x] 方案 B（2026-10-22，使用者選 B）：鹿類（白尾鹿用共用的 `deer`、騾鹿、母馬鹿、公馬鹿、馴鹿與幼體）`chase_help` 0.4，乘在苔原狼的咬傷、咬住、撲被咬住的加成，以及逃跑方向裡苔原狼的推力（逼獵物轉向）；其他動物預設 1。鹿群：馴鹿 52 → 70%、白尾鹿 43 → 67%、馬鹿 43 → 62%；單隻健康白尾鹿 慢／普通／快 有同伴 33／48／63%（之前 48／67／73%）。細節在 `docs/proposals/pack-hunt-difficulty-data.md` 第九節。
   - [ ] 3. 試玩與校準：等使用者在原型試玩（K4），再依手感調難度與通過標準。
 - [ ] Phase 2i 苔原狼一起狩獵接進主遊戲、所有狩獵改成戰術場景（2026-10-24 寫入 SPEC，使用者同意；提案 `docs/proposals/tundra-joint-in-game.md`、`all-hunts-tactical.md`）
-  - [ ] 1. 苔原狼：主遊戲開場帶苔原狼（加入、跟上來）、上場隻數、開場說明、結算；修兩個不一致
+  - [x] 1. 苔原狼：主遊戲開場帶苔原狼（2026-10-24）：`HuntSystem.tundra_joined`（加入 true／跟上來 false，`apply_tundra_help` 記下）；`GameState.start_tactical` 有苔原狼幫忙時最多 2 隻上場（`tactical_hunt.json` allies.game：max 2、roles 追擊→驅趕、join_dist 2、follow_delay 3、behind_dist 2）。加入：`TacticalHunt.join_allies_chasing`——目標與整群照規則開始逃（會站定的照站定）、已經逃了 1 回合，苔原狼（追擊）在目標後方你這一側 2 格；跟上來：`pending_allies`，第 3 回合從你身後 2 格出現（`_arrive_allies`，每個鹿的回合開頭檢查，撲咬、咬住的回合也算），紀錄寫「身後傳來腳步聲……跟上來了」（單數另寫）。主遊戲選「加入」改走 `_enter_hunt`（戰術地圖）。結算沿用 `finish_hunt` 的 tundra_help：一起獵到照舊分肉、紀錄、關係。兩個不一致修掉：自動玩家／照常過日子加入時（`join_tundra_hunt` → `start_tactical`）有苔原狼；跟上來對鹿類（戰術地圖）也有苔原狼。新回歸測試 `tundra_joint_game`（加入 20 場都是 2 隻追擊、目標在逃、在 4.5 格內；跟上來第 3 回合出現；1 隻成狼單數；一起獵到分肉；沒有苔原狼不受影響；join_tundra_hunt 帶苔原狼）。`tactical_game_ctx`、`tactical_ally_rules`、`tactical_stand_rules`、`save_roundtrip`、`tactical_button_cover` 通過。
   - [ ] 2. 苔原狼：主遊戲的戰術畫面顯示同伴；交給本能、自動玩家、照常過日子
   - [ ] 3. 苔原狼：主遊戲開法的模擬與校準、苔原巢穴的一生模擬
   - [ ] 4. 苔原狼：回歸測試、事件結局矩陣、試玩清單

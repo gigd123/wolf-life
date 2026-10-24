@@ -2806,7 +2806,7 @@ func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> v
 
 # 開始狩獵畫面：白尾鹿、馬鹿、騾鹿、馴鹿走戰術地圖，其他走選單。看到獵物、追蹤到獵物、發現足跡都經過這裡
 # （2026-10-20 試玩：看到一群白尾鹿選「狩獵」沒有進戰術地圖——目擊、追蹤原本直接走選單）。
-# 獵物靠近（撲抓）、和苔原狼一起狩獵照舊走選單。
+# 獵物靠近（撲抓）照舊走選單；和苔原狼一起狩獵也走戰術地圖（Phase 2i）。
 func _enter_hunt() -> void:
 	if GameState.tactical_eligible(current_hunt):
 		_open_tactical()
@@ -3547,7 +3547,7 @@ func _show_tundra_hunt(d: Dictionary) -> void:
 	_add_hunt_button(tr("tundra.hunt.join"), func():
 		encounter_overlay.visible = false
 		current_hunt = GameState.join_tundra_hunt()
-		_render_hunt_stage()
+		_enter_hunt()
 	)
 	_add_encounter_button(tr("tundra.hunt.watch"), func():
 		var res := GameState.watch_tundra_hunt()

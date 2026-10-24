@@ -3851,6 +3851,16 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	# 未滿 1 歲盯上成年的大、中型獵物：開場多一句提示（2026-10-22 使用者選 A 加提示）
 	if not youth_food_mults().is_empty() and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
 		th.game_mods["youth_hint"] = true
+	# 苔原狼一起狩獵（Phase 2i）：最多 2 隻上場；加入時獵物已經在逃、牠們在追，跟上來的幾回合後從你身後出現
+	if hunt.tundra_help > 0:
+		var ag: Dictionary = th.t.get("allies", {}).get("game", {})
+		var n: int = mini(int(ag.get("max", 2)), hunt.tundra_help)
+		if hunt.tundra_joined:
+			th.join_allies_chasing(n)
+		else:
+			var roles: Array = ag.get("roles", ["chase", "drive"])
+			for i in n:
+				th.pending_allies.append({"role": str(roles[mini(i, roles.size() - 1)]), "round": int(ag.get("follow_delay", 3))})
 	_stat_inc("tactical", "started")
 	return th
 

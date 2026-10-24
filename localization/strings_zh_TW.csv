@@ -1973,6 +1973,10 @@ tactical.ally.defend_miss,{animal}衝向苔原狼，苔原狼閃開了。
 tactical.ally.snap,苔原狼撲上去咬{animal}，沒咬住。
 tactical.ally.hold,苔原狼咬住了{animal}的後腿，死命拖住——牠跑不動了！
 tactical.ally.broke_free,{animal}甩開了苔原狼，帶著傷逃跑！
+tactical.ally.joined,兩隻苔原狼已經追了上去，{animal}正在逃——你從側邊趕過去。
+tactical.ally.joined.single,那隻苔原狼已經追了上去，{animal}正在逃——你從側邊趕過去。
+tactical.ally.arrived,身後傳來腳步聲——那兩隻苔原狼聽到動靜，跟上來了。
+tactical.ally.arrived.single,身後傳來腳步聲——那隻苔原狼聽到動靜，跟上來了。
 tactical.ally.pull_down_pack,苔原狼們一擁而上，把{animal}拖倒了。你們一起獵到了。
 tactical.factor.ambush,牠被趕著往你這邊跑
 tactical.factor.ally_holding,苔原狼拖住了牠
