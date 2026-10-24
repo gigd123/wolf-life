@@ -6737,6 +6737,22 @@ func debug_tundra_mob() -> Dictionary:
 	identify("tundra_wolf")
 	return current_discovery
 
+# 苔原狼在狩獵（Phase 2i 第 4 步）：撞見牠們在追馴鹿或駝鹿（選加入就進戰術地圖）
+func debug_tundra_hunt(animal: String = "caribou") -> Dictionary:
+	debug_tundra_wolves_here()
+	identify("tundra_wolf", false)
+	current_discovery = {"kind": "tundra_hunt", "animal_id": animal, "location": _random_terrain(current_region)}
+	return current_discovery
+
+# 苔原狼跟上來（Phase 2i 第 4 步）：自己出手獵馴鹿，友善的苔原狼聽到動靜跟上來（不擲 30%）
+func debug_tundra_follow(animal: String = "caribou") -> HuntSystem:
+	debug_tundra_wolves_here()
+	identify("tundra_wolf", false)
+	var h := start_hunt(animal, "adult", -1, false, _random_terrain(current_region))
+	if h.tundra_help == 0:
+		h.apply_tundra_help(maxi(1, tundra_adults()), false)
+	return h
+
 func debug_tundra_howl() -> void:
 	pending_events.append({"type": "tundra_howl", "region": tundra_wolves_region()})
 

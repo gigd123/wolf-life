@@ -3,7 +3,7 @@
 最後更新：2026-10-20
 
 ## 目前階段
-（2026-10-24）Phase 2i 第 4 步：苔原狼的回歸測試、事件結局矩陣、試玩清單。Phase 4a 牧場七步完成（待試玩，試玩清單 M 區），主遊戲的牧場打開（ranch.json enabled true）；SPEC 已更新。苔原狼一起狩獵的實驗：原型畫面與方案 2、B 完成，待使用者試玩（試玩清單 K4）。
+（2026-10-24）Phase 2i 第 5 步：受傷的個體、獵物靠近（短版）。苔原狼一起狩獵（第 1～4 步）完成，待試玩（試玩清單 K5）。Phase 4a 牧場七步完成（待試玩，試玩清單 M 區），主遊戲的牧場打開（ranch.json enabled true）；SPEC 已更新。苔原狼一起狩獵的實驗：原型畫面與方案 2、B 完成，待使用者試玩（試玩清單 K4）。
 （2026-10-22）Phase 2h 鮭魚洄流季（SPEC 已寫入，使用者同意）：6 步完成（SPEC 已照校準後的天數、熊數、線索頻率更新，使用者同意），待試玩與目視確認。Phase 2g 4 步完成，待試玩。
 （2026-10-21）Phase 2e（藏食物）、Phase 2f（會站定的大型獵物：公馬鹿、駝鹿、野牛）實作完成，待試玩（試玩清單「其他最近的改動」）；Phase 2f 一生模擬的挨餓偏高（成年 4.5～5.4、1～2 歲 8.3 天），使用者選 A 接受，等試玩再調。
 （2026-10-20）Phase 2c、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）實作完成，待試玩（`docs/playtest-checklist.md` 最上面 30 分鐘版與「其他最近的改動」）。
@@ -91,7 +91,7 @@
   - [x] 1. 苔原狼：主遊戲開場帶苔原狼（2026-10-24）：`HuntSystem.tundra_joined`（加入 true／跟上來 false，`apply_tundra_help` 記下）；`GameState.start_tactical` 有苔原狼幫忙時最多 2 隻上場（`tactical_hunt.json` allies.game：max 2、roles 追擊→驅趕、join_dist 2、follow_delay 3、behind_dist 2）。加入：`TacticalHunt.join_allies_chasing`——目標與整群照規則開始逃（會站定的照站定）、已經逃了 1 回合，苔原狼（追擊）在目標後方你這一側 2 格；跟上來：`pending_allies`，第 3 回合從你身後 2 格出現（`_arrive_allies`，每個鹿的回合開頭檢查，撲咬、咬住的回合也算），紀錄寫「身後傳來腳步聲……跟上來了」（單數另寫）。主遊戲選「加入」改走 `_enter_hunt`（戰術地圖）。結算沿用 `finish_hunt` 的 tundra_help：一起獵到照舊分肉、紀錄、關係。兩個不一致修掉：自動玩家／照常過日子加入時（`join_tundra_hunt` → `start_tactical`）有苔原狼；跟上來對鹿類（戰術地圖）也有苔原狼。新回歸測試 `tundra_joint_game`（加入 20 場都是 2 隻追擊、目標在逃、在 4.5 格內；跟上來第 3 回合出現；1 隻成狼單數；一起獵到分肉；沒有苔原狼不受影響；join_tundra_hunt 帶苔原狼）。`tactical_game_ctx`、`tactical_ally_rules`、`tactical_stand_rules`、`save_roundtrip`、`tactical_button_cover` 通過。
   - [x] 2. 苔原狼：畫面、交給本能、自動玩家（2026-10-24）：畫面本來就會畫同伴（原型的圖、角色點、驅趕的虛線、右下角狀態），主遊戲多一行說明（`tactical.ui.ally_intro`，有苔原狼或跟上來的時候）；加入時苔原狼一開始寫「追上去」。交給本能（`TacticalInstinct.pick_policy`）有同伴時：獵物已經在逃或沒有驅趕的 → 一起猛追；會站定的大型獵物（駝鹿）猛追、看出虛弱潛近；其他（鹿群）等驅趕。依據 `tactical_ally_sim`（每格 30 場，加「同伴＋本能」一欄）：馴鹿群 本能 80%（等著趕 80、猛追 73）、白尾鹿群 63%（63、67）、馬鹿群 57%（57、60）、健康駝鹿 13%（猛追 20）、虛弱駝鹿 43%（潛近 60，本能不先觀察）。自動玩家、照常過日子走同一條路（`join_tundra_hunt` → `start_tactical` → 本能）。`tundra_joint_game` 加 6～8（本能的打法、本能玩到底：成年能力的狼獵馴鹿群 單狼 5／60、跟上來 37／60、加入 54／60、畫面的說明）。截圖工具 `tools/tundra_joint_shot.gd`（KIND=join／follow）。第 3 步要看：主遊戲開法的單狼本能獵馴鹿群只有約 8%（原型 33%）、加入約 90%（獵物在逃、苔原狼就在後面，原型沒有這種開場）。
   - [x] 3. 苔原狼：主遊戲開法的模擬與校準、苔原巢穴的一生模擬（2026-10-24；使用者選 A：通過標準改成成年下降不超過約 3 天，SPEC 已寫入；四張地圖對照 森林 2.0、草原 2.6、山地 3.6、苔原 8.1 天；生態資料補進 ecology-reference「苔原對狼來說難不難活」，山地高處冬季比遊戲難，另外提案）：新模擬 `tundra_joint_calib`（SEASON、RUNS、SET 覆寫 allies.game；記獵到小鹿的比例）。中途查明「不觀察直接交給本能 93～100%」不是 bug（春夏秋的鹿群有小鹿，本能沒觀察時改追小鹿）。冬季（沒有小鹿）主遊戲開法、80 場：一般的狼 馴鹿群 單狼觀察 56%／本能 39% → 跟上來 76%、加入 79%（改版前選單式加入 84%）；駝鹿 38%／41% → 59%、48%（31%）。苔原巢穴的一生（`life_pressure DENS_ONLY=tundra_south`，各 2×20 隻；新的 `TACTICAL_SET` 覆寫、`GameState.tactical_overrides`）：成年每年挨餓 舊版 10.4 天、新版但沒有苔原狼 10.7、新版 V0 7.4、V1 7.9；未滿 2 歲 15.3／17.0／11.8／13.2；老年 18.8／16.2／17.5／12.5（雜訊大）。舊版的選單式幫忙對一生幾乎沒影響；SPEC 通過標準「成年下降不超過約 1 天」沒過（約 2.5 天）。預設改成 V1（join_dist 2 → 4、join_flee_round 1 → 0、follow_delay 3 → 5：加入的開場原本太有利）。順手修正：暴風雪結束後再選躲或退寫出沒有 phase 的 blizzard（同大火；舊版的一生模擬有一隻狼因此卡住、99 個錯誤；`fire_paths` 加第 6 項）。
-  - [ ] 4. 苔原狼：回歸測試、事件結局矩陣、試玩清單
+  - [x] 4. 苔原狼：回歸測試、事件結局矩陣、試玩清單（2026-10-24）：除錯選單「苔原狼在狩獵」（`debug_tundra_hunt`，接選「加入」的畫面）、「苔原狼跟上來」（`debug_tundra_follow`，不擲 30%，直接進戰術地圖）；`encounter_matrix` 加這兩個情境（`ONLY=tundra_wolf` 92 場全部通過）；試玩清單新 K5 區。`tundra_joint_game`、`tactical_ally_rules`、`tactical_game_ctx`、`save_roundtrip`、`text_watch`、`fire_paths` 通過。
   - [ ] 5. 受傷的個體、獵物靠近（短版）
   - [ ] 6. 躲在草裡的幼鹿（感知的作用與校準）
   - [ ] 7. 牧場的家畜；隱藏所有選單入口；一生模擬、回歸測試、事件結局矩陣、試玩清單

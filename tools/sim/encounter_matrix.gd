@@ -40,7 +40,7 @@ func _scenarios() -> Array:
 		out.append({"name": k, "den": "forest_east", "stage": "adult", "trigger": "btn:" + k})
 	out.append({"name": "debug.challenger", "den": "forest_east", "stage": "elder", "trigger": "btn:debug.challenger"})
 	for k in ["debug.tundra.wolverine", "debug.tundra.ravens", "debug.tundra.ice", "debug.tundra_wolf.meet", "debug.tundra_wolf.mob",
-			"debug.tundra_wolf.howl", "debug.tundra_wolf.carcass", "debug.tundra.blizzard"]:
+			"debug.tundra_wolf.howl", "debug.tundra_wolf.carcass", "debug.tundra.blizzard", "debug.tundra_wolf.hunt", "debug.tundra_wolf.follow"]:
 		out.append({"name": k, "den": "tundra_south", "stage": "adult", "trigger": "btn:" + k})
 	# 牧場的人類遭遇（Phase 4a 第 7 步）：巡查、預警、追獵（含被狗追上）、吃到一半被打斷；牧場邊緣的線索與觀察走一般的探索
 	for k in ["debug.event.ranch_patrol", "debug.event.ranch_warning", "debug.event.ranch_hunt", "debug.event.ranch_eating"]:

@@ -948,6 +948,15 @@ func _build_debug_overlay() -> void:
 		GameState.debug_tundra_howl()
 		_refresh()
 	)
+	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.hunt"), func():
+		debug_overlay.visible = false
+		_show_tundra_hunt(GameState.debug_tundra_hunt())
+	)
+	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.follow"), func():
+		debug_overlay.visible = false
+		current_hunt = GameState.debug_tundra_follow()
+		_enter_hunt()
+	)
 	_debug_button(tundra_wolf_row, tr("debug.tundra_wolf.carcass"), func():
 		debug_overlay.visible = false
 		GameState.debug_tundra_wolves_here()
