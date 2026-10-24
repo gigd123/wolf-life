@@ -166,6 +166,9 @@ func start_from_game(th, done_cb: Callable) -> void:
 	lines = [tr("tactical.ui.intro")]
 	if bool(h.game_mods.get("youth_hint", false)):
 		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
+	# 苔原狼一起狩獵（Phase 2i）：一行說明牠們會做什麼（跟上來的也先說）
+	if h.wolves.size() > 1 or not h.pending_allies.is_empty():
+		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.ally_intro"))
 	_after_action()
 
 # width：選單的寬度（設定列放不下時文字截斷，展開的清單照舊完整；群體狩獵實驗多一個選單後，2026-10-22）

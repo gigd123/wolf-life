@@ -13,6 +13,20 @@ const POLICIES := ["chase", "pace", "stalk", "ambush"]
 
 # 依局面挑一種打法（本能）。
 static func pick_policy(h) -> String:
+	# 有苔原狼同伴（Phase 2i；含還沒跟上來的）：獵物已經在逃或沒有驅趕的 → 一起猛追；會站定的大型獵物（駝鹿）猛追、看出虛弱潛近；
+	# 其他（鹿群）等驅趕（tactical_ally_sim，每格 30 場：馴鹿群 等著趕 80%／猛追 73%，白尾鹿群 63／67%，馬鹿群 57／60%，健康駝鹿 猛追 20%，虛弱駝鹿 潛近 60%）
+	var roles: Array = []
+	for w in h.wolves:
+		if bool(w.get("ally", false)):
+			roles.append(str(w["role"]))
+	for pa in h.pending_allies:
+		roles.append(str(pa["role"]))
+	if not roles.is_empty():
+		if h.deer_state == "flee" or not roles.has("drive"):
+			return "chase"
+		if h.sp().has("stand"):
+			return "stalk" if h.condition_known and h.condition == "weak" else "chase"
+		return "hold"
 	# 逃向一格洞口的獵物（旱獺）：牠就在洞口邊才先截斷退路；離洞遠的直接潛近（模擬：遠的時候繞去洞口太慢，Phase 2g）
 	var rp: Dictionary = h.sp().get("refuge_pounce", {})
 	if not rp.is_empty():

@@ -26,7 +26,7 @@ func _process(_d) -> bool:
 	print("== 群體狩獵實驗（每格 %d 場，同伴 %s）：獵到的比例（平均回合）" % [runs, ",".join(roles)])
 	for c in CASES:
 		var line := "  %-18s %-7s" % ["%s×%d" % [c[0], c[2]], c[3]]
-		for setup in [["單狼最好", 0, ""], ["單狼本能", 0, "instinct"], ["同伴+潛近", 1, "stalk"], ["同伴+猛追", 1, "chase"], ["同伴+等著趕", 1, "hold"]]:
+		for setup in [["單狼最好", 0, ""], ["單狼本能", 0, "instinct"], ["同伴+潛近", 1, "stalk"], ["同伴+猛追", 1, "chase"], ["同伴+等著趕", 1, "hold"], ["同伴+本能", 1, "instinct"]]:
 			var best := 0.0
 			var best_r := 0.0
 			var best_st := {}

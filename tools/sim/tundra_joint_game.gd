@@ -5,7 +5,10 @@ extends SceneTree
 #   3. 只有 1 隻成狼：上場 1 隻、單數的寫法
 #   4. 一起獵到：照現在的規則分肉（with_tundra）、紀錄一起狩獵
 #   5. 沒有苔原狼的狩獵不受影響
-# 第 2 步之後再加：畫面、交給本能、自動玩家
+# 第 2 步：
+#   6. 交給本能挑的打法：鹿群有驅趕的同伴（跟上來）→ 等驅趕；加入（獵物在逃）→ 一起猛追；駝鹿 → 猛追
+#   7. 交給本能玩到底：加入、跟上來的馴鹿成功率比單狼高（各 60 場，印出來）
+#   8. 畫面：主遊戲的戰術畫面有苔原狼時多一行說明
 # 用法：bash tools/run_sim.sh tundra_joint_game
 var f := 0
 var gs
@@ -97,6 +100,34 @@ func _process(_d) -> bool:
 	var thj = gs.start_tactical(hj)
 	_check(hj.tundra_joined and _allies(thj).size() == mini(2, gs.tundra_adults()) and gs.tundra_adults() > 0,
 		"join_tundra_hunt：加入的狩獵帶苔原狼（成狼 %d 隻，上場 %d 隻）" % [gs.tundra_adults(), _allies(thj).size()])
+	# 6. 本能的打法
+	var p_follow: String = TacticalInstinct.pick_policy(gs.start_tactical(_hunt("caribou", 2, false)))
+	var p_join: String = TacticalInstinct.pick_policy(gs.start_tactical(_hunt("caribou", 2, true)))
+	var hm = gs.start_hunt("moose", "adult", -1, false, "open_tundra")
+	hm.apply_tundra_help(2, false)
+	var p_moose: String = TacticalInstinct.pick_policy(gs.start_tactical(hm))
+	_check(p_follow == "hold" and p_join == "chase" and p_moose in ["chase", "stalk"], "本能：跟上來 %s、加入 %s、駝鹿 %s" % [p_follow, p_join, p_moose])
+	# 7. 本能玩到底（成年狼常見的能力值；debug_force_transition 只換生命階段，能力還是小狼的）
+	for st in [["speed", 66.0], ["skill", 62.0], ["strength", 70.0], ["perception", 70.0], ["age_years", 4.0]]:
+		gs.debug_set_stat(st[0], st[1])
+	var rate := {}
+	for kind in ["solo", "follow", "join"]:
+		var ok := 0
+		for i in 60:
+			gs.wolf.health = gs.wolf.health_max
+			var hh = _hunt("caribou", 0 if kind == "solo" else 2, kind == "join")
+			var tt = gs.start_tactical(hh)
+			TacticalInstinct.play(tt)
+			if tt.result == "caught":
+				ok += 1
+		rate[kind] = ok
+	_check(rate["follow"] > rate["solo"] and rate["join"] > rate["solo"], "交給本能（馴鹿，各 60 場）：單狼 %d、跟上來 %d、加入 %d" % [rate["solo"], rate["follow"], rate["join"]])
+	# 8. 畫面的說明
+	var view = load("res://prototypes/tactical_hunt/TacticalHunt.tscn").instantiate()
+	root.add_child(view)
+	view.start_from_game(gs.start_tactical(_hunt("caribou", 2, false)), func(_t): pass)
+	_check(view.log_box.text.contains("苔原狼和你一起獵"), "畫面：有苔原狼時多一行說明")
+	view.queue_free()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 	return true

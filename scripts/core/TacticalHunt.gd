@@ -1330,6 +1330,7 @@ func join_allies_chasing(n: int) -> void:
 	for k in n:
 		var off: Vector2 = dir * float(gc.get("join_dist", 2)) + side * (float(k) - (n - 1) * 0.5) * 2.0
 		add_ally("chase", _clamp_cell(Vector2i((Vector2(tp) + off).round())))
+		wolves[wolves.size() - 1]["intent"] = "chasing" # 牠們本來就在追（畫面右下角一開始就寫「追上去」）
 	events.append(_tx("tactical.ally.joined" + ("" if n > 1 else ".single")).replace("{animal}", label(target)))
 
 # 跟上來的苔原狼：回合到了就從你身後（背對目標的那一側）出現
