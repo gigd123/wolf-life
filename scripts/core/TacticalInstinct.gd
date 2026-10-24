@@ -85,6 +85,10 @@ static func step(h, pol: String) -> void:
 			pick = "hang"
 		h.hold_action(pick)
 		return
+	# 躲在草裡、還沒看出牠在哪（Phase 2i 第 6 步）：走到草叢外 HIDDEN_WATCH 格左右觀察；看不出來就潛近去找（可能把牠驚起來）。躲著的幼鹿不會聞到你，不用避開上風
+	if h.hidden_unfound():
+		_hidden_step(h)
+		return
 	# 站定的大型獵物（Phase 2f）：看出是健康的就放棄（照生態幾乎打不下來）；否則繞到側面、後方再撲，站太久就放棄
 	if h.deer_state == "stand" and h.sp().has("stand"):
 		_stand_step(h)
@@ -167,6 +171,29 @@ static func step(h, pol: String) -> void:
 						h.observe()
 				else:
 					_go(h, reach, cover, ["creep"] if h.dist(h.wolf_pos, h.deer_pos) <= 8.0 else ["trot", "creep"], true)
+
+const HIDDEN_WATCH := 3.5 # 離草叢中心幾格就停下來觀察
+const HIDDEN_TRIES := 1 # 觀察幾次看不出來就走進去找（再看的機會越來越小）
+
+static func _hidden_step(h) -> void:
+	var center: Vector2 = Vector2(h.hidden_area.position) + Vector2(h.hidden_area.size) * 0.5 - Vector2(0.5, 0.5)
+	var d: float = Vector2(h.wolf_pos).distance_to(center)
+	var tries: int = int(h.stats.get("hidden_observes", 0))
+	if d > HIDDEN_WATCH + 0.5:
+		var reach: Dictionary = h.reachable()
+		if reach.is_empty():
+			h.observe()
+			return
+		_go(h, reach, Vector2i(center.round()), ["trot", "creep"] if d > 8.0 else ["creep"])
+		return
+	if tries < HIDDEN_TRIES:
+		h.observe()
+		return
+	var reach2: Dictionary = h.reachable()
+	if reach2.is_empty():
+		h.observe()
+		return
+	_go(h, reach2, Vector2i(center.round()), ["creep"])
 
 # 往目標走：在允許的方式裡挑離目標最近的格子；avoid_wind 時避開上風。
 const STAND_GIVE_UP := 6 # 站定幾回合還繞不到好角度就放棄

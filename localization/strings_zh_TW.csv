@@ -1843,6 +1843,13 @@ tactical.look,{animal}抬起頭，朝你這邊張望。
 tactical.flee.scent,風把你的氣味送了過去，牠猛地跳開！
 tactical.flee.noise,牠聽到動靜，拔腿就跑！
 tactical.flee.close,牠發現你了，拔腿就跑！
+tactical.hidden.intro,母鹿不在附近，{animal}就趴在這一塊草叢裡，一動也不動。牠身上幾乎沒有氣味，要靠眼睛找。
+tactical.hidden.found_look,你盯著草叢看了一會兒——看見了，{animal}就趴在那裡，耳朵貼著背。
+tactical.hidden.look_miss,你盯著草叢看，草葉一動也不動，看不出牠在哪。
+tactical.hidden.found_walk,走近時你看見牠了：{animal}縮在草裡，大氣也不敢出。
+tactical.hidden.bolt,草叢裡猛地竄出一隻{animal}，拔腿就跑！
+tactical.factor.found_hiding,先看出牠躲在哪
+tactical.ui.hidden,躲在草裡（還沒找到）
 tactical.flee.missed,牠受驚，拔腿就跑！
 tactical.flee.other,牠跑了！
 tactical.herd_runs,整群跟著跑了起來。

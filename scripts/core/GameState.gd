@@ -3805,7 +3805,8 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 	if hunt != null and (g.get("exclude_stages", {}).get(hunt.animal_id, []) as Array).has(hunt.life_stage):
 		return false
 	# 受傷的個體也走戰術地圖（Phase 2i 第 5 步；原本只有野牛，game.injured_tactical）：帶傷、跑得比較慢（game.injured_*）
-	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id) and not hunt.hiding
+	# 躲在草裡的幼鹿也走戰術地圖（Phase 2i 第 6 步：大概在哪的範圍＋感知）
+	return hunt != null and (g.get("animals", []) as Array).has(hunt.animal_id)
 
 # 開一場戰術狩獵：地圖依地形（幼鹿跟在母鹿旁邊，目標是幼鹿），風向、體況照這一場的 HuntSystem。
 
@@ -3849,6 +3850,11 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	elif hunt.life_stage == "juvenile" and RNGService.chance(float(g.get("lone_calf_alone", {}).get(hunt.animal_id, 0.0))):
 		ctx["herd"] = {"calf_alone": true}
 	# 受傷的個體帶幾處傷（Phase 2i 第 5 步：依物種、物種.階段覆寫，校準到選單式受傷的成功率）
+	# 躲在草裡的幼鹿（Phase 2i 第 6 步）：母鹿不在場；感知對上牠的隱蔽度（animals.json 幼體的 detection）
+	if hunt.hiding:
+		ctx["herd"] = {"calf_alone": true}
+		ctx["hidden"] = true
+		ctx["hidden_detection"] = float(GameData.animals.get(hunt.animal_id, {}).get(hunt.life_stage, {}).get("detection", 30))
 	# 獵物靠近（Phase 2i 第 5 步）：走近的幼鹿身邊沒有母鹿、不成群
 	if hunt.nearby:
 		ctx["herd"] = {"calf_alone": true} if hunt.life_stage == "juvenile" and bool(g0.get("nearby_calf_alone", true)) else {}

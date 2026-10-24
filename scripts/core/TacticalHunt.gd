@@ -116,6 +116,9 @@ var stats := {"stuck": 0, "toward_wolf": 0}
 # 主遊戲帶進來的狀態（Phase 2c 第 1 步，setup_from_game）：age_penalty（撲咬、壓倒、咬喉的年齡減成）、
 # no_sprint（吃撐不能衝刺）、alert_mult（晨昏時鹿的警覺值漲得慢）、snow_slow（深雪時鹿每回合少跑幾格）
 var game_mods := {}
+var hidden_area := Rect2i() # 躲在草裡的幼鹿（Phase 2i 第 6 步）：牠大概在哪一塊（還沒看出時畫面上只畫這塊）；size 0 = 不是躲著的
+var hidden_revealed: bool = false # 看出牠確切的位置了
+var hidden_det: float = 30.0 # 牠的隱蔽度（animals.json 幼體的 detection）
 var pending_allies: Array = [] # 友善時跟上來的苔原狼（Phase 2i）：[{role, round}]，到那一回合從你身後出現
 # 接回主遊戲用（Phase 2c 第 2 步）：每一下受到的傷害、這一場的鍛鍊（同 HuntSystem.practice 的格式，Growth.apply_practice）
 var hits_taken: Array = []
@@ -249,6 +252,9 @@ func setup_from_game(ctx: Dictionary) -> void:
 		game_mods["age_penalty"] = float(ctx["age_penalty"])
 	if ctx.has("season"):
 		game_mods["season"] = str(ctx["season"])
+	# 躲在草裡的幼鹿：目標在一塊 area×area 的草叢裡某一格，趴著不動
+	if bool(ctx.get("hidden", false)):
+		_setup_hidden(float(ctx.get("hidden_detection", 30.0)))
 	if bool(ctx.get("twilight", false)):
 		game_mods["alert_mult"] = float(g.get("twilight_alert_mult", 0.85))
 	if bool(ctx.get("deep_snow", false)):
@@ -637,6 +643,19 @@ func observe() -> void:
 	if done:
 		return
 	_spend("breath_observe")
+	# 躲在草裡、還沒看出：這次觀察是在找牠（看不出來不會跟丟）
+	if hidden_unfound():
+		observed += 1
+		var seen: bool = rng.randf() < hidden_observe_chance()
+		stats["hidden_observes"] = int(stats.get("hidden_observes", 0)) + 1
+		if seen:
+			hidden_revealed = true
+			condition_known = true
+			events.append(_tx("tactical.hidden.found_look").replace("{animal}", label(target)))
+		else:
+			events.append(_tx("tactical.hidden.look_miss"))
+		_end_wolf_turn("still")
+		return
 	condition_known = true
 	observed += 1
 	events.append(_tx("tactical.observe").replace("{condition}", _tx("tactical.condition." + condition)))
@@ -693,7 +712,7 @@ var pounce_origin := Vector2i(-1, -1)
 
 func pounce_targets() -> Dictionary:
 	var out := {}
-	if done or held:
+	if done or held or hidden_unfound():
 		return out
 	var need: float = -float(t["move"]["breath_pounce"])
 	var cells := {}
@@ -867,6 +886,11 @@ func pounce_chance(mode: String = "still") -> Dictionary:
 		var fb: float = float(t["herd"]["fawn"]["pounce"])
 		v += fb
 		factors.append([_tx("tactical.factor.fawn"), fb])
+		# 先看出牠躲在哪、牠還趴著（同選單式「發現躲著的獵物」）
+		if bool(herd[di].get("hiding", false)) and hidden_revealed and deer_state == "unaware":
+			var hb: float = float(_hidden_cfg().get("pounce_bonus", 0.1))
+			v += hb
+			factors.append([_tx("tactical.factor.found_hiding"), hb])
 		# 成牛擋在小牛旁邊（野牛，Phase 2f 第 3 步）：把小牛和牛群分開才好撲
 		var gd: Dictionary = sp().get("guarded", {})
 		if not gd.is_empty() and _guarded(di, float(gd.get("dist", 1.5))):
@@ -1255,6 +1279,7 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 func _end_wolf_turn(mode: String) -> void:
 	rounds += 1
 	last_mode = mode
+	_check_hidden()
 	# 同伴（群體狩獵實驗）先動；牠們也會被看到、聞到
 	if wolves.size() > 1:
 		_allies_turn()
@@ -1312,6 +1337,58 @@ func add_ally(role: String, pos: Vector2i) -> void:
 			break
 	wolves.append({"pos": cell, "stats": st, "breath": bmax, "breath_max": bmax, "breath_used": 0.0, "ally": true, "role": role, "mode": "still",
 		"intent": "circling" if role == "drive" else "following", "aim": cell})
+
+# --- 躲在草裡的幼鹿（Phase 2i 第 6 步，SPEC「其他入口」；數值在 game.hidden）---
+func _hidden_cfg() -> Dictionary:
+	return t.get("game", {}).get("hidden", {})
+
+func _setup_hidden(det: float) -> void:
+	var n: int = int(_hidden_cfg().get("area", 3))
+	var p: Vector2i = herd[target]["pos"]
+	var o := Vector2i(rng.randi_range(0, n - 1), rng.randi_range(0, n - 1))
+	var corner := Vector2i(clampi(p.x - o.x, 0, maxi(0, width - n)), clampi(p.y - o.y, 0, maxi(0, height - n)))
+	hidden_area = Rect2i(corner, Vector2i(n, n))
+	hidden_revealed = false
+	hidden_det = det
+	herd[target]["hiding"] = true
+	events.append(_tx("tactical.hidden.intro").replace("{animal}", label(target)))
+
+# 還躲著、你還沒看出牠在哪
+func hidden_unfound() -> bool:
+	return hidden_area.size.x > 0 and not hidden_revealed and not done and str(herd[target]["state"]) == "unaware"
+
+# 觀察看出確切位置的機率：base ＋（感知 − 隱蔽度）÷ observe_div（同選單式的搜尋）
+func hidden_observe_chance() -> float:
+	var c := _hidden_cfg()
+	var p: float = clamp(float(c.get("observe_base", 0.5)) + (float(wolf["perception"]) - hidden_det) / float(c.get("observe_div", 120.0)), 0.05, 0.95)
+	# 第一眼最有用；之後一直盯著同一片草，看出來的機會越來越小（不然站著多看幾次一定找得到）
+	return p * pow(float(c.get("observe_repeat_mult", 1.0)), int(stats.get("hidden_observes", 0)))
+
+# 走到這麼近就看出牠在哪：reveal_base ＋（感知 − 隱蔽度）÷ reveal_div 格，夾在 reveal_base～reveal_max
+func hidden_reveal_dist() -> float:
+	var c := _hidden_cfg()
+	return clamp(float(c.get("reveal_base", 1.0)) + (float(wolf["perception"]) - hidden_det) / float(c.get("reveal_div", 30.0)), float(c.get("reveal_base", 1.0)), float(c.get("reveal_max", 3.0)))
+
+# 你動完之後：還沒看出就走到牠旁邊（1 格內）→ 牠竄出來跑；在看出的距離內 → 看出牠
+func _check_hidden() -> void:
+	if not hidden_unfound():
+		return
+	var keep := di
+	di = target
+	if _cheb(wolf_pos, deer_pos) <= 1:
+		hidden_revealed = true
+		herd[target]["hiding"] = false
+		herd[target]["bolted"] = true
+		var n0: int = events.size()
+		_start_flee("close")
+		events.resize(n0) # 換成竄出來的寫法
+		events.append(_tx("tactical.hidden.bolt").replace("{animal}", label(target)))
+		stats["hidden_bolt"] = int(stats.get("hidden_bolt", 0)) + 1
+	elif dist(wolf_pos, deer_pos) <= hidden_reveal_dist():
+		hidden_revealed = true
+		events.append(_tx("tactical.hidden.found_walk").replace("{animal}", label(target)))
+		stats["hidden_found_walk"] = int(stats.get("hidden_found_walk", 0)) + 1
+	di = keep
 
 # 獵物靠近（Phase 2i 第 5 步）：把你放在目標旁邊 dmin～dmax 格（走得到的地形、不在鹿身上）；牠還沒察覺
 func place_wolf_near(dmin: float, dmax: float) -> void:
@@ -1698,6 +1775,9 @@ func _band(table: Array, d: float) -> float:
 	return 0.0
 
 func _raise_alert(mode: String) -> void:
+	# 躲在草裡的幼鹿靠不動來躲：不會因為看到、聞到而逃（被你走到旁邊才竄出，_check_hidden）
+	if bool(herd[di].get("hiding", false)) and deer_state == "unaware":
+		return
 	var a := alert_gain(mode)
 	var gain: float = float(a["gain"])
 	# 同伴繞圈、跟著時很會藏（群體狩獵實驗）；衝出去驅趕時照算
@@ -1967,8 +2047,8 @@ func _deer_wander() -> void:
 			deer_pos += fb
 			deer_facing = fb
 		return
-	# 趴著不動（兔子，2026-10-22）：沒察覺、起疑時都不動，等你很近才竄出去
-	if bool(sp().get("freeze", false)):
+	# 趴著不動（兔子，2026-10-22）：沒察覺、起疑時都不動，等你很近才竄出去；躲在草裡的幼鹿也是（Phase 2i）
+	if bool(sp().get("freeze", false)) or bool(herd[di].get("hiding", false)):
 		return
 	if rng.randf() < float(t["deer"]["graze_idle"]):
 		return
@@ -2285,6 +2365,9 @@ func _flee_budget(i: int = -1) -> float:
 	var prof: Array = sp(k).get("calf_flee", t["herd"]["fawn_flee"]) if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
 	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - _snow_slow(k))
+	# 從草裡竄出來的幼鹿（Phase 2i 第 6 步）：前 bolt_rounds 回合多跑 bolt_bonus 格（被踩到才跑，一開始衝得最猛）
+	if bool(h.get("bolted", false)) and int(h["flee_round"]) < int(_hidden_cfg().get("bolt_rounds", 0)):
+		b += float(_hidden_cfg().get("bolt_bonus", 0.0))
 	if bool(h.get("injured", false)):
 		var g: Dictionary = t.get("game", {})
 		b = max(1.0, b * float(g.get("injured_speed_by", {}).get(str(h.get("species", "")), g.get("injured_speed_mult", 1.0))))

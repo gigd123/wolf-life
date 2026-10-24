@@ -398,7 +398,7 @@ func _process(_d) -> bool:
 			dove = true
 			break
 	_check(dove, "河狸進了深水就潛走")
-	# 叉角羚（2026-10-22）：成羚成群 4～8 隻、小羚單獨出場、躲在草裡的小羚照舊走選單、深雪時跑不動
+	# 叉角羚（2026-10-22）：成羚成群 4～8 隻、小羚單獨出場、躲在草裡的小羚也走戰術地圖（Phase 2i 第 6 步，原本走選單）、深雪時跑不動
 	gs.new_game("grassland_plains")
 	gs.wolf.age_years = 2.5
 	var pha = gs.start_hunt("pronghorn", "adult")
@@ -407,7 +407,7 @@ func _process(_d) -> bool:
 	_check(gs.tactical_eligible(pha) and phth.herd.size() >= 4 and phth.herd.size() <= 8 and str(phth.herd[0]["species"]) == "pronghorn", "叉角羚：成群 4～8 隻（%d）" % phth.herd.size())
 	var pkth = gs.start_tactical(gs.start_hunt("pronghorn", "juvenile"))
 	_check(pkth.herd.size() == 1 and str(pkth.herd[0]["species"]) == "pronghorn_kid", "小叉角羚單獨出場")
-	_check(not gs.tactical_eligible(gs.start_hunt("pronghorn", "juvenile", -1, false, "", false, true)), "躲在草裡的小羚照舊走選單")
+	_check(gs.tactical_eligible(gs.start_hunt("pronghorn", "juvenile", -1, false, "", false, true)), "躲在草裡的小羚也走戰術地圖")
 	phth.game_mods["snow_slow"] = 1.0
 	_check(phth._snow_slow(phth.target) == 3.0, "深雪：叉角羚每回合少跑 3 格")
 	# 大角羊（2026-10-22）：峽谷地圖、離峭壁近或遠、母羊成群、公羊小群、小羊跟著母羊、上了峭壁就逃掉、狼在峭壁上幾乎走不動

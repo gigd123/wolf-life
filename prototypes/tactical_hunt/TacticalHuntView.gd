@@ -411,6 +411,8 @@ func _info_text() -> String:
 		t.append(tr("tactical.ui.hold_at." + h.hold_side))
 	if int(h.herd[h.target].get("hamstrung", 0)) > 0:
 		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.factor.hamstrung"))
+	if h.hidden_unfound():
+		t.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.hidden"))
 	if h.deer_state in ["unaware", "suspicious"]:
 		t.append(tr("tactical.ui.alert").replace("{n}", str(roundi(h.alert))))
 		t.append(_bar(h.alert, 100.0, "#e0c070"))
@@ -520,8 +522,12 @@ func _draw_map() -> void:
 		for x in h.width:
 			_draw_tile(Vector2i(x, y))
 	# 鹿的目的地（沒察覺時）
-	if h.deer_state == "unaware":
+	var hid: bool = h.hidden_unfound()
+	if h.deer_state == "unaware" and not hid:
 		map.draw_rect(_cell_rect(h.deer_goal()).grow(-3), COLORS["goal"], false, 1.0)
+	# 躲在草裡、還沒找到（Phase 2i 第 6 步）：只畫大概在哪的範圍
+	if hid:
+		map.draw_rect(Rect2(Vector2(h.hidden_area.position) * CELL, Vector2(h.hidden_area.size) * CELL).grow(-1), Color("#e0c070"), false, 1.5)
 	if not h.done:
 		var reach: Dictionary = h.reachable()
 		for c in reach.keys():
@@ -548,10 +554,12 @@ func _draw_map() -> void:
 	var dc: Vector2 = Vector2(h.deer_pos) * CELL + Vector2(CELL, CELL) * 0.5
 	var fawn_t: bool = h.is_fawn(h.target)
 	# 意圖線先畫，鹿畫在上面
-	if not h.done and not h.held:
+	if not h.done and not h.held and not hid:
 		for d in h.deer_intent():
 			map.draw_line(dc, dc + Vector2(d).normalized() * CELL * h._flee_budget(), COLORS["intent"], 1.0)
-	if not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE, fawn_t):
+	if hid:
+		pass
+	elif not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE, fawn_t):
 		map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
 		map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
 	if h.herd.size() > 1:
@@ -564,7 +572,7 @@ func _draw_map() -> void:
 	# 狼的面向：上一步移動的方向；沒動過時朝向鹿
 	if h.wolf_pos != last_wolf_pos:
 		var mv: Vector2i = h.wolf_pos - last_wolf_pos
-		wolf_facing = mv if last_wolf_pos.x > -99 and mv != Vector2i.ZERO else h.deer_pos - h.wolf_pos
+		wolf_facing = mv if last_wolf_pos.x > -99 and mv != Vector2i.ZERO else (h.hidden_area.get_center() if hid else h.deer_pos) - h.wolf_pos
 		last_wolf_pos = h.wolf_pos
 	if not _draw_animal("wolf", h.wolf_pos, wolf_facing):
 		var wc: Vector2 = Vector2(h.wolf_pos) * CELL + Vector2(CELL, CELL) * 0.5
