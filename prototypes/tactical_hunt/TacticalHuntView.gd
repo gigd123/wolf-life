@@ -85,6 +85,7 @@ func _ready() -> void:
 	info.size = Vector2(70, 230)
 	info.bbcode_enabled = true
 	info.scroll_active = false
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.theme_type_variation = &"SmallRichLabel"
 	add_child(info)
 	# 下方：設定列、紀錄、按鈕
@@ -130,6 +131,8 @@ func _ready() -> void:
 	hover_box.size = Vector2(226, 40)
 	hover_box.bbcode_enabled = true
 	hover_box.scroll_active = false
+	# 只是顯示用：不攔滑鼠（2026-10-24 試玩回報：咬住時招式灰掉、按鈕擠成三排，最下面的「鬆口」「交給本能」被它蓋住，按了沒反應）
+	hover_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hover_box.theme_type_variation = &"SmallRichLabel"
 	add_child(hover_box)
 	detail_panel = PanelContainer.new()
