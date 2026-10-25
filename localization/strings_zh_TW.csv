@@ -1878,7 +1878,7 @@ tactical.burrow,{animal}一溜煙鑽進岩縫下的洞，洞裡傳出一聲尖�
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
-tactical.herd_gone,鹿群全都跑掉了。
+tactical.herd_gone,整群全都跑掉了。
 tactical.ui.intro,你壓低身子，看著牠。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。
 tactical.ui.youth_hint,以你現在的體型，要撂倒成年的大型獵物很難；幼鹿、雪兔和別人吃剩的殘骸比較實在。
 tactical.ui.ally_intro,苔原狼和你一起獵：藍點驅趕的會繞到另一側，把獵物往你這邊趕；橘點追擊的會跟著獵物跑。牠們咬住時你撲上去更容易，你咬住時牠們會圍過來。滑鼠停在牠們身上看牠在做什麼。
