@@ -21,6 +21,8 @@ func _process(_d) -> bool:
 	var percs: Array = Array(OS.get_environment("PERC").split(",")) if OS.get_environment("PERC") != "" else ["45", "60", "80", "95"]
 	if OS.get_environment("SET") != "":
 		gs.tactical_overrides = {"game": JSON.parse_string(OS.get_environment("SET"))}
+	# STATS='{"strength": 84, "skill": 77, "speed": 61, "perception": 70, "age_years": 5}'：換成一生模擬裡的狼（Phase 2i 第 7 步）
+	var over: Dictionary = JSON.parse_string(OS.get_environment("STATS")) if OS.get_environment("STATS") != "" else {}
 	var ap = AP.new("all", "average")
 	ap.tactical = false
 	print("== 躲在草裡的幼鹿：選單式 vs 戰術地圖（交給本能），一般的成年狼換感知，每格 %d 場" % runs)
@@ -34,7 +36,7 @@ func _process(_d) -> bool:
 			for mode in ["menu", "tac"]:
 				for i in runs:
 					for s in [["speed", 62.0], ["skill", 58.0], ["strength", 65.0], ["perception", float(pc)], ["age_years", 4.0]]:
-						gs.debug_set_stat(s[0], s[1])
+						gs.debug_set_stat(s[0], float(over.get(s[0], s[1])))
 					gs.wolf.stamina = 80.0
 					gs.wolf.health = gs.wolf.health_max
 					gs.wolf.clear_injury()
