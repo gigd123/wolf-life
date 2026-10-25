@@ -822,7 +822,7 @@ func _deer_stand() -> void:
 	if charged_round != rounds and _cheb(deer_pos, wolf_pos) <= 2 and angle_side() == "front" and rng.randf() < float(st.get("charge", 0.0)):
 		charged_round = rounds
 		var cd: Array = st.get("charge_damage", [8, 16])
-		var dmg: int = rng.randi_range(int(cd[0]), int(cd[1]))
+		var dmg: int = _prey_dmg(rng.randi_range(int(cd[0]), int(cd[1])))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
 		hits_taken.append(dmg)
@@ -971,7 +971,7 @@ func pounce_at(cell: Vector2i) -> void:
 	var side: String = info["side"]
 	if rng.randf() < float(info["kick"]):
 		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
-		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
+		var dmg: int = _prey_dmg(rng.randi_range(int(k[0]), int(k[1])))
 		wolf["health"] = float(wolf["health"]) - dmg
 		damage_taken += dmg
 		hits_taken.append(dmg)
@@ -1262,7 +1262,7 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 	var kick_p: float = float(sp().get("hold", {}).get("kick", h["kick"])) * (float(h["front"]["kick_mult"]) if hold_side == "front" else 1.0)
 	if not is_fawn() and rng.randf() < kick_p:
 		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
-		var dmg: int = rng.randi_range(int(k[0]), int(k[1]))
+		var dmg: int = _prey_dmg(rng.randi_range(int(k[0]), int(k[1])))
 		wolf["health"] = float(wolf["health"]) - dmg
 		kicks += 1
 		damage_taken += dmg
@@ -1339,6 +1339,12 @@ func add_ally(role: String, pos: Vector2i) -> void:
 		"intent": "circling" if role == "drive" else "following", "aim": cell})
 
 # --- 躲在草裡的幼鹿（Phase 2i 第 6 步，SPEC「其他入口」；數值在 game.hidden）---
+# 受傷的個體踢、撞得比較輕（Phase 2i 第 7 步：一生模擬看出受傷的大型獵物在戰術地圖上傷狼太重，選單式每場約 1）
+func _prey_dmg(dmg: int) -> int:
+	if bool(herd[di].get("injured", false)):
+		return maxi(1, roundi(dmg * float(t.get("game", {}).get("injured_damage_mult", 1.0))))
+	return dmg
+
 func _hidden_cfg() -> Dictionary:
 	return t.get("game", {}).get("hidden", {})
 
