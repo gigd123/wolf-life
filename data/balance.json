@@ -238,7 +238,7 @@
     "submit_damage_mult": 0.5, "tundra_relation_mult": 1.5 },
   "life_stage_ages": { "subadult_end": 2.0, "yearling": 1.0, "adult_end": 6.0 },
   "elder_death_base_chance": 0.01,
-  "elder_death_age_factor": 0.01,
+  "elder_death_age_factor": 0.008,
   "elder_death_health_value_factor": 0.0005,
   "action_turn_costs": {
     "explore": 1,
