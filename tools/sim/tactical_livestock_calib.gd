@@ -2,7 +2,7 @@ extends SceneTree
 # Phase 2i 第 7 步：牧場的家畜改走戰術地圖的校準。牛犢、一歲牛、成牛、羊：選單式（自動玩家的選法）／戰術地圖（交給本能）。
 # 通過標準（SPEC Phase 2i）：和選單式差 10 個百分點以內（Phase 4a 的驗算：成年狼 牛犢約 83%、一歲牛 66%、成牛 17%、羊 85%）。
 # 一般的成年狼，夏季，每格 RUNS 場（預設 80）；括號裡是每場平均受的傷。
-# 用法：bash tools/run_sim.sh tactical_livestock_calib 0 100；SET='{"species": {"cattle": {...}}}' 覆寫 tactical_hunt.json（整個檔案逐層合併）
+# 用法：bash tools/run_sim.sh tactical_livestock_calib 0 100；STAMINA=40 開場的體力（一生裡常在體力低時出獵）；SEASON=winter；STATS='{...}' 換狼的能力；SET='{"species": {"cattle": {...}}}' 覆寫 tactical_hunt.json（整個檔案逐層合併）
 var f := 0
 
 const PREY := [["cattle", "juvenile", "prairie"], ["cattle", "adult", "prairie"], ["cattle", "buck", "prairie"], ["sheep", "adult", "clearing"]]
@@ -36,7 +36,7 @@ func _process(_d) -> bool:
 			for i in runs:
 				for st in [["speed", 62.0], ["skill", 58.0], ["strength", 65.0], ["perception", 65.0], ["age_years", 4.0]]:
 					gs.debug_set_stat(st[0], float(over.get(st[0], st[1])))
-				gs.wolf.stamina = 80.0
+				gs.wolf.stamina = float(OS.get_environment("STAMINA")) if OS.get_environment("STAMINA") != "" else 80.0
 				gs.wolf.health = gs.wolf.health_max
 				gs.wolf.clear_injury()
 				var h = gs.start_hunt(p[0], p[1], -1, false, p[2])

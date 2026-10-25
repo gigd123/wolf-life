@@ -40,7 +40,7 @@ func _process(_d) -> bool:
 			for i in runs:
 				for st in [["speed", 62.0], ["skill", 58.0], ["strength", 65.0], ["perception", 65.0], ["age_years", 4.0]]:
 					gs.debug_set_stat(st[0], float(over.get(st[0], st[1])))
-				gs.wolf.stamina = 80.0
+				gs.wolf.stamina = float(OS.get_environment("STAMINA")) if OS.get_environment("STAMINA") != "" else 80.0
 				gs.wolf.health = gs.wolf.health_max
 				gs.wolf.clear_injury()
 				var h = gs.start_hunt(p[0], p[1], -1, false, p[2], true)
