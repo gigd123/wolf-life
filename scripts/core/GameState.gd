@@ -3182,6 +3182,11 @@ func _stat_entry(hunt: HuntSystem) -> void:
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		_stat_inc("hunt_entry", key + ".ok")
 	_stat_inc("hunt_entry", key + ".hurt", roundi(maxf(0.0, float(hunt.get_meta("hp0", wolf.health)) - wolf.health)))
+	var how: String = "menu"
+	for d in hunt.decisions:
+		if str(d).begins_with("tactical.") and str(d) != "tactical.noticed":
+			how = str(d).substr(9)
+	_stat_inc("hunt_entry_how", key + "." + how + (".ok" if how == "menu" and hunt.result == HuntSystem.Result.SUCCESS else ""))
 
 func _stat_inc(group: String, key: String, amount: int = 1) -> void:
 	var stats: Dictionary = life_log.get("stats", {})

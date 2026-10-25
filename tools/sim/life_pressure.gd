@@ -80,7 +80,8 @@ func _process(_d):
 	var sub_hungry := {}
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
 	var tac_sp := {} # 物種.結果 -> 次數（Phase 2d）
-	var entry := {} # 入口.年齡.n／ok／turns／hurt（Phase 2i 第 7 步）
+	var entry := {} # 入口.年齡.n／ok／hurt（Phase 2i 第 7 步）
+	var entry_how := {} # 入口.年齡.戰術的結局（caught／escaped／lost／gave_up／timeout）或 menu／menu.ok
 	var tac_sps := {} # 物種.年齡.結果 -> 次數（2026-10-22：雪兔各年齡的捕捉率）
 	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
 	var tac_st := {}
@@ -238,6 +239,8 @@ func _process(_d):
 			tac_sp[k] = int(tac_sp.get(k, 0)) + int(tstats["tactical_by_species"][k])
 		for k in tstats.get("hunt_entry", {}).keys():
 			entry[k] = int(entry.get(k, 0)) + int(tstats["hunt_entry"][k])
+		for k in tstats.get("hunt_entry_how", {}).keys():
+			entry_how[k] = int(entry_how.get(k, 0)) + int(tstats["hunt_entry_how"][k])
 		for k in tstats.get("tactical_stamina", {}).keys():
 			tac_st[k] = int(tac_st.get(k, 0)) + int(tstats["tactical_stamina"][k])
 		var meets: Array = GS.life_log.get("pack_meetings", [])
@@ -391,7 +394,12 @@ func _process(_d):
 	ks.sort()
 	for kk in ks:
 		var n: int = int(entry.get(kk + ".n", 0))
-		print("  入口 %-18s %5d 場：獵到 %3d%%、每場受傷 %.1f" % [kk, n, roundi(100.0 * int(entry.get(kk + ".ok", 0)) / maxf(1.0, n)), float(entry.get(kk + ".hurt", 0)) / maxf(1.0, n)])
+		var hows: Array = []
+		for hk in entry_how.keys():
+			if str(hk).begins_with(kk + "."):
+				hows.append("%s %d" % [str(hk).substr(kk.length() + 1), int(entry_how[hk])])
+		hows.sort()
+		print("  入口 %-18s %5d 場：獵到 %3d%%、每場受傷 %.1f（%s）" % [kk, n, roundi(100.0 * int(entry.get(kk + ".ok", 0)) / maxf(1.0, n)), float(entry.get(kk + ".hurt", 0)) / maxf(1.0, n), "、".join(hows)])
 	quit()
 	return true
 
