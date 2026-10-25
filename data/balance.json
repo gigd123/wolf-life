@@ -237,7 +237,7 @@
     "fuzzy": { "known_hunts": 5, "known_fights": 3, "perception": 60, "labels": [[0.15, "fuzzy.none"], [0.35, "fuzzy.low"], [0.6, "fuzzy.some"], [0.8, "fuzzy.good"], [1.01, "fuzzy.sure"]] },
     "submit_damage_mult": 0.5, "tundra_relation_mult": 1.5 },
   "life_stage_ages": { "subadult_end": 2.0, "yearling": 1.0, "adult_end": 6.0 },
-  "elder_death_base_chance": 0.006,
+  "elder_death_base_chance": 0.005,
   "elder_death_age_factor": 0.008,
   "elder_death_health_value_factor": 0.0005,
   "action_turn_costs": {
