@@ -466,7 +466,8 @@ func _play_hunt(hunt: HuntSystem) -> void:
 	if tactical and GameState.tactical_eligible(hunt) and (tactical_only.is_empty() or tactical_only.has(hunt.animal_id)):
 		var th := GameState.start_tactical(hunt)
 		# 同選單式：只對中大型獵物（2026-10-22：兔子進戰術地圖後，健康的兔子也被放棄，一生模擬的挨餓大增）
-		if judge and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
+		# 幼體不判斷（Phase 2i 第 7 步：單獨出場的牛犢、小叉角羚、小河狸不算 is_fawn，原本健康的就被放棄，一生模擬裡牛犢 0%）
+		if judge and not th.is_fawn(th.target) and hunt.life_stage != "juvenile" and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
 			th.observe()
 			TacticalInstinct.pick_target(th)
 			if _tactical_not_worth(hunt, th):
