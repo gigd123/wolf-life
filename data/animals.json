@@ -149,8 +149,8 @@
     "depth": { "juvenile": "simple", "adult": "simple" },
     "reactions": {},
     "refuge": { "kind": "water", "near_chance": { "default": 0.5 }, "season_near": { "spring": 0.5, "summer": 0.55, "autumn": 0.4 }, "escape": 0.5, "pounce_penalty": 0.5, "far_bonus": 0.0, "ambush_mult": 0.5 },
-    "juvenile": { "detection": 40, "stamina": 15, "speed": 30, "counter_attack": 0, "fight_power": 15, "hunger_value": 20 },
-    "adult": { "detection": 58, "stamina": 20, "speed": 35, "counter_attack": 5, "fight_power": 25, "hunger_value": 30 }
+    "juvenile": { "detection": 40, "stamina": 15, "speed": 30, "counter_attack": 0, "fight_power": 15, "hunger_value": 25 },
+    "adult": { "detection": 58, "stamina": 20, "speed": 35, "counter_attack": 5, "fight_power": 25, "hunger_value": 40 }
   },
   "marmot": {
     "type": "prey",
