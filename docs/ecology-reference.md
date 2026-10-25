@@ -531,7 +531,7 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 | --- | --- | --- | --- |
 | 北極苔原的狼密度在各棲地裡最低：埃爾斯米爾島等地夏季成狼每 1,000 平方公里約 2.5～8 隻；北極一般少於 5 隻；北方森林平均約 18 隻（2.3～40）、獵物多的森林（波蘭比亞沃維耶扎）冬季 29～59 隻 | 研究（Anderson 2025 JWM；National Academies；北方森林統合分析；Jędrzejewski 2002） | 苔原巢穴的成年每年挨餓約 8 天，森林 2.0、草原 2.6、山地 3.6（2026-10-24，各 20 隻） | 一致：苔原是最難活的地圖 |
 | 苔原狼冬天幾乎只吃馴鹿，會跟著馴鹿移動數百公里；馴鹿少時幼狼補不上成狼的死亡、族群下降，研究者的結論是苔原狼的族群由馴鹿的消長控制 | 研究（Bathurst 鹿群，The Wildlife Society 報導；NWT 舊研究） | 苔原的挨餓集中在夏、秋（馴鹿離開） | 一致；守在固定地方的狼在苔原吃虧，跟著馴鹿或和苔原狼一起獵是活路 |
-| 山地的高海拔在冬天很難：雪深、生產力低，多數有蹄動物不在高處過冬，狼只在某些季節使用高地；蒙大拿的狼群多把領域設在海拔較低、平緩、冬天獵物多的地方 | 研究、管理文件（蒙大拿狼保育計畫；北洛磯山狼族群的聯邦公告） | 遊戲的山地冬季反而最不餓（每季 1.1 天） | **不一致**：要讓山地的高處在冬天變難（獵物下到山谷）是玩法規則，另外提案 |
+| 山地的高海拔在冬天很難：雪深、生產力低，多數有蹄動物不在高處過冬，狼只在某些季節使用高地；蒙大拿的狼群多把領域設在海拔較低、平緩、冬天獵物多的地方 | 研究、管理文件（蒙大拿狼保育計畫；北洛磯山狼族群的聯邦公告） | 高山草地冬季沒有獵物（騾鹿、馬鹿、大角羊、旱獺都是 0）、山麓冬季最多；冬季獵物比較虛弱 | 一致（2026-10-25 更正：原本寫「不一致」。狼本來就不在高處過冬；住在山谷的狼冬天、尤其冬末好過，黃石冬末獵殺率最高、夏季每隻狼吃到的量最少，見 `docs/proposals/mountain-winter.md`） |
 | 有山谷的山地系統獵物不少（黃石的狼主要獵馬鹿，戴頸圈的狼年存活約 80%；深雪反而幫狼獵大型獵物） | 研究（黃石狼計畫 2003 年報；報導） | 山地 3.6 天，介於森林、草原與苔原之間 | 大致一致 |
 
 來源：Musiani 等 2007（onlinelibrary.wiley.com/doi/10.1111/j.1365-294X.2007.03458.x）；The Wildlife Society〈Declining caribou means less prey for wolves〉；WRRB〈Food habits and ecology of wolves on barren-ground caribou range〉；Anderson 2025〈Wolf density and predation patterns in the Canadian High Arctic〉（JWM）；National Academies〈Wolves, Bears, and Their Prey in Alaska〉第 5 章；Mech 2024（Wildlife Biology）；Jędrzejewski 等 2002（Ecology 83(5)）；蒙大拿狼保育與管理計畫（fwp.mt.gov）；北洛磯山灰狼 DPS 最終規則（animallaw.info）；黃石狼計畫 2003 年報（nps.gov）；Bozeman Daily Chronicle〈Yellowstone wolves suffer through lean winter〉。**查不到**：依海拔分的冬季餓死率、苔原與森林狼的存活率直接比較。
