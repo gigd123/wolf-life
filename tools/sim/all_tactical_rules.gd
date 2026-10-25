@@ -2,7 +2,7 @@ extends SceneTree
 # Phase 2i 第 5～7 步（所有狩獵改成戰術場景）的回歸測試：
 # 第 5 步：
 #   1. 受傷的個體走戰術地圖（所有物種）；目標帶 injured，傷數照 injured_wounds_by（馴鹿 0、其他 1）
-#   2. 受傷的獵物逃得比較慢：每回合的逃跑格數 × injured_speed_mult（叉角羚 0.75）
+#   2. 受傷的獵物逃得比較慢：每回合的逃跑格數 × injured_speed_mult（叉角羚照 injured_speed_by）
 #   3. 受傷的旱獺、大角羊離避難處遠（injured_refuge_far）
 #   4. 獵物靠近：走戰術地圖；你在目標 3～4 格、牠還沒察覺；幼鹿單獨
 # 第 6 步（躲在草裡的幼鹿）：
@@ -16,6 +16,7 @@ extends SceneTree
 #  11. 戰術地圖有家畜的小圖
 #  12. 牧場的注意：獵到加那一種的注意；牠察覺你、沒獵到算被看到；沒察覺就放棄不加
 #  13. 所有會被獵的動物都走戰術地圖（除了小撲）
+#  14. 單獨出場的幼體（牛犢、小河狸、小叉角羚）獵到後還是幼體（2026-10-25 修正：原本被改成成體）；鹿群裡改追成鹿的照舊改成成體
 # 用法：bash tools/run_sim.sh all_tactical_rules
 var f := 0
 var gs
@@ -73,7 +74,8 @@ func _process(_d) -> bool:
 	thi.herd[thi.target]["wounds"] = 0
 	var b0: float = ths._flee_budget(ths.target)
 	var b1: float = thi._flee_budget(thi.target)
-	_check(absf(b1 - maxf(1.0, b0 * 0.75)) < 0.01, "受傷的叉角羚每回合逃跑格數 × 0.75（%.2f → %.2f）" % [b0, b1])
+	var pm: float = float(thi.t["game"]["injured_speed_by"]["pronghorn"])
+	_check(absf(b1 - maxf(1.0, b0 * pm)) < 0.01, "受傷的叉角羚每回合逃跑格數 × %s（%.2f → %.2f）" % [pm, b0, b1])
 	# 3. 離避難處遠
 	var far_ok := true
 	for i in 30:
@@ -121,7 +123,7 @@ func _process(_d) -> bool:
 	var c_hi: float = th_hi.hidden_observe_chance()
 	th_hi.stats["hidden_observes"] = 1
 	var c_again: float = th_hi.hidden_observe_chance()
-	_check(c_hi > c_lo + 0.2 and c_again < c_hi * 0.5, "觀察看出來的機會：感知 45 → %.2f、90 → %.2f；再看一次 %.2f" % [c_lo, c_hi, c_again])
+	_check(c_hi > c_lo + 0.2 and absf(c_again - c_hi * float(th_hi.t["game"]["hidden"]["observe_repeat_mult"])) < 0.01, "觀察看出來的機會：感知 45 → %.2f、90 → %.2f；再看一次 %.2f" % [c_lo, c_hi, c_again])
 	# 7. 走到旁邊：竄出來
 	var tb = _hidden("white_tailed_deer", 30.0)
 	var fp: Vector2i = tb.herd[tb.target]["pos"]
@@ -217,6 +219,19 @@ func _process(_d) -> bool:
 		if ad is Dictionary and str(ad.get("type", "")) == "prey" and a != "red_fox" and not (tun["game"]["animals"] as Array).has(a):
 			missing.append(a)
 	_check(missing.is_empty(), "所有會被獵的動物都走戰術地圖（紅狐只搶食；沒有的：%s）" % [missing])
+	# 14. 單獨出場的幼體獵到後還是幼體
+	var young_ok := true
+	for a in [["cattle", "prairie"], ["beaver", "stream"], ["pronghorn", "prairie"]]:
+		var hy = gs.start_hunt(a[0], "juvenile", -1, false, a[1])
+		var ty = gs.start_tactical(hy)
+		ty._finish("caught", "test")
+		gs.wolf.hunger = 30.0
+		gs.finish_tactical_hunt(hy, ty)
+		gs.current_feeding = {}
+		if hy.life_stage != "juvenile":
+			young_ok = false
+			print("    獵到後變成 ", hy.life_stage, "：", a[0])
+	_check(young_ok, "單獨出場的幼體（牛犢、小河狸、小叉角羚）獵到後還是幼體")
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 	return true

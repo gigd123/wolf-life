@@ -3934,9 +3934,11 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	_metric_tactical(th)
 	# 獵到的是哪一隻（鹿群裡換過目標）：小鹿 → juvenile、成鹿 → 原本是小鹿的話改成 adult；體況照那一隻
 	if th.result == "caught":
+		# 幼體單獨出場的物種（game.no_mother：小河狸、小叉角羚、牛犢……）目標本來就是幼體，不是鹿群裡改追成鹿（2026-10-25 修正：原本獵到後被改成成體，肉量、紀錄都算成體）
+		var lone_young: bool = hunt.life_stage == "juvenile" and (g.get("no_mother", []) as Array).has(hunt.animal_id)
 		if th.caught_kind == "fawn":
 			hunt.life_stage = "juvenile"
-		elif hunt.life_stage == "juvenile":
+		elif hunt.life_stage == "juvenile" and not lone_young:
 			hunt.life_stage = "adult"
 		hunt.condition = str(th.herd[th.target]["condition"])
 	match th.result:
