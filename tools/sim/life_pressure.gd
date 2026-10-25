@@ -80,6 +80,7 @@ func _process(_d):
 	var sub_hungry := {}
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
 	var tac_sp := {} # 物種.結果 -> 次數（Phase 2d）
+	var entry := {} # 入口.年齡.n／ok／turns／hurt（Phase 2i 第 7 步）
 	var tac_sps := {} # 物種.年齡.結果 -> 次數（2026-10-22：雪兔各年齡的捕捉率）
 	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
 	var tac_st := {}
@@ -235,6 +236,8 @@ func _process(_d):
 			tac_sps[k] = int(tac_sps.get(k, 0)) + int(tstats["tactical_by_species_stage"][k])
 		for k in tstats.get("tactical_by_species", {}).keys():
 			tac_sp[k] = int(tac_sp.get(k, 0)) + int(tstats["tactical_by_species"][k])
+		for k in tstats.get("hunt_entry", {}).keys():
+			entry[k] = int(entry.get(k, 0)) + int(tstats["hunt_entry"][k])
 		for k in tstats.get("tactical_stamina", {}).keys():
 			tac_st[k] = int(tac_st.get(k, 0)) + int(tstats["tactical_stamina"][k])
 		var meets: Array = GS.life_log.get("pack_meetings", [])
@@ -379,6 +382,16 @@ func _process(_d):
 			if n > 0:
 				line += " %s %d%%（%d 場）" % [st, roundi(100.0 * ok / n), n]
 		print(line)
+	# 各入口的狩獵（Phase 2i 第 7 步）：次數、成功率、每場受的傷
+	var kinds: Dictionary = {}
+	for k in entry.keys():
+		var parts: PackedStringArray = str(k).split(".")
+		kinds[parts[0] + "." + parts[1]] = true
+	var ks: Array = kinds.keys()
+	ks.sort()
+	for kk in ks:
+		var n: int = int(entry.get(kk + ".n", 0))
+		print("  入口 %-18s %5d 場：獵到 %3d%%、每場受傷 %.1f" % [kk, n, roundi(100.0 * int(entry.get(kk + ".ok", 0)) / maxf(1.0, n)), float(entry.get(kk + ".hurt", 0)) / maxf(1.0, n)])
 	quit()
 	return true
 

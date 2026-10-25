@@ -3052,12 +3052,14 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	if terrain == "":
 		terrain = _random_terrain(current_region)
 	var hunt := HuntSystem.new(wolf, animal_id, life_stage, detection_mod, wind_dir, prey_dir, terrain, injured)
+	hunt.set_meta("hp0", wolf.health)
 	if herd >= 0 and not injured:
 		hunt.set_herd(herd == 1)
 	# 夏季躲在草裡的幼鹿：一開始就要搜尋
 	if hidden and hunt.stage == HuntSystem.Stage.POUNCE:
 		hunt.hiding = true
 		hunt.hid_once = true
+		hunt.set_meta("entry", "hidden")
 	hunt.knowledge_bonus = weakness_bonuses(animal_id, life_stage)
 	hunt.storm = weather == "storm"
 	hunt.set_snow(snow_state())
@@ -3123,6 +3125,7 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	FightRules.danger_to_heavy(wolf, hunt.fight_state.get("parts", {"leg": 0.5, "shoulder": 0.5}), hunt.animal_id + ".hunt")
 	Growth.apply_practice(wolf, hunt.practice)
 	_record_hunt(hunt)
+	_stat_entry(hunt)
 	_ranch_hunt_attention(hunt)
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
@@ -3169,6 +3172,16 @@ func finish_hunt(hunt: HuntSystem) -> void:
 # --- 試玩自動紀錄（SPEC「遊戲內自動紀錄」）---
 # life_log["stats"]：option_counts（每個決策的次數）、counters（觀察機會、因風向失敗…）、
 # nights（巢穴／野外）、after_deer（獵到鹿之後到下一次狩獵的天數與行動）。
+
+# 模擬用：各入口（受傷、躲在草裡、獵物靠近、家畜、一般）× 年齡 的狩獵次數、成功、受的傷（Phase 2i 第 7 步）
+func _stat_entry(hunt: HuntSystem) -> void:
+	var kind: String = "injured" if hunt.injured else (str(hunt.get_meta("entry", "")) if hunt.has_meta("entry") else ("nearby" if hunt.nearby else ("livestock" if hunt.animal_id in ["cattle", "sheep"] else "normal")))
+	var age: String = ["subadult", "adult", "elder"][wolf.life_stage()]
+	var key: String = kind + "." + age
+	_stat_inc("hunt_entry", key + ".n")
+	if hunt.result == HuntSystem.Result.SUCCESS:
+		_stat_inc("hunt_entry", key + ".ok")
+	_stat_inc("hunt_entry", key + ".hurt", roundi(maxf(0.0, float(hunt.get_meta("hp0", wolf.health)) - wolf.health)))
 
 func _stat_inc(group: String, key: String, amount: int = 1) -> void:
 	var stats: Dictionary = life_log.get("stats", {})
