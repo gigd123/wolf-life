@@ -25,7 +25,9 @@ func _process(_d) -> bool:
 	print("== 牧場的家畜：選單式 vs 戰術地圖（交給本能），一般的成年狼，夏季，每格 %d 場" % runs)
 	gs.new_game("grassland_plains")
 	gs.debug_force_transition("adult")
-	gt.season_index = gt.SEASONS.find("summer")
+	# SEASON=winter：換季節（冬季有雪，Phase 2i 第 7 步）
+	gt.season_index = gt.SEASONS.find(OS.get_environment("SEASON") if OS.get_environment("SEASON") != "" else "summer")
+	gs.snow = {}
 	for p in PREY:
 		var res := {"menu": 0, "tac": 0}
 		var hurt := {"menu": 0.0, "tac": 0.0}

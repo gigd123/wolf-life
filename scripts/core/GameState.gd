@@ -3175,7 +3175,7 @@ func finish_hunt(hunt: HuntSystem) -> void:
 
 # 模擬用：各入口（受傷、躲在草裡、獵物靠近、家畜、一般）× 年齡 的狩獵次數、成功、受的傷（Phase 2i 第 7 步）
 func _stat_entry(hunt: HuntSystem) -> void:
-	var kind: String = "injured" if hunt.injured else (str(hunt.get_meta("entry", "")) if hunt.has_meta("entry") else ("nearby" if hunt.nearby else ("livestock" if hunt.animal_id in ["cattle", "sheep"] else "normal")))
+	var kind: String = "injured" if hunt.injured else (str(hunt.get_meta("entry", "")) if hunt.has_meta("entry") else ("nearby" if hunt.nearby else (hunt.animal_id + "_" + hunt.life_stage if hunt.animal_id in ["cattle", "sheep"] else "normal")))
 	var age: String = ["subadult", "adult", "elder"][wolf.life_stage()]
 	var key: String = kind + "." + age
 	_stat_inc("hunt_entry", key + ".n")

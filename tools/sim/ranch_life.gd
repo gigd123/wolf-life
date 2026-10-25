@@ -52,6 +52,7 @@ func _process(_d):
 		var ages: Array = []
 		var ranch_sum := {}
 		var kills_by := {}
+		var entry := {} # 家畜.年齡 的狩獵（hunt_entry）
 		var moved_lives := 0
 		var moves := 0
 		var peak: Array = []
@@ -115,6 +116,23 @@ func _process(_d):
 			if cause == "human":
 				human_dead.append("%.1f 歲（%s）" % [_GS.wolf.age_years, dens[r % dens.size()]])
 			ages.append(_GS.wolf.age_years)
+			var hs: Dictionary = _GS.life_log.get("stats", {})
+			for key in hs.get("hunt_entry", {}).keys():
+				if str(key).begins_with("cattle_") or str(key).begins_with("sheep_"):
+					entry[key] = int(entry.get(key, 0)) + int(hs["hunt_entry"][key])
+			for key in hs.get("hunt_entry_how", {}).keys():
+				if str(key).begins_with("cattle_") or str(key).begins_with("sheep_"):
+					entry["how." + key] = int(entry.get("how." + key, 0)) + int(hs["hunt_entry_how"][key])
+		# 家畜的狩獵（Phase 2i 第 7 步）：種類.年齡 的次數、成功率、結局
+		var ks: Array = entry.keys().filter(func(k): return str(k).ends_with(".n"))
+		ks.sort()
+		for k in ks:
+			var base: String = str(k).trim_suffix(".n")
+			var hows: Array = []
+			for hk in entry.keys():
+				if str(hk).begins_with("how." + base + "."):
+					hows.append("%s %d" % [str(hk).substr(base.length() + 5), int(entry[hk])])
+			print("  家畜 %-22s %4d 場：獵到 %3d%%（%s）" % [base, int(entry[k]), roundi(100.0 * int(entry.get(base + ".ok", 0)) / maxf(1.0, int(entry[k]))), "、".join(hows)])
 		_report(pol, runs, dpy, appeared, appear_ages, cands, adult, elder, expl, deaths, ages, ranch_sum, kills_by, visited_lives, moved_lives, moves, peak, human_dead)
 	quit()
 	return true
