@@ -2815,7 +2815,8 @@ func _begin_hunt(animal_id: String, life_stage: String, prey_dir: int = -1) -> v
 
 # 開始狩獵畫面：白尾鹿、馬鹿、騾鹿、馴鹿走戰術地圖，其他走選單。看到獵物、追蹤到獵物、發現足跡都經過這裡
 # （2026-10-20 試玩：看到一群白尾鹿選「狩獵」沒有進戰術地圖——目擊、追蹤原本直接走選單）。
-# 獵物靠近（短版開場）、和苔原狼一起狩獵、受傷的個體也走戰術地圖（Phase 2i）。
+# 獵物靠近（短版開場）、和苔原狼一起狩獵、受傷的個體、躲在草裡的幼鹿、牧場的家畜也走戰術地圖（Phase 2i）：
+# 所有獵物都在 game.animals 裡，選單式的畫面不會再出現（程式留著，模擬對照用；田鼠、地松鼠的小撲另外處理）。
 func _enter_hunt() -> void:
 	if GameState.tactical_eligible(current_hunt):
 		_open_tactical()

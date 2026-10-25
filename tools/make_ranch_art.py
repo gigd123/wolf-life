@@ -8,6 +8,7 @@
 - 殘骸：牛（馬鹿殘骸換色）、羊（大角羊殘骸換色）
 - 遭遇的圖 112×56：巡查（騎馬的人沿柵欄走）、追獵（騎馬的人＋獵犬）、被狗追上（三隻獵犬）；獵犬是郊狼換色
 - 線索圖示 16×16：柵欄、牛的蹄印、馬蹄鐵、斧頭、槍聲
+- 戰術地圖的小圖（14×14，8 個方向，Phase 2i 第 7 步）：牛犢（小野牛換色）、一歲牛與成牛（野牛換色）、羊（大角羊母羊換米白）
 
 用法：python3 tools/make_ranch_art.py
 """
@@ -225,6 +226,22 @@ def livestock():
     recolor(ANIM + "carcass_bighorn.png", ANIM + "carcass_sheep.png", sheep)
 
 
+def sheep_palette(im):
+    # 依亮度：暗的留著（腳、臉、邊）、其他改成米白羊毛
+    out = {}
+    for c in {c[1][:3] for c in im.getcolors(100000) if c[1][3] > 0}:
+        lum = sum(c) / 3
+        out[c] = c if lum < 60 else ((214, 206, 188) if lum < 110 else (234, 228, 214))
+    return out
+
+
+def tactical_livestock():
+    T = A + "tactical/"
+    for src, dst in (("bison_calf", "cattle_calf"), ("bison", "cattle"), ("bison", "cattle_cow")):
+        recolor(T + src + ".png", T + dst + ".png", calf_palette(Image.open(T + src + ".png").convert("RGBA")))
+    recolor(T + "bighorn_sheep.png", T + "sheep.png", sheep_palette(Image.open(T + "bighorn_sheep.png").convert("RGBA")))
+
+
 # --- 獵犬、騎馬的人 ---
 HOUND = {(160, 138, 110): (120, 74, 40), (180, 124, 76): (150, 96, 52), (152, 134, 112): (44, 36, 30), (184, 172, 153): (176, 120, 70),
          (118, 104, 90): (40, 32, 28), (224, 210, 186): (200, 160, 110), (74, 65, 54): (30, 24, 20), (68, 60, 52): (30, 24, 20),
@@ -321,6 +338,7 @@ tile("region_tile_ranch_pasture.png", "pasture")
 tile("region_tile_ranch_yard.png", "yard")
 tile("region_tile_ranch_edge.png", "edge")
 livestock()
+tactical_livestock()
 event_image("ranch_patrol.png", [60], [])
 event_image("ranch_hunt.png", [78], [(4, 52), (34, 54)])
 event_image("ranch_dogs.png", [], [(2, 52), (36, 54), (70, 51)])

@@ -11,6 +11,11 @@ extends SceneTree
 #   7. 走到牠旁邊（還沒看出）：竄出來逃，前 bolt_rounds 回合多跑 bolt_bonus 格
 #   8. 感知高的狼走近就看見（不驚動牠）
 #   9. 畫面：還沒找到時資訊欄寫「躲在草裡」
+# 第 7 步（牧場的家畜）：
+#  10. 牛犢、一歲牛、成牛、羊都走戰術地圖：物種對、牛犢與一歲牛單獨、成牛會站定（stand）、羊一群 5～9 隻
+#  11. 戰術地圖有家畜的小圖
+#  12. 牧場的注意：獵到加那一種的注意；牠察覺你、沒獵到算被看到；沒察覺就放棄不加
+#  13. 所有會被獵的動物都走戰術地圖（除了小撲）
 # 用法：bash tools/run_sim.sh all_tactical_rules
 var f := 0
 var gs
@@ -149,6 +154,69 @@ func _process(_d) -> bool:
 	view.start_from_game(_hidden("white_tailed_deer", 50.0), func(_t): pass)
 	_check(view._info_text().contains("躲在草裡"), "畫面：還沒找到時資訊欄寫「躲在草裡」")
 	view.queue_free()
+	# 10. 牧場的家畜
+	gs.new_game("grassland_plains")
+	gs.debug_force_transition("adult")
+	var ls_ok := true
+	var sheep_sizes: Array = []
+	for p in [["cattle", "juvenile", "cattle_calf"], ["cattle", "adult", "cattle"], ["cattle", "buck", "cattle_cow"], ["sheep", "adult", "sheep"]]:
+		for i in 5:
+			var hl = gs.start_hunt(p[0], p[1], -1, false, "prairie")
+			if not gs.tactical_eligible(hl):
+				ls_ok = false
+				continue
+			var tl2 = gs.start_tactical(hl)
+			var spc: String = str(tl2.herd[tl2.target]["species"])
+			if spc != p[2]:
+				ls_ok = false
+				print("    物種不對：", p, " → ", spc)
+			if p[0] == "cattle" and tl2.herd.size() != 1:
+				ls_ok = false
+			if p[2] == "cattle_cow" and not tl2.sp(tl2.target).has("stand"):
+				ls_ok = false
+			if p[0] == "sheep":
+				sheep_sizes.append(tl2.herd.size())
+	_check(ls_ok and sheep_sizes.min() >= 5 and sheep_sizes.max() <= 9, "家畜走戰術地圖：物種對、牛單獨、成牛會站定、羊一群 %s～%s 隻" % [sheep_sizes.min(), sheep_sizes.max()])
+	# 11. 小圖
+	var art_ok := true
+	for k in ["cattle_calf", "cattle", "cattle_cow", "sheep"]:
+		if not ResourceLoader.exists("res://assets/art/tactical/%s.png" % k):
+			art_ok = false
+	_check(art_ok, "戰術地圖有牛犢、一歲牛、成牛、羊的小圖")
+	# 12. 牧場的注意
+	gs.debug_ranch("open")
+	gs.ranch["attention"] = 0.0
+	var hk = gs.start_hunt("cattle", "juvenile", -1, false, "prairie")
+	var tk = gs.start_tactical(hk)
+	tk._finish("caught", "test")
+	gs.wolf.hunger = 30.0
+	gs.finish_tactical_hunt(hk, tk)
+	var a_kill: float = gs.ranch_attention()
+	gs.current_feeding = {}
+	gs.ranch["attention"] = 0.0
+	var hn2 = gs.start_hunt("cattle", "adult", -1, false, "prairie")
+	var tn = gs.start_tactical(hn2)
+	tn.deer_state = "flee"
+	tn.detect_cause = "close"
+	tn._finish("escaped", "test")
+	gs.finish_tactical_hunt(hn2, tn)
+	var a_seen: float = gs.ranch_attention()
+	gs.ranch["attention"] = 0.0
+	var hq = gs.start_hunt("cattle", "adult", -1, false, "prairie")
+	var tq = gs.start_tactical(hq)
+	tq._finish("gave_up", "test")
+	gs.finish_tactical_hunt(hq, tq)
+	var a_quiet: float = gs.ranch_attention()
+	_check(a_kill > 0.0 and a_seen > 0.0 and a_seen < a_kill and a_quiet == 0.0, "牧場的注意：獵到牛犢 +%.1f、被察覺沒獵到 +%.1f、沒察覺就放棄 +%.1f" % [a_kill, a_seen, a_quiet])
+	# 13. 所有獵物
+	var tun: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tactical_hunt.json"))
+	var missing: Array = []
+	var gd = root.get_node("GameData")
+	for a in gd.animals.keys():
+		var ad = gd.animals[a]
+		if ad is Dictionary and str(ad.get("type", "")) == "prey" and a != "red_fox" and not (tun["game"]["animals"] as Array).has(a):
+			missing.append(a)
+	_check(missing.is_empty(), "所有會被獵的動物都走戰術地圖（紅狐只搶食；沒有的：%s）" % [missing])
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 	return true

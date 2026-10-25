@@ -999,7 +999,7 @@ func _ranch_hunt_attention(hunt: HuntSystem) -> void:
 		rl["kills"] = int(rl.get("kills", 0)) + 1
 		var by: Dictionary = rl.get_or_add("kills_by", {})
 		by[ev] = int(by.get(ev, 0)) + 1
-	elif hunt.stage_reached_stalk():
+	elif hunt.stage_reached_stalk() or hunt.decisions.has("tactical.noticed"):
 		ranch_add_attention("seen")
 		rl["failed"] = int(rl.get("failed", 0)) + 1
 
@@ -3790,8 +3790,7 @@ func tactical_context(terrain: String, wind: String, condition: String) -> Dicti
 	ctx["wind_relation"] = wind
 	return ctx
 
-# 這一場狩獵用不用戰術地圖（Phase 2c 第 2 步）：先接白尾鹿（tactical_hunt.json 的 game.animals）；
-# 受傷的個體（簡易流程）、躲在草裡的幼鹿（要先搜尋）照舊走選單。
+# 這一場狩獵用不用戰術地圖（Phase 2c 第 2 步起，tactical_hunt.json 的 game.animals）：Phase 2i 之後所有獵物都走戰術地圖。
 # 未滿 1 歲的食物（2026-10-22 使用者選 A）：探索時小獵物的權重、撿到殘骸的機率倍率（balance.youth.food）；1 歲以後是空的
 func youth_food_mults() -> Dictionary:
 	if wolf == null or wolf.age_years >= float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)):
@@ -3838,7 +3837,9 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
 	# 一律成群的物種（野牛，Phase 2f 第 3 步）：獵小牛時也是整群，至少一隻小牛
 	var herd_juv: bool = (g.get("herd_juvenile", []) as Array).has(hunt.animal_id)
-	if size.size() == 2 and hunt.in_herd and (hunt.life_stage != "juvenile" or herd_juv):
+	# 一律成群的物種（羊，Phase 2i 第 7 步：擠成一群）
+	var in_herd: bool = hunt.in_herd or ((g.get("always_herd", []) as Array).has(hunt.animal_id) and not hunt.injured and not hunt.nearby)
+	if size.size() == 2 and in_herd and (hunt.life_stage != "juvenile" or herd_juv):
 		var conds: Array = [hunt.condition]
 		for i in RNGService.randi_range(int(size[0]), int(size[1])) - 1:
 			conds.append(hunt._pick_condition())
@@ -3909,6 +3910,9 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	hunt.practice.append_array(th.practice)
 	hunt.condition_known = hunt.condition_known or th.condition_known
 	hunt.decisions.append("tactical." + th.result)
+	# 牠察覺了你（逃了、站定）：牧場算被看到（Phase 4a「走到潛近以後」；只給牧場用，不算進鹿群受驚）
+	if th.result != "caught" and (th.detect_cause != "" or th.deer_state != "unaware"):
+		hunt.decisions.append("tactical.noticed")
 	_metric_tactical(th)
 	# 獵到的是哪一隻（鹿群裡換過目標）：小鹿 → juvenile、成鹿 → 原本是小鹿的話改成 adult；體況照那一隻
 	if th.result == "caught":
