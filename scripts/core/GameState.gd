@@ -3944,6 +3944,11 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	match th.result:
 		"caught":
 			hunt.result = HuntSystem.Result.SUCCESS
+			# 一次吃完的獵物（不分段：兔子、河狸、旱獺、小叉角羚……）當場吃掉，同選單式的 HuntSystem._kill
+			# （2026-10-25 試玩回報：獵到河狸飽食度沒增加——戰術地圖的結算原本漏了這一步）
+			if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) <= 1:
+				hunt.prey_hunger_value = float(GameData.animals.get(hunt.animal_id, {}).get(hunt.life_stage, {}).get("hunger_value", hunt.prey_hunger_value))
+				wolf.hunger += hunt.prey_hunger_value
 		"gave_up":
 			hunt.result = HuntSystem.Result.PLAYER_GAVE_UP
 			hunt.gave_up_stage = HuntSystem.Stage.CHASE if th.deer_state == "flee" else HuntSystem.Stage.STALK

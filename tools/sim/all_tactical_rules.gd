@@ -17,6 +17,7 @@ extends SceneTree
 #  12. 牧場的注意：獵到加那一種的注意；牠察覺你、沒獵到算被看到；沒察覺就放棄不加
 #  13. 所有會被獵的動物都走戰術地圖（除了小撲）
 #  14. 單獨出場的幼體（牛犢、小河狸、小叉角羚）獵到後還是幼體（2026-10-25 修正：原本被改成成體）；鹿群裡改追成鹿的照舊改成成體
+#  15. 一次吃完的獵物（兔子、河狸、旱獺、小叉角羚）獵到後飽食度加 hunger_value（2026-10-25 試玩回報：獵到河狸飽食度沒增加）
 # 用法：bash tools/run_sim.sh all_tactical_rules
 var f := 0
 var gs
@@ -232,6 +233,22 @@ func _process(_d) -> bool:
 			young_ok = false
 			print("    獵到後變成 ", hy.life_stage, "：", a[0])
 	_check(young_ok, "單獨出場的幼體（牛犢、小河狸、小叉角羚）獵到後還是幼體")
+	# 15. 一次吃完的獵物加飽食度
+	var gd2 = root.get_node("GameData")
+	var eat_ok := true
+	var eat_log: Array = []
+	for a in [["snowshoe_hare", "adult", "dense_forest"], ["hare", "adult", "prairie"], ["beaver", "adult", "stream"], ["beaver", "juvenile", "stream"], ["marmot", "adult", "scree"], ["pronghorn", "juvenile", "prairie"]]:
+		gs.wolf.hunger = 30.0
+		var he = gs.start_hunt(a[0], a[1], -1, false, a[2])
+		var te = gs.start_tactical(he)
+		te._finish("caught", "test")
+		gs.finish_tactical_hunt(he, te)
+		var want: float = float(gd2.animals[a[0]][a[1]]["hunger_value"])
+		eat_log.append("%s %s +%d" % [a[0], a[1], roundi(gs.wolf.hunger - 30.0)])
+		if gs.wolf.hunger - 30.0 < want - 8.0 or gs.wolf.hunger - 30.0 > want or not gs.current_feeding.is_empty():
+			eat_ok = false
+		gs.current_feeding = {}
+	_check(eat_ok, "一次吃完的獵物獵到後加飽食度（%s；時間的消耗另計）" % "、".join(eat_log))
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 	return true
