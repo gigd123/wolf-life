@@ -4,6 +4,7 @@ extends Node
 # math is done in seasons elapsed (see GameState._on_season_changed), so
 # switching time_mode never changes where a wolf falls in its life cycle.
 
+signal turn_advanced
 signal period_changed(period_index: int)
 signal day_changed(day: int)
 signal season_changed(season_index: int)
@@ -50,6 +51,7 @@ func advance_turns(n: int) -> void:
 		_advance_one_turn()
 
 func _advance_one_turn() -> void:
+	turn_advanced.emit()
 	turn_in_period += 1
 	if turn_in_period >= TURNS_PER_PERIOD:
 		turn_in_period = 0

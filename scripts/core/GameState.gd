@@ -160,6 +160,7 @@ func new_game(start_den: String) -> void:
 func _connect_time_signals() -> void:
 	if not GameTime.period_changed.is_connected(_on_period_changed):
 		GameTime.period_changed.connect(_on_period_changed)
+		GameTime.turn_advanced.connect(_on_turn_advanced)
 	if not GameTime.day_changed.is_connected(_on_day_changed):
 		GameTime.day_changed.connect(_on_day_changed)
 	if not GameTime.season_changed.is_connected(_on_season_changed):
@@ -588,6 +589,15 @@ var _sleep_heal: int = -1
 
 # 正在休息或睡覺（短暫休息、休息到…、睡覺推進時間時為 true）：吃撐時消化較快（Phase 2b 第 1 步）。
 var _resting: bool = false
+var _rest_kind: String = "" # 模擬用：這段休息是 sleep／short_rest／rest_until（每個遊戲回合記在 stats.time）
+
+# 每個遊戲回合在做什麼（2026-10-26 使用者要量「一天休息的比例」）：睡覺、短暫休息、休息到…、進食、其他（探索、移動、狩獵、戰鬥……）
+func _on_turn_advanced() -> void:
+	if wolf == null or not wolf.alive:
+		return
+	var tag: String = _rest_kind if _resting and _rest_kind != "" else ("eat" if is_feeding() else "active")
+	_stat_inc("time", ["subadult", "adult", "elder"][wolf.life_stage()] + "." + tag)
+	_stat_inc("time_period", GameTime.current_period() + "." + ("rest" if tag in ["sleep", "short_rest", "rest_until"] else tag))
 
 # 吃撐時在巢穴、睡處或自己的殘骸旁休息，超過門檻的部分消化較快（不會消化到門檻以下）；並記下吃撐的時段數（試玩指標）。
 func _digest_while_resting(base_decay: float) -> void:
@@ -2845,8 +2855,10 @@ func action_short_rest() -> void:
 	_record_action("short_rest")
 	var costs: Dictionary = GameData.balance.get("action_turn_costs", {})
 	_resting = true
+	_rest_kind = "short_rest"
 	GameTime.advance_turns(int(costs.get("short_rest", 2)))
 	_resting = false
+	_rest_kind = ""
 	var bonus: float = 0.0
 	for f in known_features(current_region):
 		bonus += float(GameData.region_features().get(f, {}).get("short_rest_stamina_bonus", 0))
@@ -2922,8 +2934,10 @@ func _rest_loop(stop: Callable, max_turns: int) -> Dictionary:
 			break
 		var period_before: int = GameTime.period_index
 		_resting = true
+		_rest_kind = "rest_until"
 		GameTime.advance_turns(1)
 		_resting = false
+		_rest_kind = ""
 		if not wolf.alive:
 			break
 		var before: float = wolf.stamina
@@ -2980,8 +2994,10 @@ func action_sleep() -> Dictionary:
 	_sleep_heal = max(_sleep_heal, _heal_progress(quality))
 	quiet_sleep = season_sleep
 	_resting = true
+	_rest_kind = "sleep"
 	GameTime.advance_turns(turns)
 	_resting = false
+	_rest_kind = ""
 	quiet_sleep = false
 	if not wolf.alive:
 		return {}

@@ -81,6 +81,8 @@ func _process(_d):
 	var tac := {} # 戰術狩獵（Phase 2c）：階段.結果 -> 次數；階段 -> 扣的體力總和
 	var tac_sp := {} # 物種.結果 -> 次數（Phase 2d）
 	var entry := {} # 入口.年齡.n／ok／hurt（Phase 2i 第 7 步）
+	var time_use := {} # 年齡.sleep／short_rest／rest_until／eat／active -> 遊戲回合數（2026-10-26：一天休息的比例）
+	var time_period := {} # 時段.rest／eat／active -> 遊戲回合數
 	var entry_how := {} # 入口.年齡.戰術的結局（caught／escaped／lost／gave_up／timeout）或 menu／menu.ok
 	var tac_sps := {} # 物種.年齡.結果 -> 次數（2026-10-22：雪兔各年齡的捕捉率）
 	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
@@ -239,6 +241,10 @@ func _process(_d):
 			tac_sp[k] = int(tac_sp.get(k, 0)) + int(tstats["tactical_by_species"][k])
 		for k in tstats.get("hunt_entry", {}).keys():
 			entry[k] = int(entry.get(k, 0)) + int(tstats["hunt_entry"][k])
+		for k in tstats.get("time", {}).keys():
+			time_use[k] = int(time_use.get(k, 0)) + int(tstats["time"][k])
+		for k in tstats.get("time_period", {}).keys():
+			time_period[k] = int(time_period.get(k, 0)) + int(tstats["time_period"][k])
 		for k in tstats.get("hunt_entry_how", {}).keys():
 			entry_how[k] = int(entry_how.get(k, 0)) + int(tstats["hunt_entry_how"][k])
 		for k in tstats.get("tactical_stamina", {}).keys():
@@ -400,6 +406,29 @@ func _process(_d):
 				hows.append("%s %d" % [str(hk).substr(kk.length() + 1), int(entry_how[hk])])
 		hows.sort()
 		print("  入口 %-18s %5d 場：獵到 %3d%%、每場受傷 %.1f（%s）" % [kk, n, roundi(100.0 * int(entry.get(kk + ".ok", 0)) / maxf(1.0, n)), float(entry.get(kk + ".hurt", 0)) / maxf(1.0, n), "、".join(hows)])
+	# 一天的時間怎麼用（2026-10-26）：每個遊戲回合在做什麼；一天 20 回合
+	for stg in ["subadult", "adult", "elder", "all"]:
+		var tot := 0
+		var part := {}
+		for k in time_use.keys():
+			var ps: PackedStringArray = str(k).split(".")
+			if stg == "all" or ps[0] == stg:
+				tot += int(time_use[k])
+				part[ps[1]] = int(part.get(ps[1], 0)) + int(time_use[k])
+		if tot == 0:
+			continue
+		var rest: int = int(part.get("sleep", 0)) + int(part.get("short_rest", 0)) + int(part.get("rest_until", 0))
+		print("  時間 %-8s 休息 %2d%%（睡覺 %2d%%、短暫休息 %2d%%、休息到… %2d%%）、進食 %2d%%、其他 %2d%%；一天平均 睡覺 %.1f、休息合計 %.1f 回合（共 %d 天）" % [stg,
+			roundi(100.0 * rest / tot), roundi(100.0 * int(part.get("sleep", 0)) / tot), roundi(100.0 * int(part.get("short_rest", 0)) / tot), roundi(100.0 * int(part.get("rest_until", 0)) / tot),
+			roundi(100.0 * int(part.get("eat", 0)) / tot), roundi(100.0 * int(part.get("active", 0)) / tot), 20.0 * int(part.get("sleep", 0)) / tot, 20.0 * rest / tot, tot / 20])
+	var per_line: Array = []
+	for per in ["dawn", "day", "dusk", "night", "predawn"]:
+		var t := 0
+		for k in ["rest", "eat", "active"]:
+			t += int(time_period.get(per + "." + k, 0))
+		if t > 0:
+			per_line.append("%s 休息 %d%%" % [{"dawn": "清晨", "day": "白天", "dusk": "黃昏", "night": "夜裡", "predawn": "黎明前"}[per], roundi(100.0 * int(time_period.get(per + ".rest", 0)) / t)])
+	print("  時間 各時段：" + "、".join(per_line))
 	quit()
 	return true
 
