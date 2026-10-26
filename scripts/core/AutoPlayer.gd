@@ -26,6 +26,7 @@ var tactical: bool = true
 var daytime_rest: bool = true # Phase 2j：不餓、體力不滿時白天休息到黃昏（模擬對照可以關掉）
 const DAY_REST_HUNGER := 70.0
 const DAY_REST_STAMINA := 95.0
+var _slept_day: int = -1
 # 模擬用：不是空的時候，只有這些動物走戰術地圖（Phase 2d 第 5 步對照）
 var tactical_only: Array = []
 # 藏食物（Phase 2e 第 3 步）：離開殘骸前有剩就藏；沒有殘骸、肚子空出來時吃藏肉；餓了走去藏肉的區域。false 時不藏（模擬對照）
@@ -165,7 +166,13 @@ func _play_day() -> void:
 			elif not _go_home():
 				GameState.action_short_rest()
 			continue
-		if GameTime.current_period() == "predawn":
+		# 晨昏節奏（Phase 2j）：夜裡睡一覺，黎明前、清晨醒著出獵；原本在黎明前睡、常睡過頭錯過清晨
+		if daytime_rest:
+			if GameTime.current_period() == "night" and _slept_day != GameTime.day:
+				_slept_day = GameTime.day
+				GameState.action_sleep()
+				continue
+		elif GameTime.current_period() == "predawn":
 			GameState.action_sleep()
 			continue
 		if _ranch_step():
