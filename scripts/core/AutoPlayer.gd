@@ -23,6 +23,9 @@ var style: String
 var judge: bool = true
 # 模擬用：false 時白尾鹿也用選單式狩獵（和 Phase 2b 比較）
 var tactical: bool = true
+var daytime_rest: bool = true # Phase 2j：不餓、體力不滿時白天休息到黃昏（模擬對照可以關掉）
+const DAY_REST_HUNGER := 70.0
+const DAY_REST_STAMINA := 95.0
 # 模擬用：不是空的時候，只有這些動物走戰術地圖（Phase 2d 第 5 步對照）
 var tactical_only: Array = []
 # 藏食物（Phase 2e 第 3 步）：離開殘骸前有剩就藏；沒有殘骸、肚子空出來時吃藏肉；餓了走去藏肉的區域。false 時不藏（模擬對照）
@@ -189,6 +192,10 @@ func _play_day() -> void:
 		if cache and _eat_cache_here():
 			continue
 		if cache and GameState.wolf.hunger < 60.0 and _go_cache():
+			continue
+		# 晨昏出獵、白天休息（Phase 2j）：不餓、體力不滿時白天休息到黃昏；餓了或體力夠就照樣活動
+		if daytime_rest and GameTime.current_period() == "day" and GameState.wolf.hunger >= DAY_REST_HUNGER and GameState.wolf.stamina < DAY_REST_STAMINA:
+			GameState.action_rest_until("dusk")
 			continue
 		if roam:
 			if GameTime.current_period() == "dawn" and not bool(_roamed_today.get(GameTime.day, false)):

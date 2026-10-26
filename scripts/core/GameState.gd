@@ -3224,6 +3224,10 @@ func _spend_action_stamina(action: String) -> void:
 	# 吃撐時移動、探索比較累（Phase 2b 第 1 步）
 	if wolf != null and wolf.is_overfed() and action in ["move_region", "explore"]:
 		cost *= float(GameData.balance.get("gorged", {}).get("move_stamina_mult", 1.0))
+	# 白天探索、移動比較累，夏天更累（Phase 2j：晨昏出獵、白天休息）
+	if action in ["move_region", "explore"] and GameTime.current_period() == "day":
+		var dc: Dictionary = GameData.balance.get("daytime", {})
+		cost *= float(dc.get("summer_stamina_mult", 1.3)) if GameTime.current_season() == "summer" else float(dc.get("stamina_mult", 1.15))
 	if cost > 0.0 and wolf != null:
 		wolf.stamina = max(0.0, wolf.stamina - cost * wolf.injury_stamina_mult())
 

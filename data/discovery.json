@@ -2,6 +2,8 @@
   "_comment": "探索系統（SPEC「探索系統」）：發現 = 地點特徵 × 線索類型 × 來源 × 新鮮度。數值為 Phase 1.5 初始值。",
   "nothing_chance_min": 0.08,
   "nothing_chance_max": 0.3,
+  "_day_bedded_comment": "Phase 2j：白天探索空手、這一帶這一季有這些晨昏活動的鹿時，紀錄寫白天的鹿多半臥著（explore.nothing.day）。",
+  "day_bedded": ["white_tailed_deer", "mule_deer", "elk"],
   "feature_chance": 0.12,
   "gather_source_weight_mult": 0.5,
   "fresh_chance_base": 0.55,

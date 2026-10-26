@@ -10,7 +10,7 @@ extends SceneTree
 # 另外在 2、3、4 歲時，拿那時的狼和那時的黑狼（各複製一份）單挑 DUELS 場（一直撲咬、瀕危就撤退、牠示弱就放牠走），
 # 看「正常成長到 2～4 歲打贏黑狼六到八成」（使用者 2026-10-15）有沒有守住。
 # 用法：bash tools/run_sim.sh life_pressure 0 40（約數分鐘）；NO_TACTICAL=1 時鹿類都用選單式狩獵（對照 Phase 2b）；
-# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）；DENS_ONLY=forest_east 只從這些巢穴開始；NO_SALMON=1 沒有鮭魚洄流；SALMON_SET='{...}' 覆寫鮭魚的設定
+# TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）；DENS_ONLY=forest_east 只從這些巢穴開始；NO_SALMON=1 沒有鮭魚洄流；NO_DAY_REST=1 自動玩家不在白天休息（對照 Phase 2j）；SALMON_SET='{...}' 覆寫鮭魚的設定
 
 const STAGES := ["subadult", "adult", "elder"]
 const FOOD_CATS := ["大中型獵物", "小獵物", "殘骸撿食", "藏肉", "採集", "小撲", "猞猁的雪兔", "鮭魚", "其他"]
@@ -110,6 +110,7 @@ func _process(_d):
 	for r in runs:
 		var ap = AP.new("all", "average")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
+		ap.daytime_rest = OS.get_environment("NO_DAY_REST") == ""
 		ap.cache = OS.get_environment("NO_CACHE") == ""
 		if OS.get_environment("TACTICAL_ONLY") != "":
 			ap.tactical_only = OS.get_environment("TACTICAL_ONLY").split(",")

@@ -81,7 +81,14 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	if mode == "water" and not ctx["period"] in ["dawn", "dusk"]:
 		nothing_chance = 1.0 - (1.0 - nothing_chance) * float(mc.get("dawn_dusk_mult", 1.0))
 	if RNGService.chance(nothing_chance):
-		return _hibernate_hint({"kind": "nothing", "location": location, "absent_source": _least_likely(weights), "mode": mode, "wind_bad": not wind_good}, region, ctx["season"])
+		var nd: Dictionary = _hibernate_hint({"kind": "nothing", "location": location, "absent_source": _least_likely(weights), "mode": mode, "wind_bad": not wind_good}, region, ctx["season"])
+		# 白天空手、這一帶這一季有晨昏活動的鹿：寫出原因（Phase 2j，讓玩家讀得懂「白天的鹿多半臥著」）
+		if ctx["period"] == "day" and not nd.has("hibernating") and str(nd.get("mode", "trail")) != "water" and not bool(nd.get("wind_bad", false)):
+			for a in cfg.get("day_bedded", []):
+				if float(EncounterSystem._seasonal_weights(region.get("prey_weights", {}), ctx["season"]).get(a, 0.0)) > 0.0:
+					nd["day_bedded"] = true
+					break
+		return nd
 
 	# 別人吃剩的殘骸（骨頭、碎肉）與其他狼的氣味標記（Phase 1.7b 的多樣結果）
 	var scorched_now: bool = str(ctx.get("burn", "")) in ["burning", "ash"]

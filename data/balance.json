@@ -341,7 +341,7 @@
     },
     "_herd_comment": "1.8 第 5 步：成群的獵物。stalk_penalty：潛近時很多雙眼睛；weakest_rolls：觀察鹿群成功時多擲幾次體況、挑最弱的；spooked：對鹿群失手後，這一區這種獵物 spooked_days 天內警覺 + detection。",
     "_period_comment": "Phase 2b 第 4 步「活動時段」：stalk 依時段加在潛近（晨昏 +5%）；end_stamina_mult「季節.時段」狩獵結束扣的體力倍率（夏季白天 ×1.3）；rest_stamina_mult 依時段乘在短暫休息、休息到…回的體力（白天 ×1.2）。睡覺不受影響。",
-    "period": { "stalk": { "dawn": 0.05, "dusk": 0.05 }, "end_stamina_mult": { "summer.day": 1.3 }, "rest_stamina_mult": { "day": 1.2 } },
+    "period": { "stalk": { "dawn": 0.05, "dusk": 0.05 }, "end_stamina_mult": { "summer.day": 1.3 }, "rest_stamina_mult": { "day": 1.4 } },
     "_age_comment": "Phase 2b 第 3 步：老年的狩獵表現逐年下降（追擊與制伏），decline_start 歲起每年 − per_year，最多 − max；挑選、試探的準度不受影響。第 5 步改成 5 歲起、每年 0.06、最多 0.3（能力值本身另有 growth.age_decay）。",
     "age": { "decline_start": 5.0, "per_year": 0.06, "max": 0.3 },
     "herd": { "stalk_penalty": 0.08, "weakest_rolls": 1, "spooked_detection": 10, "spooked_days": 1 },
@@ -446,6 +446,8 @@
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
   "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },
+  "_daytime_comment": "Phase 2j 一天的節奏（2026-10-26）：白天探索、移動的體力 × stamina_mult，夏天 × summer_stamina_mult；白天休息的回復倍率在 hunt.period.rest_stamina_mult（1.2 → 1.4）。",
+  "daytime": { "stamina_mult": 1.15, "summer_stamina_mult": 1.3 },
   "_year_comment": "年況（1.8 第 11 步，提案之十二 A）：每年春天決定這一年的冬季（暖冬、一般、嚴冬）與夏季（乾、一般、濕），不直接告訴玩家，從季節卡片、雪況、獵物的體況慢慢察覺。severe_max_streak：嚴冬最多連續幾年。snow：冬季（含秋末、春初）的雪況權重倍率；weak_mult：冬季虛弱的比例倍率（大型獵物）；moose_tick_spring：暖冬後春季駝鹿虛弱的倍率（冬蜱）；cold_mult：苔原嚴寒消耗；winter_kill_extra：風雪後凍死的動物多幾具。summer：fire 大火的年機率倍率、berries 漿果倍率、storm 暴雨倍率。",
   "year": {
     "winter": { "mild": 0.25, "normal": 0.5, "severe": 0.25 },

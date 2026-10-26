@@ -2081,6 +2081,8 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("explore.hibernating." + str(d["hibernating"])).replace("{location}", location)
 		"nothing" when str(d.get("mode", "")) == "water":
 			return tr("explore.water.nothing").replace("{location}", location)
+		"nothing" when d.get("day_bedded", false):
+			return tr("explore.nothing.day").replace("{location}", location)
 		"nothing":
 			return tr("explore.nothing").replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))
