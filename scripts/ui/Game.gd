@@ -2445,7 +2445,9 @@ func _process_events() -> void:
 			_log(howl_text)
 		"driven_off":
 			var to: String = GameState.apply_drive_off()
-			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)), "stranger_wolf")
+			# 還沒到可以和牠對上的時機（這一局要等成年）：說一句，讓玩家知道要等
+			var young: String = "" if GameState.stranger_can_interact() else tr("event.driven_off.too_young")
+			_show_event_message(tr("event.driven_off").replace("{region}", tr("region." + to)) + young, "stranger_wolf")
 		"stranger_confront":
 			_show_stranger_confront()
 			return

@@ -3582,6 +3582,8 @@ func apply_drive_off() -> String:
 		{"leg": 0.5, "shoulder": 0.5}, "stranger_wolf.encounter", false)
 	wolf.apply_injury(Wolf.Injury.LIGHT, 2)
 	identify("stranger_wolf")
+	# 被牠趕過也算見過牠（2026-10-26 使用者選 C：原本只有遠距「觀察」才算，被趕再多次、成年了也不會變成可以對峙）
+	life_log["stranger_observed"] = true
 	return _leave_stranger_territory()
 
 # 離開陌生灰狼的範圍：這一帶的殘骸與進食中斷，移到相鄰的區域。回傳新的區域。
