@@ -83,6 +83,7 @@ func _process(_d):
 	var entry := {} # 入口.年齡.n／ok／hurt（Phase 2i 第 7 步）
 	var time_use := {} # 年齡.sleep／short_rest／rest_until／eat／active -> 遊戲回合數（2026-10-26：一天休息的比例）
 	var time_period := {} # 時段.rest／eat／active -> 遊戲回合數
+	var hunt_period := {} # 時段（.big = 中大型獵物）-> 出獵次數（Phase 2j）
 	var entry_how := {} # 入口.年齡.戰術的結局（caught／escaped／lost／gave_up／timeout）或 menu／menu.ok
 	var tac_sps := {} # 物種.年齡.結果 -> 次數（2026-10-22：雪兔各年齡的捕捉率）
 	var tac_spx := {} # 物種.stamina／物種.turns -> 總和
@@ -244,6 +245,8 @@ func _process(_d):
 			entry[k] = int(entry.get(k, 0)) + int(tstats["hunt_entry"][k])
 		for k in tstats.get("time", {}).keys():
 			time_use[k] = int(time_use.get(k, 0)) + int(tstats["time"][k])
+		for k in tstats.get("hunt_period", {}).keys():
+			hunt_period[k] = int(hunt_period.get(k, 0)) + int(tstats["hunt_period"][k])
 		for k in tstats.get("time_period", {}).keys():
 			time_period[k] = int(time_period.get(k, 0)) + int(tstats["time_period"][k])
 		for k in tstats.get("hunt_entry_how", {}).keys():
@@ -430,6 +433,17 @@ func _process(_d):
 		if t > 0:
 			per_line.append("%s 休息 %d%%" % [{"dawn": "清晨", "day": "白天", "dusk": "黃昏", "night": "夜裡", "predawn": "黎明前"}[per], roundi(100.0 * int(time_period.get(per + ".rest", 0)) / t)])
 	print("  時間 各時段：" + "、".join(per_line))
+	var hp_all := 0
+	var hp_big := 0
+	for k in hunt_period.keys():
+		hp_all += int(hunt_period[k])
+		if str(k).ends_with(".big"):
+			hp_big += int(hunt_period[k])
+	var hp_line: Array = []
+	for per in ["dawn", "day", "dusk", "night", "predawn"]:
+		hp_line.append("%s %d%%（大中型 %d%%）" % [{"dawn": "清晨", "day": "白天", "dusk": "黃昏", "night": "夜裡", "predawn": "黎明前"}[per],
+			roundi(100.0 * (int(hunt_period.get(per, 0)) + int(hunt_period.get(per + ".big", 0))) / maxf(1.0, hp_all)), roundi(100.0 * int(hunt_period.get(per + ".big", 0)) / maxf(1.0, hp_big))])
+	print("  出獵的時段：" + "、".join(hp_line))
 	quit()
 	return true
 

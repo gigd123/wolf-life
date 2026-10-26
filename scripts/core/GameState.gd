@@ -3242,6 +3242,7 @@ func _record_action(action: String) -> void:
 
 func _on_hunt_started(hunt: HuntSystem) -> void:
 	_stat_inc("counters", "hunts")
+	_stat_inc("hunt_period", GameTime.current_period() + ("" if str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) == "small" else ".big"))
 	if hunt.stage == HuntSystem.Stage.OBSERVE:
 		_stat_inc("counters", "observe_opportunities")
 	var after: Dictionary = life_log.get("after_deer", {})
