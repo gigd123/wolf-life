@@ -3557,6 +3557,10 @@ func trigger_howl() -> void:
 
 # 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
 func _update_territory() -> void:
+	# 一次黑狼的事件之後，冷卻幾個時段才會再有（2026-10-29 QA：威嚇成功後牠又立刻出來要你離開）
+	if _abs_period() < int(life_log.get("black_wolf_quiet_until", -1)):
+		territory_periods = 0
+		return
 	# 黑狼成家後，改成「撞上狼群」（Phase 3a 第 3 步）
 	if pack_active():
 		territory_periods = 0
@@ -3573,6 +3577,7 @@ func _update_territory() -> void:
 	if territory_periods >= int(cfg.get("drive_off_periods", 4)) and _can_trigger_event() and RNGService.chance(chance_value):
 		territory_periods = 0
 		# 可以直接互動後，「被驅趕」改為牠現身、由你選擇退讓或對峙（SPEC 1.6「陌生灰狼」）
+		_black_wolf_quiet()
 		_queue_event({"type": "stranger_confront" if stranger_can_interact() else "driven_off"})
 
 # 實際執行被驅趕（畫面層處理事件時呼叫）。回傳被趕到的區域。
@@ -3667,11 +3672,18 @@ func _maybe_pack_meet() -> void:
 	if RNGService.chance(chance_value):
 		var e := _pack_meet_event()
 		_pack_note(str(e.get("lone", "")) if str(e.get("lone", "")) != "" else ("leader" if str(e.get("type", "")) == "stranger_confront" else "meet"))
+		_black_wolf_quiet()
 		_queue_event(e)
+
+# 黑狼的事件之後的冷卻（balance black_pack.meet.quiet_periods）
+func _black_wolf_quiet() -> void:
+	life_log["black_wolf_quiet_until"] = _abs_period() + int(_pack_meet_cfg().get("quiet_periods", 8))
 
 func _pack_meet_event() -> Dictionary:
 	var cfg := _pack_meet_cfg()
-	if black_pack.generation == 1 and stranger_can_interact() and RNGService.chance(float(cfg.get("lone_leader_chance", 0.25))):
+	# 你贏過牠（趕走或示弱讓牠退開）之後，牠不再單獨出來要你離開；遇到的是戒備的狼群（2026-10-29 QA）
+	var beaten: bool = stranger() != null and stranger().yielded_to_player
+	if black_pack.generation == 1 and not beaten and stranger_can_interact() and RNGService.chance(float(cfg.get("lone_leader_chance", 0.25))):
 		return {"type": "stranger_confront"}
 	if black_pack.young.any(func(a): return float(a) >= 1.0) and RNGService.chance(float(cfg.get("lone_young_chance", 0.15))):
 		return {"type": "pack_meet", "lone": "young", "location": _random_terrain(current_region)}
@@ -4120,6 +4132,11 @@ func _note_food(source: String, gain: float) -> void:
 func is_feeding() -> bool:
 	return not current_feeding.is_empty()
 
+# 這一區、這一季有沒有灰熊（區域的 competitor_weights）：沒有的地方（牧場、苔原北部）吃東西時灰熊不會來搶（2026-10-29 QA，原本全地圖共用）
+func _grizzly_here() -> float:
+	var w: Dictionary = EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {})
+	return 1.0 if float(w.get(GameTime.current_season(), 0.0)) > 0.0 else 0.0
+
 # 下一段吃完後，灰熊／狐狸來搶食的機率：每多停留 1 回合上升，深夜與密林更高。
 func scavenge_chances() -> Dictionary:
 	var cfg := _feeding_cfg()
@@ -4136,7 +4153,7 @@ func scavenge_chances() -> Dictionary:
 		bear += bonus
 		if _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")):
 			wolverine = (float(_wolverine_cfg().get("feed_chance", 0.1)) + bonus) * wolverine_season_mult()
-	bear *= float(_bear_phase_cfg().get("scavenge_mult", 1.0))
+	bear *= float(_bear_phase_cfg().get("scavenge_mult", 1.0)) * _grizzly_here()
 	return {"bear": clamp(bear, 0.0, 0.95), "fox": fox_chance(float(cfg.get("fox_chance", 0.12))), "wolverine": clamp(wolverine, 0.0, 0.95)}
 
 # 狐狸來偷殘骸（1.8 第 6 步）：冬季、雪兔低谷年更常來；你常待的區域狐狸較少。
@@ -4273,7 +4290,7 @@ func action_return_to_carcass() -> Dictionary:
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
 		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"], "src": "kill" if own else "carcass"}
 	var event: String = ""
-	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult() * float(_bear_phase_cfg().get("scavenge_mult", 1.0))):
+	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult() * float(_bear_phase_cfg().get("scavenge_mult", 1.0)) * _grizzly_here()):
 		event = "bear"
 	elif _wolverine_alive() and current_map() == str(_wolverine_cfg().get("map", "tundra")) \
 			and RNGService.chance(float(_wolverine_cfg().get("return_chance", 0.25)) * wolverine_season_mult()):
@@ -5508,6 +5525,7 @@ func stranger_yield_territory() -> String:
 # 回傳第一次打贏牠時技巧的成長量（沒有就是 0）。
 func _after_stranger_combat(c: Combat) -> float:
 	var npc := stranger()
+	_black_wolf_quiet()
 	npc.health = c.opp_hp
 	_stranger_record("drive_off" if c.context == "territory" else "meet", c.outcome, c.damage_taken, c.opp_hp_max - c.opp_hp)
 	var skill_gain: float = 0.0

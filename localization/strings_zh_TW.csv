@@ -457,6 +457,7 @@ explore.clue.sight_herd,{location}，你看見一小群{animal}
 explore.gather,{location}，你發現了{item}
 explore.nothing,{location}什麼也沒發現，這裡最近沒有{animal}來過。
 explore.nothing.day,{location}沒看到走動的鹿。白天牠們多半臥在隱蔽處反芻，清晨和黃昏才比較會出來。
+explore.nothing.empty,{location}什麼也沒發現，這一帶這時候沒有獵物的動靜。
 explore.hibernating.marmot,{location}的岩塊下有幾個洞口，都被雪封住了。旱獺在洞裡冬眠，要等春天才會出來。
 salmon.clue.early.shadows,{location}的水裡，一道道深色的影子逆著水流往上擠——鮭魚上來了，還不算多。
 salmon.clue.early.bones,{location}的岸邊有一兩副新鮮的魚骨，附近飄著淡淡的魚腥味。

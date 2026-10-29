@@ -2083,6 +2083,9 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("explore.water.nothing").replace("{location}", location)
 		"nothing" when d.get("day_bedded", false):
 			return tr("explore.nothing.day").replace("{location}", location)
+		"nothing" when str(d.get("absent_source", "")) == "":
+			# 這一區、這一季沒有任何獵物（冬季的屋舍與畜欄，羊關在棚裡；2026-10-29 QA：原本顯示原始的翻譯鍵）
+			return tr("explore.nothing.empty").replace("{location}", location)
 		"nothing":
 			return tr("explore.nothing").replace("{location}", location) \
 				.replace("{animal}", tr("animal." + str(d.get("absent_source", ""))))

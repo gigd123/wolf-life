@@ -502,6 +502,8 @@
     "remains": { "core_chance": 0.05, "border_chance": 0.025, "segments": [2, 3], "hunger": [15, 22], "core_risk": 0.3, "border_risk": 0.15 },
     "probe": { "overmark_chance": 0.15, "faded_chance": 0.3, "max_regions": 3 },
     "meet": {
+      "_quiet_comment": "quiet_periods：一次黑狼的事件（撞上狼群、牠要你離開、被趕、和牠打過）之後，幾個時段內不再有（2026-10-29 QA）。",
+      "quiet_periods": 8,
       "core_chance": 0.04, "border_chance": 0.015, "lone_leader_chance": 0.25, "lone_young_chance": 0.15,
       "standoff": { "base": 0.7, "power_divisor": 200, "min": 0.03, "max": 0.6, "leaderless_power": 120 },
       "standoff_damage": [6, 12],
