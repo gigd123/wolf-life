@@ -1772,7 +1772,9 @@ func alert_gain(mode: String) -> Dictionary:
 	sight *= float(sp().get("alert_mult", 1.0))
 	# 季節的警覺倍率（秋季繁殖期的公大角羊比較不警覺，2026-10-22；選單式 season_detection）
 	sight *= float(sp().get("season_alert", {}).get(str(game_mods.get("season", "")), 1.0))
-	return {"gain": sight + scent, "scent": scent, "noise": sight}
+	# 聽到：小跑、衝刺在近距離的腳步聲，不受密林、晨昏、技巧影響（2026-10-29 QA）
+	var hear: float = _band(al.get("hearing", {}).get(mode, []), d)
+	return {"gain": sight + scent + hear, "scent": scent, "noise": sight + hear}
 
 func _band(table: Array, d: float) -> float:
 	for pair in table:
@@ -1793,6 +1795,9 @@ func _raise_alert(mode: String) -> void:
 		alert = max(0.0, alert - float(t["alert"]["relax"]))
 		return
 	alert = min(100.0, alert + gain)
+	# 小跑、衝刺貼到牠身邊（1 格內）：一定察覺（2026-10-29 QA，使用者選 A 加 B）
+	if bool(t["alert"].get("close_bolt", false)) and mode in ["trot", "sprint"] and _cheb(wolf_pos, deer_pos) <= 1:
+		alert = 100.0
 	if alert >= float(t["deer"]["flee_at"]):
 		var cause: String = "scent" if float(a["scent"]) >= float(a["noise"]) else ("noise" if mode in ["trot", "sprint"] else "close")
 		_start_flee(cause)

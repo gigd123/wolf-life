@@ -167,7 +167,10 @@
       "downwind": []
     },
     "relax_beyond": 9,
-    "relax": 5.0
+    "relax": 5.0,
+    "_hearing_comment": "聽到（2026-10-29 QA：小跑貼近鹿群卻沒逃）：小跑、衝刺在近距離另外加的警覺，不受密林、晨昏、技巧影響；潛行、不動沒有聲音。close_bolt：小跑、衝刺結束時在牠身邊 1 格內，牠一定察覺（逃跑，會站定的照站定）。",
+    "hearing": { "trot": [[2, 60.0], [4, 30.0]], "sprint": [[2, 80.0], [4, 40.0]] },
+    "close_bolt": true
   },
   "intent": {
     "perception_two": 50,
