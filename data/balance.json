@@ -174,7 +174,7 @@
       "retreat": { "base": 0.55, "speed_divisor": 150, "danger_bonus": 0.25, "leg_injury_penalty": 0.15, "stamina": 8, "trains": ["speed"] }
     },
     "standoff": {
-      "threaten": { "base": 0.3, "divisor": 200, "stamina": 3 },
+      "threaten": { "base": 0.3, "divisor": 200, "stamina": 3, "_three_comment": "2026-10-29 QA：威嚇沒嚇住時分成僵持（牠低吼逼近、不動手，下一次威嚇 + standoff_bonus × 僵持次數）與激怒（牠先撲上來）。激怒的機率 = provoke_base ＋（牠的力量值 − 你的）÷ provoke_power_div ＋（利害倍率 − 1）× provoke_stake ＋ 僵持次數 × provoke_repeat；試探看出牠動搖 − provoke_wavering；夾在 provoke_min～provoke_max。", "standoff_bonus": 0.08, "provoke_base": 0.35, "provoke_power_div": 200, "provoke_stake": 0.5, "provoke_repeat": 0.2, "provoke_wavering": 0.15, "provoke_min": 0.1, "provoke_max": 0.9 },
       "probe": { "stamina": 4, "bonus": 0.08, "swipe_chance": 0.15 }
     },
     "_stake_comment": "對手為什麼在這裡：stake 倍率越高，越不容易被威嚇、越晚放棄。",

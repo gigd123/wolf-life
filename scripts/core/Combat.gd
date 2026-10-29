@@ -31,6 +31,7 @@ var outcome: String = ""
 var rounds: int = 0
 var probed: bool = false
 var probe_reading: String = "" # 試探後看出的態度："resolute"／"wavering"
+var threaten_standoffs: int = 0 # 威嚇後僵持的次數（2026-10-29 QA：威嚇改成成功／僵持／激怒三段）
 var damage_taken: float = 0.0
 var start_health: float = 0.0
 var start_heavy_count: int = 0 # 開打時的重傷次數：這一戰有沒有受重傷（打贏黑狼的成長用）
@@ -276,8 +277,26 @@ func _retreat_option() -> Dictionary:
 func _threaten_option() -> Dictionary:
 	var info := FightRules.threaten_chance(wolf, opp, stake_mult, morale_bonus() * float(FightRules.combat_cfg().get("morale", {}).get("threaten_mult", 0.8)))
 	var t: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("threaten", {})
-	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": info["chance"], "chance_key": "chance_label.drive_off", "factors": info["factors"],
-		"stamina": float(t.get("stamina", 3)), "injury_risk": (1.0 - float(info["chance"])) * FightRules.opponent_hit_chance(wolf, opp_power(), "bite", float(opp.get("hit_divisor", 0.0)))}
+	var chance: float = float(info["chance"])
+	var factors: Array = info["factors"]
+	# 僵持過：你沒退，牠的氣勢一點一點被壓下來
+	if threaten_standoffs > 0:
+		var b: float = float(t.get("standoff_bonus", 0.08)) * threaten_standoffs
+		chance = HuntSystem.clamp_chance(chance + b)
+		factors.append({"key": "factor.combat.held_ground", "good": true, "weight": b})
+	return {"id": "threaten", "label_key": "combat.option.threaten", "chance": chance, "chance_key": "chance_label.drive_off", "factors": factors,
+		"stamina": float(t.get("stamina", 3)), "provoke": threaten_provoke_chance(),
+		"injury_risk": (1.0 - chance) * threaten_provoke_chance() * FightRules.opponent_hit_chance(wolf, opp_power(), "bite", float(opp.get("hit_divisor", 0.0)))}
+
+# 威嚇沒嚇住時，牠直接撲上來（激怒）的機率；其餘是僵持（低吼逼近、不動手）。
+# 牠比你強、在牠的地盤（利害高）、已經僵持過幾次 → 越容易激怒；試探看出牠動搖 → 比較不會
+func threaten_provoke_chance() -> float:
+	var t: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("threaten", {})
+	var v: float = float(t.get("provoke_base", 0.35)) + (opp_power() - FightRules.wolf_power(wolf)) / float(t.get("provoke_power_div", 200.0)) \
+		+ (stake_mult - 1.0) * float(t.get("provoke_stake", 0.5)) + threaten_standoffs * float(t.get("provoke_repeat", 0.2))
+	if probe_reading == "wavering":
+		v -= float(t.get("provoke_wavering", 0.15))
+	return clamp(v, float(t.get("provoke_min", 0.1)), float(t.get("provoke_max", 0.9)))
 
 func _probe_option() -> Dictionary:
 	var p: Dictionary = FightRules.combat_cfg().get("standoff", {}).get("probe", {})
@@ -448,7 +467,12 @@ func _do_threaten(opt: Dictionary, res: Dictionary) -> void:
 		res["notes"].append("combat.threaten.success")
 		_end("drove_off")
 		return
-	# 威嚇不成，對手先動手。
+	# 沒嚇住：僵持（牠低吼逼近，不動手）或激怒（牠先撲上來）
+	if not RNGService.chance(float(opt.get("provoke", threaten_provoke_chance()))):
+		threaten_standoffs += 1
+		_ev(res, "opp", "advance")
+		res["notes"].append("combat.threaten.standoff")
+		return
 	res["notes"].append("combat.threaten.fail")
 	phase = Phase.EXCHANGE
 	_opponent_strikes("bite", false, res)

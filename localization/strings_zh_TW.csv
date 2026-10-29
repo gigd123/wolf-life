@@ -733,6 +733,7 @@ combat.opp.stamina.spent,牠的動作越來越沉，好像快撐不住了。
 combat.danger,【你瀕危】你傷得很重，再打下去可能會死；現在撤退比較容易脫身。
 combat.threaten.success,你豎起頸毛、露出牙齒，{animal}退開了。
 combat.threaten.fail,{animal}沒有被嚇住，反而撲了過來。
+combat.threaten.standoff,{animal}沒有退，喉嚨裡滾著低吼，往前逼了一步。牠還在試你的膽子。
 combat.probe.resolute,你繞著牠試探，牠寸步不讓，看來是鐵了心。
 combat.probe.wavering,你繞著牠試探，牠的目光有些游移。
 combat.probe.swipe,試探時離得太近了。
@@ -781,6 +782,7 @@ factor.combat.slow,跑得慢
 factor.combat.they_let_go,牠只想趕走你
 factor.combat.leg_injury,腿傷
 factor.combat.determined,牠不肯退
+factor.combat.held_ground,你沒退讓
 factor.combat.opening,閃開就有破綻
 factor.combat.outclassed,牠看得出打不過你
 factor.combat.tiring,消耗牠的體力

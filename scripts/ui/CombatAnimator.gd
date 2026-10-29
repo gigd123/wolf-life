@@ -136,6 +136,10 @@ func _play_event(e: Dictionary, wolf_home: Vector2, opp_home: Vector2) -> void:
 						await _struck(wolf_icon, wolf_home, dmg, Color(1.0, 0.45, 0.45), bool(e.get("heavy", false)))
 					await _return(opp_icon, opp_home)
 					_opp_action("idle")
+				"advance":
+					# 威嚇後僵持：牠低吼著往前逼一步，沒有動手
+					await _dash(opp_icon, opp_home, -1.0, 14.0, 0.18)
+					await _return(opp_icon, opp_home)
 				"give_up", "tired":
 					var t := _tween()
 					t.tween_property(opp_icon, "position", opp_home + Vector2(40, 0), 0.35)
