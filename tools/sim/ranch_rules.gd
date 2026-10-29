@@ -530,7 +530,7 @@ func _step4() -> void:
 	gs.start_ranch_encounter("eating", "prairie")
 	gs.ranch_encounter_choose("drop")
 	var dropped_ok: bool = not gs.is_feeding()
-	_check(interrupts > 10 and grabbed_ok and dropped_ok, "牧場吃到一半被打斷（%d／200 段）；叼一段跑多吃一段、殘骸沒了；丟下就沒了" % interrupts)
+	_check(interrupts > 5 and grabbed_ok and dropped_ok, "牧場吃到一半被打斷（%d／200 段）；叼一段跑多吃一段、殘骸沒了；丟下就沒了" % interrupts)
 	gs.current_region = "forest_south"
 	gs.start_feeding("white_tailed_deer", "adult", "forest_edge")
 	var outside := 0

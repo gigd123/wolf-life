@@ -76,5 +76,10 @@
     "ranch_pasture": { "name_key": "region.ranch_pasture", "map": "ranch", "terrains": ["prairie"], "main_feature": "ranch_pasture", "secondary_features": [], "adjacent": ["ranch_yard", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.2, "prey_weights": { "cattle": { "spring": 8, "summer": 8, "autumn": 7, "winter": 5 }, "hare": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": {} },
     "ranch_yard": { "name_key": "region.ranch_yard", "map": "ranch", "terrains": ["clearing"], "main_feature": "ranch_yard", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_edge"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.05, "prey_weights": { "sheep": { "spring": 6, "summer": 6, "autumn": 6, "winter": 0 } }, "competitor_weights": {}, "gather_weights": {} },
     "ranch_edge": { "name_key": "region.ranch_edge", "map": "ranch", "terrains": ["forest_edge", "stream"], "main_feature": "ranch_edge", "secondary_features": [], "adjacent": ["ranch_pasture", "ranch_yard"], "can_den": false, "terrain_stamina_modifier": 0, "sleep_find_chance": 0.45, "prey_weights": { "hare": { "spring": 2, "summer": 2, "autumn": 2, "winter": 2 }, "cattle": { "spring": 1, "summer": 1, "autumn": 1, "winter": 1 } }, "competitor_weights": {}, "gather_weights": { "berries": { "summer": 1, "autumn": 1 } } }
+  },
+  "_explore_comment": "牧場自己的探索結果（2026-10-29 QA 第五項，使用者選方案 2：共用探索的底層，牧場另有結果）。guarded：找到牛、羊的線索時，有人、有狗看著、現在靠過去太顯眼，改成看得到但不能下手（機率 = 時段 × 區域 × (1 + 注意 ÷ 100)，最多 max）。empty：空手時寫牧場的句子（屋舍冬季、屋舍夜裡、放牧地、邊緣）。",
+  "explore": {
+    "guarded": { "period": { "dawn": 0.25, "day": 0.45, "dusk": 0.25, "night": 0.08, "predawn": 0.08 }, "region": { "ranch_yard": 1.2, "ranch_pasture": 1.0, "ranch_edge": 0.4 }, "max": 0.8, "animals": ["cattle", "sheep"] },
+    "empty": { "ranch_yard": "yard", "ranch_pasture": "pasture", "ranch_edge": "edge" }
   }
 }

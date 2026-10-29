@@ -998,6 +998,28 @@ func ranch_add_attention(event: String, region_id: String = "") -> float:
 	rl["peak_attention"] = maxf(float(rl.get("peak_attention", 0.0)), ranch_attention())
 	return v
 
+# 牧場自己的探索結果（2026-10-29 QA 第五項，ranch.json explore）：
+# 找到牛、羊的線索時，有人、有狗看著 → 看得到但不能下手（ranch_guarded）；空手時寫牧場的句子（ranch_empty）
+func _ranch_explore_situation() -> void:
+	if current_map() != "ranch":
+		return
+	var cfg: Dictionary = _ranch_cfg().get("explore", {})
+	var d: Dictionary = current_discovery
+	var kind: String = str(d.get("kind", ""))
+	if kind == "clue" and (cfg.get("guarded", {}).get("animals", []) as Array).has(str(d.get("source", ""))):
+		var g: Dictionary = cfg.get("guarded", {})
+		var p: float = float(g.get("period", {}).get(GameTime.current_period(), 0.0)) * float(g.get("region", {}).get(current_region, 1.0)) * (1.0 + ranch_attention() / 100.0)
+		if RNGService.chance(minf(p, float(g.get("max", 0.8)))):
+			current_discovery = {"kind": "nothing", "ranch_guarded": str(d["source"]), "location": str(d.get("location", _random_terrain(current_region)))}
+			_stat_inc("ranch_explore", "guarded")
+		return
+	if kind == "nothing" and not d.has("ranch_sign") and not d.has("ranch_watch") and not d.has("ranch_clue"):
+		var area: String = str(cfg.get("empty", {}).get(current_region, ""))
+		if area == "yard":
+			area = "yard_winter" if GameTime.current_season() == "winter" else ("yard_night" if GameTime.current_period() in ["night", "predawn"] else "yard")
+		if area != "":
+			d["ranch_empty"] = area
+
 # 在牧場獵家畜（Phase 4a 第 3 步）：獵到加那一種的注意；出手但沒獵到（走到潛近以後）算被看到
 func _ranch_hunt_attention(hunt: HuntSystem) -> void:
 	var ev: String = str(_ranch_cfg().get("livestock", {}).get(hunt.animal_id + "." + hunt.life_stage, ""))
@@ -1349,7 +1371,7 @@ func small_pounce_candidates(region_id: String) -> Array:
 func _small_pounce_replaceable(d: Dictionary) -> bool:
 	match str(d.get("kind", "")):
 		"nothing":
-			return not d.has("hibernating") and not bool(d.get("wind_bad", false)) and not bool(d.get("blizzard", false))
+			return not d.has("hibernating") and not d.has("ranch_guarded") and not bool(d.get("wind_bad", false)) and not bool(d.get("blizzard", false))
 		"clue":
 			if d.get("source_kind", "") == "gather":
 				return true
@@ -2081,6 +2103,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"notables": _notables_here(),
 		"youth": youth_food_mults(),
 	})
+	_ranch_explore_situation()
 	# 田鼠與地松鼠的小撲（Phase 2g 第 2 步；2026-10-22 使用者選 A：只取代平淡的結果，不蓋掉獵物、殘骸這些發現）
 	if _small_pounce_replaceable(current_discovery) and _maybe_small_pounce(mode):
 		state_changed.emit()

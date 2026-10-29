@@ -2058,6 +2058,13 @@ debug.ranch.done,除錯：牧場{state}，連到{a}、{b}。
 debug.ranch.clues,出現（這一季只有線索）
 debug.ranch.open,開放
 explore.mode.watch_ranch,望向柵欄裡（看牧場的人在做什麼）
+ranch.guarded.cattle,{location}，牛群就在柵欄那頭吃草，可是旁邊有人騎著馬，還有狗跟著。現在靠過去太顯眼了。
+ranch.guarded.sheep,{location}，羊擠在畜欄邊，牧羊犬繞著牠們打轉，屋裡有人影走動。現在下手太冒險。
+ranch.empty.yard,{location}的羊都趕到另一頭去了，畜欄邊只剩踩爛的泥巴，屋裡傳來人聲。
+ranch.empty.yard_night,{location}的羊都關進棚裡了，門口拴著狗，屋裡還亮著火光。
+ranch.empty.yard_winter,{location}靜悄悄的，羊都關在棚裡過冬，只有煙囪冒著煙。
+ranch.empty.pasture,{location}的牛群走到遠處的柵欄邊去了，這附近只有被啃短的草和牛糞。
+ranch.empty.edge,{location}沒有動物的動靜，柵欄那頭偶爾傳來幾聲牛叫。
 ranch.sign.fence,{location}，你看到一段木柵欄，柱子上掛著幾撮牛毛。
 ranch.sign.cattle,{location}，地上有一大片被踩爛的泥巴和牛糞，氣味悶悶的、很濃。
 ranch.sign.smoke,{location}，遠處的木屋升起一道炊煙，風裡有燒木頭的味道。

@@ -2075,6 +2075,10 @@ func _discovery_text(d: Dictionary) -> String:
 			return tr("ranch.sign." + str(d["ranch_sign"])).replace("{location}", location)
 		"nothing" when d.has("ranch_watch"):
 			return tr("ranch.watch." + str(d["ranch_watch"]))
+		"nothing" when d.has("ranch_guarded"):
+			return tr("ranch.guarded." + str(d["ranch_guarded"])).replace("{location}", location)
+		"nothing" when d.has("ranch_empty"):
+			return tr("ranch.empty." + str(d["ranch_empty"])).replace("{location}", location)
 		"nothing" when d.has("ranch_clue"):
 			return tr("ranch.clue." + str(d["ranch_clue"])).replace("{location}", location)
 		"nothing" when d.has("hibernating"):
