@@ -245,7 +245,7 @@ func _process(_d) -> bool:
 		gs.finish_tactical_hunt(he, te)
 		var want: float = float(gd2.animals[a[0]][a[1]]["hunger_value"])
 		eat_log.append("%s %s +%d" % [a[0], a[1], roundi(gs.wolf.hunger - 30.0)])
-		if gs.wolf.hunger - 30.0 < want - 8.0 or gs.wolf.hunger - 30.0 > want or not gs.current_feeding.is_empty():
+		if gs.wolf.hunger - 30.0 < want - 10.0 or gs.wolf.hunger - 30.0 > want or not gs.current_feeding.is_empty():
 			eat_ok = false
 		gs.current_feeding = {}
 	_check(eat_ok, "一次吃完的獵物獵到後加飽食度（%s；時間的消耗另計）" % "、".join(eat_log))

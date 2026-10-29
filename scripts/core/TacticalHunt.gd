@@ -416,6 +416,12 @@ func _age_factor(factors: Array, hold: bool = false) -> float:
 func sp(i: int = -1) -> Dictionary:
 	return t.get("species", {}).get(str(herd[di if i < 0 else i].get("species", "deer")), {})
 
+# 咬住之後招式與咬著的喘 × 體型倍率（hold.size_mult：物種 id，幼鹿用 "fawn"；沒列的 1.0）
+func hold_size_mult() -> float:
+	var sm: Dictionary = t["hold"].get("size_mult", {})
+	var key: String = "fawn" if is_fawn() else str(herd[di].get("species", "deer"))
+	return float(sm.get(key, 1.0))
+
 func is_fawn(i: int = -1) -> bool:
 	return str(herd[di if i < 0 else i].get("kind", "adult")) == "fawn"
 
@@ -1160,7 +1166,8 @@ func hold_options() -> Dictionary:
 			"factors": [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(hm["divisor"])], [_tx("tactical.factor.tired"), fat * float(hm["tired"])]]}
 	hold_short = {}
 	# 苔原狼在旁邊一起咬著：招式省喘（2026-10-22 使用者：兩三隻狼一起咬住，成功率不一定比較高，但省很多力氣）
-	var bm: float = _ally_breath_mult()
+	# 依獵物的體型：小獵物咬住後制伏花的力氣少（2026-10-29 QA：咬住小河狸卻喘不過氣只能鬆口）
+	var bm: float = _ally_breath_mult() * hold_size_mult()
 	for k in out.keys():
 		out[k]["breath"] = float(out[k]["breath"]) * bm
 	for k in out.keys():
@@ -1199,6 +1206,7 @@ func hold_action(id: String) -> void:
 	var o: Dictionary = opts[id]
 	last_mode = "still"
 	if id == "release":
+		stats["released"] = int(stats.get("released", 0)) + 1
 		_let_go(_tx("tactical.release").replace("{animal}", label()))
 		rounds += 1
 		_deer_turn()
@@ -1270,6 +1278,7 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		events.append(_tx(str(sp().get("struggle_text", "tactical.struggle_kick"))).replace("{n}", str(dmg)))
 	if rng.randf() < break_chance(after_throat_miss, hanging):
+		stats["broke_free"] = int(stats.get("broke_free", 0)) + 1
 		_let_go(_tx("tactical.broke_free").replace("{animal}", label()))
 		if not _refuge_dive():
 			_deer_flee()
@@ -1877,7 +1886,7 @@ func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 		return
 	if held:
 		if not hanging:
-			breath = max(0.0, breath - float(t["hold"]["hold_breath"]) * _ally_breath_mult()) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘；苔原狼一起咬著時省喘）
+			breath = max(0.0, breath - float(t["hold"]["hold_breath"]) * _ally_breath_mult() * hold_size_mult()) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘；苔原狼一起咬著時省喘）
 		_deer_struggle(after_throat_miss, hanging)
 		if not bool(herd[target]["gone"]):
 			di = target
