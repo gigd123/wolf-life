@@ -292,6 +292,10 @@ func _handle_pending() -> void:
 					play_combat(GameState.start_stranger_combat("territory"))
 				else:
 					GameState.stranger_yield_territory()
+			"den_threat":
+				# 巢穴有東西靠近（Phase 3 第 5 步）：趕得走就趕，不然護住幼狼
+				var an: String = str(event.get("animal", "coyote"))
+				GameState.den_threat_choice(an, GameState.den_threat_drive_chance(an) >= 0.5)
 			"bear_passing":
 				GameState.resolve_bear_passing(event, "leave")
 			"ranch_humans":

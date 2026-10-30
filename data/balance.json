@@ -79,6 +79,8 @@
     "black_heir": { "base": "stranger_wolf", "start_stats": { "speed": [62, 70], "strength": [62, 70], "skill": [56, 64], "perception": [56, 64], "health_max": [100, 110] } },
     "_lone_female_comment": "Phase 3 第 2 步：離群的母狼（之後可能成為你的伴侶）。設定沿用黑狼，年輕、體型略小。",
     "lone_female": { "base": "stranger_wolf", "sex": "female", "start_age": [1.75, 3.0], "start_stats": { "speed": [62, 72], "strength": [56, 64], "skill": [56, 66], "perception": [58, 68], "health_max": [92, 104] } },
+    "_pup_comment": "Phase 3 第 5 步：你的幼狼（出生時 0 歲；能力、繼承第 6 步再做）。",
+    "pup": { "base": "stranger_wolf", "start_age": [0.0, 0.0], "start_stats": { "speed": [20, 28], "strength": [14, 20], "skill": [10, 16], "perception": [20, 28], "health_max": [30, 40] }, "other_death_per_season": 0.0 },
     "_pack_breeder_comment": "Phase 3 第 1 步：一般鄰群帶頭的繁殖公狼（換代後的也是）。設定沿用黑狼，能力略低。",
     "pack_breeder": { "base": "stranger_wolf", "start_age": [3.0, 5.0], "start_stats": { "speed": [60, 70], "strength": [62, 72], "skill": [56, 66], "perception": [56, 64], "health_max": [100, 112] } },
     "wolverine": {
@@ -514,6 +516,18 @@
     "combat": { "ally_chance": 0.25, "per_strength": 0.005, "damage_per_strength": 0.1, "hurt_chance": 0.15, "hurt_damage": [10, 25] },
     "auto_role": { "drive_speed": 68, "ambush_strength": 66 },
     "candidate_join_chance": 0.3, "eat_segments": 1
+  },
+  "breeding": {
+    "_comment": "Phase 3 第 5 步（SPEC「繁殖與育幼」）：冬季換春季時決定懷孕（pregnant；配對第一年 pregnant_first_year；冬天吃飽的天數比例低於 fed_min × underfed_mult；伴侶血量低於一半 × weak_mult），春季第 birth_day 天生 litter_base 隻（去冬吃飽 ≥ well_fed +1、年況好（剛過的冬天是嚴冬）+1、伴侶血量低於六成 −1，夾在 litter_range）。春季伴侶留守、靠你帶回去：每天 mate_need ＋ 每隻幼狼 pup_need（季節）；夏季搬到集合點（巢穴或相鄰），只算幼狼；秋季起幼狼跟著行動，在獵物旁每兩隻吃一段。存糧從 start_food 開始；不夠時幼狼挨餓（每隻每天多 hunger_death_daily 的死亡機率），春季伴侶會自己出去找（巢穴沒人看著）。叼一段回去：走到巢穴時放下 carry_keep；回巢反芻：飽食度 ≥ min_hunger 才能，扣 cost、存糧 + cost × keep。威脅：每天 threat_chance（沒人看著 × unguarded_mult），你在那裡是事件（defend：趕走的機率 base ＋ 旁邊每隻大狼 per_helper ＋ 力量差；失敗受傷、fail_loss 少一隻；護住 shelter_loss），不在時有大狼守著 guarded_loss、沒有 unguarded_loss 的機率少 1～2 隻。每隻幼狼每天 pup_death_daily ×（1 ＋ 每多一隻（4 隻以上）litter_penalty）＋ 壞天氣 weather_death_daily。目標：第一年存活約一半（模擬校準）。",
+    "pregnant": 0.85, "pregnant_first_year": 0.65, "fed_min": 0.5, "underfed_mult": 0.5, "weak_mult": 0.5,
+    "birth_day": 5, "litter_base": 4, "well_fed": 0.8, "litter_range": [3, 6],
+    "mate_need": 15, "pup_need": { "spring": 3, "summer": 6 }, "start_food": 30,
+    "carry_keep": 0.9, "regurgitate": { "min_hunger": 60, "cost": 25, "keep": 0.85 },
+    "threat_chance": 0.03, "unguarded_mult": 2.5, "threats": { "grizzly_bear": 2, "black_bear": 1, "cougar": 1, "coyote": 2 },
+    "guarded_loss": 0.2, "unguarded_loss": 0.6,
+    "defend": { "base": { "grizzly_bear": 0.35, "black_bear": 0.5, "cougar": 0.45, "coyote": 0.8 }, "per_helper": 0.15,
+      "fail_damage": { "grizzly_bear": [15, 30], "black_bear": [10, 20], "cougar": [10, 25], "coyote": [4, 8] }, "fail_loss": 0.5, "shelter_loss": 0.4 },
+    "pup_death_daily": 0.006, "litter_penalty": 0.15, "hunger_death_daily": 0.05, "weather_death_daily": 0.01
   },
   "packs": {
     "_comment": "Phase 3 第 1 步（SPEC「鄰群的配置」，方案甲）：黑狼一家以外的鄰群。layout：每張地圖最多一群住在地圖上（核心放在離你的巢穴最遠的那一區），其他住在地圖外、只在 border 那一區出現。neighbor：覆寫 black_pack 的數值（一般鄰群不受你的年齡限制、一開始就是一對或狼群）。cap_exempt：不受每天事件上限的事件種類（巢穴、幼狼，第 5 步用）。",

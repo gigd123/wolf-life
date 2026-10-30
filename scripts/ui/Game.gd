@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "regurgitate", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1666,6 +1666,9 @@ func _on_action_button(action_id: String) -> void:
 		"mark":
 			var r: String = GameState.action_mark()
 			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
+		"regurgitate":
+			var got: float = GameState.regurgitate()
+			_log(tr("den.regurgitated").replace("{days}", str(snapped(GameState.den_food_days(), 0.5))) if got > 0.0 else tr("den.cannot_regurgitate"))
 		"howl":
 			var hr: Dictionary = GameState.action_howl()
 			_log(tr("log.howl"))
@@ -2276,6 +2279,16 @@ func _show_feeding(intro: String = "") -> void:
 		var cache_btn: Button = encounter_buttons_box.get_child(encounter_buttons_box.get_child_count() - 1)
 		cache_btn.disabled = cache_status == "full"
 		cache_btn.tooltip_text = tr("feeding.cache.full").replace("{n}", str(int(GameData.balance.get("cache", {}).get("max_segments", 2)))) if cache_status == "full" else tr("feeding.cache.tip")
+	# 叼一段回巢穴（Phase 3 第 5 步）：幼狼要靠你餵的季節
+	if GameState.can_carry_to_den():
+		_add_encounter_button(tr("feeding.carry_den"), func():
+			GameState.carry_to_den()
+			_log(tr("den.carrying").replace("{region}", tr("region." + GameState.pup_spot())))
+			_show_feeding()
+			_refresh()
+		)
+		var carry_btn: Button = encounter_buttons_box.get_child(encounter_buttons_box.get_child_count() - 1)
+		carry_btn.tooltip_text = tr("feeding.carry_den.tip").replace("{days}", str(snapped(GameState.den_food_days(), 0.5)))
 	_add_encounter_button(tr("feeding.leave"), func():
 		GameState.leave_feeding()
 		_log(tr("log.feeding_left"))
@@ -2624,6 +2637,20 @@ func _process_events() -> void:
 		"territory_lost", "territory_won":
 			_show_card(tr("territory_card.title." + str(event["type"]).trim_prefix("territory_")), tr("territory_card." + str(event["type"]).trim_prefix("territory_")).replace("{region}", tr("region." + str(event.get("region", "")))))
 			_set_card_wolf("")
+			return
+		"pups_expected", "pups_born", "pups_weaned", "pups_follow":
+			var pk: String = str(event["type"]).trim_prefix("pups_")
+			_show_card(tr("pups.title." + pk), tr("pups." + pk + (".nomate" if pk == "weaned" and not event.get("mate", true) else "")).replace("{n}", str(int(event.get("n", 0)))).replace("{region}", tr("region." + str(event.get("region", "")))))
+			_set_card_wolf("")
+			return
+		"pups_hungry":
+			_show_event_message(tr("pups.hungry").replace("{region}", tr("region." + GameState.pup_spot())), "")
+			return
+		"pup_died":
+			_show_event_message(tr("pups.died." + ("hunger" if str(event.get("cause", "")) == "hunger" else ("weak" if str(event.get("cause", "")) == "weak" else "predator"))) + (tr("pups.left").replace("{n}", str(int(event.get("left", 0)))) if int(event.get("left", 0)) > 0 else tr("pups.none_left")), "")
+			return
+		"den_threat":
+			_show_den_threat(str(event.get("animal", "coyote")))
 			return
 		"she_wolf_mate":
 			_show_card(tr("she_wolf.mate.title"), tr("she_wolf.mate." + str(event.get("how", "courted"))))
@@ -3653,13 +3680,25 @@ func _show_pack_panel() -> void:
 	var members: Array = GameState.pack_members()
 	if members.is_empty():
 		return
-	var n: NpcWolf = members[0]
+	var n: NpcWolf = GameState.she_wolf() if GameState.has_mate() else null
+	if n == null:
+		# 伴侶不在了、只剩幼狼（第 6 步再做逐隻的面板）
+		encounter_message.text = _pups_line()
+		encounter_detail.text = ""
+		_clear_children(encounter_buttons_box)
+		_add_encounter_button(tr("ui.close"), func():
+			encounter_overlay.visible = false
+		)
+		encounter_overlay.visible = true
+		return
 	var lines: Array[String] = []
 	lines.append(tr("ui.pack.mate").replace("{age}", str(snapped(n.age_years, 0.5))))
 	lines.append(tr("stranger.compare." + GameState.power_compare(n.power())))
 	lines.append(tr("ui.pack.health").replace("{hp}", str(int(n.health))).replace("{max}", str(int(n.health_max))))
 	if n.task == "follow" and not GameState.followers().has(n):
 		lines.append(tr("ui.pack.too_hurt"))
+	if not GameState.pups().is_empty():
+		lines.append(_pups_line())
 	var role_now: String = GameState.hunt_role_of(n)
 	lines.append(tr("ui.pack.now").replace("{task}", tr("ui.pack.task." + n.task)).replace("{role}", tr("ui.pack.role." + n.hunt_role) + ("" if n.hunt_role != "auto" else tr("ui.pack.role.auto_is").replace("{role}", tr("ui.pack.role." + role_now)))))
 	encounter_message.text = "\n".join(lines)
@@ -3681,6 +3720,40 @@ func _show_pack_panel() -> void:
 			_show_pack_panel()
 		)
 	_add_encounter_button(tr("ui.close"), func():
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	encounter_overlay.visible = true
+
+# 幼狼的狀況（Phase 3 第 5 步）：幾隻、在哪、存糧還夠幾天
+func _pups_line() -> String:
+	var n: int = GameState.pups().size()
+	if not GameState.pups_need_food():
+		return tr("ui.pack.pups.follow").replace("{n}", str(n))
+	return tr("ui.pack.pups").replace("{n}", str(n)).replace("{region}", tr("region." + GameState.pup_spot())).replace("{days}", str(snapped(GameState.den_food_days(), 0.5)))
+
+# 巢穴（集合點）有東西靠近、你在那裡（Phase 3 第 5 步）：趕走或護住幼狼
+func _show_den_threat(animal: String) -> void:
+	var known: bool = GameState.is_identified(animal)
+	var text: String = tr("den.threat." + animal + ("" if known else ".unknown"))
+	_log(text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, animal, "adult", "idle")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("den.threat.drive").replace("{p}", str(roundi(GameState.den_threat_drive_chance(animal) * 100.0))), func():
+		var r: Dictionary = GameState.den_threat_choice(animal, true)
+		_log(tr("den.threat.drive." + ("ok" if r["ok"] else "fail")) + (tr("den.threat.lost") if int(r["lost"]) > 0 else ""))
+		encounter_overlay.visible = false
+		if GameState.wolf != null and not GameState.wolf.alive:
+			_on_wolf_died(GameState.wolf.death_cause)
+			return
+		_refresh()
+	)
+	_add_encounter_button(tr("den.threat.shelter"), func():
+		var r: Dictionary = GameState.den_threat_choice(animal, false)
+		_log(tr("den.threat.sheltered") + (tr("den.threat.lost") if int(r["lost"]) > 0 else ""))
 		encounter_overlay.visible = false
 		_refresh()
 	)

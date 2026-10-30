@@ -191,6 +191,7 @@ func _on_period_changed(_period_index: int) -> void:
 	_decay_carcasses()
 	_update_caches()
 	_place_members()
+	_deliver_food()
 	# 換季睡眠期間暫停隨機的世界事件（SPEC「季節轉換」）；大火、暴風雪進行中不會是換季睡眠
 	if not quiet_sleep:
 		_update_weather()
@@ -230,6 +231,7 @@ func _on_day_changed(_day: int) -> void:
 	_heal_npcs()
 	_rest_members()
 	_update_she_wolf()
+	_update_breeding()
 	_place_members()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
@@ -265,6 +267,7 @@ func _on_season_changed(_season_index: int) -> void:
 			_new_year()
 		_tundra_breeding_season()
 		_maybe_tundra_mate()
+		_breeding_on_season(_season_fed_ratio())
 		_roam_tundra_wolves(true)
 		_update_snow() # 換季時日期直接歸 1、不經過換日：雪況在這裡結算，冬季第一天不會沿用秋末的
 		life_log["region_periods"] = {}
@@ -778,6 +781,8 @@ func available_actions() -> Array[String]:
 		actions.append("mark")
 	if can_howl():
 		actions.append("howl")
+	if can_regurgitate():
+		actions.append("regurgitate")
 	if can_lie_down():
 		actions.append("lie_down")
 	return actions
@@ -3215,6 +3220,10 @@ func finish_hunt(hunt: HuntSystem) -> void:
 				var eaten: int = min(int(current_feeding["segments_left"]) - 1, RNGService.randi_range(int(e[0]), int(e[1])) + max(0, tundra_adults() - 2))
 				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - max(0, eaten)
 				current_feeding["with_tundra"] = true
+		# 跟著行動的幼狼（秋季起，Phase 3 第 5 步）：每兩隻吃掉一段
+		var fp: int = pups().filter(func(n): return n.task == "follow").size()
+		if fp > 0 and not current_feeding.is_empty():
+			current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - ceili(fp / 2.0))
 		# 和伴侶（或還在認識的母狼）一起獵到（Phase 3 第 3 步）：牠吃掉一段；還在認識的關係 +2
 		if hunt.mate_help != "":
 			_stat_inc("pack_hunt", "caught")
@@ -6121,12 +6130,12 @@ func _pack_life_cfg() -> Dictionary:
 
 # 你的狼群成員（目前只有伴侶；第 6 步加長大的子女）
 func pack_members() -> Array:
-	return [she_wolf()] if has_mate() else []
+	return ([she_wolf()] if has_mate() else []) + npcs.values().filter(func(n): return n.alive and n.pack_id == "player")
 
 # 跟著你、而且還走得動的成員（血量低於 follow_min_health 的留下來養傷）
 func followers() -> Array:
 	var min_hp: float = float(_pack_life_cfg().get("follow_min_health", 0.4))
-	return pack_members().filter(func(n): return n.task == "follow" and n.health >= n.health_max * min_hp)
+	return pack_members().filter(func(n): return n.task == "follow" and n.age_years >= 1.0 and n.health >= n.health_max * min_hp)
 
 func set_task(npc_id: String, task: String) -> void:
 	var n: NpcWolf = npcs.get(npc_id, null)
@@ -6159,7 +6168,7 @@ func _place_member(n: NpcWolf) -> void:
 		"follow":
 			n.territory = current_region if followers().has(n) else (den_region if den_region != "" else current_region)
 		"den", "rest":
-			n.territory = den_region if den_region != "" else n.territory
+			n.territory = pup_spot() if pups_need_food() else (den_region if den_region != "" else n.territory)
 		"patrol":
 			var own := own_territories()
 			n.territory = str(own[RNGService.randi_range(0, own.size() - 1)]) if not own.is_empty() else (den_region if den_region != "" else n.territory)
@@ -6220,6 +6229,246 @@ func _apply_mate_hunt_help(hunt: HuntSystem) -> void:
 	if _she_wolf_here() and she_relation_key() == "friendly" and RNGService.chance(float(_pack_life_cfg().get("candidate_join_chance", 0.3))):
 		hunt.mate_help = she_wolf().id
 		hunt.mate_role = hunt_role_of(she_wolf())
+
+# --- Phase 3 第 5 步：繁殖與育幼（SPEC Phase 3「繁殖與育幼」；數值在 balance.json 的 breeding）---
+# 狀態在 life_log.breeding：pregnant、birth_day、den_food（巢穴的存糧，飽食度單位）、spot（巢穴或集合點）、carrying（叼著要帶回去的肉）、
+# hungry_days、prev_task（伴侶留守前的指派）。幼狼是具名的 NpcWolf（id pup_N，pack_id "player"，父母記在 parents）。
+
+func _pup_cfg() -> Dictionary:
+	return GameData.balance.get("breeding", {})
+
+func breeding() -> Dictionary:
+	return life_log.get_or_add("breeding", {})
+
+func pups() -> Array:
+	return npcs.values().filter(func(n): return n.alive and n.pack_id == "player" and n.age_years < 1.0)
+
+# 這一季幼狼要靠你餵：春季（在巢穴、伴侶留守）、夏季（集合點）；秋季起跟著行動，在獵物旁一起吃
+func pups_need_food() -> bool:
+	return not pups().is_empty() and GameTime.current_season() in ["spring", "summer"]
+
+func pup_spot() -> String:
+	return str(breeding().get("spot", den_region))
+
+# 每天要帶回去的量：春季伴侶留守（她也靠你）＋每隻幼狼；夏季只有幼狼
+func den_daily_need() -> float:
+	if not pups_need_food():
+		return 0.0
+	var c := _pup_cfg()
+	var season: String = GameTime.current_season()
+	var mate_part: float = float(c.get("mate_need", 15)) if season == "spring" and she_wolf() != null else 0.0
+	return mate_part + float(c.get("pup_need", {}).get(season, 4)) * pups().size()
+
+func den_food_days() -> float:
+	var need := den_daily_need()
+	return float(breeding().get("den_food", 0.0)) / need if need > 0.0 else 99.0
+
+# 冬季換春季：決定伴侶有沒有懷孕（健康、這個冬天吃得夠時；第一年配對比較低）
+func _breeding_on_season(fed_ratio: float) -> void:
+	var season: String = GameTime.current_season()
+	var b := breeding()
+	var c := _pup_cfg()
+	if season == "spring" and has_mate():
+		var m: NpcWolf = she_wolf()
+		var first_year: bool = life_events("mate").size() > 0 and _today() - int(life_events("mate").back().get("day", 0)) < int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10)) * 4
+		var p: float = float(c.get("pregnant_first_year" if first_year else "pregnant", 0.85))
+		if fed_ratio < float(c.get("fed_min", 0.5)):
+			p *= float(c.get("underfed_mult", 0.5))
+		if m.health < m.health_max * 0.5:
+			p *= float(c.get("weak_mult", 0.5))
+		if RNGService.chance(p):
+			b["pregnant"] = true
+			b["birth_day"] = int(c.get("birth_day", 5))
+			b["winter_fed"] = fed_ratio
+			add_life_event("mate.pregnant", {"who": m.id})
+			_queue_notice({"type": "pups_expected"})
+	elif season == "summer" and not pups().is_empty():
+		# 斷奶：搬到巢穴附近的集合點，伴侶回來一起狩獵
+		var near: Array = [den_region] + (EncounterSystem.region_data(den_region).get("adjacent", []) as Array).filter(func(r): return GameData.map_of(r) == GameData.map_of(den_region))
+		b["spot"] = str(near[RNGService.randi_range(0, near.size() - 1)])
+		_restore_mate_task()
+		add_life_event("pups.weaned", {"n": pups().size(), "spot": b["spot"]})
+		_queue_notice({"type": "pups_weaned", "region": b["spot"], "n": pups().size(), "mate": has_mate()})
+	elif season == "autumn" and not pups().is_empty():
+		# 秋季：幼狼開始跟著行動（在獵物旁一起吃）
+		for n in pups():
+			n.task = "follow"
+		b.erase("spot")
+		b["den_food"] = 0.0
+		add_life_event("pups.follow", {"n": pups().size()})
+		_queue_notice({"type": "pups_follow", "n": pups().size()})
+
+func _restore_mate_task() -> void:
+	var m := she_wolf()
+	var b := breeding()
+	if m != null and b.has("prev_task"):
+		m.task = str(b["prev_task"])
+		b.erase("prev_task")
+
+# 春季第 birth_day 天生幼狼：基本 4 隻，去冬吃得好 +1、年況好 +1、伴侶虛弱 −1（3～6）
+func _give_birth() -> void:
+	var b := breeding()
+	var c := _pup_cfg()
+	var m := she_wolf()
+	b.erase("pregnant")
+	if m == null:
+		return
+	var n: int = int(c.get("litter_base", 4))
+	if float(b.get("winter_fed", 0.0)) >= float(c.get("well_fed", 0.8)):
+		n += 1
+	# 年況好：剛過的冬天是嚴冬（深雪、虛弱的獵物多，對狼是好年，見 year）
+	if str(year_state().get("winter", "normal")) == "severe":
+		n += 1
+	if m.health < m.health_max * 0.6:
+		n -= 1
+	var lr: Array = c.get("litter_range", [3, 6])
+	n = clampi(n, int(lr[0]), int(lr[1]))
+	var ids: Array = []
+	for i in n:
+		var count: int = int(life_log.get("pup_count", 0)) + 1
+		life_log["pup_count"] = count
+		var id: String = "pup_%d" % count
+		var pup := NpcWolf.create(id, den_region, "pup")
+		pup.age_years = 0.0
+		pup.sex = "female" if RNGService.chance(0.5) else "male"
+		pup.pack_id = "player"
+		pup.parents = ["player", m.id]
+		pup.task = "den"
+		npcs[id] = pup
+		ids.append(id)
+	b["spot"] = den_region
+	b["den_food"] = float(c.get("start_food", 30))
+	b["hungry_days"] = 0
+	b["prev_task"] = m.task
+	m.task = "den"
+	m.territory = den_region
+	add_life_event("pups.born", {"n": n, "ids": ids})
+	_queue_notice({"type": "pups_born", "n": n})
+
+# 每天換日：生產、存糧、威脅、幼狼的存活
+func _update_breeding() -> void:
+	var b := breeding()
+	var c := _pup_cfg()
+	if bool(b.get("pregnant", false)) and GameTime.current_season() == "spring" and GameTime.day >= int(b.get("birth_day", 5)):
+		_give_birth()
+	var ps := pups()
+	if ps.is_empty():
+		return
+	var need_food: bool = pups_need_food()
+	var hungry := false
+	var mate_out := false
+	if need_food:
+		var food: float = float(b.get("den_food", 0.0)) - den_daily_need()
+		if food < 0.0:
+			hungry = true
+			food = 0.0
+			# 存糧不夠：春季伴侶只好自己出去找吃的（巢穴沒有大狼看著）
+			mate_out = GameTime.current_season() == "spring"
+		b["den_food"] = food
+		b["hungry_days"] = int(b.get("hungry_days", 0)) + 1 if hungry else 0
+		if hungry and int(b["hungry_days"]) == 1:
+			_queue_event({"type": "pups_hungry"}, "pups")
+	# 守著的大狼：春季伴侶（沒出去找吃的）、指派留守的成員、你自己在那裡
+	var guarded: bool = not need_food or current_region == pup_spot() or (not mate_out and pack_members().any(func(n): return n.age_years >= 1.0 and n.task in ["den", "rest"]))
+	# 威脅：熊、美洲獅、郊狼靠近（只在幼狼還在巢穴、集合點時）
+	if need_food and RNGService.chance(float(c.get("threat_chance", 0.03)) * (1.0 if guarded else float(c.get("unguarded_mult", 2.5)))):
+		_den_threat(guarded)
+	# 每隻幼狼的存活：一窩越大越難、挨餓、壞天氣
+	var d: float = float(c.get("pup_death_daily", 0.006)) * (1.0 + float(c.get("litter_penalty", 0.15)) * max(0, ps.size() - 4))
+	if hungry:
+		d += float(c.get("hunger_death_daily", 0.05))
+	if weather == "storm" or blizzard_active():
+		d += float(c.get("weather_death_daily", 0.01))
+	for n in ps:
+		if RNGService.chance(d):
+			_pup_died(n, "hunger" if hungry else "weak")
+
+func _pup_died(n: NpcWolf, cause: String) -> void:
+	n.die(cause)
+	add_life_event("pup.died", {"who": n.id, "cause": cause})
+	_queue_event({"type": "pup_died", "cause": cause, "left": pups().size()}, "pups")
+
+# 巢穴（集合點）有東西靠近：你在那裡 → 事件（趕走或護住）；不在 → 有大狼守著時少一點損失
+func _den_threat(guarded: bool) -> void:
+	var c := _pup_cfg()
+	var animal: String = str(RNGService.weighted_pick(c.get("threats", {"grizzly_bear": 1, "coyote": 1})))
+	if current_region == pup_spot():
+		_queue_event({"type": "den_threat", "animal": animal}, "den")
+		return
+	var loss: float = float(c.get("guarded_loss", 0.2)) if guarded else float(c.get("unguarded_loss", 0.6))
+	if RNGService.chance(loss):
+		var ps := pups()
+		var k: int = 1 if guarded or ps.size() <= 1 else RNGService.randi_range(1, 2)
+		for i in mini(k, ps.size()):
+			_pup_died(ps[i], animal)
+	add_life_event("den.threat", {"animal": animal, "guarded": guarded, "present": false})
+
+# 你在巢穴時有東西靠近：趕走（有大狼在旁邊時比較容易；失敗受傷、可能少一隻）或護住幼狼（不受傷，可能少一隻）
+func den_threat_drive_chance(animal: String) -> float:
+	var c: Dictionary = _pup_cfg().get("defend", {})
+	var base: float = float(c.get("base", {}).get(animal, 0.5))
+	var helpers: int = pack_members().filter(func(n): return n.age_years >= 1.0 and n.territory == current_region).size()
+	return clamp(base + helpers * float(c.get("per_helper", 0.15)) + (FightRules.wolf_power(wolf) - 140.0) / 300.0, 0.05, 0.95)
+
+func den_threat_choice(animal: String, drive: bool) -> Dictionary:
+	var c: Dictionary = _pup_cfg().get("defend", {})
+	GameTime.advance_turns(1)
+	var res := {"drive": drive, "ok": true, "lost": 0}
+	if drive:
+		res["ok"] = RNGService.chance(den_threat_drive_chance(animal))
+		if not res["ok"]:
+			var dmg: Array = c.get("fail_damage", {}).get(animal, [10, 20])
+			FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(dmg[0]), int(dmg[1]))), {"leg": 0.4, "shoulder": 0.4, "face": 0.2}, animal + ".den", false)
+	var lose: float = 0.0 if drive and res["ok"] else float(c.get("fail_loss" if drive else "shelter_loss", 0.4))
+	if not pups().is_empty() and RNGService.chance(lose):
+		_pup_died(pups()[0], animal)
+		res["lost"] = 1
+	add_life_event("den.threat", {"animal": animal, "present": true, "drive": drive, "ok": res["ok"], "lost": res["lost"]})
+	_check_death()
+	state_changed.emit()
+	return res
+
+# 叼一段回去：從正在吃的獵物叼走一段，走到巢穴（集合點）時放下
+func can_carry_to_den() -> bool:
+	return pups_need_food() and not current_feeding.is_empty() and int(current_feeding.get("segments_left", 0)) >= 1 and float(breeding().get("carrying", 0.0)) <= 0.0
+
+func carry_to_den() -> void:
+	if not can_carry_to_den():
+		return
+	record_decision("den.carry")
+	breeding()["carrying"] = float(current_feeding["segment_value"])
+	current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+	if int(current_feeding["segments_left"]) <= 0:
+		current_feeding = {}
+	_deliver_food()
+	state_changed.emit()
+
+func _deliver_food() -> void:
+	var b := breeding()
+	if float(b.get("carrying", 0.0)) > 0.0 and current_region == pup_spot():
+		b["den_food"] = float(b.get("den_food", 0.0)) + float(b["carrying"]) * float(_pup_cfg().get("carry_keep", 0.9))
+		b["carrying"] = 0.0
+		_stat_inc("den", "carried")
+		log_message.emit(tr("den.delivered"))
+
+# 回巢反芻：吃飽的你把胃裡的肉吐給幼狼（扣你的飽食度）
+func can_regurgitate() -> bool:
+	return pups_need_food() and current_region == pup_spot() and wolf.hunger >= float(_pup_cfg().get("regurgitate", {}).get("min_hunger", 60))
+
+func regurgitate() -> float:
+	if not can_regurgitate():
+		return 0.0
+	record_decision("den.regurgitate")
+	var r: Dictionary = _pup_cfg().get("regurgitate", {})
+	GameTime.advance_turns(1)
+	var give: float = float(r.get("cost", 25))
+	wolf.hunger -= give
+	wolf.clamp_stats()
+	var got: float = give * float(r.get("keep", 0.85))
+	breeding()["den_food"] = float(breeding().get("den_food", 0.0)) + got
+	_stat_inc("den", "regurgitated")
+	state_changed.emit()
+	return got
 
 # 在牠面前逃跑或示弱：關係下降。
 func _she_saw_combat(c: Combat) -> void:

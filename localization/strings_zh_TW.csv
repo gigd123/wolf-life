@@ -2231,3 +2231,41 @@ territory_card.title.lost,地盤被佔走
 territory_card.lost,你在{region}留下的氣味早就被蓋過去了。那一帶現在是那群狼的地方。
 territory_card.title.won,新的地盤
 territory_card.won,{region}一帶，現在只剩下你們的氣味。那一帶是你們的了。
+action.regurgitate,反芻餵幼狼
+den.regurgitated,你低下頭，把胃裡的肉吐給擠過來的幼狼。巢穴的存糧夠吃約 {days} 天。
+den.cannot_regurgitate,你胃裡沒有東西可以吐給牠們。
+den.carrying,你叼起一段肉。帶回{region}，就能放下給牠們。
+den.delivered,你把叼回來的肉放下，幼狼們一擁而上。
+feeding.carry_den,叼一段回去給幼狼
+feeding.carry_den.tip,叼著走回巢穴（集合點）時放下。現在的存糧夠吃約 {days} 天。
+pups.title.expected,懷孕
+pups.expected,這個春天，伴侶的肚子一天天圓了起來。牠開始在巢穴附近徘徊，不太願意走遠。
+pups.title.born,幼狼
+pups.born,巢穴深處傳來細細的嗚咽聲。伴侶生下了 {n} 隻幼狼。牠會留在巢穴照顧牠們，吃的要靠你帶回來。
+pups.title.weaned,集合點
+pups.weaned,幼狼斷奶了。你們把牠們帶到{region}那一帶，那裡成了狼群的集合點。伴侶可以和你一起出去狩獵了，牠們還是要靠你們帶吃的回來。
+pups.weaned.nomate,幼狼斷奶了。你把牠們帶到{region}那一帶，那裡成了集合點。牠們還是要靠你帶吃的回來。
+pups.title.follow,跟著走
+pups.follow,入秋了，{n} 隻小狼開始跟在你們身後走。獵到東西時，牠們會擠過來一起吃。
+pups.hungry,{region}傳來幼狼餓得一直哭叫的聲音。帶回去的吃的不夠了。
+pups.died.hunger,一隻幼狼沒有撐過今天。牠太餓了。
+pups.died.weak,一隻幼狼沒有撐過今天。
+pups.died.predator,巢穴那邊出了事，一隻幼狼不見了。
+pups.left,還剩 {n} 隻。
+pups.none_left,一隻都沒有剩下。
+ui.pack.pups,幼狼 {n} 隻在{region}，存糧夠吃約 {days} 天。
+ui.pack.pups.follow,{n} 隻小狼跟著你們行動。
+den.threat.grizzly_bear,一頭灰熊循著氣味走向巢穴，幼狼縮在洞口發抖。
+den.threat.grizzly_bear.unknown,一頭巨大的野獸循著氣味走向巢穴，幼狼縮在洞口發抖。
+den.threat.black_bear,一頭黑熊在巢穴附近嗅來嗅去，越走越近。
+den.threat.black_bear.unknown,一頭黑色的野獸在巢穴附近嗅來嗅去，越走越近。
+den.threat.cougar,美洲獅伏在岩石後面，盯著巢穴的洞口。
+den.threat.cougar.unknown,一隻黃褐色的大貓伏在岩石後面，盯著巢穴的洞口。
+den.threat.coyote,兩隻郊狼在巢穴外繞圈，想趁機叼走一隻幼狼。
+den.threat.coyote.unknown,兩隻比你小的灰黃色犬類在巢穴外繞圈，想趁機叼走一隻幼狼。
+den.threat.drive,衝出去趕走牠（成功率 {p}%）
+den.threat.shelter,擋在洞口護住幼狼
+den.threat.drive.ok,你衝出去又咬又吼，牠退走了。
+den.threat.drive.fail,你衝出去，被牠打了回來。
+den.threat.sheltered,你擋在洞口，壓低身子低吼，等牠離開。
+den.threat.lost,混亂中，一隻幼狼不見了。
