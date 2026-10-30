@@ -29,6 +29,7 @@ func _process(_d):
 	var adult_days := 0
 	var adult_hungry := 0
 	var stam_sum := 0.0
+	var starve_ages: Array = []
 	var by_age := {} # 歲 -> [季數, 有事的季數]
 	for r in runs:
 		var ap = AP.new("all", style)
@@ -67,6 +68,8 @@ func _process(_d):
 		var cause: String = str(GS.wolf.death_cause)
 		deaths[cause] = int(deaths.get(cause, 0)) + 1
 		ages.append(GS.wolf.age_years)
+		if cause == "starvation":
+			starve_ages.append(snapped(GS.wolf.age_years, 0.25))
 	ages.sort()
 	var total := 0.0
 	for a in ages:
@@ -84,6 +87,8 @@ func _process(_d):
 	print("  事件次數：", kinds)
 	print("  壽命：平均 %.1f、中位數 %.1f（目標 9～11）" % [total / max(1, ages.size()), ages[ages.size() / 2] if not ages.is_empty() else 0.0])
 	print("  死因：%s；被狼殺死 %d%%（目標 ≤ 15%%）" % [deaths, roundi(100.0 * wolf_deaths / max(1, runs))])
+	starve_ages.sort()
+	print("  餓死的年齡：", starve_ages)
 	print("  成年每年挨餓 %.1f 天；成年每天開始時的體力平均 %.0f" % [adult_hungry / max(0.01, adult_days / 40.0), stam_sum / max(1, adult_days)])
 	quit()
 	return true
