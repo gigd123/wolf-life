@@ -39,6 +39,7 @@ var roam: bool = false
 # 找伴侶（Phase 3 第 2 步）：never 不嚎叫；sometimes 秋冬每 3 天嚎叫一次；always 秋冬每天嚎叫。母狼在附近時都會嚎叫叫牠過來
 var mate_search: String = "sometimes"
 var _howled_day: int = -1
+var _sought_she_day: int = -1
 # 四處走動時，夜裡先走回巢穴再睡（模擬對照：四處走動的狼變餓，是不是因為睡在野外）
 var roam_sleep_home: bool = false
 # 牧場（Phase 4a 第 5 步，ranch.json auto）：never 不去、sometimes 餓了而且注意不高才去、often 注意 < 70 就去；預設照打法
@@ -175,6 +176,8 @@ func _play_day() -> void:
 		# 晨昏節奏（Phase 2j）：夜裡睡一覺，黎明前、清晨醒著出獵；原本在黎明前睡、常睡過頭錯過清晨
 		if daytime_rest:
 			if GameTime.current_period() == "night" and _slept_day != GameTime.day:
+				if _maybe_howl():
+					continue
 				if roam and roam_sleep_home and _go_home():
 					continue
 				# 不在巢穴、這一區還沒找過睡處：先找一次（真人在野外過夜會先找；原本直接勉強過夜，只回復四成）
@@ -218,6 +221,8 @@ func _play_day() -> void:
 			GameState.action_rest_until("dusk")
 			continue
 		if _maybe_howl():
+			continue
+		if _seek_she_wolf():
 			continue
 		if roam:
 			if GameTime.current_period() == "dawn" and not bool(_roamed_today.get(GameTime.day, false)):
@@ -849,7 +854,8 @@ func _best(opts: Array) -> Dictionary:
 
 # 黃昏嚎叫一次（Phase 3 第 2 步）：還沒有伴侶的成年狼，依 mate_search；母狼在附近時都會嚎叫。
 func _maybe_howl() -> bool:
-	if routine or GameTime.current_period() != "dusk" or _howled_day == GameState._today() or not GameState.can_howl() or GameState.has_mate():
+	# 黃昏嚎叫；黃昏忙著狩獵、休息錯過的話，夜裡睡前補叫
+	if routine or not GameTime.current_period() in ["dusk", "night"] or _howled_day == GameState._today() or not GameState.can_howl() or GameState.has_mate():
 		return false
 	var season: String = GameTime.current_season()
 	var near: bool = GameState.she_wolf() != null
@@ -858,6 +864,9 @@ func _maybe_howl() -> bool:
 		want = mate_search == "always" or (mate_search == "sometimes" and GameState._today() % 3 == 0)
 	if not want:
 		return false
+	# 認真找（always）：嚎叫前先在這一區標記（遇到離群母狼的機會 ×1.5）
+	if mate_search == "always" and season in ["autumn", "winter"] and GameState.can_mark_here() and int(GameState.life_log.get("marked_day", -1)) != GameState._today():
+		GameState.action_mark()
 	_howled_day = GameState._today()
 	if GameState.action_howl().get("came", false):
 		_meet_she_wolf(GameState.current_discovery)
@@ -877,4 +886,18 @@ func _meet_she_wolf(d: Dictionary) -> void:
 		GameState.clear_discovery()
 		return
 	GameState.she_approach()
+
+# 母狼還在認識、不在這一區（徵兆說牠往哪裡去了）：清晨走過去找牠，一天一次（同一張地圖、不太餓時）。
+func _seek_she_wolf() -> bool:
+	if routine or GameState.mate_stage() != "candidate" or _sought_she_day == GameState._today():
+		return false
+	var n: NpcWolf = GameState.she_wolf()
+	if n.territory == GameState.current_region or GameData.map_of(n.territory) != GameState.current_map() or GameState.wolf.hunger < 40.0:
+		return false
+	_sought_she_day = GameState._today()
+	var step: String = GameState.next_step_toward(n.territory)
+	if step == "":
+		return false
+	GameState.action_move(step)
+	return true
 
