@@ -4320,6 +4320,20 @@ func _show_pack_meet(event: Dictionary) -> void:
 		var r: Dictionary = GameState.pack_standoff()
 		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost") + (".neighbor" if neighbor and r["won"] else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
 	)
+	# 撲上去打（Phase 3 第 7 步）
+	_add_encounter_button(tr("pack.option.fight").replace("{p}", str(roundi(GameState.pack_fight_chance() * 100.0))), func():
+		var alone: bool = GameState.team_size() <= 1
+		var r: Dictionary = GameState.pack_fight()
+		var msg: String = tr("pack.fight." + ("won" if r["won"] else "lost") + (".alone" if alone else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
+		if str(r.get("member_lost", "")) != "":
+			msg += tr("pack.fight.member_lost")
+		if GameState.wolf != null and not GameState.wolf.alive:
+			_log(msg)
+			encounter_overlay.visible = false
+			_on_wolf_died(GameState.wolf.death_cause)
+			return
+		after.call(msg)
+	)
 	_add_encounter_button(tr("pack.option.flee").replace("{p}", str(roundi((1.0 - GameState.pack_flee_caught_chance()) * 100.0))), func():
 		var r: Dictionary = GameState.pack_flee()
 		after.call(tr("pack.flee." + ("caught" if r["caught"] else "safe")).replace("{region}", tr("region." + str(r["region"]))))

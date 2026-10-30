@@ -3234,7 +3234,8 @@ func finish_hunt(hunt: HuntSystem) -> void:
 			if mate_stage() == "candidate":
 				_she_relation_add("joint_hunt")
 			if not current_feeding.is_empty():
-				var me: int = int(_pack_life_cfg().get("eat_segments", 1))
+				# 伴侶吃一段；其他一起出獵的子女每兩隻一段（第 7 步）
+				var me: int = int(_pack_life_cfg().get("eat_segments", 1)) + ceili(hunt.pack_allies.size() / 2.0)
 				current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - me)
 				current_feeding["with_mate"] = true
 			log_message.emit(tr("tundra.hunt.shared" + ("" if tundra_pair().size() > 1 else ".single")))
@@ -3976,7 +3977,7 @@ func pack_standoff_chance() -> float:
 	var leader := pack_leader_of(p)
 	var diff: float = FightRules.wolf_power(wolf) - (leader.power() if leader != null and leader.alive else float(cfg.get("leaderless_power", 120)))
 	# 勝負主要看數量（SPEC Phase 3：你這一邊多一隻，勝算明顯提高）
-	var value: float = float(cfg.get("base", 0.7)) * team_size() / max(1, pack_size_of(p)) + diff / float(cfg.get("power_divisor", 200)) + _pack_attitude_value_of(p, "standoff_bonus", 0.0)
+	var value: float = float(cfg.get("base", 0.7)) * team_size() / max(1, pack_size_of(p)) + diff / float(cfg.get("power_divisor", 200)) + _pack_attitude_value_of(p, "standoff_bonus", 0.0) + _elder_edge()
 	return clamp(value, float(cfg.get("min", 0.03)), float(cfg.get("max", 0.6)))
 
 # 逃跑被追上的機會：牠們戒備你時不太追；吃撐、受傷時較容易被追上。
@@ -4052,6 +4053,51 @@ func pack_flee() -> Dictionary:
 	if caught:
 		_pack_bite("flee_damage")
 	return {"caught": caught, "region": _pack_leave(caught)}
+
+# 6 歲以上的狼在鄰群衝突中是優勢（SPEC Phase 3，Cassidy 2015）：你這一邊每有一隻（含你）+ elder_bonus
+func _elder_edge() -> float:
+	var n: int = (1 if wolf.age_years >= 6.0 else 0) + followers().filter(func(m): return m.age_years >= 6.0).size()
+	return n * float(_pack_meet_cfg().get("standoff", {}).get("elder_bonus", 0.04))
+
+# 撲上去打（第 7 步，SPEC「多隻對多隻的戰鬥」先用數量與組成決定勝算）：贏了牠們少一隻、退開（照對峙贏了佔區域）；
+# 輸了你重傷、跟著你的成員可能死一隻，被趕走。
+func pack_fight_chance() -> float:
+	var f: Dictionary = _pack_meet_cfg().get("fight", {})
+	return clamp(pack_standoff_chance() * float(f.get("mult", 1.2)) + float(f.get("bonus", 0.0)), float(f.get("min", 0.02)), float(f.get("max", 0.8)))
+
+func pack_fight() -> Dictionary:
+	var mp := meet_pack()
+	if mp == black_pack:
+		identify("stranger_wolf")
+	record_decision("pack.fight")
+	var f: Dictionary = _pack_meet_cfg().get("fight", {})
+	var won: bool = RNGService.chance(pack_fight_chance())
+	_pack_record("meet", "fight_won" if won else "fight_lost")
+	var res := {"won": won, "region": current_region, "member_lost": ""}
+	_pack_bite("fight_damage_won" if won else "fight_damage")
+	for m in followers():
+		if RNGService.chance(float(f.get("member_hurt", 0.5))):
+			m.health = max(1.0, m.health - RNGService.randf_range(10.0, 25.0))
+	if won:
+		_set_pack_rel(mp, "wary")
+		_standoff_won_here(mp)
+		var lost: float = mp.young.filter(func(a): return float(a) >= 1.0).size()
+		if lost > 0:
+			mp._remove_oldest_young()
+		add_life_event("pack.fight", {"pack": mp.id, "won": true})
+	else:
+		_set_pack_rel(mp, "scorn")
+		var fol := followers()
+		if not fol.is_empty() and RNGService.chance(float(f.get("member_death", 0.3))):
+			var v: NpcWolf = fol[RNGService.randi_range(0, fol.size() - 1)]
+			v.die("pack_fight")
+			_on_npc_died(v)
+			res["member_lost"] = v.id
+		add_life_event("pack.fight", {"pack": mp.id, "won": false, "lost": res["member_lost"]})
+		res["region"] = _pack_leave(true)
+	_check_death()
+	state_changed.emit()
+	return res
 
 # 對峙贏了（SPEC Phase 3「領域與鄰群」）：在你的地盤上 → 清掉這一區被試探的紀錄；在牠們的領域（不是核心）→ 你標記了的話，換季時變成你的
 func _standoff_won_here(p: WolfPack) -> void:
@@ -4283,7 +4329,11 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	# 伴侶一起出獵（Phase 3 第 3 步）
 	if hunt.mate_help != "" and npcs.has(hunt.mate_help):
 		var m: NpcWolf = npcs[hunt.mate_help]
-		th.add_mate_ally(hunt.mate_role, {"speed": m.speed, "strength": m.strength, "skill": m.skill, "perception": m.perception})
+		th.add_mate_ally(hunt.mate_role, {"speed": m.speed, "strength": m.strength, "skill": m.skill, "perception": m.perception}, m == she_wolf() and has_mate())
+		for pa in hunt.pack_allies:
+			var o: NpcWolf = npcs.get(str(pa["id"]), null)
+			if o != null:
+				th.add_mate_ally(str(pa["role"]), {"speed": o.speed, "strength": o.strength, "skill": o.skill, "perception": o.perception}, false)
 		_stat_inc("pack_hunt", "started")
 	_stat_inc("tactical", "started")
 	return th
@@ -6214,7 +6264,9 @@ func _follower_combat_help(c: Combat) -> void:
 		return
 	var cfg: Dictionary = _pack_life_cfg().get("combat", {})
 	var n: NpcWolf = followers()[0]
-	c.ally_chance = clamp(float(cfg.get("ally_chance", 0.25)) + (n.strength - 60.0) * float(cfg.get("per_strength", 0.005)), 0.05, 0.5)
+	# 多一隻跟著你的成員，每回合咬中的機會多一點（第 7 步；越多越少，夾在 max）
+	var extra: float = float(cfg.get("per_extra", 0.1)) * sqrt(float(followers().size() - 1))
+	c.ally_chance = clamp(float(cfg.get("ally_chance", 0.25)) + (n.strength - 60.0) * float(cfg.get("per_strength", 0.005)) + extra, 0.05, float(cfg.get("max", 0.6)))
 	var d0: float = 4.0 + n.strength * float(cfg.get("damage_per_strength", 0.1))
 	c.ally_damage = [int(d0), int(d0 + 5)]
 	c.set_meta("follower", n.id)
@@ -6233,9 +6285,15 @@ func _after_follower_combat(c: Combat) -> void:
 func _apply_mate_hunt_help(hunt: HuntSystem) -> void:
 	var f := followers()
 	if not f.is_empty():
+		# 伴侶排第一；其他跟著你的成員最多到這種獵物的上限（含你，SPEC Phase 3：鹿類 4、駝鹿 5、野牛 12），地圖上最多 max_on_map 隻
+		var cap: int = int(_pack_life_cfg().get("hunt_cap", {}).get(hunt.animal_id, _pack_life_cfg().get("hunt_cap", {}).get("default", 4)))
+		var room: int = mini(cap - 1, int(_pack_life_cfg().get("max_on_map", 4)))
 		var n: NpcWolf = f[0]
 		hunt.mate_help = n.id
 		hunt.mate_role = hunt_role_of(n)
+		hunt.pack_allies = []
+		for i in range(1, mini(f.size(), room)):
+			hunt.pack_allies.append({"id": f[i].id, "role": hunt_role_of(f[i])})
 		return
 	if _she_wolf_here() and she_relation_key() == "friendly" and RNGService.chance(float(_pack_life_cfg().get("candidate_join_chance", 0.3))):
 		hunt.mate_help = she_wolf().id
@@ -6656,6 +6714,8 @@ func _maybe_new_wolverine() -> void:
 		life_log["wolverine_gen"] = int(life_log.get("wolverine_gen", 1)) + 1
 
 func _on_npc_died(npc: NpcWolf) -> void:
+	if npc.pack_id == "player" and npc.age_years >= 1.0:
+		add_life_event("child.died", {"who": npc.id, "cause": npc.death_cause})
 	if npc.id == str(life_log.get("mate_id", "")):
 		# 伴侶（或還在認識的母狼）死去：之後可以再找（SPEC Phase 3）
 		add_life_event("mate.died" if str(life_log.get("mate_stage", "")) == "mate" else "she_wolf.died", {"who": npc.id, "cause": npc.death_cause})

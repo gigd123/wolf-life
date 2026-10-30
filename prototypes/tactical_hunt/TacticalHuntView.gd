@@ -167,7 +167,10 @@ func start_from_game(th, done_cb: Callable) -> void:
 	if bool(h.game_mods.get("youth_hint", false)):
 		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
 	# 苔原狼一起狩獵（Phase 2i）：一行說明牠們會做什麼（跟上來的也先說）
-	if h.has_mate_ally():
+	if h.own_ally_count() > 1 or (h.own_ally_count() == 1 and not h.has_mate_ally()):
+		# 你的狼群好幾隻一起出獵（Phase 3 第 7 步）
+		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.pack_intro").replace("{n}", str(h.own_ally_count())))
+	elif h.has_mate_ally():
 		# 伴侶一起出獵（Phase 3 第 3 步）：照牠的角色說明
 		var mrole := "chase"
 		for w in h.wolves:

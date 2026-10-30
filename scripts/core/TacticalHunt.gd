@@ -399,12 +399,21 @@ static func _tx(key: String) -> String:
 
 # 同伴的文字：伴侶一起出獵時（Phase 3 第 3 步）用寫「伴侶」的版本（鍵 + ".mate"），沒有就照原本（苔原狼）
 func _atx(key: String) -> String:
+	# 你的狼群好幾隻一起（第 7 步）用「同伴」的寫法（鍵 + ".pack"）
+	if own_ally_count() > 1 or (own_ally_count() == 1 and not has_mate_ally()):
+		var pk: String = key + ".pack"
+		var tr_p: String = TranslationServer.translate(pk)
+		if tr_p != pk:
+			return tr_p
 	if has_mate_ally():
 		var mk: String = key + ".mate"
 		var tr_m: String = TranslationServer.translate(mk)
 		if tr_m != mk:
 			return tr_m
 	return TranslationServer.translate(key)
+
+func own_ally_count() -> int:
+	return wolves.filter(func(w): return bool(w.get("own", false))).size()
 
 func has_mate_ally() -> bool:
 	for w in wolves:
@@ -1460,11 +1469,13 @@ func join_allies_chasing(n: int) -> void:
 	events.append(_atx("tactical.ally.joined" + ("" if n > 1 else ".single")).replace("{animal}", label(target)))
 
 # 伴侶一起出獵（Phase 3 第 3 步）：一開始就在你身後 behind_dist 格，用牠自己的能力、照指派的角色
-func add_mate_ally(role: String, stats_over: Dictionary) -> void:
+func add_mate_ally(role: String, stats_over: Dictionary, is_mate: bool = true) -> void:
 	var gc: Dictionary = _allies_cfg().get("game", {})
 	var back := Vector2(wolf_pos - herd[target]["pos"]).normalized()
 	add_ally(role, _clamp_cell(Vector2i((Vector2(wolf_pos) + back * float(gc.get("behind_dist", 2))).round())), stats_over)
-	wolves[wolves.size() - 1]["mate"] = true
+	# own：你的狼群（伴侶、子女，第 7 步）；mate：伴侶
+	wolves[wolves.size() - 1]["own"] = true
+	wolves[wolves.size() - 1]["mate"] = is_mate
 
 # 跟上來的苔原狼：回合到了就從你身後（背對目標的那一側）出現
 func _arrive_allies() -> void:
@@ -1751,7 +1762,7 @@ func _ally_step(k: int) -> void:
 			return
 		var hc: Dictionary = cfg.get("hold", {})
 		# 伴侶（Phase 3 第 3 步）：和你一起生活、默契比苔原狼好，咬、咬住、拖倒 × mate_mult
-		if bool(wolves[k].get("mate", false)):
+		if bool(wolves[k].get("own", false)):
 			ph *= float(cfg.get("mate_mult", 1.0))
 		# 埋伏的同伴從藏身處撲出來的那一下（上一回合還趴著等）：咬住、咬傷的機率 × ambush_mult
 		if str(wolves[k].get("role", "")) == "ambush" and int(wolves[k].get("lurk", -9)) >= rounds - 1:

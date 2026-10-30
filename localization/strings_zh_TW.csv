@@ -2284,3 +2284,26 @@ child.left.male,{age} 歲的兒子在一個清晨離開了狼群。牠在山脊�
 child.left.female,{age} 歲的女兒在一個清晨離開了狼群。牠在山脊上回頭看了一眼，就往遠方走去。
 child.left.trait.independent,牠一直是最早獨自出去探路的那一隻。
 child.left.trait.clingy,牠一直是最黏著你們的那一隻，還是走了。
+tactical.ui.pack_intro,你們 {n} 隻和你一起獵：每一隻照牠的角色行動（藍點驅趕、橘點追擊、紫點埋伏）。滑鼠停在牠們身上看牠在做什麼。
+tactical.ally.bite.pack,同伴追上{animal}，一口咬在後腿上又鬆開——牠跑得慢了。
+tactical.ally.pull_down.pack,同伴追上已經跑不動的{animal}，咬住後腿把牠拖倒了。你們一起獵到了。
+tactical.ally.takedown.pack,你死死拖住{animal}，同伴趁勢咬住牠的腿，一起把牠扭倒在地。你們一起獵到了。
+tactical.ally.takedown_miss.pack,同伴撲上來想把{animal}扭倒，被牠撐住了。
+tactical.ui.ally_takedown.pack,（同伴拖倒 {p}%）
+tactical.ui.ally_takedown_tip.pack,你死咬拖住的這一回合，旁邊的同伴會試著把牠扭倒（{n} 隻，合計 {p}%）。
+tactical.ally.defend_release.pack,{animal}衝過來踢開你的同伴，牠鬆口了。
+tactical.ally.defend_hit.pack,{animal}衝向你的同伴，把牠踢開了。
+tactical.ally.defend_miss.pack,{animal}衝向你的同伴，牠閃開了。
+tactical.ally.snap.pack,同伴撲上去咬{animal}，沒咬住。
+tactical.ally.hold.pack,同伴咬住了{animal}的後腿，死命拖住——牠跑不動了！
+tactical.ally.broke_free.pack,{animal}甩開了你的同伴，帶著傷逃跑！
+tactical.ally.pull_down_pack.pack,你們一擁而上，把{animal}拖倒了。你們一起獵到了。
+tactical.ally.tip.pack,同伴（{role}）：{what}
+tactical.factor.ally_holding.pack,同伴拖住了牠
+tactical.ally.ambush_strike.pack,{animal}衝過來的那一刻，趴著等的同伴撲了出來！
+pack.option.fight,撲上去打（勝算 {p}%）
+pack.fight.won,你們撲了上去，咬成一團。{who}丟下一隻受傷的同伴，退走了。
+pack.fight.lost,你們撲了上去，卻被牠們的數量壓了回來。你們帶著傷逃到{region}。
+pack.fight.member_lost,有一隻沒有跟上來。
+pack.fight.won.alone,你撲了上去，和牠們咬成一團。{who}丟下一隻受傷的同伴，退走了。
+pack.fight.lost.alone,你撲了上去，卻被牠們的數量壓了回來。你帶著傷逃到{region}。

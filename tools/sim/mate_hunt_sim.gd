@@ -1,9 +1,10 @@
 extends SceneTree
 # Phase 3 第 3 步「伴侶一起狩獵」的模擬（SPEC Phase 3 第 2、3 步的通過標準：有伴侶時大型獵物的成功率高 10～20 個百分點、一場的回合數不超過單狼的 1.5 倍）。
 # 成年狼（常見的能力值）交給本能玩到底（每場固定秋季清晨，WHEN=summer_day 夏季白天），每種打法都試、取最好的（表格），另外印本能自己挑的合計：單狼／伴侶驅趕／追擊／埋伏，各獵物 RUNS 場；伴侶用離群母狼的平均能力。
-# 用法：bash tools/run_sim.sh mate_hunt_sim 0 60；WHEN=summer_day 改成夏季白天；PREY_ONLY=white_tailed_deer,moose 只跑這些
+# 用法：bash tools/run_sim.sh mate_hunt_sim 0 60；PACK=1 比較 單狼／伴侶（追擊）／伴侶＋兩隻子女（第 7 步）；WHEN=summer_day 改成夏季白天；PREY_ONLY=white_tailed_deer,moose 只跑這些
 var SEASON := 2
 var PERIOD := 0
+var KINDS: Array = ["solo", "drive", "chase", "ambush"]
 const POLS := ["auto", "stalk", "chase", "hold", "pace"]
 const PREY := [["white_tailed_deer", "forest_edge", "forest_east"], ["elk", "dense_forest", "forest_north"], ["mule_deer", "forest_edge", "mountain_foothills"], ["caribou", "open_tundra", "tundra_south"], ["moose", "stream", "forest_north"]]
 var f := 0
@@ -16,12 +17,14 @@ func _process(_d) -> bool:
 	var gt = root.get_node("GameTime")
 	var runs := int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 40
 	# WHEN=summer_day：夏季白天（比較難，避免秋季清晨幾乎都獵得到、看不出差別）
+	if OS.get_environment("PACK") != "":
+		KINDS = ["solo", "chase", "pack3"]
 	if OS.get_environment("WHEN") == "summer_day":
 		SEASON = 1
 		PERIOD = 1
 	print("== mate_hunt_sim：成年狼交給本能，各 %d 場（成功率 %%／平均回合）" % runs)
-	print("| 獵物 | 單狼 | 驅趕 | 追擊 | 埋伏 |")
-	print("| --- | --- | --- | --- | --- |")
+	print("| 獵物 | " + " | ".join(KINDS) + " |")
+	print("| --- ".repeat(KINDS.size() + 1) + "|")
 	var tot := {}
 	var auto_tot := {}
 	var only: Array = Array(OS.get_environment("PREY_ONLY").split(",")) if OS.get_environment("PREY_ONLY") != "" else []
@@ -36,7 +39,7 @@ func _process(_d) -> bool:
 			gs.debug_set_stat(st[0], st[1])
 		gs.pending_events.clear()
 		var row: Array = [p[0]]
-		for kind in ["solo", "drive", "chase", "ambush"]:
+		for kind in KINDS:
 			# 每種打法都試，取最好的（同 tactical_ally_matrix：看角色本身的價值，不受本能挑錯打法影響）；本能自己挑的也記下來
 			var best := -1
 			var best_rounds := 0
@@ -56,8 +59,14 @@ func _process(_d) -> bool:
 					var h = gs.start_hunt(p[0], "adult", -1, false, p[1])
 					if kind != "solo":
 						h.mate_help = "she_wolf_sim"
-						h.mate_role = kind
+						h.mate_role = "chase" if kind.begins_with("pack") else kind
 						gs.npcs["she_wolf_sim"] = load("res://scripts/core/NpcWolf.gd").create("she_wolf_sim", p[2], "lone_female")
+					# PACK=1：伴侶（追擊）＋兩隻子女（驅趕、埋伏），第 7 步
+					if kind == "pack3":
+						h.pack_allies = []
+						for kr in [["kid_a", "drive"], ["kid_b", "ambush"]]:
+							gs.npcs[kr[0]] = load("res://scripts/core/NpcWolf.gd").create(kr[0], p[2], "lone_female")
+							h.pack_allies.append({"id": kr[0], "role": kr[1]})
 					var th = gs.start_tactical(h)
 					TacticalInstinct.play(th, "" if pol == "auto" else pol)
 					rounds += th.rounds
@@ -73,7 +82,12 @@ func _process(_d) -> bool:
 			tot[kind] = int(tot.get(kind, 0)) + best
 		print("| " + " | ".join(row) + " |")
 	var n: int = runs * prey_n
-	print("本能自己挑：單狼 %d%%、驅趕 %d%%、追擊 %d%%、埋伏 %d%%" % [roundi(100.0 * auto_tot["solo"] / n), roundi(100.0 * auto_tot["drive"] / n), roundi(100.0 * auto_tot["chase"] / n), roundi(100.0 * auto_tot["ambush"] / n)])
-	print("最好的打法：單狼 %d%%、驅趕 %d%%、追擊 %d%%、埋伏 %d%%" % [roundi(100.0 * tot["solo"] / n), roundi(100.0 * tot["drive"] / n), roundi(100.0 * tot["chase"] / n), roundi(100.0 * tot["ambush"] / n)])
+	var auto_parts: Array = []
+	var best_parts: Array = []
+	for k in KINDS:
+		auto_parts.append("%s %d%%" % [k, roundi(100.0 * int(auto_tot.get(k, 0)) / n)])
+		best_parts.append("%s %d%%" % [k, roundi(100.0 * int(tot.get(k, 0)) / n)])
+	print("本能自己挑：" + "、".join(auto_parts))
+	print("最好的打法：" + "、".join(best_parts))
 	quit()
 	return true
