@@ -19,6 +19,7 @@ var perception: float = 40.0
 var hunger: float = 70.0
 var health_value: float = 80.0 # 「體質」：長期狀態（變數名沿用 health_value）
 var age_years: float = 0.6667
+var sex: String = "male" # SPEC Phase 3：玩家先只有公狼（保留欄位，以後可能加入母狼）
 
 var injury: int = Injury.NONE
 var injury_days_remaining: int = 0
@@ -199,7 +200,7 @@ func to_dict() -> Dictionary:
 	return {
 		"health": health, "health_max": health_max, "stamina": stamina, "speed": speed,
 		"strength": strength, "skill": skill, "perception": perception,
-		"hunger": hunger, "health_value": health_value, "age_years": age_years,
+		"hunger": hunger, "health_value": health_value, "age_years": age_years, "sex": sex,
 		"injury": injury, "injury_days_remaining": injury_days_remaining, "injury_stat": injury_stat, "heavy_injury_count": heavy_injury_count,
 		"poison_days_remaining": poison_days_remaining,
 		"injury_part": injury_part, "injury_source": injury_source,
@@ -210,6 +211,7 @@ func to_dict() -> Dictionary:
 
 static func from_dict(data: Dictionary) -> Wolf:
 	var w := Wolf.new()
+	w.sex = str(data.get("sex", "male"))
 	w.health_max = float(data.get("health_max", 80.0))
 	w.health = float(data.get("health", 80.0))
 	w.stamina = float(data.get("stamina", 80.0))

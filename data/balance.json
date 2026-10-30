@@ -77,6 +77,8 @@
     "_pack_young_comment": "Phase 3a 第 3 步：落單的年輕狼（黑狼的孩子），比黑狼弱。戰鬥用 challenger 的外觀與名稱「年輕的狼」。",
     "pack_young": { "base": "stranger_wolf", "start_age": [1.0, 2.0], "start_stats": { "speed": [58, 66], "strength": [50, 58], "skill": [46, 54], "perception": [50, 58], "health_max": [85, 95] } },
     "black_heir": { "base": "stranger_wolf", "start_stats": { "speed": [62, 70], "strength": [62, 70], "skill": [56, 64], "perception": [56, 64], "health_max": [100, 110] } },
+    "_pack_breeder_comment": "Phase 3 第 1 步：一般鄰群帶頭的繁殖公狼（換代後的也是）。設定沿用黑狼，能力略低。",
+    "pack_breeder": { "base": "stranger_wolf", "start_age": [3.0, 5.0], "start_stats": { "speed": [60, 70], "strength": [62, 72], "skill": [56, 66], "perception": [56, 64], "health_max": [100, 112] } },
     "wolverine": {
       "_comment": "狼獾（1.6 第 6d 步）：苔原的搶屍者。體型小但極兇猛：力量值約 110，很少放棄（耐力低於 15% 才退），不會示弱，也不會想殺狼。interaction：map 牠活動的地圖；feed_chance 在苔原分段進食時每一段吃完後找上門的機率（渡鴉的 feeding_bonus_per_turn 會再往上加）；return_chance 回到苔原的殘骸時撞見牠的機率；carcass_loss_mult 苔原的殘骸被偷吃（消失）的倍率；replace_chance_per_season 牠死後每一季有新的狼獾遷進來的機率。",
       "sex": "unknown",
@@ -490,12 +492,23 @@
   },
   "start_health_max": 80,
   "_black_pack_comment": "Phase 3a 黑狼的一生（WolfPack.gd）：每次換季更新。成家：你打贏牠之後或你滿 pair_min_player_age 歲之後，每季 pair_chance × pair_season_mult，牠還沒老才會。伴侶的年齡 mate_age，每季死亡 mate_death_per_season（mate_old_age 歲起 mate_old_death_per_season）。春季 pup_chance 生 litter 隻，幼狼每季存活 pup_survival_per_season（第一年約一半）；disperse_per_season：1 歲以上的子女每季離群的機會。數量 ≥ expand_min_size 時秋季 expand_chance 擴張一區，最多 max_regions 區；數量上限 max_size。帶頭的死了，有伴侶和 heir_min_age 歲以上的子女就由最年長的接手（換代），否則解散。黑狼的開局年齡 2.5～3 歲（原本 3～4，讓牠的家族撐過你的壯年）。",
+  "packs": {
+    "_comment": "Phase 3 第 1 步（SPEC「鄰群的配置」，方案甲）：黑狼一家以外的鄰群。layout：每張地圖最多一群住在地圖上（核心放在離你的巢穴最遠的那一區），其他住在地圖外、只在 border 那一區出現。neighbor：覆寫 black_pack 的數值（一般鄰群不受你的年齡限制、一開始就是一對或狼群）。cap_exempt：不受每天事件上限的事件種類（巢穴、幼狼，第 5 步用）。",
+    "layout": [
+      { "id": "forest_outer", "map": "forest", "off_map": true, "border": "forest_west" },
+      { "id": "mountain", "map": "mountain" },
+      { "id": "grassland", "map": "grassland" },
+      { "id": "grassland_outer", "map": "grassland", "off_map": true, "border": "grassland_plains" }
+    ],
+    "neighbor": { "pair_min_player_age": 0.0, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 }, "start_mate_age": [3.0, 5.0], "start_young": [1, 5], "start_young_age": [0.5, 2.5] },
+    "cap_exempt": ["den", "pups"]
+  },
   "black_pack": {
     "pair_min_player_age": 2.5, "pair_chance": 0.3, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 },
     "mate_age": [2.0, 3.0], "mate_death_per_season": 0.02, "mate_old_age": 8.0, "mate_old_death_per_season": 0.15,
     "pup_chance": 0.8, "litter": [3, 5], "pup_survival_per_season": 0.84,
     "disperse_per_season": { "autumn": 0.15, "winter": 0.15 }, "heir_min_age": 1.5,
-    "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10,
+    "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10, "_over_cap_comment": "Phase 3：未滿 1 歲的幼狼不算進 max_size；超過時秋冬換季每多一隻有 over_cap_disperse 的機率最年長的年輕成員離開（不會立刻離開）。", "over_cap_disperse": 0.6,
     "_meet_comment": "第 3 步「撞上狼群」：在牠們的領域每個時段 core_chance、相鄰區 border_chance；先擲落單的黑狼（第一代、可以互動時 lone_leader_chance，走現有的單挑）、落單的年輕狼（lone_young_chance）。對峙勝算 = base ÷ 數量 + (你的力量值 − 帶頭的) ÷ power_divisor + 態度加減，限制在 min～max；輸了 standoff_damage 並離開。逃：caught 被追上（吃撐或有傷 + slow_bonus），flee_damage。attitude：wary（打贏過牠）、scorn（向牠示弱、被趕過）、neutral；換代後效果減半。charge ≥ 0.5：牠們直接逼過來，不能從容退開。",
     "_survival_comment": "第 4 步「對生存的影響」：prey 牠們的領域（core）、相鄰區（border）的中、大型獵物倍率。remains：在 core／border 探索時發現牠們吃剩的殘骸（segments 段，每段 hunger 飽食度），每吃一段被發現的機會 *_risk（× 態度的 meet_mult）。probe：和牠們相鄰的你的地盤，標記還在時每天 overmark_chance 被蓋過，淡掉時 faded_chance 被試探（× 態度的 probe_mult）；下一次換季時你還沒補，變成牠們的（最多 max_regions 區）。",
     "prey": { "core": 0.7, "border": 1.1 },

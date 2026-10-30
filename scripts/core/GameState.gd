@@ -52,6 +52,7 @@ var territory_periods: int = 0
 var npcs: Dictionary = {}
 # 黑狼家族（Phase 3a）：一對、狼群、領域、換代；帶頭的是 pack_leader()。存檔。
 var black_pack: WolfPack = WolfPack.new()
+var neighbor_packs: Array = [] # 黑狼一家以外的鄰群（SPEC Phase 3「鄰群的配置」），WolfPack
 # 森林大火（SPEC 1.6「森林大火」）：fire 是進行中的大火 {origin, phase: "warning"|"burning", ignite_at, noticed,
 # regions: {region_id: 起火的絕對時段}, burned: [燒完的區域], alerted: 已經提示過「火燒到這裡」的區域, sheltered: 躲在溪邊或巢穴的區域}。
 # region_burn：燒過的區域 {region_id: 燒完那天的 days_lived}，決定焦黑與草木新生。fire_at：排定的起火時段（-1 = 沒有）。
@@ -120,6 +121,7 @@ func new_game(start_den: String) -> void:
 	npcs = {"stranger_wolf": NpcWolf.create("stranger_wolf", stranger_territory)}
 	black_pack = WolfPack.new()
 	black_pack.regions = [stranger_territory] if stranger_territory != "" else []
+	_setup_neighbor_packs()
 	fire = {}
 	region_burn = {}
 	fire_at = -1
@@ -249,6 +251,7 @@ func _on_season_changed(_season_index: int) -> void:
 		wolf.age_years += 0.25
 		_age_npcs()
 		_update_black_pack()
+		_update_neighbor_packs()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
 		if GameTime.current_season() == "spring":
@@ -520,7 +523,9 @@ func _check_life_stage_transition(prev_stage: int) -> void:
 		_queue_notice({"type": "yearling"})
 	if prev_stage == Wolf.LifeStage.SUBADULT and stage != Wolf.LifeStage.SUBADULT:
 		_settle_adulthood()
+		add_life_event("adult")
 	if prev_stage != Wolf.LifeStage.ELDER and stage == Wolf.LifeStage.ELDER:
+		add_life_event("elder")
 		life_log["elder_age"] = snapped(wolf.age_years, 0.01)
 		_queue_notice({"type": "elder_transition"})
 		_schedule_challenger(_elder_cfg().get("challenger", {}).get("first_days", [5, 15]))
@@ -741,6 +746,7 @@ func _die(cause: String) -> void:
 	wolf.alive = false
 	wolf.death_cause = cause
 	life_log["death_cause"] = cause
+	add_life_event("death", {"cause": cause, "region": current_region})
 	_write_playtest_log()
 	SaveSystem.save_game()
 	wolf_died.emit(cause)
@@ -3519,11 +3525,18 @@ func _events_cfg() -> Dictionary:
 func _storm_cfg() -> Dictionary:
 	return GameData.events.get("storm", {})
 
-func _can_trigger_event() -> bool:
-	return wolf != null and wolf.alive and events_today < int(_events_cfg().get("max_per_day", 2))
+# kind：事件的種類；cap_exempt 裡的種類（巢穴、幼狼，SPEC Phase 3「繁殖與育幼」）不受每天的上限，也不佔名額。
+func _can_trigger_event(kind: String = "") -> bool:
+	if wolf == null or not wolf.alive:
+		return false
+	return _cap_exempt(kind) or events_today < int(_events_cfg().get("max_per_day", 2))
 
-func _queue_event(event: Dictionary) -> void:
-	events_today += 1
+func _cap_exempt(kind: String) -> bool:
+	return kind != "" and (_packs_cfg().get("cap_exempt", []) as Array).has(kind)
+
+func _queue_event(event: Dictionary, kind: String = "") -> void:
+	if not _cap_exempt(kind):
+		events_today += 1
 	pending_events.append(event)
 
 func pop_event() -> Dictionary:
@@ -3581,7 +3594,7 @@ func trigger_howl() -> void:
 # 在陌生灰狼的範圍停留太久：被驅趕（輕傷、被迫離開、失去這裡的獵物）。
 func _update_territory() -> void:
 	# 一次黑狼的事件之後，冷卻幾個時段才會再有（2026-10-29 QA：威嚇成功後牠又立刻出來要你離開）
-	if _abs_period() < int(life_log.get("black_wolf_quiet_until", -1)):
+	if is_quiet("black"):
 		territory_periods = 0
 		return
 	# 黑狼成家後，改成「撞上狼群」（Phase 3a 第 3 步）
@@ -3700,7 +3713,16 @@ func _maybe_pack_meet() -> void:
 
 # 黑狼的事件之後的冷卻（balance black_pack.meet.quiet_periods）
 func _black_wolf_quiet() -> void:
-	life_log["black_wolf_quiet_until"] = _abs_period() + int(_pack_meet_cfg().get("quiet_periods", 8))
+	set_quiet("black", int(_pack_meet_cfg().get("quiet_periods", 8)))
+
+# 各對手各自的冷卻（SPEC Phase 3「衝突與戰鬥」）：opponent 是狼群 id、具名 NPC 或動物的鍵；一次事件後 periods 個時段內不再出現。
+func set_quiet(opponent: String, periods: int) -> void:
+	var q: Dictionary = life_log.get("quiet_until", {})
+	q[opponent] = max(int(q.get(opponent, -1)), _abs_period() + periods)
+	life_log["quiet_until"] = q
+
+func is_quiet(opponent: String) -> bool:
+	return _abs_period() < int((life_log.get("quiet_until", {}) as Dictionary).get(opponent, -1))
 
 func _pack_meet_event() -> Dictionary:
 	var cfg := _pack_meet_cfg()
@@ -5384,7 +5406,7 @@ func stranger_can_interact() -> bool:
 func _heal_npcs() -> void:
 	for npc in npcs.values():
 		if npc.alive:
-			npc.health = min(npc.health_max, npc.health + float(NpcWolf.cfg(npc.id).get("heal_per_day", 10)))
+			npc.health = min(npc.health_max, npc.health + float(NpcWolf.cfg(npc.config_key()).get("heal_per_day", 10)))
 
 # 每季：牠也會變老；老死或死於其他原因後，那一帶就空了。
 func _age_npcs() -> void:
@@ -5419,6 +5441,7 @@ func _update_black_pack() -> void:
 		var log_list: Array = life_log.get("black_pack_events", [])
 		for e in events:
 			log_list.append({"event": e, "age": snapped(wolf.age_years, 0.25)})
+			add_life_event("pack." + str(e), {"pack": black_pack.id})
 		life_log["black_pack_events"] = log_list
 	# 徵兆（第 2 步）：記下來，下一張森林的季節卡片寫出來（人不在森林時等回到森林）
 	var news: Array = life_log.get("pack_news", [])
@@ -5430,6 +5453,95 @@ func _update_black_pack() -> void:
 		life_log["pack_news"] = news
 
 const PACK_NEWS := ["paired", "pups", "expanded", "succession", "dissolved"]
+
+# --- Phase 3 第 1 步：鄰群（黑狼一家以外，同一套 WolfPack）、生命事件 ---
+
+func _packs_cfg() -> Dictionary:
+	return GameData.balance.get("packs", {})
+
+func all_packs() -> Array:
+	return [black_pack] + neighbor_packs
+
+func pack_by_id(pack_id: String) -> WolfPack:
+	for p in all_packs():
+		if p.id == pack_id:
+			return p
+	return null
+
+# 開局時照 packs.layout 建立鄰群：住在地圖上的，核心放在離你的巢穴最遠的那一區；住在地圖外的只有邊界區。
+func _setup_neighbor_packs() -> void:
+	neighbor_packs = []
+	for d in _packs_cfg().get("layout", []):
+		var p := WolfPack.new()
+		p.id = str(d.get("id", ""))
+		p.kind = "neighbor"
+		p.map_id = str(d.get("map", ""))
+		p.off_map = bool(d.get("off_map", false))
+		p.border = str(d.get("border", ""))
+		var core: String = p.border if p.off_map else _pack_core_far_from_den(p.map_id)
+		p.regions = [] if p.off_map else [core]
+		p.leader_id = "pack_" + p.id
+		var leader := NpcWolf.create(p.leader_id, core, "pack_breeder")
+		leader.pack_id = p.id
+		npcs[p.leader_id] = leader
+		var c := p.conf()
+		var ma: Array = c.get("start_mate_age", [3.0, 5.0])
+		p.mate_age = snapped(RNGService.randf_range(float(ma[0]), float(ma[1])), 0.25)
+		var ny: Array = c.get("start_young", [1, 5])
+		var ya: Array = c.get("start_young_age", [0.5, 2.5])
+		for i in RNGService.randi_range(int(ny[0]), int(ny[1])):
+			p.young.append(snapped(RNGService.randf_range(float(ya[0]), float(ya[1])), 0.25))
+		p.stage = "pack" if not p.young.is_empty() else "pair"
+		neighbor_packs.append(p)
+
+# 這張地圖上離你的巢穴最遠的區域（同距離隨機）；巢穴不在這張地圖時，隨機一區。
+func _pack_core_far_from_den(map_id: String) -> String:
+	var regions: Array = GameData.map_regions(map_id)
+	if regions.is_empty():
+		return ""
+	if not regions.has(den_region):
+		return str(regions[RNGService.randi_range(0, regions.size() - 1)])
+	var dist := {den_region: 0}
+	var queue: Array = [den_region]
+	while not queue.is_empty():
+		var r: String = queue.pop_front()
+		for a in EncounterSystem.region_data(r).get("adjacent", []):
+			if regions.has(a) and not dist.has(a):
+				dist[a] = int(dist[r]) + 1
+				queue.append(a)
+	var far: int = 0
+	for r in dist.keys():
+		far = max(far, int(dist[r]))
+	var pool: Array = dist.keys().filter(func(r): return int(dist[r]) == far and r != den_region)
+	return str(pool[RNGService.randi_range(0, pool.size() - 1)]) if not pool.is_empty() else ""
+
+# 鄰群的換季更新：只在換季時（SPEC Phase 3「狼的資料結構」）；擴張到第 4 步才開。換代時建立新的帶頭的。
+func _update_neighbor_packs() -> void:
+	for p in neighbor_packs:
+		var leader: NpcWolf = npcs.get(p.leader_id, null)
+		var events: Array = p.on_season_passed({"season": GameTime.current_season(), "leader": leader,
+			"player_age": wolf.age_years, "expand": false})
+		if events.has("succession"):
+			var core: String = str(p.regions[0]) if not p.regions.is_empty() else p.border
+			var nid: String = "pack_%s_%d" % [p.id, p.generation]
+			var heir := NpcWolf.create(nid, core, "pack_breeder")
+			heir.age_years = snapped(max(2.0, p.heir_age), 0.25)
+			heir.pack_id = p.id
+			npcs[nid] = heir
+			p.leader_id = nid
+
+# 共用的生命事件紀錄（SPEC Phase 3「狼的資料結構」）：{day, age, type, 其他資料}；年度回顧、一生回顧、家族篇從這裡產生。
+func add_life_event(type: String, data: Dictionary = {}) -> void:
+	if wolf == null:
+		return
+	var list: Array = life_log.get("life_events", [])
+	var e := {"day": int(life_log.get("days_lived", 1)), "age": snapped(wolf.age_years, 0.25), "type": type}
+	e.merge(data)
+	list.append(e)
+	life_log["life_events"] = list
+
+func life_events(type_prefix: String = "") -> Array:
+	return (life_log.get("life_events", []) as Array).filter(func(e): return type_prefix == "" or str(e.get("type", "")).begins_with(type_prefix))
 
 # 徵兆的文字（第 2 步）：一對、狼群時，足跡、氣味、遠觀、標記、狼嚎多一句；獨居照舊（回傳空字串）。
 func pack_sign_key(kind: String) -> String:
@@ -6931,6 +7043,7 @@ func to_dict() -> Dictionary:
 		"territory_periods": territory_periods,
 		"npcs": _npcs_to_dict(),
 		"black_pack": black_pack.to_dict(),
+		"neighbor_packs": neighbor_packs.map(func(p): return p.to_dict()),
 		"fire": fire,
 		"region_burn": region_burn,
 		"fire_at": fire_at,
@@ -6992,6 +7105,10 @@ func load_from_dict(data: Dictionary) -> void:
 	if not npcs.has("stranger_wolf"):
 		npcs["stranger_wolf"] = NpcWolf.create("stranger_wolf", stranger_territory)
 	black_pack = WolfPack.from_dict(data.get("black_pack", {"regions": [stranger_territory] if stranger_territory != "" else []}))
+	if data.has("neighbor_packs"):
+		neighbor_packs = (data["neighbor_packs"] as Array).map(func(d): return WolfPack.from_dict(d))
+	else:
+		_setup_neighbor_packs()
 	if not npcs.has("wolverine"):
 		npcs["wolverine"] = NpcWolf.create("wolverine", "")
 	for id in TUNDRA_WOLF_IDS:

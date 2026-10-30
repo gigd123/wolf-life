@@ -23,6 +23,12 @@ var yielded_to_player: bool = false # 輸給玩家、示弱離開後，就不再
 var relation: int = 0 # 對玩家的關係值（苔原狼）：越高越熟悉、友善，負的是敵視；Phase 3 用來決定能不能配對或加入狼群
 # 每次相遇：{age（玩家年齡）, npc_age, kind（meet／drive_off／follow）, outcome, wolf_damage, npc_damage, region}
 var record: Array = []
+# Phase 3：設定用哪一組（balance npc_wolves 的鍵；空的就用 id）、潛力上限、個性標籤、所屬的狼群、父母的 id
+var cfg_id: String = ""
+var potential: Dictionary = {}
+var traits: Array = []
+var pack_id: String = ""
+var parents: Array = []
 
 # base：沿用另一個 NPC 的設定，只覆寫有寫的欄位（例如苔原狼的另一隻）。
 static func cfg(npc_id: String) -> Dictionary:
@@ -35,10 +41,11 @@ static func cfg(npc_id: String) -> Dictionary:
 	return c
 
 # 開局時建立：年齡與能力在設定的範圍內隨機。
-static func create(npc_id: String, territory_region: String) -> NpcWolf:
-	var c := cfg(npc_id)
+static func create(npc_id: String, territory_region: String, config_id: String = "") -> NpcWolf:
+	var c := cfg(config_id if config_id != "" else npc_id)
 	var n := NpcWolf.new()
 	n.id = npc_id
+	n.cfg_id = config_id
 	n.sex = str(c.get("sex", "male"))
 	n.territory = territory_region
 	var age: Array = c.get("start_age", [3.0, 4.0])
@@ -59,6 +66,9 @@ func life_stage_key() -> String:
 	return "prime"
 
 # 戰鬥用的力量值（同狼的公式：力量 + 技巧）。
+func config_key() -> String:
+	return cfg_id if cfg_id != "" else id
+
 func power() -> float:
 	return strength + skill
 
@@ -66,7 +76,7 @@ func power() -> float:
 func on_season_passed() -> String:
 	if not alive:
 		return ""
-	var c := cfg(id)
+	var c := cfg(config_key())
 	age_years += 0.25
 	health = health_max
 	var ages: Dictionary = c.get("ages", {})
@@ -93,7 +103,7 @@ func die(cause: String) -> void:
 
 # 戰鬥對手的資料（FightRules／Combat 用，格式同 balance.json 的 combat.opponents）。
 func combat_profile() -> Dictionary:
-	var c := cfg(id)
+	var c := cfg(config_key())
 	var d: Dictionary = c.get("combat", {})
 	var dmg_base: float = 4.0 + strength * float(d.get("damage_per_strength", 0.15))
 	return {"power": power(), "hp": health_max, "damage": [int(dmg_base), int(dmg_base + 8)],
@@ -108,11 +118,12 @@ func add_record(entry: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {"id": id, "sex": sex, "age_years": age_years, "speed": speed, "strength": strength, "skill": skill,
 		"perception": perception, "health_max": health_max, "health": health, "alive": alive, "death_cause": death_cause,
-		"territory": territory, "dominance": dominance, "yielded_to_player": yielded_to_player, "relation": relation, "record": record}
+		"territory": territory, "dominance": dominance, "yielded_to_player": yielded_to_player, "relation": relation, "record": record,
+		"cfg_id": cfg_id, "potential": potential, "traits": traits, "pack_id": pack_id, "parents": parents}
 
 static func from_dict(data: Dictionary) -> NpcWolf:
 	var n := NpcWolf.new()
-	for key in ["id", "sex", "death_cause", "territory"]:
+	for key in ["id", "sex", "death_cause", "territory", "cfg_id", "pack_id"]:
 		n.set(key, str(data.get(key, n.get(key))))
 	for key in ["age_years", "speed", "strength", "skill", "perception", "health_max", "health"]:
 		n.set(key, float(data.get(key, n.get(key))))
@@ -121,4 +132,7 @@ static func from_dict(data: Dictionary) -> NpcWolf:
 	n.relation = int(data.get("relation", 0))
 	n.yielded_to_player = bool(data.get("yielded_to_player", false))
 	n.record = data.get("record", [])
+	n.potential = data.get("potential", {})
+	n.traits = data.get("traits", [])
+	n.parents = data.get("parents", [])
 	return n

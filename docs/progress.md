@@ -23,6 +23,8 @@
 ## 最近的工作（2026-10-14 起；更早的在 progress-archive.md）
 - [ ] Phase 3 成年期與社會（2026-10-30 寫入 SPEC，使用者同意）
   - [ ] 1. 基礎：狼群通用化（黑狼一家改用）、每張地圖的鄰群配置、`NpcWolf` 補欄位、共用的生命事件紀錄、每個對手各自的冷卻、事件的優先；玩家為公狼
+    - 2026-10-30 實作：`WolfPack` 加 id／kind／map／off_map／border／leader_id、`conf()`（一般鄰群用 `balance.packs.neighbor` 覆寫 `black_pack`）、`counted_size()`（未滿 1 歲不算）、超過上限時秋冬換季每多一隻 `over_cap_disperse` 0.6 最年長的先走（生幼狼不再受上限限制，黑狼一家同一條）；`balance.packs.layout`：森林地圖外一群（邊界森林西部）、山地、草原各一群（核心在離巢穴最遠的區域）、草原地圖外一群（邊界開闊草原）；帶頭的是 `pack_breeder` NPC，換季時更新、換代建立新的帶頭的，擴張到第 4 步才開；`NpcWolf` 加 cfg_id／potential／traits／pack_id／parents；`Wolf.sex`；`add_life_event`／`life_events`（成年、老年、死亡、黑狼一家的事件）；`set_quiet`／`is_quiet` 各對手的冷卻（黑狼改用）；`_can_trigger_event(kind)`／`_queue_event(e, kind)` 與 `packs.cap_exempt`。回歸 R-114 `phase3_foundation` 通過；R-76 等舊測試通過。
+    - 待查：`black_pack_life`（R-76）在改動前就已經壽命 6.8、餓死 8／20（2026-10-20 是 8.5），正在用 40 隻比對改動前後。
   - [ ] 2. 離群母狼與配對
   - [ ] 3. 伴侶同行、狼群面板、戰術地圖上的伴侶（2、3 合成可以試玩的循環）
   - [ ] 4. 領域與鄰群
