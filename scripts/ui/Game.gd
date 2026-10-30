@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -749,6 +749,17 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		GameState.debug_pack_remains()
 		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.she_wolf"), func():
+		debug_overlay.visible = false
+		GameState.debug_she_wolf()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.she_wolf_closer"), func():
+		debug_overlay.visible = false
+		GameState.debug_she_wolf_closer()
 		_refresh()
 	)
 	_debug_button(event_row2, tr("debug.event.salmon"), func():
@@ -1634,6 +1645,11 @@ func _on_action_button(action_id: String) -> void:
 		"mark":
 			var r: String = GameState.action_mark()
 			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
+		"howl":
+			var hr: Dictionary = GameState.action_howl()
+			_log(tr("log.howl"))
+			if hr.get("came", false):
+				_show_discovery(GameState.current_discovery)
 		"return_to_carcass":
 			var res := GameState.action_return_to_carcass()
 			if res.get("gone", false) or res.is_empty():
@@ -1741,6 +1757,9 @@ const CLUE_ICON_FOR := {"scent": "scent", "track": "track", "sound": "sound", "s
 
 func _show_discovery(d: Dictionary) -> void:
 	if d.is_empty() or GameState.wolf == null or not GameState.wolf.alive:
+		return
+	if d.get("kind", "") == "she_wolf":
+		_show_she_wolf(d)
 		return
 	if d.get("kind", "") == "tundra_wolves":
 		_show_tundra_meet(d)
@@ -2296,6 +2315,24 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 			_log(tr("scavenger.%s.%s%s" % [event, "returning" if returning else "arrive", "" if known else ".first"]))
 		_begin_combat(GameState.start_combat(event, "adult", "carcass"), "move")
 		return
+	if event == "she_wait":
+		var st: String = tr("scavenger.she_wait")
+		_log(st)
+		encounter_message.text = st
+		encounter_detail.text = ""
+		_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
+		_clear_children(encounter_buttons_box)
+		_add_encounter_button(tr("she_wolf.wait.share"), func():
+			GameState.she_wait_choice(true)
+			_log(tr("she_wolf.wait.shared"))
+			_show_feeding()
+		)
+		_add_encounter_button(tr("she_wolf.wait.keep"), func():
+			GameState.she_wait_choice(false)
+			_show_feeding()
+		)
+		encounter_overlay.visible = true
+		return
 	if event == "tundra_wait":
 		var text: String = _tt("scavenger.tundra_wait")
 		_log(text)
@@ -2546,6 +2583,16 @@ func _process_events() -> void:
 			return
 		"year_review":
 			_show_year_review(event.get("summary", {}))
+			return
+		"she_wolf_sign":
+			var sign_text: String = tr("she_wolf.sign." + str(event.get("how", "scent")))
+			var sr: String = str(event.get("region", ""))
+			sign_text += tr("she_wolf.sign.here") if sr == GameState.current_region else tr("she_wolf.sign.near").replace("{region}", tr("region." + sr))
+			_show_event_message(sign_text, "tundra_wolf")
+			return
+		"she_wolf_mate":
+			_show_card(tr("she_wolf.mate.title"), tr("she_wolf.mate." + str(event.get("how", "courted"))))
+			_set_card_wolf("")
 			return
 		"yearling":
 			_show_card(tr("yearling.title"), tr("yearling.body"))
@@ -3502,6 +3549,68 @@ func _show_tundra_meet(d: Dictionary, extra: String = "") -> void:
 	_add_encounter_button(tr("stranger.challenge"), func():
 		_begin_combat(GameState.start_tundra_combat("meet"))
 	)
+	encounter_overlay.visible = true
+
+# 離群的母狼（Phase 3 第 2 步）：避開、走近、跟著；牠在吃東西時多「一起吃」「搶過來」。
+func _show_she_wolf(d: Dictionary, extra: String = "") -> void:
+	if GameState.she_wolf() == null:
+		GameState.clear_discovery()
+		return
+	var lines: Array[String] = []
+	if d.get("came", false):
+		lines.append(tr("she_wolf.came"))
+	else:
+		lines.append(tr("she_wolf.meet.first" if d.get("first", false) else "she_wolf.meet"))
+	var eating: bool = bool(d.get("eating", false))
+	if eating:
+		lines.append(tr("she_wolf.meet.eating"))
+	lines.append(tr("she_wolf.attitude." + GameState.she_relation_key()))
+	if extra != "":
+		lines.append(extra)
+	else:
+		_log(lines[0])
+	encounter_message.text = "\n".join(lines)
+	encounter_detail.text = ""
+	_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("stranger.avoid"), func():
+		GameState.she_avoid()
+		_log(tr("she_wolf.avoided"))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	if eating:
+		_add_encounter_button(tr("she_wolf.eat_together"), func():
+			var res := GameState.she_eat_together()
+			_log(tr("she_wolf.eat." + ("allowed" if res.get("allowed", false) else "refused")))
+			encounter_overlay.visible = false
+			_refresh()
+		)
+		_add_encounter_button(tr("she_wolf.steal"), func():
+			var res := GameState.she_steal()
+			_log(tr("she_wolf.stole" + (".left" if res.get("left", false) else "")))
+			encounter_overlay.visible = false
+			_refresh()
+		)
+	_add_encounter_button(tr("she_wolf.approach"), func():
+		var ok := GameState.she_approach()
+		_log(tr("she_wolf.approached" if ok else "she_wolf.approach.refused"))
+		encounter_overlay.visible = false
+		_refresh()
+	)
+	if extra == "":
+		_add_encounter_button(tr("she_wolf.follow").replace("{n}", str(int(round(GameState.she_follow_chance() * 100.0)))), func():
+			var res := GameState.she_follow()
+			if res.get("success", false) and res.has("assessment"):
+				var text: String = tr("she_wolf.follow.success").replace("{text}", tr("stranger.compare." + str(res["assessment"]["compare"])))
+				_log(text)
+				_show_she_wolf(d, text)
+			else:
+				_log(tr("she_wolf.follow.fail"))
+				encounter_overlay.visible = false
+				_refresh()
+		)
 	encounter_overlay.visible = true
 
 # 兩隻苔原狼圍攻狼獾：幫苔原狼、在旁邊看、離開。

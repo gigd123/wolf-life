@@ -3837,6 +3837,26 @@ func debug_pack_remains() -> void:
 	var zone: String = pack_zone(current_region)
 	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": 3, "zone": zone if zone != "" else "border"}
 
+# 離群的母狼（Phase 3 第 2 步）：還沒有就在這一區出現一隻，接著遇上（一半機會牠正在吃東西）
+func debug_she_wolf() -> void:
+	if she_wolf() == null:
+		_spawn_she_wolf()
+		pending_events = pending_events.filter(func(e): return str(e.get("type", "")) != "she_wolf_sign")
+	she_wolf().territory = current_region
+	current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)),
+		"eating": RNGService.chance(0.5) and mate_stage() == "candidate"}
+	_she_seen()
+
+# 母狼的關係 +3（到伴侶的門檻就成為伴侶）
+func debug_she_wolf_closer() -> void:
+	if she_wolf() == null:
+		_spawn_she_wolf()
+		she_wolf().territory = current_region
+	_she_relation_add("debug")
+	if mate_stage() == "candidate":
+		she_wolf().relation += 3
+		_she_relation_add("approach")
+
 # 猞猁咬著剛抓到的雪兔（Phase 2g 第 3 步：悄悄叼走、正面搶、離開）
 func debug_lynx_kill() -> void:
 	current_discovery = {"kind": "lynx", "location": _random_terrain(current_region), "has_kill": true, "known": is_identified("lynx")}

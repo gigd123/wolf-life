@@ -14,7 +14,7 @@ const MAX_YEARS := 15.0
 const ROUTINE_IGNORE := ["prey_nearby", "howl", "storm", "storm_end", "after_rain", "rain_stopped"]
 # 照常過日子期間排進的字卡（GameState._queue_notice）：留到結束後顯示，不讓它們打斷（2026-10-15 試玩 BUG-12）
 const ROUTINE_NOTICES := ["season_card", "blizzard_over", "yearling", "elder_transition", "adult_transition", "year_review",
-	"tendency_changed", "first_big_kill", "fire_over", "stranger_killed"]
+	"tendency_changed", "first_big_kill", "fire_over", "stranger_killed", "she_wolf_sign", "she_wolf_mate"]
 const MAX_ACTIONS_PER_DAY := 80
 
 var prey: String
@@ -469,7 +469,7 @@ func _routine_notable(d: Dictionary) -> bool:
 			_encounter = res["encounter"]
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
+	if kind in ["carcass", "she_wolf", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
@@ -849,7 +849,7 @@ func _best(opts: Array) -> Dictionary:
 
 # 黃昏嚎叫一次（Phase 3 第 2 步）：還沒有伴侶的成年狼，依 mate_search；母狼在附近時都會嚎叫。
 func _maybe_howl() -> bool:
-	if GameTime.current_period() != "dusk" or _howled_day == GameState._today() or not GameState.can_howl() or GameState.has_mate():
+	if routine or GameTime.current_period() != "dusk" or _howled_day == GameState._today() or not GameState.can_howl() or GameState.has_mate():
 		return false
 	var season: String = GameTime.current_season()
 	var near: bool = GameState.she_wolf() != null

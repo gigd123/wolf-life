@@ -14,6 +14,7 @@
 | `year.hint.spring.hare_low_rising` | 雪兔還是少，但比去年多 | 雪兔倍率 ≤ 0.3 且比去年高 | 比去年少時出現 |
 | `year.hint.spring.hare_high` | 雪兔多 | 雪兔倍率 ≥ 1.6（不做比較） | — |
 | `year.hint.elder.winter.*` | 老狼預感今年冬天 | `year_state().winter`（當年擲出的冬況），老年、秋天 | 和實際冬況不同 |
+| `she_wolf.meet` | 那隻母狼又出現 | 這隻母狼見過（`life_log.she_met`；第一次用 `she_wolf.meet.first`，嚎叫找來的用 `she_wolf.came`） | 第一次見到時出現 |
 | `challenger.again.*` | 年輕的狼又來了 | `challenger_visits` > 0 | 第一次見面時用 |
 | `challenger.again.grew` | 牠比上次更壯 | `challenger_grew()`：上次是你打贏（`_after_challenger` 讓牠能力 +3） | 你讓了或輸了（牠沒變）時出現 |
 | `combat.remember*、combat.remember.generic.*、knowledge.opponent` | 上次交手的結果、現在誰強 | `opponent_beaten` 記錄、`power_compare` 用對手實際能力（試玩 BUG-04） | 用資料表的固定數值比較 |
