@@ -1782,6 +1782,13 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") == "she_wolf":
 		_show_she_wolf(d)
 		return
+	if d.get("kind", "") == "pack_sign":
+		# 鄰群的徵兆（Phase 3 第 4 步）
+		var ps_text: String = tr("pack_sign." + str(d.get("sign", "core"))).replace("{region}", tr("region." + str(d.get("home", ""))))
+		GameState.clear_discovery()
+		_show_event_message(ps_text, "stranger_wolf")
+		_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+		return
 	if d.get("kind", "") == "tundra_wolves":
 		_show_tundra_meet(d)
 		return
@@ -2610,6 +2617,13 @@ func _process_events() -> void:
 			var sr: String = str(event.get("region", ""))
 			sign_text += tr("she_wolf.sign.here") if sr == GameState.current_region else tr("she_wolf.sign.near").replace("{region}", tr("region." + sr))
 			_show_event_message(sign_text, "tundra_wolf")
+			return
+		"neighbor_howl":
+			_show_event_message(tr("pack_sign.howl" + (".many" if event.get("many", false) else "")).replace("{region}", tr("region." + str(event.get("region", "")))), "stranger_wolf")
+			return
+		"territory_lost", "territory_won":
+			_show_card(tr("territory_card.title." + str(event["type"]).trim_prefix("territory_")), tr("territory_card." + str(event["type"]).trim_prefix("territory_")).replace("{region}", tr("region." + str(event.get("region", "")))))
+			_set_card_wolf("")
 			return
 		"she_wolf_mate":
 			_show_card(tr("she_wolf.mate.title"), tr("she_wolf.mate." + str(event.get("how", "courted"))))

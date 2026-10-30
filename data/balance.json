@@ -525,7 +525,9 @@
     ],
     "neighbor": { "pair_min_player_age": 0.0, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 }, "start_mate_age": [3.0, 5.0], "start_young": [1, 5], "start_young_age": [0.5, 2.5] },
     "cap_exempt": ["den", "pups"],
-    "reform_seasons": 4
+    "reform_seasons": 4,
+    "_signs_comment": "Phase 3 第 4 步補：一般鄰群的徵兆。howl_night_chance：深夜聽到同一張地圖上鄰群的合嚎（many 隻以上寫「很多隻」）；core_chance／border_chance：在牠們的地方、旁邊探索時發現氣味標記；probed_chance：在被試探的地盤探索時看到牠們新的氣味（換季前沒補標記就會被佔走）。",
+    "signs": { "howl_night_chance": 0.25, "many": 5, "core_chance": 0.2, "border_chance": 0.1, "probed_chance": 0.6 }
   },
   "black_pack": {
     "pair_min_player_age": 2.5, "pair_chance": 0.3, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 },

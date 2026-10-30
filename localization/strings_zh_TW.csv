@@ -2218,3 +2218,16 @@ pack.meet.count.team,牠們有 {n} 隻，你們有 {m} 隻。
 pack.meet.young.neighbor,{location}，一隻年輕的狼獨自在嗅聞，身邊沒有別的狼。牠身上是那群陌生的狼的氣味。
 pack.standoff.won.neighbor,你豎起頸毛長嚎，聲音遠遠傳開。{who}遲疑了一下，掉頭走遠了。
 debug.event.neighbor_meet,撞上鄰群
+knowledge.pack_land.1,{region}一帶似乎有一群狼
+knowledge.pack_land.2,{region}常有一群狼的氣味和嚎聲
+knowledge.pack_land.3,{region}是一群狼的地方，在那裡和旁邊常會撞上牠們
+pack_sign.core,沿路的石頭、灌木上到處是同一群狼的氣味標記，新鮮又密集。這裡是牠們的地方。
+pack_sign.border,路旁的石頭上有一群狼留下的氣味標記，還算新鮮。牠們的地方就在{region}那頭。
+pack_sign.border_off,路旁的石頭上有一群狼留下的氣味標記，還算新鮮。牠們是從更遠的地方巡過來的。
+pack_sign.probed,你之前留下的氣味已經淡了，上面蓋著另一群狼新的標記。再不補上，這一帶會變成牠們的。
+pack_sign.howl,深夜，一群狼的合嚎從{region}那頭傳來，此起彼落。
+pack_sign.howl.many,深夜，一群狼的合嚎從{region}那頭傳來。聲音很多，至少有好幾隻。
+territory_card.title.lost,地盤被佔走
+territory_card.lost,你在{region}留下的氣味早就被蓋過去了。那一帶現在是那群狼的地方。
+territory_card.title.won,新的地盤
+territory_card.won,{region}一帶，現在只剩下你們的氣味。那一帶是你們的了。

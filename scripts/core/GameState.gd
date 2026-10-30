@@ -197,6 +197,7 @@ func _on_period_changed(_period_index: int) -> void:
 		_maybe_howl()
 		_update_territory()
 		_maybe_neighbor_meet()
+		_maybe_neighbor_howl()
 		_update_fire()
 		_update_tundra_events()
 		_maybe_ranch_humans()
@@ -2085,6 +2086,10 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	if _maybe_pack_remains():
 		state_changed.emit()
 		return current_discovery
+	# 鄰群的徵兆（Phase 3 第 4 步）：氣味標記、你被試探的地盤
+	if _maybe_pack_sign():
+		state_changed.emit()
+		return current_discovery
 	# 黑狼的標記蓋在你的地盤上：在那一區探索時發現（1.9b 第 1 步）
 	if is_overmarked() and RNGService.chance(0.6):
 		current_discovery = {"kind": "overmarked", "location": _random_terrain(current_region)}
@@ -2740,6 +2745,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"overhunt": return "overhunt|%s|%s" % [entry["animal"], entry["region"]]
 		"stranger": return "stranger|%s|%s" % [entry["animal"], entry["region"]]
 		"territory": return "territory|%s|%s" % [entry["animal"], entry["region"]]
+		"pack_land": return "pack_land|%s" % entry["region"]
 		"opponent": return "opponent|%s|%s" % [entry["animal"], entry["life_stage"]]
 	return ""
 
@@ -3801,6 +3807,42 @@ func _maybe_neighbor_meet() -> void:
 					"size": pack_size_of(p), "stage": p.stage, "location": _random_terrain(current_region)})
 			return
 
+# 一般鄰群的徵兆（Phase 3 第 4 步補）：深夜的合嚎（同一張地圖，從牠們的地方傳來）、探索時的氣味標記、你淡掉的標記被試探。
+# 都會累積「那一帶是一群狼的地方」的知識（pack_land）。
+func pack_home_region(p: WolfPack) -> String:
+	return p.border if p.off_map else (str(p.regions[0]) if not p.regions.is_empty() else "")
+
+func _maybe_neighbor_howl() -> void:
+	if GameTime.current_period() != "night" or not _can_trigger_event():
+		return
+	for p in neighbor_packs:
+		var r: String = pack_home_region(p)
+		if not pack_is_active(p) or r == "" or GameData.map_of(r) != current_map():
+			continue
+		if RNGService.chance(float(_packs_cfg().get("signs", {}).get("howl_night_chance", 0.25))):
+			learn({"type": "pack_land", "region": r})
+			_queue_event({"type": "neighbor_howl", "region": r, "pack": p.id, "many": pack_size_of(p) >= int(_packs_cfg().get("signs", {}).get("many", 5))})
+			return
+
+# 探索時：在牠們的地方或旁邊發現氣味標記；你被試探的地盤上看到牠們新的氣味（警告：換季前沒補就會被佔走）
+func _maybe_pack_sign() -> bool:
+	var cfg: Dictionary = _packs_cfg().get("signs", {})
+	for q in all_packs():
+		if (life_log.get(_probe_key(q), {}) as Dictionary).has(current_region) and RNGService.chance(float(cfg.get("probed_chance", 0.6))):
+			current_discovery = {"kind": "pack_sign", "sign": "probed", "pack": q.id, "location": _random_terrain(current_region)}
+			return true
+	var here := pack_here(current_region)
+	if here.is_empty() or here["pack"] == black_pack:
+		return false
+	var zone: String = str(here["zone"])
+	if not RNGService.chance(float(cfg.get(zone + "_chance", 0.0))):
+		return false
+	var p: WolfPack = here["pack"]
+	learn({"type": "pack_land", "region": current_region if zone == "core" else pack_home_region(p)})
+	current_discovery = {"kind": "pack_sign", "sign": zone + ("_off" if p.off_map else ""), "pack": p.id, "location": _random_terrain(current_region),
+		"home": pack_home_region(p)}
+	return true
+
 # 一般鄰群試探你的地盤（同黑狼一家的 _pack_probe）：你們數量少時比較常來
 func _probe_key(p: WolfPack) -> String:
 	return "pack_probe" if p == black_pack else "pack_probe." + p.id
@@ -3845,6 +3887,7 @@ func _take_probed_by(p: WolfPack) -> Array:
 			p.regions.append(r)
 			taken.append(r)
 			add_life_event("territory.lost", {"region": r, "pack": p.id})
+			_queue_notice({"type": "territory_lost", "region": r})
 	life_log.erase(key)
 	return taken
 
@@ -3856,6 +3899,7 @@ func _settle_pack_claims() -> void:
 		if p != null and p.regions.has(r) and p.regions.size() > 1 and str(p.regions[0]) != r and is_own_territory(r):
 			p.regions.erase(r)
 			add_life_event("territory.won", {"region": r, "pack": p.id})
+			_queue_notice({"type": "territory_won", "region": r})
 	life_log.erase("pack_claims")
 
 func pack_attitude() -> String:

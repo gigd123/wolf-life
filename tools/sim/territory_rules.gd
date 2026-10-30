@@ -9,6 +9,7 @@ extends SceneTree
 #   7. 有伴侶後地盤最多 3 區
 #   8. 解散的鄰群：幾季後有新的一對搬進來
 #   9. 鄰群的領域裡大、中型獵物少一點
+#  10. 徵兆：深夜的合嚎、探索時的氣味標記、被試探時的警告；地盤被佔走、搶下來的卡片；知識「那一帶是一群狼的地方」
 # 用法：bash tools/run_sim.sh territory_rules
 var gs
 var gt
@@ -83,8 +84,14 @@ func _run() -> void:
 	data.balance["black_pack"]["probe"]["faded_chance"] = 1.0
 	gs._probe_by(mp)
 	_check((gs.life_log.get("pack_probe.mountain", {}) as Dictionary).has("mountain_meadow"), "標記淡掉、和牠們相鄰：被試探")
+	data.balance["packs"]["signs"]["probed_chance"] = 1.0
+	gs.current_region = "mountain_meadow"
+	_check(gs._maybe_pack_sign() and str(gs.current_discovery.get("sign", "")) == "probed", "在被試探的地盤探索：看到牠們新的氣味（警告）")
+	gs.clear_discovery()
+	gs.pending_events.clear()
 	var taken: Array = gs._take_probed_by(mp)
 	_check(taken == ["mountain_meadow"] and mp.regions.has("mountain_meadow") and not gs.life_log["marks"].has("mountain_meadow"), "換季時沒補：變成牠們的")
+	_check(gs.pending_events.any(func(e): return str(e.get("type", "")) == "territory_lost"), "跳「地盤被佔走」的卡片")
 	gs.new_game("forest_east")
 	gs.wolf.age_years = 3.0
 	fo = gs.pack_by_id("forest_outer")
@@ -110,6 +117,7 @@ func _run() -> void:
 	gs._settle_pack_claims()
 	_check(r["won"] and not mp.regions.has("mountain_meadow") and mp.regions.has("mountain_canyon"), "在牠們領域的邊緣對峙贏了、你也標記了：換季時變成你的（%s）" % str(mp.regions))
 	_check(gs.life_events("territory.won").size() == 1 and gs.pack_attitude_of(mp) == "wary", "寫進生命事件；牠們之後戒備你")
+	_check(gs.pending_events.any(func(e): return str(e.get("type", "")) == "territory_won"), "跳「新的地盤」的卡片")
 	# 8
 	mp.stage = "gone"
 	mp.regions = []
@@ -122,5 +130,20 @@ func _run() -> void:
 	# 9
 	var pm: Dictionary = gs.prey_mults(str(mp.regions[0]))
 	_check(float(pm.get("mule_deer", 1.0)) < 1.0, "鄰群的領域裡騾鹿少一點（× %.2f）" % float(pm.get("mule_deer", 1.0)))
+	# 10. 徵兆：深夜的合嚎、探索時的氣味標記，都累積「那一帶是一群狼的地方」
+	gs.new_game("mountain_foothills")
+	gs.wolf.age_years = 3.0
+	mp = gs.pack_by_id("mountain")
+	data.balance["packs"]["signs"]["howl_night_chance"] = 1.0
+	gt.period_index = 3
+	gs.events_today = 0
+	gs.pending_events.clear()
+	gs._maybe_neighbor_howl()
+	var hw: Array = gs.pending_events.filter(func(e): return str(e.get("type", "")) == "neighbor_howl")
+	_check(not hw.is_empty() and str(hw[0]["region"]) == "mountain_canyon", "深夜聽到鄰群的合嚎（從峽谷傳來）")
+	data.balance["packs"]["signs"]["core_chance"] = 1.0
+	gs.current_region = "mountain_canyon"
+	_check(gs._maybe_pack_sign() and str(gs.current_discovery.get("sign", "")) == "core", "在牠們的地方探索：到處是牠們的氣味標記")
+	_check(gs.knowledge_level({"type": "pack_land", "region": "mountain_canyon"}) == 2, "累積知識：峽谷是一群狼的地方（第 %d 級）" % gs.knowledge_level({"type": "pack_land", "region": "mountain_canyon"}))
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()

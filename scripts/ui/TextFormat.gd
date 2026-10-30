@@ -32,12 +32,15 @@ static func injury_source(source: String) -> String:
 static func knowledge_text(entry: Dictionary) -> String:
 	var level: String = t("knowledge.level.%d" % GameState.knowledge_level(entry))
 	# 狼嚎的知識本身就分三句寫出把握程度，不再加【似乎】（免得「【似乎】似乎有其他狼」）
-	if entry["type"] == "territory":
+	if entry["type"] in ["territory", "pack_land"]:
 		level = ""
 	var text: String = t("knowledge." + str(entry["type"]))
 	if entry["type"] == "territory":
 		# 狼嚎的知識逐步成形：似乎有其他狼 → 常從某處傳來 → 這一帶是其他狼的範圍
 		text = t("knowledge.territory.%d" % GameState.knowledge_level(entry))
+	if entry["type"] == "pack_land":
+		# 一般鄰群（Phase 3 第 4 步）：似乎有一群狼 → 常有牠們的氣味和嚎聲 → 那一帶是牠們的地方
+		text = t("knowledge.pack_land.%d" % GameState.knowledge_level(entry))
 	text = text.replace("{animal}", source_name(str(entry.get("animal", ""))))
 	text = text.replace("{region}", t("region." + str(entry.get("region", ""))))
 	text = text.replace("{period}", t("period." + str(entry.get("period", ""))))

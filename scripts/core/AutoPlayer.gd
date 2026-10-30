@@ -329,6 +329,12 @@ func _explore_once() -> void:
 	if d.get("kind", "") == "tundra_wolves":
 		_meet_tundra(bool(d.get("charge", false)))
 		return
+	if d.get("kind", "") == "pack_sign":
+		# 鄰群的徵兆（Phase 3 第 4 步）：被試探的地盤就補標記
+		GameState.clear_discovery()
+		if str(d.get("sign", "")) == "probed" and GameState.can_mark_here():
+			GameState.action_mark()
+		return
 	if d.get("kind", "") == "she_wolf":
 		_meet_she_wolf(d)
 		return
@@ -475,7 +481,7 @@ func _routine_notable(d: Dictionary) -> bool:
 			_encounter = res["encounter"]
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "she_wolf", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
+	if kind in ["carcass", "she_wolf", "pack_sign", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
