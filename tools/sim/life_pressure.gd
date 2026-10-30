@@ -257,7 +257,7 @@ func _process(_d):
 		if not meets.is_empty():
 			meet_lives += 1
 		for m in meets:
-			var mk: String = "%s.%s" % [m["kind"], m["outcome"]]
+			var mk: String = "%s.%s.%s" % ["black" if str(m.get("pack", "black")) == "black" else "neighbor", m["kind"], m["outcome"]]
 			meet_count[mk] = int(meet_count.get(mk, 0)) + 1
 		for e in GS.life_log.get("black_pack_events", []):
 			var ev: String = str(e["event"])
@@ -352,7 +352,7 @@ func _process(_d):
 		var t := 0.0
 		for x in l: t += x
 		print("    %-10s %d 局發生（共 %d 次）；第一次 平均 %.1f 歲、中位數 %.1f 歲" % [ev, l.size(), event_count[ev], t / l.size(), l[l.size() / 2]])
-	print("    撞上黑狼一家：%d 局有，%s" % [meet_lives, meet_count])
+	print("    撞上鄰群（black 黑狼一家、neighbor 一般鄰群，Phase 3 第 4 步）：%d 局有，%s" % [meet_lives, meet_count])
 	for st in ["young", "yearling", "adult", "elder"]:
 		var n := 0
 		var ok := 0
