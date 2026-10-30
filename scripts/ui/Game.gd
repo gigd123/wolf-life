@@ -24,6 +24,8 @@ var sleeping_now: bool = false # 睡覺結算期間（QA-70）
 var woken_encounter: Dictionary = {}
 var stamina_icon: TextureRect = null # 有圖示時取代文字
 var stamina_warning: Label # 頂部「體力不支」（QA-55；最低體力的規則在 1.7 定）
+var pack_label: Label # 頂部「伴侶同行」（Phase 3 第 3 步）
+var pack_btn: Button # 「狼群」面板（有伴侶之後才出現）
 var log_box: RichTextLabel
 
 # 行動訊息（試玩回饋後的改版）：
@@ -262,6 +264,18 @@ func _build_ui() -> void:
 	stamina_warning.theme_type_variation = &"WarningLabel"
 	stamina_warning.visible = false
 	status_row.add_child(stamina_warning)
+	pack_label = Label.new()
+	pack_label.text = tr("ui.pack.following")
+	pack_label.tooltip_text = tr("ui.pack.following.tip")
+	pack_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	pack_label.visible = false
+	status_row.add_child(pack_label)
+
+	pack_btn = Button.new()
+	pack_btn.text = tr("ui.pack")
+	pack_btn.pressed.connect(_show_pack_panel)
+	pack_btn.visible = false
+	top_row.add_child(pack_btn)
 
 	var debug_btn := Button.new()
 	debug_btn.text = tr("ui.debug")
@@ -1139,6 +1153,8 @@ func _refresh() -> void:
 		snow_icon.tooltip_text = tr("snow." + snow_state) + "\n" + tr("snow.tip." + snow_state)
 	var low_stamina: bool = w.stamina <= float(GameData.balance.get("stamina_low_threshold", 10))
 	stamina_warning.visible = low_stamina
+	pack_btn.visible = not GameState.pack_members().is_empty()
+	pack_label.visible = GameState.mate_follows_here()
 	if stamina_icon != null:
 		stamina_icon.visible = low_stamina
 
@@ -3611,6 +3627,44 @@ func _show_she_wolf(d: Dictionary, extra: String = "") -> void:
 				encounter_overlay.visible = false
 				_refresh()
 		)
+	encounter_overlay.visible = true
+
+# 狼群面板（Phase 3 第 3 步，SPEC「同行與指派」）：每個成員的狀態、指派（一直有效直到你改）、群獵的角色。目前只有伴侶。
+func _show_pack_panel() -> void:
+	var members: Array = GameState.pack_members()
+	if members.is_empty():
+		return
+	var n: NpcWolf = members[0]
+	var lines: Array[String] = []
+	lines.append(tr("ui.pack.mate").replace("{age}", str(snapped(n.age_years, 0.5))))
+	lines.append(tr("stranger.compare." + GameState.power_compare(n.power())))
+	lines.append(tr("ui.pack.health").replace("{hp}", str(int(n.health))).replace("{max}", str(int(n.health_max))))
+	if n.task == "follow" and not GameState.followers().has(n):
+		lines.append(tr("ui.pack.too_hurt"))
+	var role_now: String = GameState.hunt_role_of(n)
+	lines.append(tr("ui.pack.now").replace("{task}", tr("ui.pack.task." + n.task)).replace("{role}", tr("ui.pack.role." + n.hunt_role) + ("" if n.hunt_role != "auto" else tr("ui.pack.role.auto_is").replace("{role}", tr("ui.pack.role." + role_now)))))
+	encounter_message.text = "\n".join(lines)
+	encounter_detail.text = tr("ui.pack.detail")
+	_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	for task in GameState.PACK_TASKS:
+		var label: String = tr("ui.pack.task." + task) + ("　✓" if n.task == task else "")
+		_add_encounter_button(label, func():
+			GameState.set_task(n.id, task)
+			_show_pack_panel()
+			_refresh()
+		)
+	for role in GameState.HUNT_ROLES:
+		var rl: String = tr("ui.pack.role_button").replace("{role}", tr("ui.pack.role." + role)) + ("　✓" if n.hunt_role == role else "")
+		_add_encounter_button(rl, func():
+			GameState.set_hunt_role(n.id, role)
+			_show_pack_panel()
+		)
+	_add_encounter_button(tr("ui.close"), func():
+		encounter_overlay.visible = false
+		_refresh()
+	)
 	encounter_overlay.visible = true
 
 # 兩隻苔原狼圍攻狼獾：幫苔原狼、在旁邊看、離開。

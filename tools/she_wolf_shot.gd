@@ -1,5 +1,5 @@
 extends SceneTree
-# 離群母狼（Phase 3 第 2 步）的畫面檢查：成年 → 主畫面（行動欄多了「嚎叫」）→ 徵兆 → 遇上（牠在吃東西）→ 走近 → 伴侶字卡，各截一張。
+# 離群母狼（Phase 3 第 2 步）的畫面檢查：成年 → 主畫面（行動欄多了「嚎叫」）→ 徵兆 → 遇上（牠在吃東西）→ 走近 → 伴侶字卡 → 主畫面（伴侶同行、狼群按鈕）→ 狼群面板（第 3 步），各截一張。
 # 用法：OUT=<輸出路徑前綴> xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/she_wolf_shot.gd
 var f := 0
 var game
@@ -39,6 +39,13 @@ func _process(_d) -> bool:
 		game._process_events()
 	if f == 18:
 		_shot("mate")
+		game.card_overlay.visible = false
+		game._refresh()
+	if f == 21:
+		_shot("main_mate")
+		game._show_pack_panel()
+	if f == 24:
+		_shot("pack")
 		print("SHOT done mate=", gs.has_mate())
 		quit()
 	return false

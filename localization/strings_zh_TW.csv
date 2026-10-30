@@ -2191,3 +2191,23 @@ tactical.ally.ambush_strike.mate,{animal}衝過來的那一刻，趴著等的伴
 tactical.ui.mate_intro.drive,伴侶和你一起獵（驅趕）：牠會繞到獵物的另一側，你靠近時衝出去把獵物往你這邊趕。藏著別動，等牠跑過來再撲。
 tactical.ui.mate_intro.chase,伴侶和你一起獵（追擊）：牠跟在你後面，獵物一跑就追上去咬牠的後腿。牠咬住時你撲上去更容易。
 tactical.ui.mate_intro.ambush,伴侶和你一起獵（埋伏）：牠會繞到獵物的另一側趴著等。你從這一側把獵物驚起來，牠跑過伴侶身邊時會被撲住。
+ui.pack,狼群
+ui.pack.following,伴侶同行
+ui.pack.following.tip,伴侶跟著你：一起移動、探索、吃、睡；遇到戰鬥時一起上，狩獵時在戰術地圖上幫忙。
+ui.pack.mate,你的伴侶（{age} 歲）
+ui.pack.health,血量 {hp}／{max}
+ui.pack.too_hurt,牠傷得太重，留在巢穴養傷，好一點才會跟著你。
+ui.pack.now,現在：{task}　群獵：{role}
+ui.pack.detail,指派會一直有效，直到你改。
+ui.pack.task.follow,跟著你
+ui.pack.task.den,留守巢穴
+ui.pack.task.patrol,巡視邊界
+ui.pack.task.free,自由行動
+ui.pack.task.rest,休息養傷
+ui.pack.role_button,群獵：{role}
+ui.pack.role.auto,自動
+ui.pack.role.auto_is,（{role}）
+ui.pack.role.drive,驅趕
+ui.pack.role.chase,追擊
+ui.pack.role.ambush,埋伏
+ui.close,關閉
