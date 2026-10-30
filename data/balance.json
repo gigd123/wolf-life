@@ -77,6 +77,8 @@
     "_pack_young_comment": "Phase 3a 第 3 步：落單的年輕狼（黑狼的孩子），比黑狼弱。戰鬥用 challenger 的外觀與名稱「年輕的狼」。",
     "pack_young": { "base": "stranger_wolf", "start_age": [1.0, 2.0], "start_stats": { "speed": [58, 66], "strength": [50, 58], "skill": [46, 54], "perception": [50, 58], "health_max": [85, 95] } },
     "black_heir": { "base": "stranger_wolf", "start_stats": { "speed": [62, 70], "strength": [62, 70], "skill": [56, 64], "perception": [56, 64], "health_max": [100, 110] } },
+    "_lone_female_comment": "Phase 3 第 2 步：離群的母狼（之後可能成為你的伴侶）。設定沿用黑狼，年輕、體型略小。",
+    "lone_female": { "base": "stranger_wolf", "sex": "female", "start_age": [1.75, 3.0], "start_stats": { "speed": [62, 72], "strength": [56, 64], "skill": [56, 66], "perception": [58, 68], "health_max": [92, 104] } },
     "_pack_breeder_comment": "Phase 3 第 1 步：一般鄰群帶頭的繁殖公狼（換代後的也是）。設定沿用黑狼，能力略低。",
     "pack_breeder": { "base": "stranger_wolf", "start_age": [3.0, 5.0], "start_stats": { "speed": [60, 70], "strength": [62, 72], "skill": [56, 66], "perception": [56, 64], "health_max": [100, 112] } },
     "wolverine": {
@@ -492,6 +494,19 @@
   },
   "start_health_max": 80,
   "_black_pack_comment": "Phase 3a 黑狼的一生（WolfPack.gd）：每次換季更新。成家：你打贏牠之後或你滿 pair_min_player_age 歲之後，每季 pair_chance × pair_season_mult，牠還沒老才會。伴侶的年齡 mate_age，每季死亡 mate_death_per_season（mate_old_age 歲起 mate_old_death_per_season）。春季 pup_chance 生 litter 隻，幼狼每季存活 pup_survival_per_season（第一年約一半）；disperse_per_season：1 歲以上的子女每季離群的機會。數量 ≥ expand_min_size 時秋季 expand_chance 擴張一區，最多 max_regions 區；數量上限 max_size。帶頭的死了，有伴侶和 heir_min_age 歲以上的子女就由最年長的接手（換代），否則解散。黑狼的開局年齡 2.5～3 歲（原本 3～4，讓牠的家族撐過你的壯年）。",
+  "mate": {
+    "_comment": "Phase 3 第 2 步（SPEC「離群母狼與配對」）：daily_chance 每天換日時擲（成年、還沒有母狼時）；昨天嚎叫過 ×howl_mult、標記過 ×mark_mult、這一區獵物沒被獵少 ×prey_mult。牠在某一區（roam_chance 每天換到相鄰區，在你的地盤裡 ×own_territory_roam_mult）；探索時 meet_chance 遇上（eating_chance 牠正在吃），你在吃東西時 feed_chance 牠來到旁邊。關係：levels 到 mate 成為伴侶；relation 是各種互動的加減；absent_days 天沒見之後每天 absent_per_day、leave_chance_per_day 機率離開，關係 < 0 也離開。howl：嚎叫花的回合、體力，牠在這一區或相鄰時 come_chance 循聲找來，嚎叫的那天撞上黑狼一家 ×pack_meet_mult。tundra_replace_chance：苔原狼只剩一隻母狼、關係友善時，換季時留下來跟你。",
+    "daily_chance": { "autumn": 0.015, "winter": 0.015, "spring": 0.003, "summer": 0.003 },
+    "howl_mult": 3.0, "mark_mult": 1.5, "prey_mult": 1.2,
+    "roam_chance": 0.3, "own_territory_roam_mult": 0.5,
+    "meet_chance": 0.3, "eating_chance": 0.25, "feed_chance": 0.3,
+    "wary_accept": 0.6, "follow_base": 0.5, "follow_divisor": 150, "eat_gain": 20, "steal_gain": 30,
+    "levels": { "familiar": 3, "friendly": 6, "mate": 9 },
+    "relation": { "approach": 1, "follow": 1, "howl_reply": 1, "eat_together": 1, "share": 2, "joint_hunt": 2, "steal": -3, "flee": -1, "absent_per_day": -1 },
+    "absent_days": 7, "leave_chance_per_day": 0.25,
+    "howl": { "turns": 1, "stamina": 2, "come_chance": 0.5, "pack_meet_mult": 1.5 },
+    "tundra_replace_chance": 0.5
+  },
   "packs": {
     "_comment": "Phase 3 第 1 步（SPEC「鄰群的配置」，方案甲）：黑狼一家以外的鄰群。layout：每張地圖最多一群住在地圖上（核心放在離你的巢穴最遠的那一區），其他住在地圖外、只在 border 那一區出現。neighbor：覆寫 black_pack 的數值（一般鄰群不受你的年齡限制、一開始就是一對或狼群）。cap_exempt：不受每天事件上限的事件種類（巢穴、幼狼，第 5 步用）。",
     "layout": [

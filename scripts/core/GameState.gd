@@ -225,6 +225,7 @@ func _on_day_changed(_day: int) -> void:
 	_update_sleep_spots()
 	_decay_ranch_attention()
 	_heal_npcs()
+	_update_she_wolf()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
@@ -257,6 +258,7 @@ func _on_season_changed(_season_index: int) -> void:
 		if GameTime.current_season() == "spring":
 			_new_year()
 		_tundra_breeding_season()
+		_maybe_tundra_mate()
 		_roam_tundra_wolves(true)
 		_update_snow() # 換季時日期直接歸 1、不經過換日：雪況在這裡結算，冬季第一天不會沿用秋末的
 		life_log["region_periods"] = {}
@@ -768,6 +770,8 @@ func available_actions() -> Array[String]:
 		actions.append("make_den")
 	if can_mark_here():
 		actions.append("mark")
+	if can_howl():
+		actions.append("howl")
 	if can_lie_down():
 		actions.append("lie_down")
 	return actions
@@ -1749,6 +1753,7 @@ func action_mark() -> String:
 	wolf.stamina -= float(cfg.get("mark_stamina", 2))
 	wolf.clamp_stats()
 	var marks: Dictionary = life_log.get("marks", {})
+	life_log["marked_day"] = _today()
 	var result: String = "refresh" if is_own_territory() else "new"
 	var over: Dictionary = life_log.get("overmarked", {})
 	if over.has(current_region):
@@ -2080,7 +2085,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 			_pack_note("overmarked")
 		state_changed.emit()
 		return current_discovery
-	if _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
+	if _maybe_meet_she_wolf() or _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -3705,6 +3710,8 @@ func _maybe_pack_meet() -> void:
 		return
 	var cfg := _pack_meet_cfg()
 	var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value("meet_mult", 1.0)
+	if howled_today():
+		chance_value *= float(_mate_cfg().get("howl", {}).get("pack_meet_mult", 1.5)) # 嚎叫也會把鄰群引來（SPEC Phase 3）
 	if RNGService.chance(chance_value):
 		var e := _pack_meet_event()
 		_pack_note(str(e.get("lone", "")) if str(e.get("lone", "")) != "" else ("leader" if str(e.get("type", "")) == "stranger_confront" else "meet"))
@@ -4249,6 +4256,8 @@ func feed_once() -> Dictionary:
 			event = "bear"
 		elif RNGService.chance(float(chances["wolverine"])):
 			event = "wolverine"
+		elif _she_wolf_here() and RNGService.chance(float(_mate_cfg().get("feed_chance", 0.3))):
+			event = "she_wait"
 		elif _tundra_wolves_here() and RNGService.chance(_tundra_carcass_chance()):
 			event = "tundra_wait" if tundra_relation_key() == "friendly" else "tundra_wolves"
 		elif RNGService.chance(float(chances["fox"])):
@@ -4759,6 +4768,7 @@ func finish_combat(c: Combat) -> Dictionary:
 		_push_on_injury(c.start_heavy)
 	_record_combat_log(c)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
+	_she_saw_combat(c)
 	var result := {"outcome": c.outcome, "grow": ""}
 	if c.npc != null:
 		c.npc.health = c.opp_hp
@@ -5543,6 +5553,286 @@ func add_life_event(type: String, data: Dictionary = {}) -> void:
 func life_events(type_prefix: String = "") -> Array:
 	return (life_log.get("life_events", []) as Array).filter(func(e): return type_prefix == "" or str(e.get("type", "")).begins_with(type_prefix))
 
+# --- Phase 3 第 2 步：離群母狼與配對（SPEC Phase 3「離群母狼與配對」）---
+# 同一時間最多一隻：life_log.mate_id 是牠在 npcs 的鍵，mate_stage 是 candidate（還在認識）或 mate（伴侶）。
+# 關係沿用苔原狼的階段，再多一階 mate；數值在 balance.json 的 mate。
+
+func _mate_cfg() -> Dictionary:
+	return GameData.balance.get("mate", {})
+
+func she_wolf() -> NpcWolf:
+	var id: String = str(life_log.get("mate_id", ""))
+	var n: NpcWolf = npcs.get(id, null) if id != "" else null
+	return n if n != null and n.alive else null
+
+func mate_stage() -> String:
+	return str(life_log.get("mate_stage", "")) if she_wolf() != null else ""
+
+func has_mate() -> bool:
+	return mate_stage() == "mate"
+
+func she_relation_key() -> String:
+	var n := she_wolf()
+	if n == null:
+		return ""
+	if mate_stage() == "mate":
+		return "mate"
+	var levels: Dictionary = _mate_cfg().get("levels", {})
+	if n.relation >= int(levels.get("friendly", 6)):
+		return "friendly"
+	if n.relation >= int(levels.get("familiar", 3)):
+		return "familiar"
+	return "wary"
+
+func _she_wolf_here() -> bool:
+	var n := she_wolf()
+	return n != null and mate_stage() == "candidate" and n.territory == current_region
+
+func _today() -> int:
+	return int(life_log.get("days_lived", 1))
+
+# 每天換日時擲一次（昨天嚎叫過、標記過、這一區獵物沒被獵少時乘倍率）。成年、還沒有母狼時才會遇到。
+func lone_female_chance() -> float:
+	var cfg := _mate_cfg()
+	var yesterday: int = _today() - 1
+	var c: float = float(cfg.get("daily_chance", {}).get(GameTime.current_season(), 0.0))
+	if int(life_log.get("howled_day", -1)) == yesterday:
+		c *= float(cfg.get("howl_mult", 3.0))
+	if int(life_log.get("marked_day", -1)) == yesterday:
+		c *= float(cfg.get("mark_mult", 1.5))
+	if (region_depletion.get(current_region, {}) as Dictionary).is_empty():
+		c *= float(cfg.get("prey_mult", 1.2))
+	return c
+
+func _update_she_wolf() -> void:
+	if wolf == null or not wolf.alive:
+		return
+	var cfg := _mate_cfg()
+	var n := she_wolf()
+	if n == null:
+		if wolf.life_stage() != Wolf.LifeStage.SUBADULT and current_map() != "ranch" and RNGService.chance(lone_female_chance()):
+			_spawn_she_wolf()
+		return
+	if mate_stage() == "mate":
+		n.territory = current_region # 第 3 步改成跟著你行動
+		return
+	# 太久沒見：關係下降，可能離開這一帶
+	var absent: int = _today() - int(life_log.get("she_last_seen", _today()))
+	if absent >= int(cfg.get("absent_days", 7)):
+		n.relation += int(cfg.get("relation", {}).get("absent_per_day", -1))
+		if n.relation < 0 or RNGService.chance(float(cfg.get("leave_chance_per_day", 0.25))):
+			_she_wolf_leaves("absent")
+			return
+	# 牠自己也在走動（同一張地圖）
+	var roam: float = float(cfg.get("roam_chance", 0.3)) * (float(cfg.get("own_territory_roam_mult", 0.5)) if is_own_territory(n.territory) else 1.0)
+	if RNGService.chance(roam):
+		var adj: Array = (EncounterSystem.region_data(n.territory).get("adjacent", []) as Array).filter(func(r): return GameData.map_of(r) == GameData.map_of(n.territory))
+		if not adj.is_empty():
+			n.territory = str(adj[RNGService.randi_range(0, adj.size() - 1)])
+
+func _spawn_she_wolf() -> void:
+	var count: int = int(life_log.get("she_wolf_count", 0)) + 1
+	life_log["she_wolf_count"] = count
+	var adj: Array = adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
+	var region: String = current_region if adj.is_empty() or RNGService.chance(0.5) else str(adj[RNGService.randi_range(0, adj.size() - 1)])
+	var id: String = "she_wolf_%d" % count
+	var n := NpcWolf.create(id, region, "lone_female")
+	npcs[id] = n
+	life_log["mate_id"] = id
+	life_log["mate_stage"] = "candidate"
+	life_log["she_last_seen"] = _today()
+	add_life_event("she_wolf.sign", {"who": id, "region": region})
+	_queue_event({"type": "she_wolf_sign", "how": "scent" if RNGService.chance(0.6) else "sight", "region": region})
+
+func _she_wolf_leaves(reason: String) -> void:
+	var n := she_wolf()
+	if n == null:
+		return
+	add_life_event("she_wolf.left", {"who": n.id, "reason": reason, "relation": n.relation})
+	n.alive = false
+	n.death_cause = "left"
+	life_log["mate_id"] = ""
+	life_log["mate_stage"] = ""
+
+func _she_relation_add(kind: String) -> void:
+	var n := she_wolf()
+	if n == null or mate_stage() != "candidate":
+		return
+	n.relation += int(_mate_cfg().get("relation", {}).get(kind, 0))
+	n.add_record({"age": snapped(wolf.age_years, 0.1), "kind": kind, "region": current_region})
+	life_log["she_last_seen"] = _today()
+	if n.relation < 0:
+		_she_wolf_leaves("hostile")
+	elif n.relation >= int(_mate_cfg().get("levels", {}).get("mate", 9)) and wolf.life_stage() != Wolf.LifeStage.SUBADULT:
+		_become_mates("courted")
+
+func _become_mates(how: String) -> void:
+	var n := she_wolf()
+	if n == null:
+		return
+	life_log["mate_stage"] = "mate"
+	n.territory = current_region
+	add_life_event("mate", {"who": n.id, "how": how})
+	_queue_notice({"type": "she_wolf_mate", "how": how})
+
+# 探索時在牠所在的區域遇上（第一次的徵兆之後）。eating：牠正在吃自己獵到的東西。
+func _maybe_meet_she_wolf() -> bool:
+	if not _she_wolf_here() or blizzard_here():
+		return false
+	var cfg := _mate_cfg()
+	if not RNGService.chance(float(cfg.get("meet_chance", 0.3))):
+		return false
+	current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)),
+		"eating": RNGService.chance(float(cfg.get("eating_chance", 0.25)))}
+	_she_seen()
+	return true
+
+func _she_seen() -> void:
+	if not bool(life_log.get("she_met", false)):
+		add_life_event("she_wolf.met", {"who": str(life_log.get("mate_id", ""))})
+	life_log["she_met"] = true
+	life_log["she_last_seen"] = _today()
+
+func she_avoid() -> void:
+	record_decision("she_wolf.avoid")
+	_she_seen()
+	clear_discovery()
+	state_changed.emit()
+
+# 靠近：還在戒備時牠可能退開（走到相鄰的區域）；回傳牠有沒有讓你靠近。
+func she_approach() -> bool:
+	record_decision("she_wolf.approach")
+	clear_discovery()
+	GameTime.advance_turns(1)
+	var accepted: bool = she_relation_key() != "wary" or RNGService.chance(float(_mate_cfg().get("wary_accept", 0.6)))
+	if accepted:
+		_she_relation_add("approach")
+	else:
+		_she_seen()
+		var n := she_wolf()
+		var adj: Array = adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
+		if n != null and not adj.is_empty():
+			n.territory = str(adj[RNGService.randi_range(0, adj.size() - 1)])
+	state_changed.emit()
+	return accepted
+
+func she_follow_chance() -> float:
+	var cfg := _mate_cfg()
+	var n := she_wolf()
+	return HuntSystem.clamp_chance(float(cfg.get("follow_base", 0.5)) + (wolf.effective_perception() - (n.perception if n != null else 60.0)) / float(cfg.get("follow_divisor", 150)))
+
+# 跟著牠：看清楚牠和你相比的強弱；被發現時牠回頭看你一眼就走開（不加不減）。
+func she_follow() -> Dictionary:
+	record_decision("she_wolf.follow")
+	GameTime.advance_turns(1)
+	var ok: bool = RNGService.chance(she_follow_chance())
+	Growth.learn_flat(wolf, "perception", "track_perception", 1.0 if ok else float(Growth.cfg().get("fail_mult", 0.25)))
+	_she_seen()
+	if not ok:
+		clear_discovery()
+		state_changed.emit()
+		return {"success": false}
+	_she_relation_add("follow")
+	state_changed.emit()
+	return {"success": true, "assessment": npc_assessment(she_wolf())} if she_wolf() != null else {"success": true}
+
+# 牠在吃自己獵到的東西：一起吃（還在戒備時牠會低吼趕開你）或搶過來（關係大降）。
+func she_eat_together() -> Dictionary:
+	record_decision("she_wolf.eat_together")
+	clear_discovery()
+	GameTime.advance_turns(1)
+	if she_relation_key() == "wary":
+		_she_seen()
+		state_changed.emit()
+		return {"allowed": false}
+	var gain: float = float(_mate_cfg().get("eat_gain", 20))
+	wolf.hunger += gain
+	wolf.clamp_stats()
+	_she_relation_add("eat_together")
+	state_changed.emit()
+	return {"allowed": true, "gain": gain}
+
+func she_steal() -> Dictionary:
+	record_decision("she_wolf.steal")
+	clear_discovery()
+	GameTime.advance_turns(1)
+	var gain: float = float(_mate_cfg().get("steal_gain", 30))
+	wolf.hunger += gain
+	wolf.clamp_stats()
+	_she_relation_add("steal")
+	state_changed.emit()
+	return {"gain": gain, "left": she_wolf() == null}
+
+# 你在吃的時候牠來到旁邊：分牠一段（失去 1 段）或自己吃。
+func she_wait_choice(share: bool) -> void:
+	record_decision("she_wolf.wait." + ("share" if share else "keep"))
+	if share and not current_feeding.is_empty():
+		current_feeding["segments_left"] = int(current_feeding["segments_left"]) - 1
+		if int(current_feeding["segments_left"]) <= 0:
+			current_feeding = {}
+		_she_relation_add("share")
+	else:
+		_she_seen()
+	state_changed.emit()
+
+# 嚎叫（成年後的行動）：記下今天嚎叫過（遇到離群母狼的機會 ×3、鄰群也比較容易找來）；牠在這一區或相鄰的區域時可能循聲找來。
+func can_howl() -> bool:
+	return wolf != null and wolf.life_stage() != Wolf.LifeStage.SUBADULT and not blizzard_here()
+
+func action_howl() -> Dictionary:
+	_record_action("howl")
+	var cfg: Dictionary = _mate_cfg().get("howl", {})
+	GameTime.advance_turns(int(cfg.get("turns", 1)))
+	wolf.stamina -= float(cfg.get("stamina", 2))
+	wolf.clamp_stats()
+	life_log["howled_day"] = _today()
+	var n := she_wolf()
+	var came := false
+	if n != null and mate_stage() == "candidate" and (n.territory == current_region or adjacent_regions().has(n.territory)) \
+			and RNGService.chance(float(cfg.get("come_chance", 0.5))):
+		n.territory = current_region
+		came = true
+		_she_relation_add("howl_reply")
+		current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)), "came": true, "eating": false}
+		_she_seen()
+	state_changed.emit()
+	return {"came": came}
+
+func howled_today() -> bool:
+	return int(life_log.get("howled_day", -1)) == _today()
+
+# 在牠面前逃跑或示弱：關係下降。
+func _she_saw_combat(c: Combat) -> void:
+	if _she_wolf_here() and c.outcome in ["submit", "retreated"]:
+		_she_relation_add("flee")
+
+# 苔原狼只剩一隻母狼、你們的關係是友善：換季時牠可能留下來跟你（具名化成你的伴侶）。
+func _maybe_tundra_mate() -> void:
+	if she_wolf() != null or wolf.life_stage() == Wolf.LifeStage.SUBADULT:
+		return
+	var pair := tundra_pair()
+	if pair.size() != 1 or str(pair[0].sex) != "female" or tundra_relation_key() != "friendly" or current_map() != "tundra":
+		return
+	if not RNGService.chance(float(_mate_cfg().get("tundra_replace_chance", 0.5))):
+		return
+	var t: NpcWolf = pair[0]
+	var count: int = int(life_log.get("she_wolf_count", 0)) + 1
+	life_log["she_wolf_count"] = count
+	var id: String = "she_wolf_%d" % count
+	var n := NpcWolf.create(id, current_region, "lone_female")
+	for stat in ["age_years", "speed", "strength", "skill", "perception", "health_max", "health"]:
+		n.set(stat, t.get(stat))
+	n.relation = int(_mate_cfg().get("levels", {}).get("mate", 9))
+	n.record = t.record.duplicate()
+	npcs[id] = n
+	t.alive = false
+	t.death_cause = "joined_player"
+	life_log["mate_id"] = id
+	life_log["mate_stage"] = "candidate"
+	life_log["she_met"] = true
+	life_log["she_last_seen"] = _today()
+	_become_mates("tundra")
+
 # 徵兆的文字（第 2 步）：一對、狼群時，足跡、氣味、遠觀、標記、狼嚎多一句；獨居照舊（回傳空字串）。
 func pack_sign_key(kind: String) -> String:
 	if black_pack.stage in ["pair", "pack"]:
@@ -5579,6 +5869,12 @@ func _maybe_new_wolverine() -> void:
 		life_log["wolverine_gen"] = int(life_log.get("wolverine_gen", 1)) + 1
 
 func _on_npc_died(npc: NpcWolf) -> void:
+	if npc.id == str(life_log.get("mate_id", "")):
+		# 伴侶（或還在認識的母狼）死去：之後可以再找（SPEC Phase 3）
+		add_life_event("mate.died" if str(life_log.get("mate_stage", "")) == "mate" else "she_wolf.died", {"who": npc.id, "cause": npc.death_cause})
+		life_log["mate_id"] = ""
+		life_log["mate_stage"] = ""
+		return
 	if npc.id == "wolverine":
 		var deaths: Array = life_log.get("wolverine_deaths", [])
 		deaths.append({"cause": npc.death_cause, "npc_age": snapped(npc.age_years, 0.25), "age": snapped(wolf.age_years, 0.1)})

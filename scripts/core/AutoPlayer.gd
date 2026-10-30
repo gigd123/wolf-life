@@ -36,6 +36,9 @@ const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
 var roam: bool = false
+# 找伴侶（Phase 3 第 2 步）：never 不嚎叫；sometimes 秋冬每 3 天嚎叫一次；always 秋冬每天嚎叫。母狼在附近時都會嚎叫叫牠過來
+var mate_search: String = "sometimes"
+var _howled_day: int = -1
 # 四處走動時，夜裡先走回巢穴再睡（模擬對照：四處走動的狼變餓，是不是因為睡在野外）
 var roam_sleep_home: bool = false
 # 牧場（Phase 4a 第 5 步，ranch.json auto）：never 不去、sometimes 餓了而且注意不高才去、often 注意 < 70 就去；預設照打法
@@ -214,6 +217,8 @@ func _play_day() -> void:
 		if daytime_rest and GameTime.current_period() == "day" and GameState.wolf.hunger >= DAY_REST_HUNGER and GameState.wolf.stamina < DAY_REST_STAMINA:
 			GameState.action_rest_until("dusk")
 			continue
+		if _maybe_howl():
+			continue
 		if roam:
 			if GameTime.current_period() == "dawn" and not bool(_roamed_today.get(GameTime.day, false)):
 				_roamed_today = {GameTime.day: true}
@@ -317,6 +322,9 @@ func _explore_once() -> void:
 		return
 	if d.get("kind", "") == "tundra_wolves":
 		_meet_tundra(bool(d.get("charge", false)))
+		return
+	if d.get("kind", "") == "she_wolf":
+		_meet_she_wolf(d)
 		return
 	if d.get("kind", "") == "tundra_mob":
 		# 強攻型幫苔原狼，謹慎型離開，其他在旁邊看
@@ -566,6 +574,8 @@ func _scavenger(ev: String) -> void:
 		play_combat(GameState.start_tundra_combat("carcass"))
 	elif ev == "tundra_wait":
 		GameState.tundra_wait_choice(style != "assault")
+	elif ev == "she_wait":
+		GameState.she_wait_choice(style != "assault" or GameState.wolf.hunger > 80.0)
 	else:
 		play_combat(GameState.start_combat("grizzly_bear" if ev == "bear" else "red_fox", "adult", "carcass"))
 
@@ -836,3 +846,35 @@ func _best(opts: Array) -> Dictionary:
 		if best.is_empty() or not best.has("chance") or float(o["chance"]) > float(best["chance"]):
 			best = o
 	return best
+
+# 黃昏嚎叫一次（Phase 3 第 2 步）：還沒有伴侶的成年狼，依 mate_search；母狼在附近時都會嚎叫。
+func _maybe_howl() -> bool:
+	if GameTime.current_period() != "dusk" or _howled_day == GameState._today() or not GameState.can_howl() or GameState.has_mate():
+		return false
+	var season: String = GameTime.current_season()
+	var near: bool = GameState.she_wolf() != null
+	var want: bool = near
+	if not want and season in ["autumn", "winter"]:
+		want = mate_search == "always" or (mate_search == "sometimes" and GameState._today() % 3 == 0)
+	if not want:
+		return false
+	_howled_day = GameState._today()
+	if GameState.action_howl().get("came", false):
+		_meet_she_wolf(GameState.current_discovery)
+	return true
+
+# 遇上離群母狼：牠在吃東西時，關係夠就一起吃、強攻型餓了就搶；否則靠近，偶爾跟著看看。
+func _meet_she_wolf(d: Dictionary) -> void:
+	if bool(d.get("eating", false)):
+		if style == "assault" and GameState.wolf.hunger < 50.0:
+			GameState.she_steal()
+			return
+		if GameState.she_relation_key() != "wary":
+			GameState.she_eat_together()
+			return
+	if style == "cautious" and GameState.she_relation_key() == "wary" and RNGService.chance(0.5):
+		GameState.she_follow()
+		GameState.clear_discovery()
+		return
+	GameState.she_approach()
+
