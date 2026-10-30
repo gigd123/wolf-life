@@ -29,6 +29,9 @@ var potential: Dictionary = {}
 var traits: Array = []
 var pack_id: String = ""
 var parents: Array = []
+# Phase 3 第 3 步：狼群成員的指派（follow 跟著你／den 留守巢穴／patrol 巡視邊界／free 自由行動／rest 休息養傷）與群獵的角色（auto／drive／chase／ambush）
+var task: String = "follow"
+var hunt_role: String = "auto"
 
 # base：沿用另一個 NPC 的設定，只覆寫有寫的欄位（例如苔原狼的另一隻）。
 static func cfg(npc_id: String) -> Dictionary:
@@ -119,11 +122,11 @@ func to_dict() -> Dictionary:
 	return {"id": id, "sex": sex, "age_years": age_years, "speed": speed, "strength": strength, "skill": skill,
 		"perception": perception, "health_max": health_max, "health": health, "alive": alive, "death_cause": death_cause,
 		"territory": territory, "dominance": dominance, "yielded_to_player": yielded_to_player, "relation": relation, "record": record,
-		"cfg_id": cfg_id, "potential": potential, "traits": traits, "pack_id": pack_id, "parents": parents}
+		"cfg_id": cfg_id, "potential": potential, "traits": traits, "pack_id": pack_id, "parents": parents, "task": task, "hunt_role": hunt_role}
 
 static func from_dict(data: Dictionary) -> NpcWolf:
 	var n := NpcWolf.new()
-	for key in ["id", "sex", "death_cause", "territory", "cfg_id", "pack_id"]:
+	for key in ["id", "sex", "death_cause", "territory", "cfg_id", "pack_id", "task", "hunt_role"]:
 		n.set(key, str(data.get(key, n.get(key))))
 	for key in ["age_years", "speed", "strength", "skill", "perception", "health_max", "health"]:
 		n.set(key, float(data.get(key, n.get(key))))

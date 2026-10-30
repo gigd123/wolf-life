@@ -2167,3 +2167,27 @@ she_wolf.mate.courted,這幾天，那隻母狼總是走在你身邊。你們一�
 she_wolf.mate.tundra,失去伴侶的那隻苔原狼沒有跟著其他狼走。牠留在你身邊，和你一起睡、一起嚎叫。
 debug.event.she_wolf,離群的母狼
 debug.event.she_wolf_closer,母狼的關係 +4
+tactical.ally.role.ambush,埋伏：
+tactical.ally.name.ambush,埋伏
+tactical.ally.intent.ambushing,趴著等
+tactical.ally.intent_tip.ambushing,在獵物的另一側趴著等；你把牠驚起來往這邊跑，牠近了才撲出去。
+tactical.ally.bite.mate,伴侶追上{animal}，一口咬在後腿上又鬆開——牠跑得慢了。
+tactical.ally.pull_down.mate,伴侶追上已經跑不動的{animal}，咬住後腿把牠拖倒了。你們一起獵到了。
+tactical.ally.takedown.mate,你死死拖住{animal}，伴侶趁勢咬住牠的腿，一起把牠扭倒在地。你們一起獵到了。
+tactical.ally.takedown_miss.mate,伴侶撲上來想把{animal}扭倒，被牠撐住了。
+tactical.ui.ally_takedown.mate,（伴侶拖倒 {p}%）
+tactical.ui.ally_takedown_tip.mate,你死咬拖住的這一回合，旁邊的伴侶會試著把牠扭倒（{n} 隻，合計 {p}%）。
+tactical.ally.defend_release.mate,{animal}衝過來踢開你的伴侶，牠鬆口了。
+tactical.ally.defend_hit.mate,{animal}衝向你的伴侶，把牠踢開了。
+tactical.ally.defend_miss.mate,{animal}衝向你的伴侶，牠閃開了。
+tactical.ally.snap.mate,伴侶撲上去咬{animal}，沒咬住。
+tactical.ally.hold.mate,伴侶咬住了{animal}的後腿，死命拖住——牠跑不動了！
+tactical.ally.broke_free.mate,{animal}甩開了你的伴侶，帶著傷逃跑！
+tactical.ally.pull_down_pack.mate,你們一擁而上，把{animal}拖倒了。你們一起獵到了。
+tactical.ally.tip.mate,伴侶（{role}）：{what}
+tactical.factor.ally_holding.mate,伴侶拖住了牠
+tactical.ally.ambush_strike,{animal}衝過來的那一刻，趴著的同伴撲了出來！
+tactical.ally.ambush_strike.mate,{animal}衝過來的那一刻，趴著等的伴侶撲了出來！
+tactical.ui.mate_intro.drive,伴侶和你一起獵（驅趕）：牠會繞到獵物的另一側，你靠近時衝出去把獵物往你這邊趕。藏著別動，等牠跑過來再撲。
+tactical.ui.mate_intro.chase,伴侶和你一起獵（追擊）：牠跟在你後面，獵物一跑就追上去咬牠的後腿。牠咬住時你撲上去更容易。
+tactical.ui.mate_intro.ambush,伴侶和你一起獵（埋伏）：牠會繞到獵物的另一側趴著等。你從這一側把獵物驚起來，牠跑過伴侶身邊時會被撲住。

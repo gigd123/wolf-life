@@ -30,7 +30,7 @@ const EXTRA := [
 	{"name": "N 虛弱駝鹿、密林", "family": "dense", "species": "moose", "herd": 1, "condition": "weak"},
 ]
 const ALLIES := [[], ["drive", "chase"], ["drive"], ["chase"]]
-const ALLY_COLORS := {"drive": Color("#7fc8ff"), "chase": Color("#ffb060")}
+const ALLY_COLORS := {"drive": Color("#7fc8ff"), "chase": Color("#ffb060"), "ambush": Color("#c49bff")}
 
 var h = TH.new()
 var map: Control
@@ -167,7 +167,14 @@ func start_from_game(th, done_cb: Callable) -> void:
 	if bool(h.game_mods.get("youth_hint", false)):
 		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
 	# 苔原狼一起狩獵（Phase 2i）：一行說明牠們會做什麼（跟上來的也先說）
-	if h.wolves.size() > 1 or not h.pending_allies.is_empty():
+	if h.has_mate_ally():
+		# 伴侶一起出獵（Phase 3 第 3 步）：照牠的角色說明
+		var mrole := "chase"
+		for w in h.wolves:
+			if bool(w.get("mate", false)):
+				mrole = str(w.get("role", "chase"))
+		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.mate_intro." + mrole))
+	elif h.wolves.size() > 1 or not h.pending_allies.is_empty():
 		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.ally_intro"))
 	_after_action()
 
@@ -320,8 +327,8 @@ func _build_buttons() -> void:
 					b.tooltip_text = cost + " " + b.tooltip_text
 				if allies_help:
 					var pa: String = str(roundi(float(opts[id]["ally_takedown_any"]) * 100.0))
-					b.text += tr("tactical.ui.ally_takedown").replace("{p}", pa)
-					b.tooltip_text = tr("tactical.ui.ally_takedown_tip").replace("{n}", str((opts[id]["ally_takedown"] as Array).size())).replace("{p}", pa) + "\n" + b.tooltip_text
+					b.text += h._atx("tactical.ui.ally_takedown").replace("{p}", pa)
+					b.tooltip_text = h._atx("tactical.ui.ally_takedown_tip").replace("{n}", str((opts[id]["ally_takedown"] as Array).size())).replace("{p}", pa) + "\n" + b.tooltip_text
 				var a: String = id
 				b.pressed.connect(func(): h.hold_action(a); _after_action())
 				buttons.add_child(b)
@@ -465,7 +472,7 @@ func _hover_text() -> String:
 	# 滑鼠停在苔原狼同伴上：牠在做什麼（群體狩獵實驗）
 	for k in range(1, h.wolves.size()):
 		if Vector2i(h.wolves[k]["pos"]) == hover:
-			return tr("tactical.ally.tip").replace("{role}", tr("tactical.ally.name." + str(h.wolves[k]["role"]))) \
+			return h._atx("tactical.ally.tip").replace("{role}", tr("tactical.ally.name." + str(h.wolves[k]["role"]))) \
 				.replace("{what}", tr("tactical.ally.intent_tip." + str(h.wolves[k].get("intent", "following"))))
 	# 滑鼠停在一隻鹿上：寫出牠是誰（母鹿、幼鹿分得出來，2026-10-22 試玩回報）
 	for i in h.active_deer():

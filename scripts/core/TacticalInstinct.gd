@@ -21,6 +21,9 @@ static func pick_policy(h) -> String:
 			roles.append(str(w["role"]))
 	for pa in h.pending_allies:
 		roles.append(str(pa["role"]))
+	# 只有伴侶一隻同伴（Phase 3 第 3 步）：照單狼的打法，伴侶自己照角色行動（mate_hunt_sim：一隻同伴時「等驅趕」「猛追」都不如單狼的潛近、跟著）
+	if roles.size() == 1 and h.has_mate_ally():
+		roles = []
 	if not roles.is_empty():
 		if h.deer_state == "flee" or not roles.has("drive"):
 			return "chase"

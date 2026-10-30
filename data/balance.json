@@ -507,6 +507,14 @@
     "howl": { "turns": 1, "stamina": 2, "come_chance": 0.5, "pack_meet_mult": 1.5 },
     "tundra_replace_chance": 0.5
   },
+  "pack_life": {
+    "_comment": "Phase 3 第 3 步（SPEC「同行與指派」「群獵」）：跟著你的成員。follow_min_health：血量低於這個比例就留在巢穴養傷（不跟）；rest_heal_mult：指派休息養傷時回復的倍率。follower_perception_share：追蹤判定多加牠感知的這個比例；follower_nothing_mult：探索空手的機率倍率（多一雙眼睛）；sleep_encounter_mult：夜裡被撞見的機率倍率。combat：戰鬥時每回合咬中對手的機率（同苔原狼圍攻狼獾）、之後受傷的機率與傷害。auto_role：自動分配群獵的角色。candidate_join_chance：還在認識、關係友善的母狼在這一區時跟上來一起獵的機率。eat_segments：一起獵到時牠吃掉幾段。",
+    "follow_min_health": 0.4, "rest_heal_mult": 2.0,
+    "follower_perception_share": 0.15, "follower_nothing_mult": 0.85, "sleep_encounter_mult": 0.6,
+    "combat": { "ally_chance": 0.25, "per_strength": 0.005, "damage_per_strength": 0.1, "hurt_chance": 0.15, "hurt_damage": [10, 25] },
+    "auto_role": { "drive_speed": 68, "ambush_strength": 66 },
+    "candidate_join_chance": 0.3, "eat_segments": 1
+  },
   "packs": {
     "_comment": "Phase 3 第 1 步（SPEC「鄰群的配置」，方案甲）：黑狼一家以外的鄰群。layout：每張地圖最多一群住在地圖上（核心放在離你的巢穴最遠的那一區），其他住在地圖外、只在 border 那一區出現。neighbor：覆寫 black_pack 的數值（一般鄰群不受你的年齡限制、一開始就是一對或狼群）。cap_exempt：不受每天事件上限的事件種類（巢穴、幼狼，第 5 步用）。",
     "layout": [

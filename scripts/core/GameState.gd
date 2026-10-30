@@ -190,6 +190,7 @@ func _on_period_changed(_period_index: int) -> void:
 	wolf.clamp_stats()
 	_decay_carcasses()
 	_update_caches()
+	_place_members()
 	# 換季睡眠期間暫停隨機的世界事件（SPEC「季節轉換」）；大火、暴風雪進行中不會是換季睡眠
 	if not quiet_sleep:
 		_update_weather()
@@ -225,7 +226,9 @@ func _on_day_changed(_day: int) -> void:
 	_update_sleep_spots()
 	_decay_ranch_attention()
 	_heal_npcs()
+	_rest_members()
 	_update_she_wolf()
+	_place_members()
 	_roam_tundra_wolves()
 	_maybe_elder_death_check()
 	SaveSystem.save_game()
@@ -2109,7 +2112,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"stranger_territory": stranger_territory,
 		"mode": mode,
 		"berries_mult": float(year_effects("summer").get("berries", 1.0)),
-		"lean_nothing": float(lean_effects().get("nothing_mult", 1.0)),
+		"lean_nothing": float(lean_effects().get("nothing_mult", 1.0)) * (float(_pack_life_cfg().get("follower_nothing_mult", 0.85)) if mate_follows_here() else 1.0),
 		"marks": _nearby_marks(),
 		"notables": _notables_here(),
 		"youth": youth_food_mults(),
@@ -2445,7 +2448,7 @@ func is_notable_discovery(d: Dictionary) -> bool:
 	return true
 
 func track_chance() -> Dictionary:
-	return ExploreSystem.track_chance(current_discovery, wolf.effective_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty())
+	return ExploreSystem.track_chance(current_discovery, team_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty())
 
 # 暴雨中氣味被沖散、容易跟丟。
 func _track_weather_penalty() -> float:
@@ -2465,7 +2468,7 @@ func action_track() -> Dictionary:
 	current_discovery = {}
 	if not ExploreSystem.can_track(d):
 		return {"success": false}
-	var info := ExploreSystem.track_chance(d, wolf.effective_perception(), _track_knowledge_bonus(d), _track_weather_penalty())
+	var info := ExploreSystem.track_chance(d, team_perception(), _track_knowledge_bonus(d), _track_weather_penalty())
 	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
 	if not wolf.alive:
 		return {"success": false}
@@ -3036,7 +3039,9 @@ func action_sleep() -> Dictionary:
 	if not wolf.alive:
 		return {}
 	var encounter: Dictionary = {}
-	if not season_sleep and RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0)) * threat_mult()):
+	# 伴侶睡在旁邊：比較不容易在夜裡被撞見（多一隻狼警戒）
+	var guard: float = float(_pack_life_cfg().get("sleep_encounter_mult", 0.6)) if mate_follows_here() else 1.0
+	if not season_sleep and RNGService.chance(float(cfg.get("night_encounter", {}).get(quality, 0.0)) * threat_mult() * guard):
 		encounter = EncounterSystem.roll_competitor(current_region, GameTime.current_season(), true)
 	var mult: float = float(cfg.get("recovery", {}).get(quality, 0.4))
 	if encounter.get("encountered", false):
@@ -3114,6 +3119,7 @@ func start_hunt(animal_id: String, life_stage: String, prey_dir: int = -1, from_
 	hunt.storm = weather == "storm"
 	hunt.set_snow(snow_state())
 	_on_hunt_started(hunt)
+	_apply_mate_hunt_help(hunt)
 	hunt.tendency = current_tendency()
 	hunt.fight_state["tendency_bonus"] = tendency_effect("assault")
 	hunt.fight_state["source"] = animal_id + ".hunt"
@@ -3198,6 +3204,15 @@ func finish_hunt(hunt: HuntSystem) -> void:
 				var eaten: int = min(int(current_feeding["segments_left"]) - 1, RNGService.randi_range(int(e[0]), int(e[1])) + max(0, tundra_adults() - 2))
 				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - max(0, eaten)
 				current_feeding["with_tundra"] = true
+		# 和伴侶（或還在認識的母狼）一起獵到（Phase 3 第 3 步）：牠吃掉一段；還在認識的關係 +2
+		if hunt.mate_help != "":
+			_stat_inc("pack_hunt", "caught")
+			if mate_stage() == "candidate":
+				_she_relation_add("joint_hunt")
+			if not current_feeding.is_empty():
+				var me: int = int(_pack_life_cfg().get("eat_segments", 1))
+				current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - me)
+				current_feeding["with_mate"] = true
 			log_message.emit(tr("tundra.hunt.shared" + ("" if tundra_pair().size() > 1 else ".single")))
 	else:
 		if hunt.in_herd and hunt.stage_reached_stalk():
@@ -4015,6 +4030,11 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 			var roles: Array = ag.get("roles", ["chase", "drive"])
 			for i in n:
 				th.pending_allies.append({"role": str(roles[mini(i, roles.size() - 1)]), "round": int(ag.get("follow_delay", 3))})
+	# 伴侶一起出獵（Phase 3 第 3 步）
+	if hunt.mate_help != "" and npcs.has(hunt.mate_help):
+		var m: NpcWolf = npcs[hunt.mate_help]
+		th.add_mate_ally(hunt.mate_role, {"speed": m.speed, "strength": m.strength, "skill": m.skill, "perception": m.perception})
+		_stat_inc("pack_hunt", "started")
 	_stat_inc("tactical", "started")
 	return th
 
@@ -4678,6 +4698,7 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 		identify(animal_id)
 	_stat_inc("fights_by_animal", animal_id)
 	var c := Combat.new(wolf, animal_id, life_stage, context, bool(encounter.get("mother", false)))
+	_follower_combat_help(c)
 	# 在自己的地盤和黑狼、苔原狼衝突：你更拚（1.9b 第 1 步）
 	if animal_id in ["stranger_wolf", "tundra_wolf"] and is_own_territory():
 		c.stake_mult *= float(_territory_cfg().get("stake_mult", 1.25))
@@ -4789,6 +4810,7 @@ func finish_combat(c: Combat) -> Dictionary:
 	_record_combat_log(c)
 	_stat_inc("combat", c.animal_id + "." + c.outcome)
 	_she_saw_combat(c)
+	_after_follower_combat(c)
 	var result := {"outcome": c.outcome, "grow": ""}
 	if c.npc != null:
 		c.npc.health = c.opp_hp
@@ -5820,6 +5842,117 @@ func action_howl() -> Dictionary:
 
 func howled_today() -> bool:
 	return int(life_log.get("howled_day", -1)) == _today()
+
+# --- Phase 3 第 3 步：伴侶同行與指派（SPEC Phase 3「同行與指派」；數值在 balance.json 的 pack_life）---
+# 指派一直有效直到你改；跟著你的成員和你一起移動、探索（多一雙眼睛）、吃、睡，戰鬥時一起上，狩獵時在戰術地圖上幫忙。
+
+const PACK_TASKS := ["follow", "den", "patrol", "free", "rest"]
+const HUNT_ROLES := ["auto", "drive", "chase", "ambush"]
+
+func _pack_life_cfg() -> Dictionary:
+	return GameData.balance.get("pack_life", {})
+
+# 你的狼群成員（目前只有伴侶；第 6 步加長大的子女）
+func pack_members() -> Array:
+	return [she_wolf()] if has_mate() else []
+
+# 跟著你、而且還走得動的成員（血量低於 follow_min_health 的留下來養傷）
+func followers() -> Array:
+	var min_hp: float = float(_pack_life_cfg().get("follow_min_health", 0.4))
+	return pack_members().filter(func(n): return n.task == "follow" and n.health >= n.health_max * min_hp)
+
+func set_task(npc_id: String, task: String) -> void:
+	var n: NpcWolf = npcs.get(npc_id, null)
+	if n == null or not PACK_TASKS.has(task):
+		return
+	n.task = task
+	_place_member(n)
+	state_changed.emit()
+
+func set_hunt_role(npc_id: String, role: String) -> void:
+	var n: NpcWolf = npcs.get(npc_id, null)
+	if n != null and HUNT_ROLES.has(role):
+		n.hunt_role = role
+		state_changed.emit()
+
+# 自動分配的角色：快的去驅趕、力量大又謹慎的埋伏、其他追擊（個性第 6 步再加）
+func hunt_role_of(n: NpcWolf) -> String:
+	if n.hunt_role != "auto":
+		return n.hunt_role
+	var c: Dictionary = _pack_life_cfg().get("auto_role", {})
+	if n.speed >= float(c.get("drive_speed", 68)):
+		return "drive"
+	if n.strength >= float(c.get("ambush_strength", 66)) or n.traits.has("cautious"):
+		return "ambush"
+	return "chase"
+
+# 成員現在在哪一區：跟著你的在你身邊；留守、養傷的在巢穴；巡視的在你的地盤裡輪流走；自由的在巢穴附近走動
+func _place_member(n: NpcWolf) -> void:
+	match n.task:
+		"follow":
+			n.territory = current_region if followers().has(n) else (den_region if den_region != "" else current_region)
+		"den", "rest":
+			n.territory = den_region if den_region != "" else n.territory
+		"patrol":
+			var own := own_territories()
+			n.territory = str(own[RNGService.randi_range(0, own.size() - 1)]) if not own.is_empty() else (den_region if den_region != "" else n.territory)
+		"free":
+			var home: String = den_region if den_region != "" else n.territory
+			var near: Array = [home] + (EncounterSystem.region_data(home).get("adjacent", []) as Array).filter(func(r): return GameData.map_of(r) == GameData.map_of(home))
+			n.territory = str(near[RNGService.randi_range(0, near.size() - 1)])
+
+func _place_members() -> void:
+	for n in pack_members():
+		_place_member(n)
+
+# 休息養傷的回得比較快（每天換日時，_heal_npcs 之外再加）
+func _rest_members() -> void:
+	for n in pack_members():
+		if n.task == "rest":
+			n.health = min(n.health_max, n.health + float(NpcWolf.cfg(n.config_key()).get("heal_per_day", 10)) * (float(_pack_life_cfg().get("rest_heal_mult", 2.0)) - 1.0))
+
+func mate_follows_here() -> bool:
+	return not followers().is_empty()
+
+# 多一雙眼睛：跟著你的成員讓追蹤的判定多一點感知
+func team_perception() -> float:
+	var p: float = wolf.effective_perception()
+	for n in followers():
+		p += n.perception * float(_pack_life_cfg().get("follower_perception_share", 0.15))
+	return p
+
+# 戰鬥時跟著你的成員一起上：每回合 ally_chance 咬中對手（同苔原狼圍攻狼獾）；之後牠可能受一點傷
+func _follower_combat_help(c: Combat) -> void:
+	if followers().is_empty() or c.ally_chance > 0.0:
+		return
+	var cfg: Dictionary = _pack_life_cfg().get("combat", {})
+	var n: NpcWolf = followers()[0]
+	c.ally_chance = clamp(float(cfg.get("ally_chance", 0.25)) + (n.strength - 60.0) * float(cfg.get("per_strength", 0.005)), 0.05, 0.5)
+	var d0: float = 4.0 + n.strength * float(cfg.get("damage_per_strength", 0.1))
+	c.ally_damage = [int(d0), int(d0 + 5)]
+	c.set_meta("follower", n.id)
+
+func _after_follower_combat(c: Combat) -> void:
+	if not c.has_meta("follower") or c.rounds <= 0:
+		return
+	var n: NpcWolf = npcs.get(str(c.get_meta("follower")), null)
+	var cfg: Dictionary = _pack_life_cfg().get("combat", {})
+	if n != null and n.alive and RNGService.chance(float(cfg.get("hurt_chance", 0.15))):
+		var r: Array = cfg.get("hurt_damage", [10, 25])
+		n.health = max(1.0, n.health - RNGService.randf_range(float(r[0]), float(r[1])))
+		add_life_event("mate.hurt", {"who": n.id, "animal": c.animal_id})
+
+# 狩獵時跟著你的成員（戰術地圖上的同伴）：伴侶；還在認識、關係友善、在這一區的母狼有機會跟上來（一起獵到關係 +2）
+func _apply_mate_hunt_help(hunt: HuntSystem) -> void:
+	var f := followers()
+	if not f.is_empty():
+		var n: NpcWolf = f[0]
+		hunt.mate_help = n.id
+		hunt.mate_role = hunt_role_of(n)
+		return
+	if _she_wolf_here() and she_relation_key() == "friendly" and RNGService.chance(float(_pack_life_cfg().get("candidate_join_chance", 0.3))):
+		hunt.mate_help = she_wolf().id
+		hunt.mate_role = hunt_role_of(she_wolf())
 
 # 在牠面前逃跑或示弱：關係下降。
 func _she_saw_combat(c: Combat) -> void:
