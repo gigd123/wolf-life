@@ -6531,11 +6531,12 @@ func _grow_young() -> void:
 		if not n.alive or n.pack_id != "player" or n.potential.is_empty() or n.age_years > full + 0.25:
 			continue
 		var t: float = clamp(n.age_years / full, 0.0, 1.0)
+		var hp_ratio: float = n.health / max(1.0, n.health_max)
 		var base: Dictionary = n.potential.get("_base", {})
 		for st in GROW_STATS:
 			var v: float = lerp(float(base.get(st, n.get(st))), float(n.potential.get(st, n.get(st))), t)
 			n.set(st, max(float(n.get(st)), snapped(v, 0.1)) if st != "health_max" else snapped(v, 0.1))
-		n.health = min(n.health, n.health_max) if n.health > 0.0 else n.health_max
+		n.health = n.health_max * hp_ratio # 長大時血量照比例跟著長
 		if n.age_years >= 1.0 and n.age_years < 1.25:
 			add_life_event("child.yearling", {"who": n.id})
 
