@@ -2211,3 +2211,10 @@ ui.pack.role.drive,驅趕
 ui.pack.role.chase,追擊
 ui.pack.role.ambush,埋伏
 ui.close,關閉
+pack.who.neighbor,那群陌生的狼
+pack.meet.scorn.neighbor,{location}，{who}一看到你，壓低身子逼了過來。牠們記得上次你在牠們面前退了下來。
+pack.meet.wary.neighbor,{location}，{who}就在前面。牠們沒有上前，只是站定了看著你，像是記得上次被你嚇退。
+pack.meet.count.team,牠們有 {n} 隻，你們有 {m} 隻。
+pack.meet.young.neighbor,{location}，一隻年輕的狼獨自在嗅聞，身邊沒有別的狼。牠身上是那群陌生的狼的氣味。
+pack.standoff.won.neighbor,你豎起頸毛長嚎，聲音遠遠傳開。{who}遲疑了一下，掉頭走遠了。
+debug.event.neighbor_meet,撞上鄰群

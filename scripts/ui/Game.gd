@@ -765,6 +765,11 @@ func _build_debug_overlay() -> void:
 		_show_discovery(GameState.current_discovery)
 		_refresh()
 	)
+	_debug_button(event_row2, tr("debug.event.neighbor_meet"), func():
+		debug_overlay.visible = false
+		GameState.debug_neighbor_meet()
+		_refresh()
+	)
 	_debug_button(event_row2, tr("debug.event.she_wolf"), func():
 		debug_overlay.visible = false
 		GameState.debug_she_wolf()
@@ -4159,12 +4164,14 @@ func _show_pack_remains(d: Dictionary, first: bool) -> void:
 
 # 撞上黑狼一家（Phase 3a 第 3 步）：退開、對峙、逃；落單的年輕狼可以打或避開。
 func _show_pack_meet(event: Dictionary) -> void:
+	GameState.meet_pack_id = str(event.get("pack", "black"))
+	var neighbor: bool = GameState.meet_pack_id != "black"
 	var location: String = tr("explore.location." + str(event.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	_set_terrain_bg(encounter_bg, str(event.get("location", GameState._random_terrain(GameState.current_region))))
 	encounter_detail.text = ""
 	if str(event.get("lone", "")) == "young":
-		var young_text: String = tr("pack.meet.young").replace("{location}", location)
+		var young_text: String = tr("pack.meet.young" + (".neighbor" if neighbor else "")).replace("{location}", location)
 		_log(young_text)
 		encounter_message.text = young_text
 		_set_creature(encounter_sprite, "challenger", "adult", "idle")
@@ -4179,13 +4186,15 @@ func _show_pack_meet(event: Dictionary) -> void:
 		)
 		encounter_overlay.visible = true
 		return
-	var who: String = tr("pack.who." + ("heir" if GameState.black_pack.generation > 1 else str(event.get("stage", "pack"))))
-	# 換代後是新一代：不寫「那隻黑狼記得…」，態度另有一句（效果減半）
-	var meet_key: String = "pack.meet." + str(event.get("attitude", "neutral")) + (".heir" if GameState.black_pack.generation > 1 and str(event.get("attitude", "neutral")) != "neutral" else "")
+	var who: String = tr("pack.who." + ("neighbor" if neighbor else ("heir" if GameState.black_pack.generation > 1 else str(event.get("stage", "pack")))))
+	# 換代後是新一代：不寫「那隻黑狼記得…」，態度另有一句（效果減半）；一般鄰群（Phase 3 第 4 步）有自己的寫法
+	var att: String = str(event.get("attitude", "neutral"))
+	var meet_key: String = "pack.meet." + att + (".neighbor" if neighbor and att != "neutral" else (".heir" if GameState.black_pack.generation > 1 and att != "neutral" else ""))
 	var text: String = tr(meet_key).replace("{who}", who).replace("{location}", location)
 	_log(text)
 	encounter_message.text = text
-	encounter_detail.text = tr("pack.meet.count").replace("{n}", str(int(event.get("size", 2))))
+	var team: int = GameState.team_size()
+	encounter_detail.text = (tr("pack.meet.count") if team <= 1 else tr("pack.meet.count.team").replace("{m}", str(team))).replace("{n}", str(int(event.get("size", 2))))
 	_set_creature(encounter_sprite, "stranger_wolf", "adult", "threaten")
 	var after := func(msg: String) -> void:
 		_log(msg)
@@ -4198,7 +4207,7 @@ func _show_pack_meet(event: Dictionary) -> void:
 		)
 	_add_encounter_button(tr("pack.option.standoff").replace("{p}", str(roundi(GameState.pack_standoff_chance() * 100.0))), func():
 		var r: Dictionary = GameState.pack_standoff()
-		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
+		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost") + (".neighbor" if neighbor and r["won"] else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
 	)
 	_add_encounter_button(tr("pack.option.flee").replace("{p}", str(roundi((1.0 - GameState.pack_flee_caught_chance()) * 100.0))), func():
 		var r: Dictionary = GameState.pack_flee()

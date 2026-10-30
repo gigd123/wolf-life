@@ -448,7 +448,7 @@
   "_sleep_spot_loss_comment": "睡處會變差（Phase 2 第 7 步）：你記得的好睡處每天可能失去（巢穴所在的區域除外）：base 每天的基本機率；blizzard 那張地圖正在起暴風雪；flood 春季、這一區有溪流或河；animal 這一區這一季的灰熊權重 × animal_per_weight。下次來到或在這一區探索時寫出原因；人就在那一區時當下就寫。animal_per_weight 0.004 → 0.0015（2026-10-15 試玩回報 25：森林西部灰熊權重 7，一季約 3 成會失去，太常；改成約 1 成多）。",
   "sleep_spot_loss": { "base": 0.004, "blizzard": 0.08, "flood": 0.02, "flood_terrains": ["stream", "river", "river_willow"], "animal_per_weight": 0.0015 },
   "_territory_comment": "地盤（Phase 1.9b 第 1 步，提案之十二 B）：成年後在一個區域做氣味標記（1 回合），最多 max_regions 個區域，fade_days 天沒補就淡掉。好處（要小）：找睡處 + sleep_bonus、這一區的知識每次多累積的機率 knowledge_bonus、在地盤裡和黑狼、苔原狼衝突時利害倍率 × stake_mult。代價（要明顯）：黑狼範圍在你的地盤或相鄰時，每天 overmark_chance 把牠的標記蓋在你的上面（下次在那一區探索時發現：重新標記、去找牠、讓出）；苔原狼經過你的地盤時相遇 × tundra_meet_mult。",
-  "territory": { "max_regions": 2, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
+  "territory": { "max_regions": 2, "mated_max_regions": 3, "fade_days": 5, "mark_turns": 1, "mark_stamina": 2, "sleep_bonus": 0.15, "knowledge_bonus": 0.3, "stake_mult": 1.25,
     "overmark_chance": 0.15, "tundra_meet_mult": 1.5 },
   "_daytime_comment": "Phase 2j 一天的節奏（2026-10-26）：白天探索、移動的體力 × stamina_mult，夏天 × summer_stamina_mult；白天休息的回復倍率在 hunt.period.rest_stamina_mult（1.2 → 1.4）。",
   "daytime": { "stamina_mult": 1.15, "summer_stamina_mult": 1.3 },
@@ -504,7 +504,7 @@
     "levels": { "familiar": 3, "friendly": 6, "mate": 9 },
     "relation": { "approach": 1, "follow": 1, "howl_reply": 1, "eat_together": 1, "share": 2, "joint_hunt": 2, "steal": -3, "flee": -1, "absent_per_day": -1 },
     "absent_days": 7, "leave_chance_per_day": 0.25,
-    "howl": { "turns": 1, "stamina": 2, "come_chance": 0.5, "pack_meet_mult": 1.5 },
+    "howl": { "turns": 1, "stamina": 2, "come_chance": 0.5, "pack_meet_mult": 1.5, "together_meet_mult": 0.6 },
     "tundra_replace_chance": 0.5
   },
   "pack_life": {
@@ -524,7 +524,8 @@
       { "id": "grassland_outer", "map": "grassland", "off_map": true, "border": "grassland_plains" }
     ],
     "neighbor": { "pair_min_player_age": 0.0, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 }, "start_mate_age": [3.0, 5.0], "start_young": [1, 5], "start_young_age": [0.5, 2.5] },
-    "cap_exempt": ["den", "pups"]
+    "cap_exempt": ["den", "pups"],
+    "reform_seasons": 4
   },
   "black_pack": {
     "pair_min_player_age": 2.5, "pair_chance": 0.3, "pair_season_mult": { "autumn": 1.5, "winter": 1.5 },
@@ -536,7 +537,7 @@
     "_survival_comment": "第 4 步「對生存的影響」：prey 牠們的領域（core）、相鄰區（border）的中、大型獵物倍率。remains：在 core／border 探索時發現牠們吃剩的殘骸（segments 段，每段 hunger 飽食度），每吃一段被發現的機會 *_risk（× 態度的 meet_mult）。probe：和牠們相鄰的你的地盤，標記還在時每天 overmark_chance 被蓋過，淡掉時 faded_chance 被試探（× 態度的 probe_mult）；下一次換季時你還沒補，變成牠們的（最多 max_regions 區）。",
     "prey": { "core": 0.7, "border": 1.1 },
     "remains": { "core_chance": 0.05, "border_chance": 0.025, "segments": [2, 3], "hunger": [15, 22], "core_risk": 0.3, "border_risk": 0.15 },
-    "probe": { "overmark_chance": 0.15, "faded_chance": 0.3, "max_regions": 3 },
+    "probe": { "alone_mult": 1.3,  "overmark_chance": 0.15, "faded_chance": 0.3, "max_regions": 3 },
     "meet": {
       "_quiet_comment": "quiet_periods：一次黑狼的事件（撞上狼群、牠要你離開、被趕、和牠打過）之後，幾個時段內不再有（2026-10-29 QA）。",
       "quiet_periods": 8,

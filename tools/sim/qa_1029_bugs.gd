@@ -49,7 +49,8 @@ func _run() -> void:
 				var ty: String = str(e.get("type", ""))
 				if ty == "stranger_confront":
 					confront += 1
-				if ty in ["stranger_confront", "driven_off", "pack_meet"]:
+				# 只算黑狼一家（Phase 3 第 4 步之後，一般鄰群也會撞上，牠們有自己的冷卻）
+				if ty in ["stranger_confront", "driven_off"] or (ty == "pack_meet" and str(e.get("pack", "black")) == "black"):
 					if gs._abs_period() - p0 < quiet:
 						early += 1
 					else:
