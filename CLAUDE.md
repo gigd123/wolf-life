@@ -50,6 +50,7 @@
 15. **Phase 4a 牧場（人類第一階段）**：依 `SPEC.md` 的實作順序做（共 7 步，從牧場地圖、候選位置與出現時機開始）。評估與討論在 `docs/proposals/human-settlement-eval.md`，拓荒時代的資料在 `docs/ecology-reference.md`「拓荒時代的牧場、獵狼人與獵犬」。家畜的肉量與難度在第 3 步先驗算、模擬。
 16. **Phase 2i 苔原狼一起狩獵接進主遊戲、所有狩獵改成戰術場景**：依 `SPEC.md` 的實作順序做（共 7 步，從主遊戲開場帶苔原狼開始）。提案在 `docs/proposals/tundra-joint-in-game.md`、`docs/proposals/all-hunts-tactical.md`；原型與難度資料在 `docs/proposals/tundra-joint-tactical.md`、`pack-hunt-difficulty-data.md`。
 17. **Phase 2j 一天的節奏**（晨昏出獵、白天休息）：依 `SPEC.md` 的實作順序做（共 2 步）。提案在 `docs/proposals/rest-and-daytime.md`。
+18. **Phase 3 成年期與社會**：依 `SPEC.md` 的實作順序做（共 9 步，從狼群通用化、狼的資料與生命事件紀錄開始；第 2、3 步合成可以獨立試玩的伴侶循環）。提案在 `docs/spec-update-proposal-14.md`，修訂後的草稿 `docs/spec-phase3-draft.md`，生態資料在 `docs/ecology-reference.md`「Phase 3：配對、領域、育幼與狼群」。
 
 ## 工作規則
 
