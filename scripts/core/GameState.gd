@@ -268,6 +268,8 @@ func _on_season_changed(_season_index: int) -> void:
 		_tundra_breeding_season()
 		_maybe_tundra_mate()
 		_breeding_on_season(_season_fed_ratio())
+		_grow_young()
+		_maybe_disperse()
 		_roam_tundra_wolves(true)
 		_update_snow() # 換季時日期直接歸 1、不經過換日：雪況在這裡結算，冬季第一天不會沿用秋末的
 		life_log["region_periods"] = {}
@@ -3220,8 +3222,9 @@ func finish_hunt(hunt: HuntSystem) -> void:
 				var eaten: int = min(int(current_feeding["segments_left"]) - 1, RNGService.randi_range(int(e[0]), int(e[1])) + max(0, tundra_adults() - 2))
 				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - max(0, eaten)
 				current_feeding["with_tundra"] = true
-		# 跟著行動的幼狼（秋季起，Phase 3 第 5 步）：每兩隻吃掉一段
-		var fp: int = pups().filter(func(n): return n.task == "follow").size()
+		_young_learn_from_hunt()
+		# 跟著行動的幼狼（秋季起，Phase 3 第 5 步）與跟著你的子女（第 6 步）：每兩隻吃掉一段
+		var fp: int = pack_members().filter(func(n): return n.task == "follow" and n.pack_id == "player").size()
 		if fp > 0 and not current_feeding.is_empty():
 			current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - ceili(fp / 2.0))
 		# 和伴侶（或還在認識的母狼）一起獵到（Phase 3 第 3 步）：牠吃掉一段；還在認識的關係 +2
@@ -6156,9 +6159,16 @@ func hunt_role_of(n: NpcWolf) -> String:
 	if n.hunt_role != "auto":
 		return n.hunt_role
 	var c: Dictionary = _pack_life_cfg().get("auto_role", {})
+	# 個性先決定（第 6 步）：大膽的驅趕、謹慎的埋伏、耐跑的追擊
+	if n.traits.has("bold"):
+		return "drive"
+	if n.traits.has("cautious"):
+		return "ambush"
+	if n.traits.has("enduring"):
+		return "chase"
 	if n.speed >= float(c.get("drive_speed", 68)):
 		return "drive"
-	if n.strength >= float(c.get("ambush_strength", 66)) or n.traits.has("cautious"):
+	if n.strength >= float(c.get("ambush_strength", 66)):
 		return "ambush"
 	return "chase"
 
@@ -6331,6 +6341,7 @@ func _give_birth() -> void:
 		var pup := NpcWolf.create(id, den_region, "pup")
 		pup.age_years = 0.0
 		pup.sex = "female" if RNGService.chance(0.5) else "male"
+		_inherit(pup, m)
 		pup.pack_id = "player"
 		pup.parents = ["player", m.id]
 		pup.task = "den"
@@ -6469,6 +6480,111 @@ func regurgitate() -> float:
 	_stat_inc("den", "regurgitated")
 	state_changed.emit()
 	return got
+
+# --- Phase 3 第 6 步：狼群成員（SPEC Phase 3「狼群成員」；數值在 balance.json 的 members）---
+# 幼狼出生時決定潛力（父母能力的平均 ±15%）與個性（1～2 個標籤），之後每季照年齡往潛力長，2 歲長滿；
+# 跟著你狩獵時技巧多長一點。1～3 歲之間，每年秋冬換季時可能離群（獨立的早、黏人的晚，狼群越大、吃得越差越早）；
+# 算進上限的（滿 1 歲）超過 10 隻時，最年長的年輕成員先走。
+
+const GROW_STATS := ["speed", "strength", "skill", "perception", "health_max"]
+const MEMBER_TRAITS := ["bold", "cautious", "enduring", "clingy", "independent"]
+
+func _members_cfg() -> Dictionary:
+	return GameData.balance.get("members", {})
+
+func _inherit(pup: NpcWolf, mother: NpcWolf) -> void:
+	var c := _members_cfg()
+	var spread: float = float(c.get("inherit_spread", 0.15))
+	var pot := {}
+	var base := {}
+	for st in GROW_STATS:
+		var avg: float = (float(wolf.get(st)) + float(mother.get(st))) / 2.0
+		pot[st] = snapped(avg * RNGService.randf_range(1.0 - spread, 1.0 + spread), 0.1)
+		base[st] = float(pup.get(st))
+	pot["_base"] = base
+	pup.potential = pot
+	var pool: Array = MEMBER_TRAITS.duplicate()
+	pup.traits = []
+	for i in (2 if RNGService.chance(float(c.get("two_traits_chance", 0.4))) else 1):
+		var t: String = str(pool[RNGService.randi_range(0, pool.size() - 1)])
+		pool.erase(t)
+		# 黏人和獨立不會同時有
+		if t == "clingy":
+			pool.erase("independent")
+		elif t == "independent":
+			pool.erase("clingy")
+		pup.traits.append(t)
+
+# 你的子女（滿 1 歲、還在狼群裡的年輕成員）
+func young_members() -> Array:
+	return npcs.values().filter(func(n): return n.alive and n.pack_id == "player" and n.age_years >= 1.0)
+
+# 算進上限的數量：你、伴侶、滿 1 歲的子女（未滿 1 歲不算）
+func pack_counted_size() -> int:
+	return 1 + (1 if has_mate() else 0) + young_members().size()
+
+# 每季：子女照年齡往潛力長（2 歲長滿）
+func _grow_young() -> void:
+	var full: float = float(_members_cfg().get("full_grown_age", 2.0))
+	for n in npcs.values():
+		# 長滿之後交給老化（NpcWolf.on_season_passed），不再拉回潛力
+		if not n.alive or n.pack_id != "player" or n.potential.is_empty() or n.age_years > full + 0.25:
+			continue
+		var t: float = clamp(n.age_years / full, 0.0, 1.0)
+		var base: Dictionary = n.potential.get("_base", {})
+		for st in GROW_STATS:
+			var v: float = lerp(float(base.get(st, n.get(st))), float(n.potential.get(st, n.get(st))), t)
+			n.set(st, max(float(n.get(st)), snapped(v, 0.1)) if st != "health_max" else snapped(v, 0.1))
+		n.health = min(n.health, n.health_max) if n.health > 0.0 else n.health_max
+		if n.age_years >= 1.0 and n.age_years < 1.25:
+			add_life_event("child.yearling", {"who": n.id})
+
+# 跟著你狩獵的年輕成員（未滿 2 歲）：技巧的潛力多長一點（成年前帶去學狩獵，SPEC Phase 3）
+func _young_learn_from_hunt() -> void:
+	var c := _members_cfg()
+	for n in pack_members():
+		if n.task == "follow" and n.age_years < float(c.get("full_grown_age", 2.0)) and not n.potential.is_empty():
+			var learned: float = float(n.potential.get("_learned", 0.0))
+			var add: float = min(float(c.get("learn_per_hunt", 0.5)), float(c.get("learn_max", 10.0)) - learned)
+			if add > 0.0:
+				n.potential["skill"] = float(n.potential.get("skill", n.skill)) + add
+				n.potential["_learned"] = learned + add
+
+# 秋冬換季：年輕成員可能離群
+func _maybe_disperse() -> void:
+	if not GameTime.current_season() in ["autumn", "winter"]:
+		return
+	var c := _members_cfg()
+	var young := young_members()
+	if young.is_empty():
+		return
+	young.sort_custom(func(a, b): return a.age_years > b.age_years)
+	var over: int = pack_counted_size() - int(c.get("max_size", 10))
+	var fed: float = _season_fed_ratio()
+	for n in young:
+		var by_age: Dictionary = c.get("disperse_by_age", {})
+		var p: float = float(by_age.get("1", 0.1)) if n.age_years < 2.0 else (float(by_age.get("2", 0.25)) if n.age_years < 3.0 else float(by_age.get("3", 0.5)))
+		if n.traits.has("independent"):
+			p *= float(c.get("independent_mult", 1.8))
+		if n.traits.has("clingy"):
+			p *= float(c.get("clingy_mult", 0.4))
+		p += max(0, pack_counted_size() - int(c.get("crowd_from", 6))) * float(c.get("crowd_per", 0.05))
+		if fed < float(c.get("hungry_fed", 0.6)):
+			p += float(c.get("hungry_bonus", 0.1))
+		if over > 0:
+			p += float(c.get("over_cap_bonus", 0.6))
+		if RNGService.chance(clamp(p, 0.0, 0.95)):
+			_member_leaves(n)
+			over -= 1
+
+func _member_leaves(n: NpcWolf) -> void:
+	n.pack_id = "dispersed"
+	n.task = "free"
+	var gone: Array = life_log.get("dispersed", [])
+	gone.append({"who": n.id, "sex": n.sex, "age": snapped(n.age_years, 0.25), "traits": n.traits, "your_age": snapped(wolf.age_years, 0.25)})
+	life_log["dispersed"] = gone
+	add_life_event("child.left", {"who": n.id, "age": snapped(n.age_years, 0.25)})
+	_queue_notice({"type": "child_left", "sex": n.sex, "age": snapped(n.age_years, 0.5), "trait": str(n.traits[0]) if not n.traits.is_empty() else ""})
 
 # 在牠面前逃跑或示弱：關係下降。
 func _she_saw_combat(c: Combat) -> void:

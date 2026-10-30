@@ -2643,6 +2643,13 @@ func _process_events() -> void:
 			_show_card(tr("pups.title." + pk), tr("pups." + pk + (".nomate" if pk == "weaned" and not event.get("mate", true) else "")).replace("{n}", str(int(event.get("n", 0)))).replace("{region}", tr("region." + str(event.get("region", "")))))
 			_set_card_wolf("")
 			return
+		"child_left":
+			var cl: String = tr("child.left." + str(event.get("sex", "male"))).replace("{age}", str(event.get("age", 1.0)))
+			if str(event.get("trait", "")) in ["independent", "clingy"]:
+				cl += tr("child.left.trait." + str(event["trait"]))
+			_show_card(tr("child.left.title"), cl)
+			_set_card_wolf("")
+			return
 		"pups_hungry":
 			_show_event_message(tr("pups.hungry").replace("{region}", tr("region." + GameState.pup_spot())), "")
 			return
@@ -3676,54 +3683,71 @@ func _show_she_wolf(d: Dictionary, extra: String = "") -> void:
 	encounter_overlay.visible = true
 
 # 狼群面板（Phase 3 第 3 步，SPEC「同行與指派」）：每個成員的狀態、指派（一直有效直到你改）、群獵的角色。目前只有伴侶。
-func _show_pack_panel() -> void:
-	var members: Array = GameState.pack_members()
-	if members.is_empty():
+# 狼群面板（Phase 3 第 3、6 步）：上面一排是成員（伴侶、滿 1 歲的子女），點一隻看牠的狀態、改指派與群獵的角色；幼狼只寫一行。
+var pack_panel_sel: String = ""
+
+func _show_pack_panel(sel: String = "") -> void:
+	var adults: Array = ([GameState.she_wolf()] if GameState.has_mate() else []) + GameState.young_members()
+	if adults.is_empty() and GameState.pups().is_empty():
 		return
-	var n: NpcWolf = GameState.she_wolf() if GameState.has_mate() else null
-	if n == null:
-		# 伴侶不在了、只剩幼狼（第 6 步再做逐隻的面板）
-		encounter_message.text = _pups_line()
-		encounter_detail.text = ""
-		_clear_children(encounter_buttons_box)
-		_add_encounter_button(tr("ui.close"), func():
-			encounter_overlay.visible = false
-		)
-		encounter_overlay.visible = true
-		return
+	if sel != "":
+		pack_panel_sel = sel
+	var n: NpcWolf = null
+	for a in adults:
+		if a.id == pack_panel_sel:
+			n = a
+	if n == null and not adults.is_empty():
+		n = adults[0]
+		pack_panel_sel = n.id
+	_clear_children(encounter_buttons_box)
 	var lines: Array[String] = []
-	lines.append(tr("ui.pack.mate").replace("{age}", str(snapped(n.age_years, 0.5))))
-	lines.append(tr("stranger.compare." + GameState.power_compare(n.power())))
-	lines.append(tr("ui.pack.health").replace("{hp}", str(int(n.health))).replace("{max}", str(int(n.health_max))))
-	if n.task == "follow" and not GameState.followers().has(n):
-		lines.append(tr("ui.pack.too_hurt"))
+	if adults.size() > 1:
+		lines.append(tr("ui.pack.count").replace("{n}", str(GameState.pack_counted_size())))
+		for a in adults:
+			var al: String = _member_name(a) + ("　✓" if a == n else "")
+			_add_encounter_button(al, func():
+				_show_pack_panel(a.id)
+			)
+	if n != null:
+		lines.append(_member_name(n) if adults.size() <= 1 else tr("ui.pack.selected").replace("{who}", _member_name(n)))
+		if not n.traits.is_empty():
+			lines.append(tr("ui.pack.traits").replace("{t}", "、".join(n.traits.map(func(t): return tr("trait." + str(t))))))
+		lines.append(tr("stranger.compare." + GameState.power_compare(n.power())) + "　" + tr("ui.pack.health").replace("{hp}", str(int(n.health))).replace("{max}", str(int(n.health_max))))
+		if n.task == "follow" and not GameState.followers().has(n):
+			lines.append(tr("ui.pack.too_hurt"))
+		var role_now: String = GameState.hunt_role_of(n)
+		lines.append(tr("ui.pack.now").replace("{task}", tr("ui.pack.task." + n.task)).replace("{role}", tr("ui.pack.role." + n.hunt_role) + ("" if n.hunt_role != "auto" else tr("ui.pack.role.auto_is").replace("{role}", tr("ui.pack.role." + role_now)))))
 	if not GameState.pups().is_empty():
 		lines.append(_pups_line())
-	var role_now: String = GameState.hunt_role_of(n)
-	lines.append(tr("ui.pack.now").replace("{task}", tr("ui.pack.task." + n.task)).replace("{role}", tr("ui.pack.role." + n.hunt_role) + ("" if n.hunt_role != "auto" else tr("ui.pack.role.auto_is").replace("{role}", tr("ui.pack.role." + role_now)))))
 	encounter_message.text = "\n".join(lines)
-	encounter_detail.text = tr("ui.pack.detail")
+	encounter_detail.text = tr("ui.pack.detail") if n != null else ""
 	_set_creature(encounter_sprite, "tundra_wolf", "adult", "idle")
 	_set_terrain_bg(encounter_bg, "")
-	_clear_children(encounter_buttons_box)
-	for task in GameState.PACK_TASKS:
-		var label: String = tr("ui.pack.task." + task) + ("　✓" if n.task == task else "")
-		_add_encounter_button(label, func():
-			GameState.set_task(n.id, task)
-			_show_pack_panel()
-			_refresh()
-		)
-	for role in GameState.HUNT_ROLES:
-		var rl: String = tr("ui.pack.role_button").replace("{role}", tr("ui.pack.role." + role)) + ("　✓" if n.hunt_role == role else "")
-		_add_encounter_button(rl, func():
-			GameState.set_hunt_role(n.id, role)
-			_show_pack_panel()
-		)
+	if n != null:
+		for task in GameState.PACK_TASKS:
+			var label: String = tr("ui.pack.task." + task) + ("　✓" if n.task == task else "")
+			_add_encounter_button(label, func():
+				GameState.set_task(n.id, task)
+				_show_pack_panel()
+				_refresh()
+			)
+		for role in GameState.HUNT_ROLES:
+			var rl: String = tr("ui.pack.role_button").replace("{role}", tr("ui.pack.role." + role)) + ("　✓" if n.hunt_role == role else "")
+			_add_encounter_button(rl, func():
+				GameState.set_hunt_role(n.id, role)
+				_show_pack_panel()
+			)
 	_add_encounter_button(tr("ui.close"), func():
 		encounter_overlay.visible = false
 		_refresh()
 	)
 	encounter_overlay.visible = true
+
+# 成員的稱呼：伴侶；子女寫公／母與年齡
+func _member_name(n: NpcWolf) -> String:
+	if GameState.has_mate() and n == GameState.she_wolf():
+		return tr("ui.pack.mate").replace("{age}", str(snapped(n.age_years, 0.5)))
+	return tr("ui.pack.child." + n.sex).replace("{age}", str(snapped(n.age_years, 0.5)))
 
 # 幼狼的狀況（Phase 3 第 5 步）：幾隻、在哪、存糧還夠幾天
 func _pups_line() -> String:

@@ -2269,3 +2269,18 @@ den.threat.drive.ok,你衝出去又咬又吼，牠退走了。
 den.threat.drive.fail,你衝出去，被牠打了回來。
 den.threat.sheltered,你擋在洞口，壓低身子低吼，等牠離開。
 den.threat.lost,混亂中，一隻幼狼不見了。
+ui.pack.count,狼群：{n} 隻（滿 1 歲的才算）
+ui.pack.selected,▸ {who}
+ui.pack.traits,個性：{t}
+ui.pack.child.male,你的兒子（{age} 歲）
+ui.pack.child.female,你的女兒（{age} 歲）
+trait.bold,大膽
+trait.cautious,謹慎
+trait.enduring,耐跑
+trait.clingy,黏人
+trait.independent,獨立
+child.left.title,離群
+child.left.male,{age} 歲的兒子在一個清晨離開了狼群。牠在山脊上回頭看了一眼，就往遠方走去。
+child.left.female,{age} 歲的女兒在一個清晨離開了狼群。牠在山脊上回頭看了一眼，就往遠方走去。
+child.left.trait.independent,牠一直是最早獨自出去探路的那一隻。
+child.left.trait.clingy,牠一直是最黏著你們的那一隻，還是走了。
