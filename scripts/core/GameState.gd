@@ -2326,6 +2326,7 @@ func pack_remains_risk() -> float:
 
 # 吃一段：回傳 {gain, left, caught}；被發現時排一個撞上狼群的事件（不受每天的事件上限）。
 func eat_pack_remains() -> Dictionary:
+	meet_pack_id = "black" # 殘骸只有黑狼一家的（紀錄、被發現時的撞上都算牠們）
 	record_decision("explore.pack_remains")
 	var risk: float = pack_remains_risk()
 	GameTime.advance_turns(1)
