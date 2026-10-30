@@ -220,6 +220,8 @@ func _play_day() -> void:
 		if daytime_rest and GameTime.current_period() == "day" and GameState.wolf.hunger >= DAY_REST_HUNGER and GameState.wolf.stamina < DAY_REST_STAMINA:
 			GameState.action_rest_until("dusk")
 			continue
+		if _care_pups():
+			continue
 		if _maybe_howl():
 			continue
 		if _seek_she_wolf():
@@ -542,10 +544,16 @@ func _play_hunt(hunt: HuntSystem) -> void:
 
 func _feed_loop() -> void:
 	while GameState.is_feeding() and not done():
+		# 幼狼的存糧不多了（Phase 3 第 5 步）：先叼一段回去
+		if GameState.can_carry_to_den() and GameState.den_food_days() < CARE_DAYS:
+			GameState.carry_to_den()
+			continue
 		# 吃到快撐滿（再吃一段會浪費一半以上）就先離開，剩下的留成殘骸，在旁邊休息，餓了再回來吃（Phase 2b 第 1 步）
 		var seg_value: float = float(GameState.current_feeding.get("segment_value", 0.0))
 		if GameState.wolf.hunger + seg_value * 0.5 > float(GameData.balance.get("hunger_max", 150)):
 			# 離開前有剩就叼去藏（Phase 2e）：藏滿為止，滿了而且有過期的就換掉
+			if GameState.can_carry_to_den():
+				GameState.carry_to_den()
 			while cache and GameState.can_cache() and not done():
 				GameState.action_cache_segment()
 			GameState.leave_feeding()
@@ -911,4 +919,22 @@ func _seek_she_wolf() -> bool:
 		return false
 	GameState.action_move(step)
 	return true
+
+
+
+# 照顧幼狼（Phase 3 第 5 步）：叼著肉就走回巢穴（集合點）；在那裡、存糧不多、自己吃得夠就反芻
+const CARE_DAYS := 2.0
+func _care_pups() -> bool:
+	if routine or not GameState.pups_need_food():
+		return false
+	var spot: String = GameState.pup_spot()
+	if float(GameState.breeding().get("carrying", 0.0)) > 0.0 and GameState.current_region != spot:
+		var step: String = GameState.next_step_toward(spot)
+		if step != "":
+			GameState.action_move(step)
+			return true
+	if GameState.current_region == spot and GameState.den_food_days() < CARE_DAYS and GameState.can_regurgitate() and GameState.wolf.hunger >= 90.0:
+		GameState.regurgitate()
+		return true
+	return false
 
