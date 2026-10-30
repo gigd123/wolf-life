@@ -35,6 +35,8 @@ const JUDGE_HUNGER := 40.0
 var stop_before_adult: bool = false
 # 四處走動（Phase 3a 第 6 步的驗證）：每天清晨有一半機會換到同一張地圖的相鄰區域，不回巢穴
 var roam: bool = false
+# 四處走動時，夜裡先走回巢穴再睡（模擬對照：四處走動的狼變餓，是不是因為睡在野外）
+var roam_sleep_home: bool = false
 # 牧場（Phase 4a 第 5 步，ranch.json auto）：never 不去、sometimes 餓了而且注意不高才去、often 注意 < 70 就去；預設照打法
 var ranch_policy: String = ""
 var ranch_moves: int = 0 # 因為牧場的注意搬巢穴的次數（模擬記錄用）
@@ -169,6 +171,8 @@ func _play_day() -> void:
 		# 晨昏節奏（Phase 2j）：夜裡睡一覺，黎明前、清晨醒著出獵；原本在黎明前睡、常睡過頭錯過清晨
 		if daytime_rest:
 			if GameTime.current_period() == "night" and _slept_day != GameTime.day:
+				if roam and roam_sleep_home and _go_home():
+					continue
 				_slept_day = GameTime.day
 				GameState.action_sleep()
 				continue

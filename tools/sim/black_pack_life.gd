@@ -5,7 +5,7 @@ extends SceneTree
 #   2. 壽命、死因（被狼殺死的比例）
 #   3. 各種事的次數、成年每年挨餓天數
 # 通過標準（初始值）：1 ≥ 70%；壽命 9～11；被狼殺死 ≤ 15%。
-# 用法：bash tools/run_sim.sh black_pack_life 0 30；STYLE=assault 換成強攻型（預設 average）
+# 用法：bash tools/run_sim.sh black_pack_life 0 30；STYLE=assault 換成強攻型（預設 average）；ROAM=0 不四處走動（待在巢穴附近）、SLEEP_HOME=1 四處走動但夜裡回巢穴睡
 
 const DENS := ["forest_east", "forest_north", "forest_south", "forest_west"]
 
@@ -28,10 +28,12 @@ func _process(_d):
 	var ages: Array = []
 	var adult_days := 0
 	var adult_hungry := 0
+	var stam_sum := 0.0
 	var by_age := {} # 歲 -> [季數, 有事的季數]
 	for r in runs:
 		var ap = AP.new("all", style)
-		ap.roam = true
+		ap.roam = OS.get_environment("ROAM") != "0"
+		ap.roam_sleep_home = OS.get_environment("SLEEP_HOME") != ""
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
 		var forest_seasons := {} # 季（age × 4）-> true：那一季有待在森林
@@ -44,6 +46,7 @@ func _process(_d):
 				forest_seasons[int(floor(GS.wolf.age_years * 4.0 + 0.001))] = true
 			if GS.wolf.life_stage() == 1:
 				adult_days += 1
+				stam_sum += GS.wolf.stamina
 				if GS.wolf.hunger < 30.0:
 					adult_hungry += 1
 		ap.finish()
@@ -81,6 +84,6 @@ func _process(_d):
 	print("  事件次數：", kinds)
 	print("  壽命：平均 %.1f、中位數 %.1f（目標 9～11）" % [total / max(1, ages.size()), ages[ages.size() / 2] if not ages.is_empty() else 0.0])
 	print("  死因：%s；被狼殺死 %d%%（目標 ≤ 15%%）" % [deaths, roundi(100.0 * wolf_deaths / max(1, runs))])
-	print("  成年每年挨餓 %.1f 天" % [adult_hungry / max(0.01, adult_days / 40.0)])
+	print("  成年每年挨餓 %.1f 天；成年每天開始時的體力平均 %.0f" % [adult_hungry / max(0.01, adult_days / 40.0), stam_sum / max(1, adult_days)])
 	quit()
 	return true
