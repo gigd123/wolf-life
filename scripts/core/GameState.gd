@@ -3223,8 +3223,9 @@ func finish_hunt(hunt: HuntSystem) -> void:
 				current_feeding["segments_left"] = int(current_feeding["segments_left"]) - max(0, eaten)
 				current_feeding["with_tundra"] = true
 		_young_learn_from_hunt()
-		# 跟著行動的幼狼（秋季起，Phase 3 第 5 步）與跟著你的子女（第 6 步）：每兩隻吃掉一段
-		var fp: int = pack_members().filter(func(n): return n.task == "follow" and n.pack_id == "player").size()
+		# 跟著行動的幼狼（秋季起，Phase 3 第 5 步）：每兩隻吃掉一段。滿 1 歲的子女自己找吃的
+		# （第 6 步：牠們還不會在戰術地圖上幫忙，只吃不幫讓你餓很多；第 7 步一起出獵時再算牠們的份）
+		var fp: int = pups().filter(func(n): return n.task == "follow").size()
 		if fp > 0 and not current_feeding.is_empty():
 			current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - ceili(fp / 2.0))
 		# 和伴侶（或還在認識的母狼）一起獵到（Phase 3 第 3 步）：牠吃掉一段；還在認識的關係 +2
