@@ -5164,6 +5164,8 @@ func finish_combat(c: Combat) -> Dictionary:
 		result["lynx_hare"] = true
 	if c.npc != null and c.npc.id == "pack_young":
 		_after_pack_young_combat(c)
+	if c.has_meta("challenge_pack"):
+		_after_pack_challenge(c)
 	if c.npc != null and c.npc.id == "challenger":
 		c.npc.health = c.opp_hp
 		_after_challenger(c.won())
@@ -5877,9 +5879,17 @@ func _update_neighbor_packs() -> void:
 		var adjacent: Dictionary = {}
 		for r in GameData.map_regions(p.map_id):
 			adjacent[r] = EncounterSystem.region_data(r).get("adjacent", [])
+		var was_vacant: bool = p.vacant
 		var events: Array = p.on_season_passed({"season": GameTime.current_season(), "leader": leader,
-			"player_age": wolf.age_years, "den": den_region, "own": own_territories(), "adjacent": adjacent})
+			"player_age": wolf.age_years, "den": den_region, "own": own_territories(), "adjacent": adjacent, "allow_vacancy": true})
 		_take_probed_by(p)
+		if events.has("vacant"):
+			_on_pack_vacancy(p)
+		elif was_vacant and (events.has("dissolved") or events.has("succession")):
+			# 空缺沒人補（解散），或子女長大接手了：那隻母狼不再是你可以接近的對象
+			var w := she_wolf()
+			if w != null and w.pack_id == p.id and mate_stage() == "candidate":
+				_she_wolf_leaves("pack_gone")
 		if events.has("dissolved"):
 			life_log["pack_gone_" + p.id] = 0
 		if events.has("succession"):
@@ -5988,6 +5998,11 @@ func _update_she_wolf() -> void:
 	if mate_stage() == "mate":
 		n.territory = current_region # 第 3 步改成跟著你行動
 		return
+	# 屬於一群的母狼（空缺，第 8 步）：待在牠們的地方，不因為太久沒見而走
+	var wp := _widow_pack()
+	if wp != null:
+		n.territory = pack_home_region(wp) if wp.regions.is_empty() else str(wp.regions[RNGService.randi_range(0, wp.regions.size() - 1)])
+		return
 	# 太久沒見：關係下降，可能離開這一帶
 	var absent: int = _today() - int(life_log.get("she_last_seen", _today()))
 	if absent >= int(cfg.get("absent_days", 7)):
@@ -6044,6 +6059,13 @@ func _become_mates(how: String) -> void:
 		return
 	life_log["mate_stage"] = "mate"
 	n.territory = current_region
+	# 那隻母狼屬於一群（第 8 步）：接手那一群
+	var wp := pack_by_id(n.pack_id) if n.pack_id != "" else null
+	if wp != null:
+		if how == "courted":
+			how = "pack"
+		_take_over_pack(wp, how)
+		n.pack_id = ""
 	add_life_event("mate", {"who": n.id, "how": how})
 	_queue_notice({"type": "she_wolf_mate", "how": how})
 
@@ -6055,7 +6077,7 @@ func _maybe_meet_she_wolf() -> bool:
 	if not RNGService.chance(float(cfg.get("meet_chance", 0.3))):
 		return false
 	current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)),
-		"eating": RNGService.chance(float(cfg.get("eating_chance", 0.25)))}
+		"eating": RNGService.chance(float(cfg.get("eating_chance", 0.25))), "widow": _widow_pack() != null}
 	_she_seen()
 	return true
 
@@ -6645,6 +6667,131 @@ func _member_leaves(n: NpcWolf) -> void:
 	life_log["dispersed"] = gone
 	add_life_event("child.left", {"who": n.id, "age": snapped(n.age_years, 0.25)})
 	_queue_notice({"type": "child_left", "sex": n.sex, "age": snapped(n.age_years, 0.5), "trait": str(n.traits[0]) if not n.traits.is_empty() else ""})
+
+# --- Phase 3 第 8 步：加入既有狼群、取而代之（SPEC Phase 3「加入既有狼群」；數值在 balance.json 的 join）---
+# 只在你 2 歲以上、沒有伴侶時。鄰群的繁殖公狼不在了、沒有子女接手（空缺）：那隻母狼成為「還在認識的母狼」（同第 2 步），
+# 關係到伴侶時你接手這一群（領域、巢穴、成員）。繁殖公狼老了或受傷時，撞上牠們可以直接挑戰：贏了接手（關係不夠的成員離開），輸了多半重傷。
+# 黑狼一家照 3a（不開放加入、取而代之）。
+
+func _join_cfg() -> Dictionary:
+	return GameData.balance.get("join", {})
+
+func can_join_packs() -> bool:
+	return wolf != null and wolf.age_years >= float(_join_cfg().get("min_age", 2.0)) and not has_mate()
+
+# 空缺開始：你有資格、在同一張地圖、還沒有在認識的母狼時，那隻母狼成為你可以接近的對象
+func _on_pack_vacancy(p: WolfPack) -> void:
+	add_life_event("pack.vacant", {"pack": p.id})
+	if not can_join_packs() or she_wolf() != null or GameData.map_of(pack_home_region(p)) != current_map():
+		return
+	var count: int = int(life_log.get("she_wolf_count", 0)) + 1
+	life_log["she_wolf_count"] = count
+	var id: String = "she_wolf_%d" % count
+	var n := NpcWolf.create(id, pack_home_region(p), "lone_female")
+	n.age_years = max(2.0, p.mate_age)
+	n.pack_id = p.id
+	npcs[id] = n
+	life_log["mate_id"] = id
+	life_log["mate_stage"] = "candidate"
+	life_log["she_met"] = false
+	life_log["she_last_seen"] = _today()
+	_queue_event({"type": "pack_vacancy", "region": pack_home_region(p), "pack": p.id})
+
+# 那隻母狼屬於某一群（空缺）：還在認識時待在牠們的地方，不會因為你太久沒去就走（這一季過了沒人補才走）
+func _widow_pack() -> WolfPack:
+	var n := she_wolf()
+	return pack_by_id(n.pack_id) if n != null and n.pack_id != "" else null
+
+# 挑戰鄰群的繁殖公狼：牠老了（6 歲以上）或受傷（血量低於 injured_ratio）
+func can_challenge_pack(p: WolfPack) -> bool:
+	if p == null or p == black_pack or not can_join_packs() or not pack_is_active(p):
+		return false
+	var l := pack_leader_of(p)
+	if l == null or not l.alive:
+		return false
+	return l.age_years >= float(_join_cfg().get("old_age", 6.0)) or l.health < l.health_max * float(_join_cfg().get("injured_ratio", 0.6))
+
+func start_pack_challenge() -> Combat:
+	var p := meet_pack()
+	var l := pack_leader_of(p)
+	record_decision("pack.challenge")
+	var c := start_combat("stranger_wolf", "adult", "meet")
+	c.set_npc(l)
+	c.set_meta("challenge_pack", p.id)
+	return c
+
+func _after_pack_challenge(c: Combat) -> void:
+	var p := pack_by_id(str(c.get_meta("challenge_pack")))
+	if p == null:
+		return
+	var l := pack_leader_of(p)
+	add_life_event("pack.challenge", {"pack": p.id, "won": c.won()})
+	if not c.won():
+		_set_pack_rel(p, "scorn")
+		return
+	# 贏了：牠被殺或被趕走，你接手；母狼留下成為伴侶
+	if l != null and l.alive:
+		l.die("driven_off" if c.outcome == "drove_off" else "killed_by_player")
+	var count: int = int(life_log.get("she_wolf_count", 0)) + 1
+	life_log["she_wolf_count"] = count
+	var id: String = "she_wolf_%d" % count
+	var n := NpcWolf.create(id, current_region, "lone_female")
+	n.age_years = max(2.0, p.mate_age)
+	n.pack_id = p.id
+	npcs[id] = n
+	if she_wolf() != null and mate_stage() == "candidate":
+		_she_wolf_leaves("replaced")
+	life_log["mate_id"] = id
+	life_log["mate_stage"] = "candidate"
+	life_log["she_met"] = true
+	_become_mates("taken")
+
+# 接手一群（加入或取而代之）：母狼成為伴侶、牠們的領域變成你的地盤、巢穴搬到牠們的核心、成員留下（取而代之時關係不夠的離開）
+func _take_over_pack(p: WolfPack, how: String) -> void:
+	var c := _join_cfg()
+	var stay: float = 1.0 if how == "pack" else float(c.get("taken_stay_chance", 0.5))
+	var kept := 0
+	for a in p.young:
+		if not RNGService.chance(stay):
+			continue
+		var cnt: int = int(life_log.get("pup_count", 0)) + 1
+		life_log["pup_count"] = cnt
+		var y := NpcWolf.create("pup_%d" % cnt, pack_home_region(p), "pup")
+		y.age_years = float(a)
+		y.sex = "female" if RNGService.chance(0.5) else "male"
+		y.pack_id = "player"
+		y.parents = ["pack_" + p.id]
+		y.relation = int(c.get("step_relation", 3)) # 前任留下的：一開始是「熟悉」
+		y.task = "follow" if float(a) >= 0.5 else "den"
+		var pot := {}
+		for st in GROW_STATS:
+			pot[st] = float(RNGService.randi_range(int(c.get("member_stats", [56, 68])[0]), int(c.get("member_stats", [56, 68])[1]))) if st != "health_max" else 100.0
+		pot["_base"] = {"speed": y.speed, "strength": y.strength, "skill": y.skill, "perception": y.perception, "health_max": y.health_max}
+		y.potential = pot
+		if y.age_years >= float(_members_cfg().get("full_grown_age", 2.0)):
+			for st in GROW_STATS:
+				y.set(st, float(pot[st]))
+			y.health = y.health_max
+		_inherit_traits(y)
+		npcs[y.id] = y
+		kept += 1
+	_grow_young()
+	var marks: Dictionary = life_log.get("marks", {})
+	for r in p.regions:
+		marks[r] = _today()
+	life_log["marks"] = marks
+	if not p.off_map and not p.regions.is_empty():
+		den_region = str(p.regions[0])
+	p.stage = "gone"
+	p.vacant = false
+	p.regions = []
+	p.young = []
+	life_log["pack_gone_" + p.id] = 0
+	add_life_event("pack.joined" if how == "pack" else "pack.taken", {"pack": p.id, "kept": kept})
+
+func _inherit_traits(n: NpcWolf) -> void:
+	var pool: Array = MEMBER_TRAITS.duplicate()
+	n.traits = [str(pool[RNGService.randi_range(0, pool.size() - 1)])]
 
 # 在牠面前逃跑或示弱：關係下降。
 func _she_saw_combat(c: Combat) -> void:

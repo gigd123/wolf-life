@@ -2307,3 +2307,8 @@ pack.fight.lost,你們撲了上去，卻被牠們的數量壓了回來。你們�
 pack.fight.member_lost,有一隻沒有跟上來。
 pack.fight.won.alone,你撲了上去，和牠們咬成一團。{who}丟下一隻受傷的同伴，退走了。
 pack.fight.lost.alone,你撲了上去，卻被牠們的數量壓了回來。你帶著傷逃到{region}。
+pack.vacancy,{region}那頭傳來的嚎聲變了，少了那個低沉的聲音。那群狼裡，帶頭的公狼似乎不在了。
+she_wolf.meet.widow,那群狼的母狼站在不遠處看著你。牠身邊少了帶頭的公狼。牠沒有低吼。
+pack.option.challenge,挑戰牠們帶頭的公狼
+she_wolf.mate.pack,你一再出現在那群狼的地方，牠們不再趕你走。母狼接納了你，年輕的狼也慢慢跟在你身後。那一帶現在是你們的地方。
+she_wolf.mate.taken,帶頭的公狼走了，再也沒有回來。母狼留了下來，那群狼裡願意留下的，慢慢跟在你身後。那一帶現在是你們的地方。

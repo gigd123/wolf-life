@@ -537,6 +537,10 @@
     "disperse_by_age": { "1": 0.1, "2": 0.25, "3": 0.5 }, "independent_mult": 1.8, "clingy_mult": 0.4,
     "crowd_from": 6, "crowd_per": 0.05, "hungry_fed": 0.6, "hungry_bonus": 0.1, "max_size": 10, "over_cap_bonus": 0.6
   },
+  "join": {
+    "_comment": "Phase 3 第 8 步（SPEC「加入既有狼群」）：你 min_age 歲以上、沒有伴侶時才能。挑戰繁殖公狼：牠 old_age 歲以上或血量低於 injured_ratio。取而代之時每隻成員 taken_stay_chance 留下（加入時都留下）；留下的前任子女關係一開始 step_relation（熟悉），能力在 member_stats 之間。",
+    "min_age": 2.0, "old_age": 6.0, "injured_ratio": 0.6, "taken_stay_chance": 0.5, "step_relation": 3, "member_stats": [56, 68]
+  },
   "packs": {
     "_comment": "Phase 3 第 1 步（SPEC「鄰群的配置」，方案甲）：黑狼一家以外的鄰群。layout：每張地圖最多一群住在地圖上（核心放在離你的巢穴最遠的那一區），其他住在地圖外、只在 border 那一區出現。neighbor：覆寫 black_pack 的數值（一般鄰群不受你的年齡限制、一開始就是一對或狼群）。cap_exempt：不受每天事件上限的事件種類（巢穴、幼狼，第 5 步用）。",
     "layout": [

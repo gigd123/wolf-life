@@ -2659,6 +2659,9 @@ func _process_events() -> void:
 		"den_threat":
 			_show_den_threat(str(event.get("animal", "coyote")))
 			return
+		"pack_vacancy":
+			_show_event_message(tr("pack.vacancy").replace("{region}", tr("region." + str(event.get("region", "")))), "tundra_wolf")
+			return
 		"she_wolf_mate":
 			_show_card(tr("she_wolf.mate.title"), tr("she_wolf.mate." + str(event.get("how", "courted"))))
 			_set_card_wolf("")
@@ -3629,7 +3632,7 @@ func _show_she_wolf(d: Dictionary, extra: String = "") -> void:
 	if d.get("came", false):
 		lines.append(tr("she_wolf.came"))
 	else:
-		lines.append(tr("she_wolf.meet.first" if d.get("first", false) else "she_wolf.meet"))
+		lines.append(tr(("she_wolf.meet.widow" if d.get("widow", false) else "she_wolf.meet.first") if d.get("first", false) else "she_wolf.meet"))
 	var eating: bool = bool(d.get("eating", false))
 	if eating:
 		lines.append(tr("she_wolf.meet.eating"))
@@ -4320,6 +4323,11 @@ func _show_pack_meet(event: Dictionary) -> void:
 		var r: Dictionary = GameState.pack_standoff()
 		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost") + (".neighbor" if neighbor and r["won"] else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
 	)
+	# 挑戰牠們帶頭的公狼（Phase 3 第 8 步）：牠老了或受傷、你沒有伴侶
+	if GameState.can_challenge_pack(GameState.meet_pack()):
+		_add_encounter_button(tr("pack.option.challenge"), func():
+			_begin_combat(GameState.start_pack_challenge())
+		)
 	# 撲上去打（Phase 3 第 7 步）
 	_add_encounter_button(tr("pack.option.fight").replace("{p}", str(roundi(GameState.pack_fight_chance() * 100.0))), func():
 		var alone: bool = GameState.team_size() <= 1

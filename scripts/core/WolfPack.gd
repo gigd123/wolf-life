@@ -18,6 +18,7 @@ var map_id: String = "forest"
 var off_map: bool = false # 住在地圖外：只在 border 那一區出現（SPEC Phase 3「鄰群的配置」）
 var border: String = ""
 var leader_id: String = "" # 帶頭的 NPC 在 GameState.npcs 的鍵（黑狼一家由 GameState.pack_leader() 決定）
+var vacant: bool = false # 帶頭的公狼不在了、沒有子女接手，母狼撐著這一季（Phase 3 第 8 步：你可以補上空缺）
 
 static func cfg() -> Dictionary:
 	return GameData.balance.get("black_pack", {})
@@ -92,8 +93,15 @@ func on_season_passed(ctx: Dictionary) -> Array:
 		if has_mate() and adults_young() > 0:
 			heir_age = _remove_oldest_adult()
 			generation += 1
+			vacant = false
 			events.append("succession")
+		elif has_mate() and bool(ctx.get("allow_vacancy", false)) and not vacant:
+			# 有空缺（Phase 3 第 8 步）：母狼撐一季，這一季你可以補上；下一季還沒人補就解散
+			vacant = true
+			events.append("vacant")
+			return _log(events, ctx)
 		else:
+			vacant = false
 			stage = "gone"
 			regions = []
 			events.append("dissolved")
@@ -182,7 +190,7 @@ func _log(events: Array, ctx: Dictionary) -> Array:
 
 func to_dict() -> Dictionary:
 	return {"stage": stage, "regions": regions, "mate_age": mate_age, "young": young, "generation": generation, "history": history,
-		"id": id, "kind": kind, "map_id": map_id, "off_map": off_map, "border": border, "leader_id": leader_id}
+		"id": id, "kind": kind, "map_id": map_id, "off_map": off_map, "border": border, "leader_id": leader_id, "vacant": vacant}
 
 static func from_dict(data: Dictionary) -> WolfPack:
 	var p := WolfPack.new()
@@ -198,4 +206,5 @@ static func from_dict(data: Dictionary) -> WolfPack:
 	p.off_map = bool(data.get("off_map", false))
 	p.border = str(data.get("border", ""))
 	p.leader_id = str(data.get("leader_id", ""))
+	p.vacant = bool(data.get("vacant", false))
 	return p
