@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "regurgitate", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1663,6 +1663,8 @@ func _on_action_button(action_id: String) -> void:
 			GameState.action_make_den()
 		"lie_down":
 			_show_lie_down()
+		"leave_to_children":
+			_show_leave_to_children()
 		"mark":
 			var r: String = GameState.action_mark()
 			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
@@ -4078,12 +4080,34 @@ func _show_lie_down() -> void:
 	_add_encounter_button(tr("lie_down.cancel"), func(): encounter_overlay.visible = false)
 	encounter_overlay.visible = true
 
+# 把領域留給子女（Phase 3 第 9 步）：確認後最年長的子女帶頭，你成為獨居的老狼
+func _show_leave_to_children() -> void:
+	var heir_sex: String = GameState._leave_heirs()[0].sex
+	encounter_message.text = tr("leave_children.prompt." + heir_sex)
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "idle")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("leave_children.confirm"), func():
+		encounter_overlay.visible = false
+		var r: Dictionary = GameState.action_leave_to_children()
+		if not r.is_empty():
+			_show_card(tr("leave_children.title"), tr("leave_children.text." + str(r["sex"])).replace("{n}", str(int(r["n"]))))
+			_set_card_wolf("")
+		_refresh()
+	)
+	_add_encounter_button(tr("leave_children.cancel"), func(): encounter_overlay.visible = false)
+	encounter_overlay.visible = true
+
 # 年輕的挑戰者（1.9b 第 2 步）：讓牠、或對峙。carcass：牠來搶殘骸。
+# 你有狼群時（Phase 3 第 9 步）：探索時遇上的改成「外來的公狼試探你們的領域」
 func _show_challenger(d: Dictionary, carcass: bool) -> void:
 	var key: String = "challenger." + ("first" if d.get("first", false) else "again") + ("." + ("carcass" if carcass else ("territory" if d.get("territory", false) else "meet")))
 	# 黑狼的兒子（Phase 3a 第 5 步）：第一次見面寫出牠是誰（毛色偏黑，取代原本的偏紅）
 	if d.get("first", false) and GameState.challenger_is_son():
 		key += ".son"
+	if d.get("pack", false) and not carcass:
+		key = "challenger.pack." + ("territory" if d.get("territory", false) else "meet")
 	var text: String = tr(key)
 	# 「牠比上次更壯」只在牠真的變強時才說（只有你上次打贏時，文案稽核 2026-10-16）
 	if not d.get("first", false) and GameState.challenger_grew():

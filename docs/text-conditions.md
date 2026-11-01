@@ -72,6 +72,9 @@
 | `feeding.cache.full` | 藏的肉已經滿了 | 這一區藏滿 max_segments 段、都還新鮮（`cache_status` = full） | — |
 | `action.eat_cache.tip.stale` | 下一段已經放了一陣子 | 下一段要吃的（比較新鮮的那段）過了新鮮期（`piece_state` = stale） | — |
 | `map.tip.cache.rotten` | 可能已經壞了 | 照日期算那段超過新鮮期 rot_mult 倍（玩家還沒回去確認，所以寫「可能」） | — |
+| `summary.family.at_death.none` | 身邊已經沒有狼群了 | 家族篇只在有過伴侶（生命事件 `mate`）時才寫；死時沒有伴侶、子女、幼狼，也沒有留給子女 | — |
+| `summary.family.mate_end.alive` | 牠一直陪你到最後 | 那隻伴侶沒有 `mate.died` 事件（你死時牠還活著） | — |
+| `challenger.backed` | 看了看你們這一群 | 有狼群（算進上限 ≥ 2）才會發生（`GameState._challenger_backs_off`） | — |
 
 回歸測試：`tools/sim/text_claims.gd`（雪兔、年輕的狼、睡醒原因、苔原狼）、`tools/sim/notice_triage.gd`（痊癒）。
 

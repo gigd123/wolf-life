@@ -2312,3 +2312,36 @@ she_wolf.meet.widow,那群狼的母狼站在不遠處看著你。牠身邊少了
 pack.option.challenge,挑戰牠們帶頭的公狼
 she_wolf.mate.pack,你一再出現在那群狼的地方，牠們不再趕你走。母狼接納了你，年輕的狼也慢慢跟在你身後。那一帶現在是你們的地方。
 she_wolf.mate.taken,帶頭的公狼走了，再也沒有回來。母狼留了下來，那群狼裡願意留下的，慢慢跟在你身後。那一帶現在是你們的地方。
+action.leave_to_children,把領域留給子女
+leave_children.prompt.male,伴侶不在了，你的腿也不如從前。最年長的兒子已經能領著其他的狼狩獵、守住這片地方。也許是時候把領域留給牠，自己離開了。
+leave_children.prompt.female,伴侶不在了，你的腿也不如從前。最年長的女兒已經能領著其他的狼狩獵、守住這片地方。也許是時候把領域留給牠，自己離開了。
+leave_children.confirm,把領域留給牠
+leave_children.cancel,還不是時候
+leave_children.title,留給子女
+leave_children.text.male,你在領域的邊上停下來，回頭看了一眼。最年長的兒子站在巢穴旁，沒有跟上來。從今天起，這片地方交給牠了。
+leave_children.text.female,你在領域的邊上停下來，回頭看了一眼。最年長的女兒站在巢穴旁，沒有跟上來。從今天起，這片地方交給牠了。
+challenger.backed,一隻外來的公狼在領域的邊上徘徊了一陣。牠看了看你們這一群，轉身走了。
+challenger.pack.meet,一隻外來的公狼站在不遠處盯著你。牠身形精壯，正在試探你們的領域，看你還守不守得住。
+challenger.pack.territory,你們留下記號的地方，一隻外來的公狼正抬起後腿，把自己的氣味蓋上去。牠在試探你們的領域，回頭看著你，沒有要走的意思。
+summary.family.title,— 家族 —
+summary.family.mate,{age} 歲時{how}，在一起 {years} 年，{end}
+summary.family.how.courted,和一隻離群的母狼結成伴侶
+summary.family.how.tundra,和留下來的苔原母狼結成伴侶
+summary.family.how.pack,補上一群的空缺，和牠們的母狼結成伴侶
+summary.family.how.taken,打敗一群帶頭的公狼，接手了那一群
+summary.family.mate_end.died,牠在你 {age} 歲那年死去
+summary.family.mate_end.alive,牠一直陪你到最後
+summary.family.litter,{age} 歲 {n} 隻（長大 {grew} 隻）
+summary.family.litters,幼狼：{list}；一共養大 {grew} 隻
+summary.family.left,離群的子女 {n} 隻
+summary.family.founded,；其中一個兒子在你 {age} 歲那年成了{region}那一群帶頭的公狼
+summary.family.handed.male,{age} 歲時你把領域留給了最年長的兒子，牠帶著的狼群一共 {n} 隻
+summary.family.handed.female,{age} 歲時你把領域留給了最年長的女兒，牠帶著的狼群一共 {n} 隻
+summary.family.at_death,你死的時候，狼群還有：{list}
+summary.family.at_death.none,你死的時候，身邊已經沒有狼群了
+summary.family.left_mate,伴侶
+summary.family.left_young,{n} 隻子女
+summary.family.left_pups,{n} 隻幼狼
+bio.family.grew,和伴侶養大了 {n} 隻幼狼
+bio.family.mate,找到過伴侶
+bio.family.handed,，老了之後把領域留給了子女

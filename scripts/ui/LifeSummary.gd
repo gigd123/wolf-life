@@ -141,6 +141,9 @@ func _ready() -> void:
 				.replace("{outcome}", tr("summary.stranger_outcome." + str(m.get("outcome", "")))))
 		_add_line(box, tr("summary.stranger").replace("{n}", str(meetings.size())).replace("{list}", "、".join(entries)))
 	# 黑狼一家（Phase 3a 第 5 步）：成家、擴張、佔走你的地盤、換代、散了（你當時的年齡），生過幾窩幼狼，撞上牠們幾次
+	# 家族篇（Phase 3 第 9 步）：伴侶、每一窩、離群子女的去向、你死時狼群還剩誰
+	for fl in _family_lines(log_data):
+		_add_line(box, fl)
 	var pack_line := _pack_line(log_data)
 	if pack_line != "":
 		_add_line(box, pack_line)
@@ -285,6 +288,80 @@ func _pack_line(log_data: Dictionary) -> String:
 		line += tr("summary.pack_meets").replace("{n}", str(meets))
 	return line
 
+# 家族篇：全部從共用的生命事件紀錄產生（SPEC Phase 3「一生回顧」）。沒有伴侶、沒有狼群就不寫。
+func _events(log_data: Dictionary, prefix: String) -> Array:
+	return (log_data.get("life_events", []) as Array).filter(func(e): return str(e.get("type", "")) == prefix)
+
+func _family_lines(log_data: Dictionary) -> Array[String]:
+	var lines: Array[String] = []
+	var mates := _events(log_data, "mate")
+	if mates.is_empty():
+		return lines
+	lines.append(tr("summary.family.title"))
+	var death_age: float = float(_events(log_data, "death")[0].get("age", 0.0)) if not _events(log_data, "death").is_empty() else 0.0
+	for m in mates:
+		var who: String = str(m.get("who", ""))
+		var start: float = float(m.get("age", 0.0))
+		var end_text: String = tr("summary.family.mate_end.alive")
+		var end_age: float = death_age
+		for d in _events(log_data, "mate.died"):
+			if str(d.get("who", "")) == who:
+				end_age = float(d.get("age", 0.0))
+				end_text = tr("summary.family.mate_end.died").replace("{age}", "%.1f" % end_age)
+		var how: String = str(m.get("how", "courted"))
+		lines.append(tr("summary.family.mate").replace("{age}", "%.1f" % start).replace("{how}", tr("summary.family.how." + how)) \
+			.replace("{years}", "%.1f" % max(0.0, end_age - start)).replace("{end}", end_text))
+	var litters: Array[String] = []
+	var grew_total := 0
+	for e in _events(log_data, "pups.born"):
+		var grew := 0
+		for id in e.get("ids", []):
+			var n = GameState.npcs.get(str(id), null)
+			if n != null and n.age_years >= 1.0:
+				grew += 1
+		grew_total += grew
+		litters.append(tr("summary.family.litter").replace("{age}", "%.1f" % float(e.get("age", 0.0))).replace("{n}", str(int(e.get("n", 0)))).replace("{grew}", str(grew)))
+	if not litters.is_empty():
+		lines.append(tr("summary.family.litters").replace("{list}", "、".join(litters)).replace("{grew}", str(grew_total)))
+	var left := _events(log_data, "child.left")
+	if not left.is_empty():
+		var line: String = tr("summary.family.left").replace("{n}", str(left.size()))
+		for f in _events(log_data, "child.founded"):
+			line += tr("summary.family.founded").replace("{age}", "%.1f" % float(f.get("age", 0.0))).replace("{region}", tr("region." + str(f.get("region", ""))))
+		lines.append(line)
+	# 你死的時候：留給子女的那一群、或身邊還有誰
+	var handed := _events(log_data, "pack.left_to_children")
+	if not handed.is_empty():
+		var h: Dictionary = handed.back()
+		lines.append(tr("summary.family.handed." + str(h.get("sex", "male"))).replace("{age}", "%.1f" % float(h.get("age", 0.0))).replace("{n}", str(int(h.get("n", 1)))))
+	else:
+		var parts: Array[String] = []
+		if GameState.has_mate():
+			parts.append(tr("summary.family.left_mate"))
+		var young: int = GameState.young_members().size()
+		if young > 0:
+			parts.append(tr("summary.family.left_young").replace("{n}", str(young)))
+		var pups: int = GameState.pups().size()
+		if pups > 0:
+			parts.append(tr("summary.family.left_pups").replace("{n}", str(pups)))
+		lines.append(tr("summary.family.at_death").replace("{list}", "、".join(parts)) if not parts.is_empty() else tr("summary.family.at_death.none"))
+	return lines
+
+# 生平裡的家族：養大了幾隻、把領域留給子女
+func _family_bio(log_data: Dictionary) -> String:
+	if _events(log_data, "mate").is_empty():
+		return ""
+	var grew := 0
+	for e in _events(log_data, "pups.born"):
+		for id in e.get("ids", []):
+			var n = GameState.npcs.get(str(id), null)
+			if n != null and n.age_years >= 1.0:
+				grew += 1
+	var text: String = tr("bio.family.grew").replace("{n}", str(grew)) if grew > 0 else tr("bio.family.mate")
+	if not _events(log_data, "pack.left_to_children").is_empty():
+		text += tr("bio.family.handed")
+	return text
+
 # 和那隻黑狼之間最重要的一次：咬死牠 > 趕走牠 > 向牠示弱。
 func _stranger_bio(log_data: Dictionary) -> String:
 	for outcome in ["killed", "drove_off", "submit"]:
@@ -323,6 +400,9 @@ func _biography(log_data: Dictionary, wolf: Wolf) -> String:
 	var stranger_line := _stranger_bio(log_data)
 	if stranger_line != "":
 		parts.append(stranger_line)
+	var family_line := _family_bio(log_data)
+	if family_line != "":
+		parts.append(family_line)
 	var age: String = "%.1f" % (wolf.age_years if wolf != null else 0.0)
 	# 最後一章：自己選擇躺下的狼有專屬的結尾（1.9b 第 2 步）
 	if str(log_data.get("death_cause", "")) == "lay_down":

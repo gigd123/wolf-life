@@ -785,6 +785,8 @@ func available_actions() -> Array[String]:
 		actions.append("howl")
 	if can_regurgitate():
 		actions.append("regurgitate")
+	if can_leave_to_children():
+		actions.append("leave_to_children")
 	if can_lie_down():
 		actions.append("lie_down")
 	return actions
@@ -1670,9 +1672,11 @@ func _ensure_challenger() -> NpcWolf:
 func _maybe_challenger_explore() -> bool:
 	if not challenger_due() or blizzard_here() or not RNGService.chance(float(_elder_cfg().get("challenger", {}).get("explore_chance", 0.5))):
 		return false
+	if _challenger_backs_off():
+		return false
 	_ensure_challenger()
 	current_discovery = {"kind": "challenger", "location": _random_terrain(current_region), "first": int(life_log.get("challenger_visits", 0)) == 0,
-		"territory": is_own_territory()}
+		"territory": is_own_territory(), "pack": has_own_pack()}
 	return true
 
 func start_challenger_combat(context: String) -> Combat:
@@ -4589,7 +4593,7 @@ func feed_once() -> Dictionary:
 		elif RNGService.chance(float(_coyote_cfg().get("feed_chance", 0.1)) * coyote_mult()):
 			event = "coyote"
 		# 年輕的挑戰者來搶殘骸（1.9b 第 2 步）
-		elif challenger_due() and RNGService.chance(0.5):
+		elif challenger_due() and RNGService.chance(0.5) and not _challenger_backs_off():
 			_ensure_challenger()
 			event = "challenger"
 		elif RNGService.chance(float(chances["bear"]) * threat_mult()):
@@ -5893,6 +5897,8 @@ func _update_neighbor_packs() -> void:
 				_she_wolf_leaves("pack_gone")
 		if events.has("dissolved"):
 			life_log["pack_gone_" + p.id] = 0
+		if events.has("outsider") and _dispersed_son_founds(p):
+			continue
 		if events.has("succession") or events.has("outsider"):
 			var core: String = str(p.regions[0]) if not p.regions.is_empty() else p.border
 			var nid: String = "pack_%s_%d" % [p.id, p.generation]
@@ -6793,6 +6799,105 @@ func _take_over_pack(p: WolfPack, how: String) -> void:
 func _inherit_traits(n: NpcWolf) -> void:
 	var pool: Array = MEMBER_TRAITS.duplicate()
 	n.traits = [str(pool[RNGService.randi_range(0, pool.size() - 1)])]
+
+# --- Phase 3 第 9 步：狼群中的老年（SPEC Phase 3「狼群中的老年」；數值在 balance.json 的 pack_elder）---
+# 1.9b 的年輕挑戰者，在你有狼群時改成「外來的公狼試探你們的領域」，狼群越大越常在邊界看一陣子就走；
+# 伴侶不在、你老了、有長大的子女時，可以把領域留給子女（牠們成為一群和你有血緣的鄰群），自己成為獨居的老狼。
+
+func _pack_elder_cfg() -> Dictionary:
+	return GameData.balance.get("pack_elder", {})
+
+# 你有狼群：伴侶或滿 1 歲的子女
+func has_own_pack() -> bool:
+	return pack_counted_size() >= 2
+
+# 外來的公狼看了你們一陣子就走的機率：每多一隻（算進上限的）多一些，有上限
+func challenger_deter_chance() -> float:
+	var size: int = pack_counted_size()
+	if size < 2:
+		return 0.0
+	var c: Dictionary = _pack_elder_cfg().get("probe", {})
+	return min(float(c.get("max", 0.85)), float(c.get("per_member", 0.2)) * (size - 1))
+
+# 牠來了，但看到你們一群就走了：算來過一次（不算你打贏，牠不會變強），照常過一陣子再來
+func _challenger_backs_off() -> bool:
+	if not RNGService.chance(challenger_deter_chance()):
+		return false
+	_ensure_challenger()
+	life_log["challenger_visits"] = int(life_log.get("challenger_visits", 0)) + 1
+	var list: Array = life_log.get("challenger_meetings", [])
+	list.append({"age": snapped(wolf.age_years, 0.1), "won": false, "backed": true})
+	life_log["challenger_meetings"] = list
+	var days: Array = _elder_cfg().get("challenger", {}).get("return_days", [10, 16])
+	_schedule_challenger(days)
+	add_life_event("challenger.backed", {"size": pack_counted_size()})
+	log_message.emit(tr("challenger.backed"))
+	return true
+
+func _leave_heirs() -> Array:
+	var min_age: float = float(_pack_elder_cfg().get("leave_min_heir_age", 1.5))
+	var heirs: Array = young_members().filter(func(n): return n.age_years >= min_age)
+	heirs.sort_custom(func(a, b): return a.age_years > b.age_years)
+	return heirs
+
+func can_leave_to_children() -> bool:
+	if wolf == null or not wolf.alive or wolf.life_stage() != Wolf.LifeStage.ELDER or has_mate():
+		return false
+	return not _leave_heirs().is_empty()
+
+# 把領域留給子女：最年長的帶頭，其他子女（含幼狼）跟著牠；你的標記、領域都交給牠們，你成為獨居的老狼（接 1.9b 的最後一章）
+func action_leave_to_children() -> Dictionary:
+	if not can_leave_to_children():
+		return {}
+	var leader: NpcWolf = _leave_heirs()[0]
+	var count: int = int(life_log.get("family_packs", 0)) + 1
+	life_log["family_packs"] = count
+	var p := WolfPack.new()
+	p.id = "family" if count == 1 else "family_%d" % count
+	p.kind = "neighbor"
+	p.map_id = current_map()
+	var regs: Array = own_territories()
+	if regs.has(den_region):
+		regs.erase(den_region)
+		regs.push_front(den_region)
+	if regs.is_empty():
+		regs = [den_region]
+	p.regions = regs
+	p.leader_id = leader.id
+	p.mate_age = -1.0
+	for n in npcs.values():
+		if n.alive and n.pack_id == "player":
+			n.pack_id = p.id
+			n.task = "free"
+			if n != leader:
+				p.young.append(snapped(n.age_years, 0.25))
+	leader.territory = str(regs[0])
+	p.stage = "pack" if not p.young.is_empty() else "solo"
+	neighbor_packs.append(p)
+	_set_pack_rel(p, "kin")
+	life_log["marks"] = {}
+	life_log.erase("overmarked")
+	breeding().clear()
+	var n_total: int = 1 + p.young.size()
+	record_decision("leave_to_children")
+	add_life_event("pack.left_to_children", {"pack": p.id, "leader": leader.id, "sex": leader.sex, "n": n_total})
+	state_changed.emit()
+	return {"n": n_total, "sex": leader.sex, "pack": p.id}
+
+# 鄰群空缺沒人補、外來的公狼補上時：你離群的兒子（2 歲以上、還活著）有機會就是那隻（一生回顧的「離群子女的去向」）
+func _dispersed_son_founds(p: WolfPack) -> bool:
+	if not RNGService.chance(float(_pack_elder_cfg().get("son_outsider_chance", 0.5))):
+		return false
+	for d in life_log.get("dispersed", []):
+		var n: NpcWolf = npcs.get(str(d.get("who", "")), null)
+		if n == null or not n.alive or n.sex != "male" or n.age_years < 2.0 or n.pack_id != "dispersed":
+			continue
+		n.pack_id = p.id
+		n.territory = str(p.regions[0]) if not p.regions.is_empty() else p.border
+		p.leader_id = n.id
+		add_life_event("child.founded", {"who": n.id, "pack": p.id, "region": pack_home_region(p)})
+		return true
+	return false
 
 # 在牠面前逃跑或示弱：關係下降。
 func _she_saw_combat(c: Combat) -> void:
