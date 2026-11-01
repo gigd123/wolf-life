@@ -90,16 +90,30 @@ func on_season_passed(ctx: Dictionary) -> Array:
 			events.append("young_left")
 	# 帶頭的死了：有伴侶和成年子女就由子女接手（換代），否則解散
 	if not leader_alive and stage != "gone":
-		if has_mate() and adults_young() > 0:
+		var allow_vacancy: bool = bool(ctx.get("allow_vacancy", false))
+		if allow_vacancy and has_mate() and not vacant:
+			# 有空缺（Phase 3 第 8 步，使用者選 A）：繁殖公狼不在、母狼還在時，兒子不接手（避免近親繁殖），
+			# 母狼撐一季，這一季你可以補上
+			vacant = true
+			events.append("vacant")
+			return _log(events, ctx)
+		elif allow_vacancy and vacant and young.size() > 0:
+			# 一季沒人補、還有年輕成員：外來的公狼補上（GameState 建立新的帶頭的）
+			vacant = false
+			generation += 1
+			heir_age = float(ctx.get("outsider_age", 3.0))
+			events.append("outsider")
+		elif has_mate() and adults_young() > 0 and not allow_vacancy:
 			heir_age = _remove_oldest_adult()
 			generation += 1
 			vacant = false
 			events.append("succession")
-		elif has_mate() and bool(ctx.get("allow_vacancy", false)) and not vacant:
-			# 有空缺（Phase 3 第 8 步）：母狼撐一季，這一季你可以補上；下一季還沒人補就解散
-			vacant = true
-			events.append("vacant")
-			return _log(events, ctx)
+		elif not has_mate() and adults_young() > 0:
+			# 繁殖母狼也不在了：滿 1.5 歲的子女接手（之後再找伴侶）
+			heir_age = _remove_oldest_adult()
+			generation += 1
+			vacant = false
+			events.append("succession")
 		else:
 			vacant = false
 			stage = "gone"

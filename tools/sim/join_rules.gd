@@ -4,8 +4,8 @@ extends SceneTree
 #   2. 你已經有伴侶：沒有資格
 #   3. 那隻母狼不會因為你太久沒去就走
 #   4. 關係到伴侶：接手那一群（地盤、巢穴、成員都留下、前任的子女是「熟悉」），那一群解散
-#   5. 空缺一季沒人補：解散、母狼也走
-#   6. 挑戰：繁殖公狼老了或受傷才可以；有伴侶、黑狼一家不行
+#   5. 空缺一季沒人補：有年輕成員時外來的公狼補上，沒有就解散；母狼不再可以接近；有成年的兒子也不接手（使用者選 A）
+#   6. 挑戰：繁殖公狼 7 歲以上或血量低於四成才可以；有伴侶、黑狼一家不行
 #   7. 挑戰贏了：接手（成員一部分留下）、母狼成為伴侶
 # 用法：bash tools/run_sim.sh join_rules
 var gs
@@ -60,7 +60,7 @@ func _run() -> void:
 	_check(kids.size() == 2 and kids.all(func(m): return m.relation == 3 and m.parents == ["pack_mountain"]), "成員都留下，前任的子女一開始是熟悉（%d 隻）" % kids.size())
 	_check(gs.life_events("pack.joined").size() == 1 and str(gs.life_events("mate").back().get("how", "")) == "pack", "寫進生命事件")
 	var grown = kids.filter(func(m): return m.age_years >= 1.0)
-	_check(not grown.is_empty() and grown[0].speed > 40.0, "前任的年輕成員能力照年紀（速度 %.0f）" % grown[0].speed)
+	_check(not grown.is_empty() and grown[0].speed > float(grown[0].potential["_base"]["speed"]) + 5.0, "前任的年輕成員能力照年紀長（速度 %.0f，出生 %.0f）" % [grown[0].speed, float(grown[0].potential["_base"]["speed"])])
 	# 2
 	p = gs.pack_by_id("grassland")
 	p.stage = "pack"
@@ -72,9 +72,26 @@ func _run() -> void:
 	_check(gs.she_wolf() != null and gs.she_wolf().pack_id == "", "已經有伴侶：沒有資格（不會換成那一群的母狼）")
 	# 5
 	p = _vacant_setup()
+	var gen0: int = p.generation
 	gt.season_index = 2
 	gs._update_neighbor_packs()
-	_check(p.stage == "gone" and gs.she_wolf() == null, "空缺一季沒人補：解散、母狼也走")
+	_check(p.stage != "gone" and p.generation == gen0 + 1 and gs.npcs[p.leader_id].alive and gs.she_wolf() == null, "空缺一季沒人補、還有年輕成員：外來的公狼補上，母狼不再可以接近")
+	p = _vacant_setup()
+	p.young = []
+	gt.season_index = 2
+	gs._update_neighbor_packs()
+	_check(p.stage == "gone" and gs.she_wolf() == null, "沒有年輕成員：解散、母狼也走")
+	# 兒子不接手（使用者選 A）
+	gs.new_game("mountain_foothills")
+	gs.wolf.age_years = 3.0
+	var ps = gs.pack_by_id("mountain")
+	ps.stage = "pack"
+	ps.young = [2.0, 3.0]
+	ps.mate_age = 4.0
+	gs.npcs[ps.leader_id].die("old_age")
+	gt.season_index = 1 # 夏季：不會有子女離群
+	gs._update_neighbor_packs()
+	_check(ps.vacant and ps.young.size() == 2, "有成年的兒子也不接手：一定空缺（vacant=%s、%d 隻）" % [str(ps.vacant), ps.young.size()])
 	# 6
 	gs.new_game("mountain_foothills")
 	gs.wolf.age_years = 3.0
@@ -83,10 +100,12 @@ func _run() -> void:
 	leader.age_years = 4.0
 	_check(not gs.can_challenge_pack(mp), "年輕健康的繁殖公狼不能挑戰")
 	leader.age_years = 6.5
-	_check(gs.can_challenge_pack(mp), "老了可以挑戰")
+	_check(not gs.can_challenge_pack(mp), "6 歲半還不行（使用者選 A：取而代之少見）")
+	leader.age_years = 7.0
+	_check(gs.can_challenge_pack(mp), "7 歲以上可以挑戰")
 	leader.age_years = 4.0
-	leader.health = leader.health_max * 0.4
-	_check(gs.can_challenge_pack(mp), "受傷可以挑戰")
+	leader.health = leader.health_max * 0.3
+	_check(gs.can_challenge_pack(mp), "傷得很重（血量低於四成）可以挑戰")
 	_check(not gs.can_challenge_pack(gs.black_pack), "黑狼一家不行")
 	gs._spawn_she_wolf()
 	gs.she_wolf().territory = gs.current_region

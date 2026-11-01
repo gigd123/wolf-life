@@ -5881,18 +5881,19 @@ func _update_neighbor_packs() -> void:
 			adjacent[r] = EncounterSystem.region_data(r).get("adjacent", [])
 		var was_vacant: bool = p.vacant
 		var events: Array = p.on_season_passed({"season": GameTime.current_season(), "leader": leader,
-			"player_age": wolf.age_years, "den": den_region, "own": own_territories(), "adjacent": adjacent, "allow_vacancy": true})
+			"player_age": wolf.age_years, "den": den_region, "own": own_territories(), "adjacent": adjacent, "allow_vacancy": true,
+			"outsider_age": snapped(RNGService.randf_range(2.5, 4.5), 0.25)})
 		_take_probed_by(p)
 		if events.has("vacant"):
 			_on_pack_vacancy(p)
-		elif was_vacant and (events.has("dissolved") or events.has("succession")):
+		elif was_vacant and (events.has("dissolved") or events.has("succession") or events.has("outsider")):
 			# 空缺沒人補（解散），或子女長大接手了：那隻母狼不再是你可以接近的對象
 			var w := she_wolf()
 			if w != null and w.pack_id == p.id and mate_stage() == "candidate":
 				_she_wolf_leaves("pack_gone")
 		if events.has("dissolved"):
 			life_log["pack_gone_" + p.id] = 0
-		if events.has("succession"):
+		if events.has("succession") or events.has("outsider"):
 			var core: String = str(p.regions[0]) if not p.regions.is_empty() else p.border
 			var nid: String = "pack_%s_%d" % [p.id, p.generation]
 			var heir := NpcWolf.create(nid, core, "pack_breeder")
