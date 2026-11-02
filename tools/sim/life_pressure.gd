@@ -60,6 +60,7 @@ func _process(_d):
 	var deaths := {}; var ages: Array = []
 	var fam := {"lives": 0, "mated": 0, "mated_age": 0.0, "mated_life": 0.0, "single_life": 0.0, "litters": 0, "born": 0, "grown": 0, "left": 0, "mate_died": 0, "handed": 0, "founded": 0, "joined": 0, "end_size": 0}
 	var fam_death := {}
+	var hurt_src := {} # STARVE_LOG：一次掉血 > 15 的那一步做了什麼
 	var starved: Array = [] # 餓死的年齡與巢穴（Phase 2f 第 4 步）
 	var duel_ages := [2.0, 3.0, 4.0]
 	var duel := {} # 年齡 -> [場數, 贏]
@@ -177,7 +178,18 @@ func _process(_d):
 			for k in fb0.keys():
 				ft0 += float(fb0[k])
 			var sal0: float = float(fb0.get("salmon", 0.0))
+			var hp_before: float = GS.wolf.health
+			var oc0: Dictionary = (GS.life_log.get("stats", {}).get("option_counts", {}) as Dictionary).duplicate()
 			ap.step(1)
+			if OS.get_environment("STARVE_LOG") != "" and GS.wolf.health < hp_before - 15.0:
+				var oc1: Dictionary = GS.life_log.get("stats", {}).get("option_counts", {})
+				var diff: Array = []
+				for k in oc1.keys():
+					if int(oc1[k]) > int(oc0.get(k, 0)):
+						diff.append(k)
+				trail.append("  ↓血 %.0f→%.0f（%s）%s" % [hp_before, GS.wolf.health, GS.current_region, str(diff)])
+				var lab: String = str(diff)
+				hurt_src[lab] = int(hurt_src.get(lab, 0)) + 1
 			# STARVE_LOG=1：餓死的狼印出最後一段日子的軌跡（Phase 3 整體校準：查餓死的原因）
 			if OS.get_environment("STARVE_LOG") != "":
 				trail.append("%.2f歲 %s %s 飽%.0f 血%.0f/%.0f 體%.0f 質%.0f 幼%d 存糧%.1f 跟%d 伴%s %s" % [GS.wolf.age_years, root.get_node("GameTime").current_season(), GS.current_region, GS.wolf.hunger, GS.wolf.health, GS.wolf.health_max, GS.wolf.stamina, GS.wolf.health_value,
@@ -350,6 +362,10 @@ func _process(_d):
 	print("  家族（Phase 3，MATE=%s）：%d／%d 隻找到伴侶（平均 %.1f 歲配對；有伴侶的壽命 %.1f、沒有的 %.1f）；每隻有伴侶的 %.1f 窩、生 %.1f 隻、養大 %.1f 隻、離群 %.1f 隻；伴侶死去 %d 次；加入或接手 %d、留給子女 %d、兒子成為別群帶頭的 %d；死時狼群平均 %.1f 隻；有伴侶的死因 %s" % [
 		OS.get_environment("MATE") if OS.get_environment("MATE") != "" else "sometimes", fam["mated"], fam["lives"], fam["mated_age"] / fm, fam["mated_life"] / fm, fam["single_life"] / max(1, fam["lives"] - fam["mated"]),
 		float(fam["litters"]) / fm, float(fam["born"]) / fm, float(fam["grown"]) / fm, float(fam["left"]) / fm, fam["mate_died"], fam["joined"], fam["handed"], fam["founded"], float(fam["end_size"]) / fm, fam_death])
+	if OS.get_environment("STARVE_LOG") != "":
+		var hs: Array = hurt_src.keys()
+		hs.sort_custom(func(x, y): return int(hurt_src[x]) > int(hurt_src[y]))
+		print("  掉血 > 15 的那一步（前 15）：", hs.slice(0, 15).map(func(k): return "%s ×%d" % [k, hurt_src[k]]))
 	print("  死因：", deaths, "；餓死：", ", ".join(starved) if not starved.is_empty() else "無")
 	for a in duel_ages:
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
