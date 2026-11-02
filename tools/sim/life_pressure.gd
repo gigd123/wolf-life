@@ -58,6 +58,8 @@ func _process(_d):
 	var cache_log := {"caches_made": 0, "caches_eaten": 0, "caches_lost": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
+	var fam := {"lives": 0, "mated": 0, "mated_age": 0.0, "mated_life": 0.0, "single_life": 0.0, "litters": 0, "born": 0, "grown": 0, "left": 0, "mate_died": 0, "handed": 0, "founded": 0, "joined": 0, "end_size": 0}
+	var fam_death := {}
 	var starved: Array = [] # 餓死的年齡與巢穴（Phase 2f 第 4 步）
 	var duel_ages := [2.0, 3.0, 4.0]
 	var duel := {} # 年齡 -> [場數, 贏]
@@ -110,6 +112,8 @@ func _process(_d):
 	var dens: Array = Array(OS.get_environment("DENS_ONLY").split(",")) if OS.get_environment("DENS_ONLY") != "" else DENS
 	for r in runs:
 		var ap = AP.new("all", "average")
+		if OS.get_environment("MATE") != "":
+			ap.mate_search = OS.get_environment("MATE")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
 		ap.daytime_rest = OS.get_environment("NO_DAY_REST") == ""
 		ap.cache = OS.get_environment("NO_CACHE") == ""
@@ -229,6 +233,31 @@ func _process(_d):
 				if h < hungry_at:
 					elder_lean[1] += 1
 		ap.finish()
+		# Phase 3 整體校準：家族（有沒有伴侶、幾窩、養大幾隻、子女離群、你死時狼群幾隻）
+		var mated: bool = not GS.life_events("mate").is_empty()
+		fam["lives"] += 1
+		if mated:
+			fam["mated"] += 1
+			fam["mated_age"] += float(GS.life_events("mate")[0]["age"])
+			fam["mated_life"] += GS.wolf.age_years
+		else:
+			fam["single_life"] += GS.wolf.age_years
+		for e in GS.life_events("pups.born"):
+			fam["litters"] += 1
+			fam["born"] += int(e["n"])
+			for id in e.get("ids", []):
+				var pn = GS.npcs.get(id, null)
+				if pn != null and pn.age_years >= 1.0:
+					fam["grown"] += 1
+		fam["left"] += GS.life_events("child.left").size()
+		fam["mate_died"] += GS.life_events("mate.died").size()
+		fam["handed"] += GS.life_events("pack.left_to_children").size()
+		fam["founded"] += GS.life_events("child.founded").size()
+		fam["joined"] += GS.life_events("pack.joined").size() + GS.life_events("pack.taken").size()
+		fam["end_size"] += GS.pack_counted_size() if mated else 0
+		var dc: String = str(GS.life_log.get("death_cause", ""))
+		if mated:
+			fam_death[dc] = int(fam_death.get(dc, 0)) + 1
 		for k in cache_log.keys():
 			cache_log[k] += int(GS.life_log.get(k, 0))
 		var seen := {}
@@ -307,6 +336,10 @@ func _process(_d):
 	print(sline)
 	print("  藏食物（%d 隻合計）：藏 %d 段、吃 %d 段、被挖走／燒掉／壞光 %d 份" % [runs, cache_log["caches_made"], cache_log["caches_eaten"], cache_log["caches_lost"]])
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
+	var fm: int = max(1, fam["mated"])
+	print("  家族（Phase 3，MATE=%s）：%d／%d 隻找到伴侶（平均 %.1f 歲配對；有伴侶的壽命 %.1f、沒有的 %.1f）；每隻有伴侶的 %.1f 窩、生 %.1f 隻、養大 %.1f 隻、離群 %.1f 隻；伴侶死去 %d 次；加入或接手 %d、留給子女 %d、兒子成為別群帶頭的 %d；死時狼群平均 %.1f 隻；有伴侶的死因 %s" % [
+		OS.get_environment("MATE") if OS.get_environment("MATE") != "" else "sometimes", fam["mated"], fam["lives"], fam["mated_age"] / fm, fam["mated_life"] / fm, fam["single_life"] / max(1, fam["lives"] - fam["mated"]),
+		float(fam["litters"]) / fm, float(fam["born"]) / fm, float(fam["grown"]) / fm, float(fam["left"]) / fm, fam["mate_died"], fam["joined"], fam["handed"], fam["founded"], float(fam["end_size"]) / fm, fam_death])
 	print("  死因：", deaths, "；餓死：", ", ".join(starved) if not starved.is_empty() else "無")
 	for a in duel_ages:
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
