@@ -103,6 +103,9 @@ func _process(_d):
 	# SALMON_SET='{"find": {...}}'：覆寫 balance.salmon 的部分設定（字典逐層合併；校準 Phase 2h 第 5 步用）
 	if OS.get_environment("SALMON_SET") != "":
 		_merge(GS.get_node("/root/GameData").balance["salmon"], JSON.parse_string(OS.get_environment("SALMON_SET")))
+	# BAL_SET='{"elder_death_base_chance": 0.004}'：覆寫 balance.json 的部分設定（字典逐層合併；Phase 3 整體校準用）
+	if OS.get_environment("BAL_SET") != "":
+		_merge(GS.get_node("/root/GameData").balance, JSON.parse_string(OS.get_environment("BAL_SET")))
 	# NO_SALMON=1：沒有鮭魚洄流（對照 Phase 2h）
 	if OS.get_environment("NO_SALMON") != "":
 		GS.get_node("/root/GameData").balance["salmon"]["find"] = {}
