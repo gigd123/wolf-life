@@ -59,6 +59,7 @@ func _process(_d):
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
 	var fam := {"lives": 0, "mated": 0, "mated_age": 0.0, "mated_life": 0.0, "single_life": 0.0, "litters": 0, "born": 0, "grown": 0, "left": 0, "mate_died": 0, "handed": 0, "founded": 0, "joined": 0, "end_size": 0}
+	var hv_log := [0.0, 0, 0.0, 0]
 	var fam_death := {}
 	var hurt_src := {} # STARVE_LOG：一次掉血 > 15 的那一步做了什麼
 	var starved: Array = [] # 餓死的年齡與巢穴（Phase 2f 第 4 步）
@@ -137,6 +138,7 @@ func _process(_d):
 		# MAX_AGE：到這個年紀就停（只看前半生時省時間）
 		var young_prey: String = OS.get_environment("YOUNG_PREY")
 		var max_age: float = float(OS.get_environment("MAX_AGE")) if OS.get_environment("MAX_AGE") != "" else 99.0
+		var hv_snap := {}
 		while not ap.done() and guard < 2000:
 			guard += 1
 			if young_prey != "":
@@ -228,7 +230,11 @@ func _process(_d):
 				if n > 0:
 					var size: String = str(root.get_node("GameData").animals.get(k, {}).get("size", "small"))
 					kills[stage][size] = int(kills[stage].get(size, 0)) + n
+			if not hv_snap.has("e") and GS.wolf.age_years >= 6.0:
+				hv_snap["e"] = true
+				hv_log[0] += GS.wolf.health_value; hv_log[1] += 1
 			if not GS.wolf.alive:
+				hv_log[2] += GS.wolf.health_value; hv_log[3] += 1
 				break
 			days[stage] += 1
 			var h: float = GS.wolf.hunger
@@ -360,6 +366,7 @@ func _process(_d):
 		sline += " %s %.2f 天" % [se, 10.0 * float(season_hungry.get(se, 0)) / max(1, int(season_days.get(se, 0)))]
 	print(sline)
 	print("  藏食物（%d 隻合計）：藏 %d 段、吃 %d 段、被挖走／燒掉／壞光 %d 份" % [runs, cache_log["caches_made"], cache_log["caches_eaten"], cache_log["caches_lost"]])
+	print("  體質（health_value）：6 歲時平均 %.0f（%d 隻）、死時平均 %.0f" % [hv_log[0] / max(1, hv_log[1]), hv_log[1], hv_log[2] / max(1, hv_log[3])])
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])
 	var fm: int = max(1, fam["mated"])
 	print("  家族（Phase 3，MATE=%s）：%d／%d 隻找到伴侶（平均 %.1f 歲配對；有伴侶的壽命 %.1f、沒有的 %.1f）；每隻有伴侶的 %.1f 窩、生 %.1f 隻、養大 %.1f 隻、離群 %.1f 隻；伴侶死去 %d 次；加入或接手 %d、留給子女 %d、兒子成為別群帶頭的 %d；死時狼群平均 %.1f 隻；有伴侶的死因 %s" % [
