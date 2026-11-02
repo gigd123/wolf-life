@@ -7,6 +7,7 @@ extends SceneTree
 #   5. 離群的兒子可能成為鄰群帶頭的公狼（外來的公狼補上空缺時）
 #   6. 存檔 → 讀檔：留給子女的那一群還在、態度一樣
 #   7. 一生回顧的家族篇：伴侶、幼狼、離群、留給子女
+#   8. 你老了以後，跟著的壯年子女（2～6 歲）在戰術地圖上咬得更準（young_lead_mult）
 # 用法：bash tools/run_sim.sh pack_elder_rules
 var gs
 var gt
@@ -99,6 +100,16 @@ func _run() -> void:
 	gs.load_from_dict(d)
 	var fp2 = gs.pack_by_id(str(r.get("pack", "")))
 	_check(fp2 != null and fp2.leader_id == eldest.id and gs.pack_attitude_of(fp2) == "kin", "存檔後那一群還在、態度一樣")
+	# 8 群獵的重心轉到子女（使用者選 B）
+	var mk = _family(1, 3.0)
+	var kid3 = gs.young_members()[0]
+	gs.wolf.age_years = 4.0
+	var adult_mult: float = gs.young_lead_mult(kid3)
+	gs.wolf.age_years = 8.0
+	var elder_mult: float = gs.young_lead_mult(kid3)
+	_check(adult_mult == 1.0 and elder_mult > 1.0 and gs.young_lead_mult(mk) == 1.0, "你老了：壯年子女咬得更準（×%.1f），伴侶、你壯年時不變" % elder_mult)
+	kid3.age_years = 1.5
+	_check(gs.young_lead_mult(kid3) == 1.0, "未滿 2 歲的子女不算")
 	# 5
 	_family(1, 3.0)
 	var son = gs.young_members()[0]

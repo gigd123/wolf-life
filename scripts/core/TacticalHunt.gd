@@ -1469,13 +1469,15 @@ func join_allies_chasing(n: int) -> void:
 	events.append(_atx("tactical.ally.joined" + ("" if n > 1 else ".single")).replace("{animal}", label(target)))
 
 # 伴侶一起出獵（Phase 3 第 3 步）：一開始就在你身後 behind_dist 格，用牠自己的能力、照指派的角色
-func add_mate_ally(role: String, stats_over: Dictionary, is_mate: bool = true) -> void:
+# lead：你老了以後，壯年的子女接手主攻（Phase 3 第 9 步），咬、咬住、拖倒再 × lead
+func add_mate_ally(role: String, stats_over: Dictionary, is_mate: bool = true, lead: float = 1.0) -> void:
 	var gc: Dictionary = _allies_cfg().get("game", {})
 	var back := Vector2(wolf_pos - herd[target]["pos"]).normalized()
 	add_ally(role, _clamp_cell(Vector2i((Vector2(wolf_pos) + back * float(gc.get("behind_dist", 2))).round())), stats_over)
 	# own：你的狼群（伴侶、子女，第 7 步）；mate：伴侶
 	wolves[wolves.size() - 1]["own"] = true
 	wolves[wolves.size() - 1]["mate"] = is_mate
+	wolves[wolves.size() - 1]["lead"] = lead
 
 # 跟上來的苔原狼：回合到了就從你身後（背對目標的那一側）出現
 func _arrive_allies() -> void:
@@ -1763,7 +1765,7 @@ func _ally_step(k: int) -> void:
 		var hc: Dictionary = cfg.get("hold", {})
 		# 伴侶（Phase 3 第 3 步）：和你一起生活、默契比苔原狼好，咬、咬住、拖倒 × mate_mult
 		if bool(wolves[k].get("own", false)):
-			ph *= float(cfg.get("mate_mult", 1.0))
+			ph *= float(cfg.get("mate_mult", 1.0)) * float(wolves[k].get("lead", 1.0))
 		# 埋伏的同伴從藏身處撲出來的那一下（上一回合還趴著等）：咬住、咬傷的機率 × ambush_mult
 		if str(wolves[k].get("role", "")) == "ambush" and int(wolves[k].get("lurk", -9)) >= rounds - 1:
 			ph *= float(cfg.get("ambush_mult", 2.0))

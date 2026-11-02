@@ -4337,7 +4337,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 		for pa in hunt.pack_allies:
 			var o: NpcWolf = npcs.get(str(pa["id"]), null)
 			if o != null:
-				th.add_mate_ally(str(pa["role"]), {"speed": o.speed, "strength": o.strength, "skill": o.skill, "perception": o.perception}, false)
+				th.add_mate_ally(str(pa["role"]), {"speed": o.speed, "strength": o.strength, "skill": o.skill, "perception": o.perception}, false, young_lead_mult(o))
 		_stat_inc("pack_hunt", "started")
 	_stat_inc("tactical", "started")
 	return th
@@ -6833,6 +6833,15 @@ func _challenger_backs_off() -> bool:
 	add_life_event("challenger.backed", {"size": pack_counted_size()})
 	log_message.emit(tr("challenger.backed"))
 	return true
+
+# 群獵的重心轉到子女：你老了以後，跟著你的壯年子女（young_lead_age 之間）咬、咬住、拖倒 × young_lead_mult（使用者選 B）
+func young_lead_mult(n: NpcWolf) -> float:
+	if wolf == null or wolf.life_stage() != Wolf.LifeStage.ELDER or n == null or n.pack_id != "player":
+		return 1.0
+	var ages: Array = _pack_elder_cfg().get("young_lead_age", [2.0, 6.0])
+	if n.age_years < float(ages[0]) or n.age_years >= float(ages[1]):
+		return 1.0
+	return float(_pack_elder_cfg().get("young_lead_mult", 1.3))
 
 func _leave_heirs() -> Array:
 	var min_age: float = float(_pack_elder_cfg().get("leave_min_heir_age", 1.5))

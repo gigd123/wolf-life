@@ -1,7 +1,7 @@
 extends SceneTree
 # Phase 3 第 3 步「伴侶一起狩獵」的模擬（SPEC Phase 3 第 2、3 步的通過標準：有伴侶時大型獵物的成功率高 10～20 個百分點、一場的回合數不超過單狼的 1.5 倍）。
 # 成年狼（常見的能力值）交給本能玩到底（每場固定秋季清晨，WHEN=summer_day 夏季白天），每種打法都試、取最好的（表格），另外印本能自己挑的合計：單狼／伴侶驅趕／追擊／埋伏，各獵物 RUNS 場；伴侶用離群母狼的平均能力。
-# 用法：bash tools/run_sim.sh mate_hunt_sim 0 60；PACK=1 比較 單狼／伴侶（追擊）／伴侶＋兩隻子女（第 7 步）；WHEN=summer_day 改成夏季白天；PREY_ONLY=white_tailed_deer,moose 只跑這些
+# 用法：bash tools/run_sim.sh mate_hunt_sim 0 60；PACK=1 比較 單狼／伴侶（追擊）／伴侶＋兩隻子女（第 7 步）；WHEN=summer_day 改成夏季白天；ELDER=1 你 8 歲（老年的能力）、子女 3 歲（第 9 步：子女接手主攻 young_lead_mult，LEAD=1.0 對照）；PREY_ONLY=white_tailed_deer,moose 只跑這些
 var SEASON := 2
 var PERIOD := 0
 var KINDS: Array = ["solo", "drive", "chase", "ambush"]
@@ -35,7 +35,13 @@ func _process(_d) -> bool:
 		prey_n += 1
 		gs.new_game(p[2])
 		gs.wolf.age_years = 4.0
-		for st in [["speed", 66.0], ["skill", 62.0], ["strength", 70.0], ["perception", 70.0]]:
+		var base_st: Array = [["speed", 66.0], ["skill", 62.0], ["strength", 70.0], ["perception", 70.0]]
+		if OS.get_environment("ELDER") != "":
+			gs.wolf.age_years = 8.0
+			base_st = [["speed", 56.0], ["skill", 60.0], ["strength", 60.0], ["perception", 68.0]]
+			if OS.get_environment("LEAD") != "":
+				root.get_node("GameData").balance["pack_elder"]["young_lead_mult"] = float(OS.get_environment("LEAD"))
+		for st in base_st:
 			gs.debug_set_stat(st[0], st[1])
 		gs.pending_events.clear()
 		var row: Array = [p[0]]
@@ -66,6 +72,8 @@ func _process(_d) -> bool:
 						h.pack_allies = []
 						for kr in [["kid_a", "drive"], ["kid_b", "ambush"]]:
 							gs.npcs[kr[0]] = load("res://scripts/core/NpcWolf.gd").create(kr[0], p[2], "lone_female")
+							gs.npcs[kr[0]].pack_id = "player"
+							gs.npcs[kr[0]].age_years = 3.0
 							h.pack_allies.append({"id": kr[0], "role": kr[1]})
 					var th = gs.start_tactical(h)
 					TacticalInstinct.play(th, "" if pol == "auto" else pol)
