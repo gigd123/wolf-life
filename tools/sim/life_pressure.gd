@@ -121,6 +121,7 @@ func _process(_d):
 			ap.tactical_only = OS.get_environment("TACTICAL_ONLY").split(",")
 		ap.start(dens[r % dens.size()])
 		var guard := 0
+		var trail: Array = []
 		var dueled := {}
 		var sampled := {}
 		var snapped_at := {}
@@ -177,6 +178,12 @@ func _process(_d):
 				ft0 += float(fb0[k])
 			var sal0: float = float(fb0.get("salmon", 0.0))
 			ap.step(1)
+			# STARVE_LOG=1：餓死的狼印出最後一段日子的軌跡（Phase 3 整體校準：查餓死的原因）
+			if OS.get_environment("STARVE_LOG") != "":
+				trail.append("%.2f歲 %s %s 飽%.0f 血%.0f/%.0f 體%.0f 質%.0f 幼%d 存糧%.1f 跟%d 伴%s %s" % [GS.wolf.age_years, root.get_node("GameTime").current_season(), GS.current_region, GS.wolf.hunger, GS.wolf.health, GS.wolf.health_max, GS.wolf.stamina, GS.wolf.health_value,
+					GS.pups().size(), float(GS.breeding().get("den_food", 0.0)), GS.followers().size(), GS.she_wolf().task if GS.has_mate() else "-", str((GS.life_log.get("decisions", []) as Array).slice(-2))])
+				if trail.size() > 160:
+					trail.pop_front()
 			var fb1: Dictionary = GS.life_log.get("food_by", {})
 			var ft1 := 0.0
 			for k in fb1.keys():
@@ -233,6 +240,9 @@ func _process(_d):
 				if h < hungry_at:
 					elder_lean[1] += 1
 		ap.finish()
+		if OS.get_environment("STARVE_LOG") != "" and str(GS.life_log.get("death_cause", "")) == "starvation":
+			print("== 餓死：第 %d 隻（巢穴 %s）；最近的生命事件：%s" % [r, GS.den_region, str(GS.life_events().slice(-12))])
+			print("   " + "\n   ".join(trail.slice(-160)))
 		# Phase 3 整體校準：家族（有沒有伴侶、幾窩、養大幾隻、子女離群、你死時狼群幾隻）
 		var mated: bool = not GS.life_events("mate").is_empty()
 		fam["lives"] += 1
