@@ -697,7 +697,7 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		GameState._ensure_challenger()
 		var d := {"kind": "challenger", "location": "", "first": int(GameState.life_log.get("challenger_visits", 0)) == 0,
-			"territory": GameState.is_own_territory()}
+			"territory": GameState.is_own_territory(), "pack": GameState.has_own_pack()}
 		GameState.current_discovery = d
 		_show_challenger(d, false))
 	_debug_button(time_grid, tr("debug.end_life"), func():
@@ -779,6 +779,42 @@ func _build_debug_overlay() -> void:
 	_debug_button(event_row2, tr("debug.event.she_wolf_closer"), func():
 		debug_overlay.visible = false
 		GameState.debug_she_wolf_closer()
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.p3.pregnant"), func():
+		debug_overlay.visible = false
+		var r: Array = GameState.debug_mate_pregnant()
+		var args: Dictionary = r[1]
+		for key in args.keys():
+			args[key] = tr(str(args[key]))
+		_log(tr(str(r[0])).format(args))
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.p3.leader_old"), func():
+		debug_overlay.visible = false
+		var r: Array = GameState.debug_neighbor_leader_old()
+		var args: Dictionary = r[1]
+		for key in args.keys():
+			args[key] = tr(str(args[key]))
+		_log(tr(str(r[0])).format(args))
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.p3.vacancy"), func():
+		debug_overlay.visible = false
+		var r: Array = GameState.debug_neighbor_vacancy()
+		var args: Dictionary = r[1]
+		for key in args.keys():
+			args[key] = tr(str(args[key]))
+		_log(tr(str(r[0])).format(args))
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.p3.mate_dies"), func():
+		debug_overlay.visible = false
+		var r: Array = GameState.debug_mate_dies()
+		var args: Dictionary = r[1]
+		for key in args.keys():
+			args[key] = tr(str(args[key]))
+		_log(tr(str(r[0])).format(args))
 		_refresh()
 	)
 	_debug_button(event_row2, tr("debug.event.salmon"), func():

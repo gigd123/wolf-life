@@ -4182,6 +4182,52 @@ func debug_neighbor_meet() -> void:
 	pending_events.append({"type": "pack_meet", "pack": pick.id, "lone": "", "attitude": pack_attitude_of(pick), "charge": false,
 		"size": pack_size_of(pick), "stage": pick.stage, "location": _random_terrain(current_region)})
 
+# Phase 3 試玩用的除錯（2026-11-03）：快速走到生幼狼、空缺、挑戰、留給子女。回傳寫進紀錄的訊息鍵與參數。
+func _debug_map_pack() -> WolfPack:
+	for p in neighbor_packs:
+		if p.map_id == current_map() and not p.off_map and pack_is_active(p):
+			return p
+	return null
+
+func debug_mate_pregnant() -> Array:
+	if not has_mate():
+		return ["debug.p3.no_mate", {}]
+	var b := breeding()
+	b["pregnant"] = true
+	b["birth_day"] = int(_pup_cfg().get("birth_day", 5))
+	b["winter_fed"] = 1.0
+	return ["debug.p3.pregnant", {}]
+
+func debug_neighbor_leader_old() -> Array:
+	var p := _debug_map_pack()
+	var l := pack_leader_of(p) if p != null else null
+	if l == null or not l.alive:
+		return ["debug.p3.no_pack", {}]
+	l.age_years = max(l.age_years, 7.0)
+	debug_neighbor_meet()
+	return ["debug.p3.leader_old", {}]
+
+func debug_neighbor_vacancy() -> Array:
+	var p := _debug_map_pack()
+	var l := pack_leader_of(p) if p != null else null
+	if l == null or not l.alive or not p.has_mate():
+		return ["debug.p3.no_pack", {}]
+	if not can_join_packs():
+		return ["debug.p3.cannot_join", {}]
+	l.die("old_age")
+	_on_npc_died(l)
+	p.vacant = true
+	_on_pack_vacancy(p)
+	return ["debug.p3.vacancy", {"region": "region." + pack_home_region(p)}]
+
+func debug_mate_dies() -> Array:
+	var m := she_wolf()
+	if not has_mate() or m == null:
+		return ["debug.p3.no_mate", {}]
+	m.die("old_age")
+	_on_npc_died(m)
+	return ["debug.p3.mate_died", {}]
+
 func debug_pack_meet(lone: String = "") -> void:
 	_debug_ensure_pack()
 	if lone == "young":

@@ -2345,3 +2345,14 @@ summary.family.left_pups,{n} 隻幼狼
 bio.family.grew,和伴侶養大了 {n} 隻幼狼
 bio.family.mate,找到過伴侶
 bio.family.handed,，老了之後把領域留給了子女
+debug.event.p3.pregnant,伴侶懷孕
+debug.event.p3.leader_old,鄰群帶頭的公狼老了（可挑戰）
+debug.event.p3.vacancy,鄰群的空缺
+debug.event.p3.mate_dies,伴侶死去
+debug.p3.no_mate,除錯：你還沒有伴侶（先用「離群的母狼」「母狼的關係 +4」）。
+debug.p3.pregnant,除錯：伴侶懷孕了，春季第 5 天生（不是春天的話用「跳到下一季」）。
+debug.p3.no_pack,除錯：這張地圖沒有住在地圖上、有帶頭公狼的鄰群（試試山地或草原）。
+debug.p3.leader_old,除錯：鄰群帶頭的公狼 7 歲了，撞上牠們時可以挑戰。
+debug.p3.cannot_join,除錯：要 2 歲以上、沒有伴侶才能補上空缺。
+debug.p3.vacancy,除錯：鄰群帶頭的公狼死了，那隻母狼在{region}。
+debug.p3.mate_died,除錯：伴侶死了。
