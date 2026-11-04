@@ -5,6 +5,8 @@ extends SceneTree
 #   預告後輪流（對手出手前最多轉 45°）、叼肉的機率、結束（對手走了、撤出、被打倒、時間到）、兩種模式隨機打完不出錯。
 # 第 3 步：物種只用自己能用的動作；注意力（被咬就看咬牠的）；威脅遠時吃、近時守或打；守食物時假衝比遭遇時多；
 #   被圍背靠岩壁；美洲獅受傷上樹（殘骸留下）；放棄（血量、耐心、殘骸吃光）；個性不同。
+# 第 4 步：資訊等級（知識、感知、距離、視線、觀察）、模糊不顯示範圍、部分顯示聯集、明確顯示這個動作；假動作的提示老練的比較常看出來；
+#   機率顯示四種（風險＋寬範圍、範圍、約略、精確），範圍一定包含實際值、實際機率不變；看到出手就記一次、最多 3、有預留欄位。
 # 用法：bash tools/run_sim.sh tactical_combat_rules
 var fails := 0
 
@@ -76,6 +78,7 @@ func _run() -> void:
 		and TacticalGrid.side_of(Vector2i(5, 5), Vector2i(1, 0), Vector2i(5, 6)) == "side", "前、側、後")
 	_step2()
 	_step3()
+	_step4()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 
@@ -408,3 +411,111 @@ func _step3() -> void:
 		tc.setup("grizzly_open", {"seed": s})
 		bolds[snappedf(float(tc.units[tc.enemy_index()]["bold"]), 0.1)] = true
 	_check(bolds.size() >= 6, "每隻灰熊的個性不同（%d 種）" % bolds.size())
+
+func _setup_k(know: String, prof := "average", sc := "grizzly_open", seed := 1) -> TacticalCombat:
+	var tc := TacticalCombat.new()
+	tc.setup(sc, {"seed": seed, "knowledge": know, "wolf_profile": prof})
+	return tc
+
+func _step4() -> void:
+	print("第 4 步")
+	# 資訊等級
+	var tc := _setup_k("novice")
+	var e: int = tc.enemy_index()
+	tc.units[0]["pos"] = Vector2i(7, 5)
+	var nov: int = tc.info_level(0, e, "swipe")
+	tc = _setup_k("veteran")
+	tc.units[0]["pos"] = Vector2i(7, 5)
+	var vet: int = tc.info_level(0, e, "swipe")
+	_check(vet > nov, "老練的看得比新手清楚（%d → %d）" % [nov, vet])
+	tc = _setup_k("experienced")
+	tc.units[0]["pos"] = Vector2i(7, 5)
+	var near: int = tc.info_level(0, e, "swipe")
+	tc.units[0]["pos"] = Vector2i(1, 5)
+	var far: int = tc.info_level(0, e, "swipe")
+	tc.units[0]["pos"] = Vector2i(3, 2)
+	tc.units[e]["pos"] = Vector2i(5, 2)
+	var through_forest: bool = tc.line_of_sight(Vector2i(3, 2), Vector2i(5, 2))
+	var blocked: int = tc.info_level(0, e, "swipe")
+	_check(far < near and not through_forest and blocked < near, "遠（%d）、視線被密林擋住（%d）都比近（%d）看不清楚" % [far, blocked, near])
+	tc = _setup_k("experienced")
+	tc.units[0]["pos"] = Vector2i(7, 5)
+	tc.begin_round()
+	tc.plan(0, {"action": "observe"})
+	tc.resolve()
+	var before: int = tc.info_level(0, e, "swipe")
+	tc.begin_round()
+	_check(tc.info_level(0, e, "swipe") == mini(3, before + 1), "觀察後下一回合高一級")
+	# 模糊、部分、明確的範圍
+	var ok_zone := true
+	for know in ["novice", "experienced", "veteran"]:
+		for prof in ["novice", "average", "veteran"]:
+			for s in 20:
+				tc = _setup_k(know, prof, "grizzly_open", s)
+				e = tc.enemy_index()
+				tc.units[0]["pos"] = Vector2i(8, 5)
+				var its: Dictionary = tc.begin_round()
+				var it: Dictionary = its[e]
+				var seen: Dictionary = it["seen"]
+				var real: Array = tc.zone_cells(e, str(it["looks"]), it["move"], it["facing"], it["target"])
+				match int(seen["level"]):
+					0: ok_zone = ok_zone and (seen["zone"] as Array).is_empty()
+					1:
+						for c in real:
+							ok_zone = ok_zone and (not seen["attack"] or (seen["zone"] as Array).has(c))
+					_: ok_zone = ok_zone and (seen["zone"] as Array) == real
+	_check(ok_zone, "模糊不顯示範圍、部分顯示可能範圍的聯集（包含實際的）、明確以上顯示這個動作的範圍")
+	# 假動作的提示
+	var hints := {}
+	for know in ["novice", "experienced", "veteran"]:
+		var h := 0
+		var n := 0
+		for s in 400:
+			tc = _setup_k(know, "veteran", "grizzly_open", s)
+			e = tc.enemy_index()
+			tc.units[0]["pos"] = Vector2i(5, 5)
+			tc.units[e]["pos"] = Vector2i(8, 5)
+			tc.rounds = 1
+			tc.intents = {e: tc._intent(e, "bluff_charge", Vector2i(8, 5), Vector2i(-1, 0), Vector2i(-1, -1), "bluff")}
+			var seen2: Dictionary = tc.telegraph(0, e)
+			n += 1
+			if seen2["feint_hint"]: h += 1
+		hints[know] = h
+	_check(hints["novice"] == 0 and hints["veteran"] > hints["experienced"], "假衝的提示：新手 %d、有經驗 %d、老練 %d（／400）" % [hints["novice"], hints["experienced"], hints["veteran"]])
+	# 機率顯示
+	var ok_show := true
+	var tiers := {}
+	for know in ["novice", "experienced", "veteran"]:
+		tc = _setup_k(know)
+		e = tc.enemy_index()
+		for ch in [0.12, 0.43, 0.77]:
+			var d: Dictionary = tc.display_chance(0, ch, "grizzly_bear")
+			tiers[know] = int(d["tier"])
+			if int(d["tier"]) <= 1:
+				ok_show = ok_show and float(d["lo"]) <= ch + 0.001 and float(d["hi"]) >= ch - 0.001
+			match int(d["tier"]):
+				0: ok_show = ok_show and float(d["hi"]) - float(d["lo"]) >= 0.2 and d["risk"] in ["high", "mid", "low"]
+				2: ok_show = ok_show and is_equal_approx(float(d["lo"]), snappedf(ch, 0.05))
+				3: ok_show = ok_show and is_equal_approx(float(d["lo"]), ch)
+	_check(ok_show and tiers["novice"] == 0 and tiers["veteran"] == 3, "機率顯示：新手風險＋寬範圍（包含實際值）、有經驗約略（以 5%% 為單位）、老練精確（%s）" % JSON.stringify(tiers))
+	tc = _setup_k("novice")
+	tc.units[0]["pos"] = Vector2i(8, 5)
+	var opts: Array = tc.action_options(0)
+	var bite: Dictionary = opts.filter(func(o): return o["id"] == "bite")[0]
+	var tc2 := _setup_k("veteran")
+	tc2.units[0]["pos"] = Vector2i(8, 5)
+	var bite2: Dictionary = tc2.action_options(0).filter(func(o): return o["id"] == "bite")[0]
+	_check(is_equal_approx(float(bite["chance"]), float(bite2["chance"])), "知識只改變顯示，實際機率一樣（%.0f%%）" % (float(bite["chance"]) * 100.0))
+	# 學習
+	tc = _setup_k("novice")
+	e = tc.enemy_index()
+	tc.units[0]["pos"] = Vector2i(5, 5)
+	tc.units[e]["pos"] = Vector2i(6, 5)
+	tc.units[e]["facing"] = Vector2i(-1, 0)
+	tc.units[0]["hp"] = 9999.0
+	for r in 5:
+		_force(tc, "swipe")
+		tc.plan(0, {"action": "wait"})
+		tc.resolve()
+	var entry: Dictionary = tc.knowledge["grizzly_bear|swipe"]
+	_check(int(entry["count"]) == 3 and entry.has("category") and entry.has("source"), "看到揮掌就記一次、最多 3（預留 category、source）")

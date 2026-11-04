@@ -11,7 +11,9 @@ extends RefCounted
 #   alternate 預告後輪流：你方先移動、出手 → 對手朝最近的威脅轉一次（≤45°）→ 變卦 → 出手
 # 第 3 步：對手的 AI（_ai_intent 打分）：注意力（被咬看咬牠的、守食物看最靠近殘骸的）、守食物、假衝（守食物時常見）、
 #   背靠岩壁（被圍、受傷）、美洲獅上樹（受傷或被圍；上樹＝離開，殘骸留下）、放棄（血量、耐心、殘骸吃光）、個性（bold）。
-# 之後的步驟：資訊等級、伴侶的合作。
+# 第 4 步：資訊等級。預告依「見過這個動作幾次＋感知－距離－視線－夜晚＋觀察」分模糊／部分／明確／熟悉（telegraph）；
+#   狼的機率依這種動物的經驗顯示成風險高低＋範圍／範圍／約略／精確（display_chance），實際機率不變；看到牠出手就記一次（_witness）。
+# 之後的步驟：伴侶的合作。
 
 const CFG_PATH := "res://data/tactical_combat.json"
 const HUNT_CFG_PATH := "res://data/tactical_hunt.json"
@@ -39,6 +41,11 @@ var log_lines: Array = []
 var intents := {}
 var plans := {}
 var events: Array = []
+# 第 4 步：知識（「物種|動作」→ {count 0～3, category, source}；category／source 是給之後的傳承預留的欄位）、觀察
+var knowledge := {}
+var night := false
+var observed := {} # 這一回合選了觀察的單位 → 下一回合資訊高一級
+var obs_bonus := {} # 這一回合的觀察加成（上一回合觀察過）
 
 func _init() -> void:
 	cfg = JSON.parse_string(FileAccess.get_file_as_string(CFG_PATH))
@@ -72,6 +79,9 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	intents.clear()
 	plans.clear()
 	events.clear()
+	observed.clear()
+	obs_bonus.clear()
+	night = bool(opts.get("night", false))
 	var wp: Dictionary = (cfg["wolf_profiles"][str(opts.get("wolf_profile", "average"))] as Dictionary).duplicate()
 	units.append(_make_wolf("wolf", "player", _v(sc["wolf"]), wp))
 	if with_mate and sc.has("mate"):
@@ -86,6 +96,9 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 		"attention": -1, "bitten_by": -1})
 	var br: Array = cfg["ai"]["bold"].get(str(o["id"]), [0.0, 0.0])
 	units.back()["bold"] = rng.randf_range(float(br[0]), float(br[1]))
+	knowledge.clear()
+	for act in od["actions"]:
+		knowledge[str(o["id"]) + "|" + str(act)] = {"count": knowledge_level, "category": "experience", "source": "self"}
 	carcass = {}
 	if sc.has("carcass"):
 		var cc: Array = sc["carcass"]
@@ -356,10 +369,13 @@ func begin_round() -> Dictionary:
 	intents.clear()
 	plans.clear()
 	events.clear()
+	obs_bonus = observed.duplicate()
+	observed.clear()
 	for i in units.size():
 		if active(i) and not player_side(i):
 			_drain_patience(i)
 			intents[i] = _ai_intent(i)
+			intents[i]["seen"] = telegraph(0, i)
 	return intents
 
 func _nearest_threat(i: int) -> int:
@@ -817,6 +833,7 @@ func _do_enemy_action(i: int) -> Array:
 			last = c
 		u["pos"] = last
 		_ev(a, {"who": i, "to": last})
+		_witness(i, a)
 		if struck >= 0 and float(ac.get("hit", 0.0)) > 0.0:
 			if _roll_hit(i, struck, ac):
 				hit_units.append(struck)
@@ -828,6 +845,7 @@ func _do_enemy_action(i: int) -> Array:
 		if map.in_bounds(land) and unit_at(land, i) < 0 and not blocks_for(i).has(land) and not _impassable(i).contains(map.terrain(land)):
 			u["pos"] = land
 	_ev(a, {"who": i, "zone": zone})
+	_witness(i, a)
 	for c in zone:
 		var k := unit_at(c, i)
 		if k >= 0 and player_side(k) and _roll_hit(i, k, ac):
@@ -855,6 +873,8 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 		u["breath"] = clamp(float(u["breath"]) + float(w["breath"]), 0.0, float(u["breath_max"]))
 	match a:
 		"wait", "observe":
+			if a == "observe":
+				observed[i] = true
 			if a == "wait":
 				u["breath"] = clamp(float(u["breath"]) + float(w.get("breath", 0.0)), 0.0, float(u["breath_max"]))
 			_ev(a, {"who": i})
@@ -924,3 +944,177 @@ func _check_end() -> void:
 		outcome = "timeout"
 	if done:
 		_ev("end", {"outcome": outcome, "meat": meat_taken()})
+
+
+# =====================================================================
+# 第 4 步：資訊等級與機率顯示
+# =====================================================================
+
+func _icfg() -> Dictionary:
+	return cfg["info"]
+
+func know_count(species: String, action: String) -> int:
+	return int(knowledge.get(species + "|" + action, {}).get("count", 0))
+
+# 這種動物的經驗（見過的動作次數平均，四捨五入）
+func species_experience(species: String) -> int:
+	var n := 0
+	var tot := 0
+	for k in knowledge.keys():
+		if str(k).begins_with(species + "|"):
+			n += 1
+			tot += int(knowledge[k]["count"])
+	return int(round(float(tot) / max(1, n)))
+
+func learn(species: String, action: String) -> void:
+	var key := species + "|" + action
+	var e: Dictionary = knowledge.get(key, {"count": 0, "category": "experience", "source": "self"})
+	if int(e["count"]) < 3:
+		e["count"] = int(e["count"]) + 1
+		_ev("learned", {"key": key, "count": int(e["count"])})
+	knowledge[key] = e
+
+# 看到牠出手：距離內、視線沒被擋的你方單位記一次（假衝：衝到一半停下時才知道是假的）
+func _witness(i: int, action: String) -> void:
+	if not active(0):
+		return
+	if map.dist(units[0]["pos"], units[i]["pos"]) <= float(_icfg()["learn_dist"]) and line_of_sight(units[0]["pos"], units[i]["pos"]):
+		learn(str(units[i]["species"]), action)
+
+func line_of_sight(a: Vector2i, b: Vector2i) -> bool:
+	var block: String = str(_icfg()["los_block"])
+	var n: int = maxi(absi(b.x - a.x), absi(b.y - a.y))
+	for k in range(1, n):
+		var p := Vector2(a).lerp(Vector2(b), float(k) / float(n))
+		var c := Vector2i(int(round(p.x)), int(round(p.y)))
+		if c != a and c != b and block.contains(map.terrain(c)):
+			return false
+	return true
+
+# 資訊等級：0 模糊、1 部分、2 明確、3 熟悉
+func info_level(viewer: int, e: int, action: String) -> int:
+	var ic := _icfg()
+	var lv: int = int(ic["base"])
+	var k := know_count(str(units[e]["species"]), action)
+	if k >= int(ic["know_2"]):
+		lv += 1
+	if k >= int(ic["know_3"]):
+		lv += 1
+	var per: float = float(units[viewer]["stats"].get("perception", 50))
+	if per >= float(ic["perception_good"]):
+		lv += 1
+	elif per < float(ic["perception_poor"]):
+		lv -= 1
+	if map.dist(units[viewer]["pos"], units[e]["pos"]) > float(ic["far"]):
+		lv -= 1
+	if not line_of_sight(units[viewer]["pos"], units[e]["pos"]):
+		lv -= 1
+	if night:
+		lv -= 1
+	if obs_bonus.has(viewer):
+		lv += 1
+	return clampi(lv, 0, 3)
+
+const ATTACKS := ["swipe", "charge", "bluff_charge", "pounce", "bite", "guard"]
+
+# 預告：{level, text（key 尾）, zone（顯示的範圍）, feint_hint, attack}
+func telegraph(viewer: int, e: int) -> Dictionary:
+	var it: Dictionary = intents[e]
+	var looks: String = str(it.get("looks", it["action"]))
+	var lv := info_level(viewer, e, looks)
+	var attack: bool = ATTACKS.has(looks)
+	var out := {"level": lv, "zone": [], "feint_hint": false, "attack": attack, "looks": looks}
+	if lv == 0:
+		out["text"] = "vague"
+		return out
+	if lv == 1:
+		out["text"] = "partial." + ("attack" if attack else str(it["action"]))
+		if attack:
+			# 部分：顯示牠可能用的攻擊範圍的聯集
+			var z := {}
+			for a in _actions_of(e):
+				if ATTACKS.has(a) and a != "bluff_charge":
+					for c in zone_cells(e, a, it["move"], it["facing"], it.get("target", Vector2i(-1, -1))):
+						z[c] = true
+			out["zone"] = z.keys()
+		return out
+	out["text"] = "clear." + looks
+	out["zone"] = zone_cells(e, looks, it["move"], it["facing"], it.get("target", Vector2i(-1, -1)))
+	var ic := _icfg()
+	# 看不看得出假動作：看「假動作」本身見過幾次（認得牠會虛張聲勢），不是看衝撞
+	var bluff: bool = str(it["action"]) != looks
+	var kb: int = know_count(str(units[e]["species"]), str(it["action"]) if bluff else "bluff_charge")
+	var p: float = float(ic["feint_hint"][kb]) if bluff else float(ic["false_hint"][kb])
+	# 用固定的種子擲（同一回合畫面重算時結果不變）
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([rng.seed, rounds, e])
+	out["feint_hint"] = r.randf() < p
+	return out
+
+# 機率顯示（實際機率不變）：{tier, text, lo, hi, risk}
+func display_chance(viewer: int, chance: float, species: String) -> Dictionary:
+	var ic := _icfg()
+	var tier: int = species_experience(species) + (1 if obs_bonus.has(viewer) else 0)
+	tier = clampi(tier, 0, 3)
+	var risk := "low"
+	if chance < float(ic["risk"]["high"]):
+		risk = "high"
+	elif chance < float(ic["risk"]["mid"]):
+		risk = "mid"
+	var out := {"tier": tier, "risk": risk, "lo": chance, "hi": chance}
+	match tier:
+		0, 1:
+			var w: float = float(ic["range0"] if tier == 0 else ic["range1"])
+			# 範圍不要剛好以實際值為中心（不然一看就知道），往一邊偏一點，但一定包含實際值
+			var r := RandomNumberGenerator.new()
+			r.seed = hash([rng.seed, rounds, viewer, snappedf(chance, 0.01)])
+			var shift: float = r.randf_range(-w * 0.6, w * 0.6)
+			out["lo"] = clamp(snappedf(chance - w + shift, 0.05), 0.0, chance)
+			out["hi"] = clamp(snappedf(chance + w + shift, 0.05), chance, 1.0)
+			# 範圍至少 2w 寬（被 0、1 夾到時往另一邊補）
+			while float(out["hi"]) - float(out["lo"]) < w * 2.0 - 0.001:
+				if float(out["hi"]) < 1.0:
+					out["hi"] = min(1.0, float(out["hi"]) + 0.05)
+				elif float(out["lo"]) > 0.0:
+					out["lo"] = max(0.0, float(out["lo"]) - 0.05)
+				else:
+					break
+		2:
+			var a: float = snappedf(chance, float(ic["round2"]))
+			out["lo"] = a
+			out["hi"] = a
+	return out
+
+# 畫面與模擬用：這隻從 from 出手時，各動作的實際機率與顯示
+func action_options(i: int, from: Vector2i = Vector2i(-1, -1), sprinted := false) -> Array:
+	if from.x < 0:
+		from = units[i]["pos"]
+	var e := enemy_index()
+	var sp: String = str(units[e]["species"]) if e >= 0 else ""
+	var out: Array = []
+	var carrying: bool = str(units[i]["carrying"]) != ""
+	for a in ["bite", "pounce", "harass"]:
+		if active(e) and not carrying and (map.adjacent(from, units[e]["pos"]) or (a == "pounce" and map.dist(from, units[e]["pos"]) <= float(_wcfg("pounce").get("range", 2)) + 0.5)):
+			var c: Dictionary = wolf_chance(i, a, e, from, sprinted)
+			out.append({"id": a, "chance": c["chance"], "factors": c["factors"], "show": display_chance(i, float(c["chance"]), sp)})
+	var save_pos: Vector2i = units[i]["pos"]
+	units[i]["pos"] = from
+	for k in take_kinds(i):
+		var c2: Dictionary = wolf_chance(i, "take", -1, from, sprinted, k)
+		out.append({"id": "take", "kind": k, "chance": c2["chance"], "factors": c2["factors"], "show": display_chance(i, float(c2["chance"]), sp)})
+	units[i]["pos"] = save_pos
+	for a2 in ["dodge", "observe", "wait"]:
+		out.append({"id": a2})
+	if carrying:
+		out.append({"id": "drop"})
+	if map.on_edge(from):
+		out.append({"id": "retreat"})
+	return out
+
+# 這一格在不在你看得到的預告範圍裡（畫面用來標危險的格子）
+func in_shown_zone(c: Vector2i) -> bool:
+	for e in intents.keys():
+		var seen: Dictionary = intents[e].get("seen", {})
+		if (seen.get("zone", []) as Array).has(c):
+			return true
+	return false
