@@ -1651,8 +1651,8 @@ animal.cougar,美洲獅
 animal.black_bear,黑熊
 cougar.ambush.unknown,一道黃褐色的影子從岩石上撲下來，爪子劃過你的背！你損失了 {n} 點血量。
 cougar.ambush.known,美洲獅從暗處撲了下來，爪子劃過你的背！你損失了 {n} 點血量。
-cougar.cache.unknown,一堆被扒過的草和土下面，露出一條{animal}的腿。有什麼東西把牠藏在這裡，還會回來吃。
-cougar.cache.known,一堆被扒過的草和土下面，藏著一頭{animal}。是美洲獅的獵物，牠還會回來。
+cougar.cache.unknown,一堆被扒過的草和土下面，露出一條{animal}的腿。土上有一股陌生的味道，你從沒聞過。不管是誰藏的，牠還會回來吃。
+cougar.cache.known,一堆被扒過的草和土下面，藏著一頭{animal}。土上全是美洲獅的味道，是牠藏的，牠還會回來。
 cougar.cache.eat,扒開來偷吃
 combat.stake.carcass.cougar,牠伏低身子，尾巴左右甩動，不打算讓出牠藏的獵物。
 combat.stake.encounter.cougar,牠沒有退，壓低耳朵盯著你，準備再撲一次。
