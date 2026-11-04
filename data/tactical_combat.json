@@ -85,6 +85,8 @@
     "risk": { "high": 0.35, "mid": 0.6 },
     "learn_dist": 5.0
   },
+  "_ally_comment": "第 5 步：伴侶的簡化合作。指令 harass 牽制（站到和你不同的一側騷擾，吸引注意力）、take 叼肉（從對手背後的方向接近殘骸，牠沒看著時叼一塊）、back 退開（離對手 back_dist 格以上）、auto 自動（殘骸在、對手沒盯著牠 → 叼肉；對手盯著牠 → 退開；否則牽制）。血量低於 retreat_hp 自己撤；叼到肉就往邊緣撤。zone_penalty：走進看得到的預告範圍的扣分。assume。",
+  "ally": { "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0 },
   "scenarios": {
     "_comment": "原型的固定情境（規格第九節）。map 每列一樣長；units：wolf（你）、mate（伴侶）、對手；facing 是面向（dx, dy）；carcass：[x, y, 種類]；eating：對手開場在吃。",
     "grizzly_arrives": {

@@ -13,7 +13,7 @@ extends RefCounted
 #   背靠岩壁（被圍、受傷）、美洲獅上樹（受傷或被圍；上樹＝離開，殘骸留下）、放棄（血量、耐心、殘骸吃光）、個性（bold）。
 # 第 4 步：資訊等級。預告依「見過這個動作幾次＋感知－距離－視線－夜晚＋觀察」分模糊／部分／明確／熟悉（telegraph）；
 #   狼的機率依這種動物的經驗顯示成風險高低＋範圍／範圍／約略／精確（display_chance），實際機率不變；看到牠出手就記一次（_witness）。
-# 之後的步驟：伴侶的合作。
+# 第 5 步：伴侶的簡化合作（ally_plan）：指令牽制、叼肉、退開、自動；血量低自己撤；叼到肉就往邊緣撤；避開看得到的預告範圍。
 
 const CFG_PATH := "res://data/tactical_combat.json"
 const HUNT_CFG_PATH := "res://data/tactical_hunt.json"
@@ -115,7 +115,7 @@ func _make_wolf(id: String, side: String, pos: Vector2i, st: Dictionary) -> Dict
 	var bmax: float = clamp(float(b["base"]) + float(st["stamina"]) * float(b["per_stamina"]) + float(st["speed"]) * float(b["per_speed"]), float(b["min"]), float(b["max"]))
 	return {"id": id, "side": side, "species": "wolf", "pos": pos, "facing": Vector2i(1, 0), "stats": st,
 		"hp": float(st["health"]), "hp_max": float(st["health_max"]), "breath": bmax, "breath_max": bmax,
-		"carrying": "", "carry_segments": 0, "out": false, "out_reason": "", "eating": false}
+		"carrying": "", "carry_segments": 0, "out": false, "out_reason": "", "eating": false, "command": "auto"}
 
 # --- 查詢 ---
 
@@ -655,7 +655,7 @@ func resolve() -> Array:
 		return events
 	for i in units.size():
 		if active(i) and player_side(i) and not plans.has(i):
-			plans[i] = {"action": "wait"}
+			plans[i] = ally_plan(i) if str(units[i]["side"]) == "ally" else {"action": "wait"}
 	if mode == "alternate":
 		_resolve_alternate()
 	else:
@@ -1118,3 +1118,176 @@ func in_shown_zone(c: Vector2i) -> bool:
 		if (seen.get("zone", []) as Array).has(c):
 			return true
 	return false
+
+
+# =====================================================================
+# 第 5 步：伴侶的簡化合作
+# =====================================================================
+
+const COMMANDS := ["auto", "harass", "take", "back"]
+
+func set_command(i: int, cmd: String) -> void:
+	if COMMANDS.has(cmd):
+		units[i]["command"] = cmd
+
+# 這一回合實際照哪個指令做（auto 時依局勢；血量低、叼著肉時另外處理）
+func ally_mode(i: int) -> String:
+	var u: Dictionary = units[i]
+	var ac: Dictionary = cfg["ally"]
+	if float(u["hp"]) < float(u["hp_max"]) * float(ac["retreat_hp"]):
+		return "escape"
+	if str(u["carrying"]) != "":
+		return "carry"
+	var cmd: String = str(u["command"])
+	if cmd != "auto":
+		if cmd == "take" and (carcass.is_empty() or int(carcass["segments"]) <= 0):
+			return "harass"
+		return cmd
+	var e := enemy_index()
+	if not active(e):
+		return "back"
+	var watching_me: bool = int(units[e].get("attention", -1)) == i and map.dist(units[e]["pos"], u["pos"]) <= 3.0
+	if not carcass.is_empty() and int(carcass["segments"]) > 0 and not watching_me:
+		return "take"
+	if watching_me:
+		return "back"
+	return "harass"
+
+# 看得到的預告範圍（伴侶自己的資訊等級）
+func _shown_zone_for(viewer: int) -> Dictionary:
+	var z := {}
+	for e in intents.keys():
+		if not active(e):
+			continue
+		for c in telegraph(viewer, e).get("zone", []):
+			z[c] = true
+	return z
+
+# 從可到的格子（含原地）裡挑最接近 goal、不在範圍裡的
+func _ally_move(i: int, goal: Vector2i, zone: Dictionary, stop_adjacent := false, avoid_front := Vector2i(-1, -1)) -> Vector2i:
+	var u: Dictionary = units[i]
+	var r := reachable(i)
+	r[u["pos"]] = "stay"
+	var ac: Dictionary = cfg["ally"]
+	var best: Vector2i = u["pos"]
+	var bs := -INF
+	var e := enemy_index()
+	for c in r.keys():
+		var d: float = map.dist(c, goal)
+		if stop_adjacent and d < 0.5:
+			continue
+		var sc: float = -d
+		if zone.has(c):
+			sc -= float(ac["zone_penalty"])
+		if str(r[c]) == "sprint":
+			sc -= 0.5
+		if avoid_front.x >= 0 and active(e) and TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], c) == "front" and map.dist(units[e]["pos"], c) <= 2.5:
+			sc -= 3.0
+		if sc > bs:
+			bs = sc
+			best = c
+	return best
+
+func _nearest_edge_away(i: int) -> Vector2i:
+	var u: Dictionary = units[i]
+	var e := enemy_index()
+	var best: Vector2i = u["pos"]
+	var bs := -INF
+	for y in map.height:
+		for x in map.width:
+			var c := Vector2i(x, y)
+			if not map.on_edge(c) or _impassable(i).contains(map.terrain(c)):
+				continue
+			var sc: float = -map.dist(u["pos"], c)
+			if active(e):
+				sc += map.dist(units[e]["pos"], c) * 0.7
+			if sc > bs:
+				bs = sc
+				best = c
+	return best
+
+func ally_plan(i: int) -> Dictionary:
+	var p := _ally_plan(i)
+	if p.has("move") and p["move"] == units[i]["pos"]:
+		p.erase("move")
+	return p
+
+func _ally_plan(i: int) -> Dictionary:
+	var u: Dictionary = units[i]
+	var e := enemy_index()
+	var zone := _shown_zone_for(i)
+	var m := ally_mode(i)
+	var p := {"mode": m}
+	match m:
+		"escape", "carry":
+			if map.on_edge(u["pos"]):
+				p["action"] = "retreat"
+				return p
+			var edge := _nearest_edge_away(i)
+			p["move"] = _ally_move(i, edge, zone)
+			p["action"] = "dodge" if zone.has(p["move"]) else "wait"
+			if map.on_edge(p["move"]):
+				p["action"] = "retreat"
+		"back":
+			var away: Vector2i = u["pos"]
+			if active(e):
+				var dirv := Vector2(u["pos"] - units[e]["pos"]).normalized()
+				away = u["pos"] + Vector2i(roundi(dirv.x * 3.0), roundi(dirv.y * 3.0))
+				away = Vector2i(clampi(away.x, 0, map.width - 1), clampi(away.y, 0, map.height - 1))
+			p["move"] = _ally_move(i, away, zone)
+			p["action"] = "observe"
+		"take":
+			var cpos: Vector2i = carcass["pos"]
+			if take_kinds(i).has("piece"):
+				var watching: bool = active(e) and TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], u["pos"]) == "front" \
+					and not bool(units[e]["eating"]) and map.dist(units[e]["pos"], u["pos"]) <= 2.5
+				if not watching and not zone.has(u["pos"]):
+					p["action"] = "take"
+					p["kind"] = "piece"
+					return p
+			# 從對手背後的方向接近殘骸：目標是殘骸旁、離對手正面最遠的一格
+			var goal: Vector2i = cpos
+			if active(e):
+				var bestc: Vector2i = cpos
+				var bs := -INF
+				for d in TacticalGrid.DIRS:
+					var c: Vector2i = cpos + d
+					if not map.in_bounds(c) or blocks_for(i).has(c) or _impassable(i).contains(map.terrain(c)):
+						continue
+					var sd := TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], c)
+					var sc: float = (2.0 if sd == "rear" else (1.0 if sd == "side" else -2.0)) - map.dist(u["pos"], c) * 0.2
+					if sc > bs:
+						bs = sc
+						bestc = c
+				goal = bestc
+			p["move"] = _ally_move(i, goal, zone, false, Vector2i(0, 0))
+			# 到了殘骸旁、牠沒看著：同一回合叼
+			var save: Vector2i = u["pos"]
+			u["pos"] = p["move"]
+			var can: bool = take_kinds(i).has("piece")
+			u["pos"] = save
+			p["action"] = "take" if can and not zone.has(p["move"]) else "wait"
+			p["kind"] = "piece"
+		"harass":
+			if not active(e):
+				p["action"] = "wait"
+				return p
+			var ep: Vector2i = units[e]["pos"]
+			# 站到和你不同的一側：牠旁邊、離你最遠、不在正面
+			var you: Vector2i = units[0]["pos"] if active(0) else ep
+			var bestc2: Vector2i = u["pos"]
+			var bs2 := -INF
+			for d in TacticalGrid.DIRS:
+				var c: Vector2i = ep + d
+				if not map.in_bounds(c) or (blocks_for(i).has(c) and c != u["pos"]) or _impassable(i).contains(map.terrain(c)):
+					continue
+				var sd := TacticalGrid.side_of(ep, units[e]["facing"], c)
+				var sc: float = map.dist(c, you) - (4.0 if sd == "front" else 0.0) - (6.0 if zone.has(c) else 0.0) - map.dist(u["pos"], c) * 0.3
+				if sc > bs2:
+					bs2 = sc
+					bestc2 = c
+			p["move"] = _ally_move(i, bestc2, zone)
+			var adj: bool = map.adjacent(p["move"], ep)
+			p["action"] = "harass" if adj and not zone.has(p["move"]) else ("dodge" if zone.has(p["move"]) else "wait")
+			p["target"] = e
+	return p

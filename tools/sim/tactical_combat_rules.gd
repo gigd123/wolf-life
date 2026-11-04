@@ -7,6 +7,8 @@ extends SceneTree
 #   被圍背靠岩壁；美洲獅受傷上樹（殘骸留下）；放棄（血量、耐心、殘骸吃光）；個性不同。
 # 第 4 步：資訊等級（知識、感知、距離、視線、觀察）、模糊不顯示範圍、部分顯示聯集、明確顯示這個動作；假動作的提示老練的比較常看出來；
 #   機率顯示四種（風險＋寬範圍、範圍、約略、精確），範圍一定包含實際值、實際機率不變；看到出手就記一次、最多 3、有預留欄位。
+# 第 5 步：伴侶的指令（預設自動）；牽制時站到和你不同的一側、不站正面、會騷擾，注意力被引過去；叼肉時灰熊在吃會叼到並撤出；
+#   退開時保持距離；血量低自己撤；你牽制＋伴侶叼肉比你一隻拿到更多肉。
 # 用法：bash tools/run_sim.sh tactical_combat_rules
 var fails := 0
 
@@ -79,6 +81,7 @@ func _run() -> void:
 	_step2()
 	_step3()
 	_step4()
+	_step5()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 
@@ -519,3 +522,158 @@ func _step4() -> void:
 		tc.resolve()
 	var entry: Dictionary = tc.knowledge["grizzly_bear|swipe"]
 	_check(int(entry["count"]) == 3 and entry.has("category") and entry.has("source"), "看到揮掌就記一次、最多 3（預留 category、source）")
+
+# 跑一場：你照 you_plan（Callable(tc) -> plan）做，伴侶照指令；回傳 tc
+func _play(sc: String, seed: int, you_plan: Callable, cmd := "auto", rounds := 30) -> TacticalCombat:
+	var tc := TacticalCombat.new()
+	tc.setup(sc, {"seed": seed, "knowledge": "experienced"})
+	var m := tc.index_of("mate")
+	if m >= 0:
+		tc.set_command(m, cmd)
+	var g := 0
+	while not tc.done and g < rounds:
+		g += 1
+		tc.begin_round()
+		tc.plan(0, you_plan.call(tc))
+		tc.resolve()
+	return tc
+
+# 你：先在殘骸附近牽制（站在灰熊正面外、騷擾），伴侶去叼；你自己有機會也叼，叼到就撤
+func _you_harass(tc: TacticalCombat) -> Dictionary:
+	var e: int = tc.enemy_index()
+	var u: Dictionary = tc.units[0]
+	if str(u["carrying"]) != "":
+		if tc.map.on_edge(u["pos"]):
+			return {"action": "retreat"}
+		var edge: Vector2i = tc._nearest_edge_away(0)
+		return {"move": tc._ally_move(0, edge, tc._shown_zone_for(0)), "action": "wait"}
+	if not tc.active(e):
+		return {"action": "wait"}
+	if tc.take_kinds(0).has("piece") and (bool(tc.units[e]["eating"]) or int(tc.units[e].get("attention", -1)) != 0):
+		return {"action": "take", "kind": "piece"}
+	var ep: Vector2i = tc.units[e]["pos"]
+	var zone: Dictionary = tc._shown_zone_for(0)
+	var goal: Vector2i = ep + Vector2i(-1, 0)
+	var mv: Vector2i = tc._ally_move(0, goal, zone, false, Vector2i(0, 0))
+	var p := {"action": "harass", "target": e}
+	if mv != u["pos"]:
+		p["move"] = mv
+	if not tc.map.adjacent(mv, ep):
+		p["action"] = "wait"
+	return p
+
+# 你一隻：繞到殘骸背面，牠吃的時候叼一塊就撤
+func _you_solo(tc: TacticalCombat) -> Dictionary:
+	var e: int = tc.enemy_index()
+	var u: Dictionary = tc.units[0]
+	if str(u["carrying"]) != "":
+		if tc.map.on_edge(u["pos"]):
+			return {"action": "retreat"}
+		return {"move": tc._ally_move(0, tc._nearest_edge_away(0), tc._shown_zone_for(0)), "action": "wait"}
+	if tc.take_kinds(0).has("piece") and tc.active(e) and (bool(tc.units[e]["eating"]) or TacticalGrid.side_of(tc.units[e]["pos"], tc.units[e]["facing"], u["pos"]) != "front"):
+		return {"action": "take", "kind": "piece"}
+	if tc.carcass.is_empty() or int(tc.carcass["segments"]) <= 0:
+		return {"action": "wait"}
+	var p := {"action": "wait"}
+	var mv: Vector2i = tc._ally_move(0, tc.carcass["pos"] + Vector2i(0, -1), tc._shown_zone_for(0), false, Vector2i(0, 0))
+	if mv != u["pos"]:
+		p["move"] = mv
+	return p
+
+func _step5() -> void:
+	print("第 5 步")
+	var tc := TacticalCombat.new()
+	tc.setup("grizzly_arrives_mate", {"seed": 1})
+	var m: int = tc.index_of("mate")
+	_check(str(tc.units[m]["command"]) == "auto", "伴侶的指令預設是自動")
+	# 牽制：站到不同的一側、不站正面、會騷擾
+	var sides_ok := 0
+	var harassed := 0
+	var drew := 0
+	for s in 40:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_arrives_mate", {"seed": s, "knowledge": "experienced"})
+		m = tc.index_of("mate")
+		var e: int = tc.enemy_index()
+		tc.set_command(m, "harass")
+		tc.units[e]["pos"] = Vector2i(9, 5)
+		tc.units[e]["facing"] = Vector2i(-1, 0)
+		tc.units[0]["pos"] = Vector2i(8, 5)
+		tc.units[0]["hp"] = 9999.0
+		tc.units[m]["hp"] = 9999.0
+		for r in 4:
+			tc.begin_round()
+			tc.plan(0, {"action": "dodge"})
+			tc.resolve()
+			if tc.done: break
+		if tc.active(e) and TacticalGrid.side_of(tc.units[e]["pos"], tc.units[e]["facing"], tc.units[m]["pos"]) != "front" or int(tc.units[e].get("attention", -1)) == m:
+			sides_ok += 1
+		for ev in tc.events:
+			pass
+		if int(tc.units[e].get("attention", -1)) == m: drew += 1
+	for s in 40:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_arrives_mate", {"seed": s, "knowledge": "experienced"})
+		m = tc.index_of("mate")
+		tc.set_command(m, "harass")
+		var e2: int = tc.enemy_index()
+		tc.units[e2]["pos"] = Vector2i(9, 5)
+		tc.units[e2]["facing"] = Vector2i(-1, 0)
+		tc.units[0]["pos"] = Vector2i(8, 5)
+		var any := false
+		for r in 4:
+			tc.begin_round()
+			tc.plan(0, {"action": "dodge"})
+			tc.resolve()
+			for ev in tc.events:
+				if str(ev["kind"]) == "bite" and int(ev["who"]) == m:
+					any = true
+			if tc.done: break
+		if any: harassed += 1
+	_check(sides_ok > 25 and harassed > 15 and drew > 8, "牽制：伴侶站到牠側後方（%d／40）、會騷擾（%d／40）、把注意力引過去（%d／40）" % [sides_ok, harassed, drew])
+	# 叼肉：灰熊在吃、伴侶叼到並撤出
+	var got := 0
+	for s in 40:
+		tc = _play("grizzly_on_carcass_mate", s, func(t): return {"action": "wait"}, "take", 20)
+		for u in tc.units:
+			if str(u["id"]) == "mate" and bool(u["out"]) and str(u["out_reason"]) == "retreated" and int(u["carry_segments"]) > 0:
+				got += 1
+	_check(got > 15, "叼肉：灰熊在吃時，伴侶叼到一塊並撤出地圖（%d／40）" % got)
+	# 退開：保持距離
+	var kept := 0
+	for s in 30:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_open", {"seed": s, "with_mate": true})
+		m = tc.index_of("mate")
+		if m < 0:
+			tc.units.insert(1, tc._make_wolf("mate", "ally", Vector2i(5, 6), tc.units[0]["stats"].duplicate()))
+			m = 1
+		tc.set_command(m, "back")
+		for r in 3:
+			tc.begin_round()
+			tc.plan(0, {"action": "wait"})
+			tc.resolve()
+			if tc.done: break
+		var e3: int = tc.enemy_index()
+		if not tc.active(e3) or not tc.active(m) or tc.map.dist(tc.units[m]["pos"], tc.units[e3]["pos"]) >= 2.5:
+			kept += 1
+	_check(kept > 22, "退開：伴侶和灰熊保持距離（%d／30）" % kept)
+	# 血量低自己撤
+	tc = TacticalCombat.new()
+	tc.setup("grizzly_arrives_mate", {"seed": 2})
+	m = tc.index_of("mate")
+	tc.set_command(m, "harass")
+	tc.units[m]["hp"] = float(tc.units[m]["hp_max"]) * 0.3
+	_check(tc.ally_mode(m) == "escape", "伴侶血量低於四成：不管指令，自己撤")
+	# 你牽制＋伴侶叼肉，比你一隻拿到更多肉
+	var duo := 0
+	var solo := 0
+	var mate_hurt := 0
+	for s in 60:
+		tc = _play("grizzly_on_carcass_mate", s, _you_harass, "take")
+		duo += tc.meat_taken()
+		var mm: int = tc.index_of("mate")
+		if float(tc.units[mm]["hp"]) < float(tc.units[mm]["hp_max"]): mate_hurt += 1
+		tc = _play("grizzly_on_carcass", s, _you_solo)
+		solo += tc.meat_taken()
+	_check(duo > solo, "你牽制＋伴侶叼肉：60 場共 %d 段；你一隻 %d 段（伴侶受傷 %d 場）" % [duo, solo, mate_hurt])
