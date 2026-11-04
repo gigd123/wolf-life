@@ -133,6 +133,9 @@ func _policy(tc: TacticalCombat, st: String) -> Dictionary:
 						bs = v
 						best = c
 			var mv3 := _to(tc, best, true)
+			# 靠近在吃的灰熊時悄悄潛行
+			if bool(tc.units[e]["eating"]) and tc.map.dist(u["pos"], ep) <= 4.0:
+				mv3 = tc._creep_toward(0, best, tc._shown_zone_for(0))
 			if mv3 != u["pos"]: p["move"] = mv3
 			var save: Vector2i = u["pos"]
 			u["pos"] = mv3

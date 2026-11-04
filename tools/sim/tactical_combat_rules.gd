@@ -317,6 +317,7 @@ func _step3() -> void:
 	# 威脅遠時吃
 	var eat := 0
 	var near_eat := 0
+	var sneak_eat := 0
 	for s in 100:
 		tc = TacticalCombat.new()
 		tc.setup("grizzly_on_carcass", {"seed": s})
@@ -324,9 +325,15 @@ func _step3() -> void:
 		if str(tc.begin_round()[e]["action"]) == "eat": eat += 1
 		tc = TacticalCombat.new()
 		tc.setup("grizzly_on_carcass", {"seed": s})
-		tc.units[0]["pos"] = Vector2i(9, 4)
+		tc.units[0]["pos"] = Vector2i(11, 4)
 		if str(tc.begin_round()[tc.enemy_index()]["action"]) == "eat": near_eat += 1
-	_check(eat > 80 and near_eat < 25, "你在遠處時灰熊多半在吃（%d／100），你到殘骸旁就不太吃了（%d／100）" % [eat, near_eat])
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_on_carcass", {"seed": s})
+		tc.units[0]["pos"] = Vector2i(8, 5)
+		tc.units[0]["last_mode"] = "creep"
+		if str(tc.begin_round()[tc.enemy_index()]["action"]) == "eat": sneak_eat += 1
+	_check(eat > 80 and near_eat < 25, "你在遠處時灰熊多半在吃（%d／100），你站到牠正面就不吃了（%d／100）" % [eat, near_eat])
+	_check(sneak_eat > 40, "你從背後悄悄潛行靠近：牠多半沒發現、繼續吃（%d／100）" % sneak_eat)
 	# 守食物時假衝比遭遇時多
 	var bluff_food := 0
 	var bluff_open := 0

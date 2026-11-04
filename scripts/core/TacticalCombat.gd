@@ -215,6 +215,7 @@ func move_unit(i: int, cell: Vector2i) -> String:
 	u["pos"] = cell
 	u["facing"] = TacticalGrid.dir_toward(from, cell)
 	u["eating"] = false
+	u["last_mode"] = m
 	if str(u["species"]) == "wolf":
 		_spend_breath(i, "breath_" + m)
 	return m
@@ -371,6 +372,10 @@ func begin_round() -> Dictionary:
 	events.clear()
 	obs_bonus = observed.duplicate()
 	observed.clear()
+	for k in units.size():
+		if player_side(k):
+			units[k]["prev_mode"] = str(units[k].get("last_mode", ""))
+			units[k]["last_mode"] = ""
 	for i in units.size():
 		if active(i) and not player_side(i):
 			_drain_patience(i)
@@ -406,6 +411,7 @@ func _update_attention(i: int) -> int:
 		u["attention"] = b
 		u["bitten_by"] = -1
 		u["just_bitten"] = true
+		u["alert"] = int(_ai_cfg()["alert"]["rounds"])
 		return b
 	var cur: int = int(u.get("attention", -1))
 	if not carcass.is_empty() and int(carcass["segments"]) > 0 and map.dist(u["pos"], carcass["pos"]) <= 2.5:
@@ -439,6 +445,15 @@ func surrounded(i: int) -> bool:
 
 func _drain_patience(i: int) -> void:
 	var u: Dictionary = units[i]
+	# 警戒：有狼在附近徘徊就一直維持；狼走遠了才慢慢放鬆
+	var lingering := false
+	for k in units.size():
+		if active(k) and player_side(k) and map.dist(u["pos"], units[k]["pos"]) <= float(_ai_cfg()["alert"]["linger_dist"]):
+			lingering = true
+	if int(u.get("alert", 0)) > 0 and lingering:
+		u["alert"] = int(_ai_cfg()["alert"]["rounds"])
+	else:
+		u["alert"] = maxi(0, int(u.get("alert", 0)) - 1)
 	var ai := _ai_cfg()
 	if surrounded(i):
 		u["stamina"] = max(0.0, float(u["stamina"]) - float(ai["surrounded_drain"]))
@@ -519,6 +534,9 @@ func _ai_intent(i: int) -> Dictionary:
 		var bitten_bonus: float = float(ai.get("bitten_bonus", 3.0)) if bool(u.get("just_bitten", false)) else 0.0
 		# 叼走牠的肉的那隻：追
 		var chase: float = float(ai.get("chase_bonus", 3.0)) if str(units[t]["carrying"]) != "" else 0.0
+		# 追的時候是邊跑邊轉，不受原地轉身的限制
+		if chase > 0.0:
+			turned = want
 		# 攻擊：轉過去之後對方在範圍裡
 		for a in ["swipe", "bite"]:
 			if acts.has(a) and zone_cells(i, a, pos, turned).has(tp):
@@ -556,8 +574,9 @@ func _ai_intent(i: int) -> Dictionary:
 		# 後退
 		if acts.has("back_off") and (n_threats >= 2 or hp_ratio < 0.5):
 			cands.append([float(sc["back_off"]) - bold, "back_off", pos, facing, nothing, "back_off"])
-		# 追叼走肉的
-		if chase > 0.0 and d > 1.5:
+		# 追叼走肉的（衝得到就衝，追不到才走過去）
+		var can_charge: bool = acts.has("charge") and d >= 1.5 and d <= float(_acfg("charge").get("length", 4)) + 0.5 and _clear_line(i, pos, want, tp)
+		if chase > 0.0 and d > 1.5 and not can_charge:
 			var toc := _step_toward(i, tp, true)
 			if toc != pos:
 				cands.append([float(sc["approach_food"]) + chase, "move", toc, TacticalGrid.dir_toward(toc, tp), nothing, "chase"])
@@ -568,7 +587,11 @@ func _ai_intent(i: int) -> Dictionary:
 				cands.append([float(sc["approach_threat"]) + bold * 2.0, "move", to3, TacticalGrid.dir_toward(to3, tp), nothing, "approach"])
 		# 在殘骸旁、威脅還遠：吃
 		if at_food and acts.has("eat"):
-			var safe: bool = d > float(ai["eat_safe_dist"])
+			var alert: bool = int(u.get("alert", 0)) > 0
+			var safe_d: float = float(ai["eat_safe_dist"]) + (float(ai["alert"]["extra_dist"]) if alert else 0.0)
+			var safe: bool = d > safe_d or (bool(u["eating"]) and not alert and not _notices(i, t))
+			if d <= safe_d and not safe:
+				u["alert"] = int(ai["alert"]["rounds"])
 			cands.append([float(sc["eat"]) if safe else 1.0, "eat", pos, facing, nothing, "eat"])
 	elif at_food and acts.has("eat"):
 		cands.append([float(sc["eat"]), "eat", pos, facing, nothing, "eat"])
@@ -619,7 +642,7 @@ func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: 
 		var e := enemy_index()
 		var state := "away"
 		if active(e):
-			if bool(units[e]["eating"]):
+			if bool(units[e]["eating"]) and not moved:
 				state = "eating"
 			elif TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], from) == "front" and map.dist(units[e]["pos"], from) <= 2.5:
 				state = "facing"
@@ -1231,6 +1254,21 @@ func _ally_move(i: int, goal: Vector2i, zone: Dictionary, stop_adjacent := false
 			best = c
 	return best
 
+func _creep_toward(i: int, goal: Vector2i, zone: Dictionary) -> Vector2i:
+	var u: Dictionary = units[i]
+	var best: Vector2i = u["pos"]
+	var bd: float = map.dist(u["pos"], goal)
+	var blocks := blocks_for(i)
+	for d in TacticalGrid.DIRS:
+		var c: Vector2i = u["pos"] + d
+		if not map.in_bounds(c) or blocks.has(c) or _impassable(i).contains(map.terrain(c)) or zone.has(c):
+			continue
+		var dd: float = map.dist(c, goal)
+		if dd < bd - 0.01:
+			bd = dd
+			best = c
+	return best
+
 func _nearest_edge_away(i: int) -> Vector2i:
 	var u: Dictionary = units[i]
 	var e := enemy_index()
@@ -1304,6 +1342,9 @@ func _ally_plan(i: int) -> Dictionary:
 						bestc = c
 				goal = bestc
 			p["move"] = _ally_move(i, goal, zone, false, Vector2i(0, 0))
+			# 靠近在吃的對手時用潛行（一次一格），比較不會被發現
+			if active(e) and bool(units[e]["eating"]) and map.dist(u["pos"], units[e]["pos"]) <= float(_ai_cfg()["sneak_dist"]):
+				p["move"] = _creep_toward(i, goal, zone)
 			# 到了殘骸旁、牠沒看著：同一回合叼
 			var save: Vector2i = u["pos"]
 			u["pos"] = p["move"]
@@ -1370,3 +1411,11 @@ func _track(i: int, a: String) -> void:
 		var old: Vector2i = it.get("target", tp)
 		if map.dist(old, tp) <= float(cfg["ai"].get("track_pounce", 1.5)) and map.dist(u["pos"], tp) <= float(_acfg("pounce").get("range", 3)) + 1.0:
 			it["target"] = tp
+
+# 在吃的時候有沒有發現靠近的狼：看牠在哪一側、上一回合怎麼靠近的（悄悄潛行最不容易被發現，跑過來最容易）
+func _notices(i: int, t: int) -> bool:
+	var ai := _ai_cfg()
+	var sd := TacticalGrid.side_of(units[i]["pos"], units[i]["facing"], units[t]["pos"])
+	var p: float = float(ai["notice"]["side"].get(sd, 1.0))
+	p *= float(ai["notice"]["mode"].get(str(units[t].get("prev_mode", "")), 1.0))
+	return rng.randf() < clamp(p, 0.0, 1.0)
