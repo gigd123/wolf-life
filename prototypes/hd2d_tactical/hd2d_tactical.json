@@ -1,6 +1,6 @@
 {
-  "_comment": "HD-2D 戰術場景測試（2026-11-04，prototypes/hd2d_tactical/）的數值。和遊戲進度無關。tile_px：一格幾像素（32／48 比較）。step_scales：分段縮放時，畫布放大到螢幕的整數倍（近、中、遠），每一段都是一個材質像素對齊一個畫布像素。smooth：無段縮放時，螢幕上一格的像素範圍與滾輪每格的倍率。level_height：地形高一階的世界高度（一格寬 = 1）。camera_pitch：鏡頭往下看的角度。",
-  "map_w": 32,
+  "_comment": "HD-2D 戰術場景測試（地圖和主遊戲的戰術地圖一樣 40×16）（2026-11-04，prototypes/hd2d_tactical/）的數值。和遊戲進度無關。tile_px：一格幾像素（32／48 比較）。step_scales：分段縮放時，畫布放大到螢幕的整數倍（近、中、遠），每一段都是一個材質像素對齊一個畫布像素。smooth：無段縮放時，螢幕上一格的像素範圍與滾輪每格的倍率。level_height：地形高一階的世界高度（一格寬 = 1）。camera_pitch：鏡頭往下看的角度。",
+  "map_w": 40,
   "map_h": 16,
   "tile_px": [32, 48],
   "step_scales": [3, 2, 1],

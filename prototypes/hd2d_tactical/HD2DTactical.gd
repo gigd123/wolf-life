@@ -103,6 +103,10 @@ func _build_map() -> void:
 	_fill(Rect2i(17, 0, 6, 4), GRASS, 6, ROCK)
 	# 岩柱（高 4 階，上不去）
 	_fill(Rect2i(24, 11, 3, 2), SNOW, 4, ROCK)
+	# 右邊：草地上的矮岩坎（高 1 階）與一塊高台（高 3 階，要從矮岩坎一階一階上去）
+	_fill(Rect2i(32, 5, 5, 3), GRASS, 1, ROCK)
+	_fill(Rect2i(34, 2, 4, 3), GRASS, 2, ROCK)
+	_fill(Rect2i(36, 2, 2, 2), SNOW, 3, ROCK)
 	# 小溪（低一階，有水）
 	for x in range(14, map_w):
 		for y in [13, 14]:
@@ -265,7 +269,8 @@ func _place_trees() -> void:
 		spots.append(Vector2i(map_w - 1, y))
 	for c in [Vector2i(9, 2), Vector2i(10, 4), Vector2i(2, 12), Vector2i(8, 12), Vector2i(9, 13), Vector2i(12, 9), Vector2i(13, 11),
 			Vector2i(19, 9), Vector2i(18, 11), Vector2i(29, 4), Vector2i(28, 2), Vector2i(29, 9), Vector2i(30, 11), Vector2i(23, 4),
-			Vector2i(17, 6), Vector2i(26, 3), Vector2i(21, 1), Vector2i(19, 2)]:
+			Vector2i(17, 6), Vector2i(26, 3), Vector2i(21, 1), Vector2i(19, 2),
+			Vector2i(31, 3), Vector2i(33, 9), Vector2i(35, 11), Vector2i(38, 8), Vector2i(31, 10), Vector2i(36, 6)]:
 		spots.append(c)
 	for c in spots:
 		if not in_map(c) or blocked.has(c) or terrain[c.y][c.x] == WATER or c == wolf_cell or c == moose_cell:
