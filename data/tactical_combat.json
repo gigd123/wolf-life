@@ -1,0 +1,122 @@
+{
+  "_comment": "戰術戰鬥原型（docs/proposals/tactical-combat-prototype.md，2026-11-04）的數值。移動成本、喘沿用 tactical_hunt.json 的 move、breath。標 assume 的是待模擬調整的初始值。",
+  "_terrain_comment": "地形字元：. 開闊、f 密林、l 倒木、r 岩坡、s 淺水、c 峭壁（走不進去，可以背靠）、T 大樹、t 小樹（走不進去；美洲獅、黑熊可以爬）、B 大石頭（狼、美洲獅跳得上去，額外代價 terrain_extra.B）。",
+  "terrain_extra": { "B": 2.0, "T": 0.0, "t": 0.0, "c": 0.0 },
+  "impassable": "cTt",
+  "max_rounds": 30,
+  "carry": {
+    "_comment": "叼著肉時的移動（使用者 2026-11-04：看肉的大小）：small 野兔大小／一小塊不變、medium 從大殘骸叼的一段少 1 格、large 一條後腿或一整隻幼鹿少 2 格且不能衝刺。叼著不能咬、撲；放下不花動作。",
+    "move_less": { "small": 0.0, "medium": 1.0, "large": 2.0 },
+    "no_sprint": ["large"]
+  },
+  "carcass": {
+    "_comment": "殘骸：segments 段數；size large 的可以叼一塊（medium）或撕一條腿（leg_segments 段，large）；small_whole 的整隻叼走（size 照 whole_size）。",
+    "elk": { "segments": 6, "size": "large", "leg_segments": [2, 3] },
+    "mule_deer": { "segments": 4, "size": "large", "leg_segments": [2, 2] },
+    "fawn": { "segments": 2, "small_whole": true, "whole_size": "large" },
+    "hare": { "segments": 1, "small_whole": true, "whole_size": "small" }
+  },
+  "wolf_profiles": {
+    "novice": { "speed": 55, "strength": 50, "skill": 45, "perception": 50, "stamina": 70, "health": 80, "health_max": 80 },
+    "average": { "speed": 62, "strength": 60, "skill": 58, "perception": 60, "stamina": 80, "health": 100, "health_max": 100 },
+    "veteran": { "speed": 70, "strength": 68, "skill": 70, "perception": 72, "stamina": 85, "health": 110, "health_max": 110 }
+  },
+  "knowledge_presets": { "novice": 0, "experienced": 2, "veteran": 3 },
+  "opponents": {
+    "_comment": "assume。move 小跑格數、charge_move 衝刺格數；terrain_cost 覆寫地形代價（灰熊爬大石頭比較慢：狼跳上去可以爭取一兩回合，但躲不久，規格第五節）；turn_steps 每回合最多轉幾個 45°（-1 不限）；actions 能用的動作（共用動作庫，每種只能用做得到的）。",
+    "grizzly_bear": { "hp": 260, "move": 3.0, "charge_move": 5.0, "turn_steps": 1, "strength": 95, "speed": 55,
+      "actions": ["swipe", "charge", "bluff_charge", "bite", "turn", "move", "back_off", "eat", "guard", "back_to_wall", "flee"],
+      "impassable": "cTt", "terrain_cost": { "B": 4.0 } },
+    "cougar": { "hp": 110, "move": 4.0, "charge_move": 6.0, "turn_steps": -1, "strength": 70, "speed": 75,
+      "actions": ["swipe", "pounce", "bite", "turn", "move", "back_off", "eat", "guard", "back_to_wall", "climb", "flee"],
+      "impassable": "cTt" }
+  },
+  "scenarios": {
+    "_comment": "原型的固定情境（規格第九節）。map 每列一樣長；units：wolf（你）、mate（伴侶）、對手；facing 是面向（dx, dy）；carcass：[x, y, 種類]；eating：對手開場在吃。",
+    "grizzly_arrives": {
+      "map": [
+        "................",
+        "...f......ff....",
+        "..ff.......f....",
+        "......B.........",
+        "...........T....",
+        "................",
+        "..t.......ll....",
+        "..........l.....",
+        "...ff...........",
+        "................"
+      ],
+      "carcass": [7, 5, "elk"],
+      "wolf": [6, 5], "mate": [6, 6],
+      "opponent": { "id": "grizzly_bear", "pos": [15, 4], "facing": [-1, 0] }
+    },
+    "grizzly_on_carcass": {
+      "map": [
+        "................",
+        "..ff.......f....",
+        "..f.............",
+        "........T.......",
+        "......B.........",
+        "................",
+        "...........t....",
+        "..ll............",
+        "...........ff...",
+        "................"
+      ],
+      "carcass": [9, 5, "elk"],
+      "wolf": [1, 5], "mate": [1, 6],
+      "opponent": { "id": "grizzly_bear", "pos": [10, 5], "facing": [1, 0], "eating": true }
+    },
+    "grizzly_open": {
+      "map": [
+        "................",
+        "................",
+        "....f...........",
+        "................",
+        "........B.......",
+        "................",
+        "............f...",
+        "................",
+        "................",
+        "................"
+      ],
+      "wolf": [4, 5],
+      "opponent": { "id": "grizzly_bear", "pos": [9, 5], "facing": [-1, 0] }
+    },
+    "cougar_cache": {
+      "map": [
+        "cccccccccc......",
+        "cc.......c......",
+        "c....T.........f",
+        "c..............f",
+        "c........B......",
+        "c...............",
+        "...........ff...",
+        "..f.............",
+        "................",
+        "................"
+      ],
+      "carcass": [3, 3, "mule_deer"],
+      "wolf": [12, 7], "mate": [13, 7],
+      "opponent": { "id": "cougar", "pos": [3, 2], "facing": [0, 1], "eating": true }
+    },
+    "cougar_ambush": {
+      "map": [
+        "......ff........",
+        ".....fff....T...",
+        "......f.........",
+        "................",
+        "........B.......",
+        "................",
+        "...T............",
+        ".........ll.....",
+        "................",
+        "................"
+      ],
+      "wolf": [8, 6],
+      "opponent": { "id": "cougar", "pos": [7, 5], "facing": [1, 1], "ambush": true }
+    },
+    "grizzly_arrives_mate": { "base": "grizzly_arrives", "with_mate": true },
+    "grizzly_on_carcass_mate": { "base": "grizzly_on_carcass", "with_mate": true }
+  }
+}
