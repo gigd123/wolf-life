@@ -2396,3 +2396,145 @@ hd2d.info.smooth,無段縮放（螢幕上一格 {t} 像素）・素材一格 {n}
 hd2d.info.far,拉遠看全貌（再按一次「全貌：拉遠」或滾輪回到原本的縮放）
 hd2d.help,左鍵：走到那一格（岩石台跳得上去、碎石坡走得上去）　滾輪：縮放　右鍵或中鍵拖曳、WASD、滑鼠移到畫面邊緣：捲動
 hd2d.overview.help,點一格把鏡頭移過去（Tab 關閉）
+menu.tactical_combat,戰鬥原型
+tcombat.sc.grizzly_arrives,1 灰熊來搶你的馬鹿
+tcombat.sc.grizzly_on_carcass,2 灰熊趴在殘骸上吃
+tcombat.sc.grizzly_open,3 開闊地撞上灰熊
+tcombat.sc.cougar_cache,4 美洲獅守著藏起來的鹿
+tcombat.sc.cougar_ambush,5 美洲獅伏擊
+tcombat.sc.grizzly_arrives_mate,6 灰熊來搶（有伴侶）
+tcombat.sc.grizzly_on_carcass_mate,7 灰熊在吃（有伴侶）
+tcombat.wolf.novice,年輕的狼
+tcombat.wolf.average,普通的狼
+tcombat.wolf.veteran,老練的狼
+tcombat.know.novice,知識：沒見過
+tcombat.know.experienced,知識：有經驗
+tcombat.know.veteran,知識：熟悉
+tcombat.mode.sync,同步結算
+tcombat.mode.alternate,預告後輪流
+tcombat.new,新局
+tcombat.replay,重來
+tcombat.back,返回
+tcombat.hint,點綠、黃、橘的格子選這回合要走到哪（再點一次取消），再按右下的一個動作；按下去才結算。粉紅色的格子是看得到的預告範圍，黃色虛線是牠盯著誰。
+tcombat.round,第 {n} 回合（{mode}）
+tcombat.name.wolf,你
+tcombat.name.mate,伴侶
+tcombat.name.grizzly_bear,灰熊
+tcombat.name.cougar,美洲獅
+tcombat.info.enemy,{name}　血量 {hp}%　耐心 {pat}%
+tcombat.info.wolf,{name}　血量 {hp}／{max}　喘 {b}
+tcombat.info.carrying,　叼著 {n} 段
+tcombat.info.out.retreated,　（撤出了）
+tcombat.info.out.knocked,　（被打倒了）
+tcombat.info.mode.harass,牽制中
+tcombat.info.mode.take,去叼肉
+tcombat.info.mode.back,退開
+tcombat.info.mode.escape,受傷撤退
+tcombat.info.mode.carry,叼著肉撤
+tcombat.info.carcass,殘骸：剩 {n} 段
+tcombat.in_zone,這一格在牠看起來要打的範圍裡
+tcombat.level.0,（看不清楚）
+tcombat.level.1,（看出一點）
+tcombat.level.2,（看得清楚）
+tcombat.level.3,（很熟悉）
+tcombat.tell.vague,牠在蓄勢，看不出要做什麼。
+tcombat.tell.partial.attack,牠要攻擊了。
+tcombat.tell.partial.eat,牠低頭在吃。
+tcombat.tell.partial.move,牠在移動。
+tcombat.tell.partial.turn,牠轉過身來。
+tcombat.tell.partial.flee,牠好像想走。
+tcombat.tell.partial.back_off,牠在往後退。
+tcombat.tell.partial.back_to_wall,牠往岩壁那邊退。
+tcombat.tell.partial.climb,牠盯著旁邊的樹。
+tcombat.tell.clear.swipe,牠抬起前掌，要揮掌。
+tcombat.tell.clear.charge,牠壓低身子、重心往前，要衝過來。
+tcombat.tell.clear.bluff_charge,牠壓低身子、重心往前，要衝過來。
+tcombat.tell.clear.pounce,牠伏低後腿，要撲過來。
+tcombat.tell.clear.bite,牠張開嘴，要咬。
+tcombat.tell.clear.guard,牠護住殘骸，誰靠近就打。
+tcombat.tell.clear.eat,牠低頭在吃。
+tcombat.tell.clear.move,牠在移動。
+tcombat.tell.clear.turn,牠轉身面對。
+tcombat.tell.clear.flee,牠準備離開。
+tcombat.tell.clear.back_off,牠在往後退。
+tcombat.tell.clear.back_to_wall,牠往岩壁退，想護住背後。
+tcombat.tell.clear.climb,牠要爬上樹。
+tcombat.tell.feint,（可能是虛張聲勢）
+tcombat.show.0,風險{risk}・約 {lo}～{hi}%
+tcombat.show.1,約 {lo}～{hi}%
+tcombat.show.2,約 {v}%
+tcombat.show.3,{v}%
+tcombat.risk.high,高
+tcombat.risk.mid,中
+tcombat.risk.low,低
+tcombat.act.bite,咬
+tcombat.act.pounce,撲
+tcombat.act.harass,騷擾
+tcombat.act.take.piece,叼一塊
+tcombat.act.take.leg,撕一條腿
+tcombat.act.take.whole,整個叼走
+tcombat.act.dodge,閃避
+tcombat.act.observe,觀察
+tcombat.act.wait,等
+tcombat.act.retreat,撤出
+tcombat.act.drop,放下
+tcombat.auto,交給本能
+tcombat.cmd.title,伴侶：
+tcombat.cmd.auto,自動
+tcombat.cmd.harass,牽制
+tcombat.cmd.take,叼肉
+tcombat.cmd.back,退開
+tcombat.factor.skill,技巧
+tcombat.factor.side.rear,在牠背後
+tcombat.factor.side.side,在牠側面
+tcombat.factor.side.front,在牠正面
+tcombat.factor.after_sprint,剛衝刺過
+tcombat.factor.take.eating,牠在吃
+tcombat.factor.take.away,牠沒看著你
+tcombat.factor.take.facing,牠正面對著你
+tcombat.factor.take.leg,撕一條腿比較費力
+tcombat.factor.take.whole,整個叼走
+tcombat.factor.take.guard,牠護著殘骸
+tcombat.enemy_act.swipe,揮掌
+tcombat.enemy_act.charge,衝撞
+tcombat.enemy_act.bluff_charge,虛張聲勢的衝撞
+tcombat.enemy_act.pounce,撲擊
+tcombat.enemy_act.bite,咬
+tcombat.enemy_act.guard,護食
+tcombat.ev.blocked,{who}被擋住了，沒走過去。
+tcombat.ev.changed,{who}臨時改變主意，往後退。
+tcombat.ev.hit,{who}打中了{target}（血量 −{dmg}）。
+tcombat.ev.miss,{who}沒打中{target}。
+tcombat.ev.knocked,{who}被打倒了。
+tcombat.ev.fled.hurt,{who}受了傷，掉頭走了。
+tcombat.ev.fled.patience,{who}失去了耐心，走開了。
+tcombat.ev.fled.food_gone,肉吃完了，{who}走了。
+tcombat.ev.back_off,{who}往後退了一步。
+tcombat.ev.eat,{who}低頭撕下一塊肉（剩 {left} 段）。
+tcombat.ev.back_to_wall,{who}退到岩壁前，背靠著石頭。
+tcombat.ev.climbed,{who}一躍爬上了樹，殘骸留在地上。
+tcombat.ev.enemy.swipe,{who}揮掌。
+tcombat.ev.enemy.charge,{who}衝了過來。
+tcombat.ev.enemy.bluff_charge,{who}衝了兩步就停下來，是虛張聲勢。
+tcombat.ev.enemy.pounce,{who}撲了過來。
+tcombat.ev.enemy.bite,{who}張口咬過來。
+tcombat.ev.guard,{who}護著殘骸，朝四周揮打。
+tcombat.ev.wolf.bite,{who}咬中了{target}（−{dmg}）。
+tcombat.ev.wolf.pounce,{who}撲上去咬中了{target}（−{dmg}）。
+tcombat.ev.wolf.harass,{who}咬了{target}一口就退開（−{dmg}）。
+tcombat.ev.whiff,{who}撲空了。
+tcombat.ev.take.piece,{who}叼到一塊肉。
+tcombat.ev.take.leg,{who}撕下一條腿（{n} 段）。
+tcombat.ev.take.whole,{who}把整隻叼了起來。
+tcombat.ev.take_fail,{who}沒叼到。
+tcombat.ev.cannot,{who}叼著肉，沒辦法咬。
+tcombat.ev.retreat,{who}帶著 {n} 段肉撤了出去。
+tcombat.ev.retreat.empty,{who}撤了出去。
+tcombat.ev.drop,{who}把肉放下。
+tcombat.ev.observe,{who}盯著牠的一舉一動。
+tcombat.ev.interrupted,{who}的動作被打斷了。
+tcombat.ev.learned,你更熟悉{animal}的「{act}」了（{n}／3）。
+tcombat.end.enemy_left,對手走了。你們帶走 {n} 段肉。
+tcombat.end.retreated,你撤出了戰場，帶走 {n} 段肉。
+tcombat.end.knocked,你被打倒了（原型裡不會死）。帶走 {n} 段肉。
+tcombat.end.timeout,回合用完了。帶走 {n} 段肉。

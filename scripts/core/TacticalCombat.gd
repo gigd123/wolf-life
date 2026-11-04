@@ -895,7 +895,7 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			var ch: float = float(wolf_chance(i, "take", -1, u["pos"], sprinted, kind)["chance"])
 			if rng.randf() < ch:
 				var n := take_from_carcass(i, kind)
-				_ev("take", {"who": i, "segments": n, "kind": kind})
+				_ev("take", {"who": i, "segments": n, "how": kind})
 			else:
 				_ev("take_fail", {"who": i, "why": "missed"})
 		"bite", "pounce", "harass":
@@ -917,7 +917,7 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			units[t]["stamina"] = max(0.0, float(units[t].get("stamina", 0.0)) - float(w.get("drain", dmg * 0.5)))
 			units[t]["eating"] = false
 			units[t]["bitten_by"] = i
-			_ev("bite", {"who": i, "target": t, "dmg": dmg, "kind": a})
+			_ev("bite", {"who": i, "target": t, "dmg": dmg, "how": a})
 			if a == "harass":
 				# 咬一下就退一格
 				var away: Vector2i = u["pos"] + (u["pos"] - units[t]["pos"]).sign()
@@ -1274,7 +1274,12 @@ func _ally_plan(i: int) -> Dictionary:
 				return p
 			var ep: Vector2i = units[e]["pos"]
 			# 站到和你不同的一側：牠旁邊、離你最遠、不在正面
-			var you: Vector2i = units[0]["pos"] if active(0) else ep
+			# 站到和「另一隻」（你或伴侶）不同的一側
+			var you: Vector2i = ep
+			for k in units.size():
+				if k != i and active(k) and player_side(k):
+					you = units[k]["pos"]
+					break
 			var bestc2: Vector2i = u["pos"]
 			var bs2 := -INF
 			for d in TacticalGrid.DIRS:
@@ -1290,4 +1295,12 @@ func _ally_plan(i: int) -> Dictionary:
 			var adj: bool = map.adjacent(p["move"], ep)
 			p["action"] = "harass" if adj and not zone.has(p["move"]) else ("dodge" if zone.has(p["move"]) else "wait")
 			p["target"] = e
+	return p
+
+# 交給本能：你也照伴侶的自動規則（有殘骸、牠沒盯著你就叼肉，盯著你就退開，否則牽制；叼到就撤）
+func auto_plan(i: int) -> Dictionary:
+	var keep: String = str(units[i]["command"])
+	units[i]["command"] = "auto"
+	var p := ally_plan(i)
+	units[i]["command"] = keep
 	return p
