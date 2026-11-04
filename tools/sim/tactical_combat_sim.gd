@@ -1,7 +1,8 @@
 extends SceneTree
 # 戰術戰鬥原型的模擬（規格第十一節、第一節的通過標準，2026-11-04）。
 # 每個情境 × 固定打法 × 知識 × 結算方式，各 RUNS 場（預設 200），印出：拿到 1 段以上並撤出的比例、平均段數、
-# 擊退率、受傷（血量少一成以上）、被打倒、回合數、被假動作騙到（照預告閃開卻是假衝）、伴侶受傷。
+# 每次試叼的成功率、擊退率（打傷趕走）、失去興趣離開、受傷（血量少一成以上）、被打倒、回合數、被假動作騙到（照預告閃開卻是假衝）、伴侶受傷。
+# MATE_CMD=harass 之類可以固定伴侶的指令（預設 auto）。
 # 用法：RUNS=200 SC=<情境，逗號分隔，可省略> MODES=sync,alternate WOLF=average bash tools/run_sim.sh tactical_combat_sim
 var RUNS := 200
 
@@ -27,19 +28,23 @@ func _run() -> void:
 			for k in knows:
 				for st in strats:
 					var r := _batch(sc, st, wolf, k, m)
-					print("  %-9s %-8s %-11s 叼到並撤出 %3.0f%%  段數 %.2f  擊退 %3.0f%%  受傷 %3.0f%%  打倒 %3.0f%%  回合 %4.1f  被騙 %3.0f%%  伴侶受傷 %3.0f%%  %s" % [
-						m, k, st, r["got"] * 100.0, r["meat"], r["drove"] * 100.0, r["hurt"] * 100.0, r["knocked"] * 100.0, r["rounds"], r["fooled"] * 100.0, r["mate_hurt"] * 100.0, r["outs"]])
+					print("  %-9s %-8s %-11s 叼到並撤出 %3.0f%%  每次試叼 %3.0f%%  第一次 %3.0f%%  段數 %.2f  擊退 %3.0f%%  失去興趣 %3.0f%%  受傷 %3.0f%%  打倒 %3.0f%%  回合 %4.1f  被騙 %3.0f%%  伴侶受傷 %3.0f%%  %s" % [
+						m, k, st, r["got"] * 100.0, r["try_ok"] * 100.0, r["first"] * 100.0, r["meat"], r["drove"] * 100.0, r["bored"] * 100.0, r["hurt"] * 100.0, r["knocked"] * 100.0, r["rounds"], r["fooled"] * 100.0, r["mate_hurt"] * 100.0, r["outs"]])
 	quit()
 
 func _batch(sc: String, st: String, wolf: String, know: String, m: String) -> Dictionary:
-	var acc := {"got": 0.0, "meat": 0.0, "drove": 0.0, "hurt": 0.0, "knocked": 0.0, "rounds": 0.0, "fooled": 0.0, "feints": 0.0, "mate_hurt": 0.0, "outs": {}}
+	var acc := {"got": 0.0, "meat": 0.0, "drove": 0.0, "hurt": 0.0, "knocked": 0.0, "rounds": 0.0, "fooled": 0.0, "feints": 0.0, "mate_hurt": 0.0, "outs": {}, "tries": 0.0, "takes": 0.0, "bored": 0.0, "first": 0.0, "first_n": 0.0}
 	for s in RUNS:
 		var tc := TacticalCombat.new()
 		tc.setup(sc, {"seed": 1000 + s, "wolf_profile": wolf, "knowledge": know, "mode": m})
+		var mcmd: String = _env("MATE_CMD", "")
+		if mcmd != "" and tc.index_of("mate") >= 0:
+			tc.set_command(tc.index_of("mate"), mcmd)
 		var hp0: float = tc.units[0]["hp"]
 		var fooled := 0
 		var feints := 0
 		var g := 0
+		var first_done := false
 		while not tc.done and g < 40:
 			g += 1
 			tc.begin_round()
@@ -49,6 +54,16 @@ func _batch(sc: String, st: String, wolf: String, know: String, m: String) -> Di
 			var dodged: bool = str(p.get("action", "")) == "dodge" or bool(p.get("fled_tell", false))
 			var it: Dictionary = tc.intents.get(e, {})
 			var evs: Array = tc.resolve()
+			for ev in evs:
+				if int(ev.get("who", -1)) == 0 and (str(ev["kind"]) == "take" or (str(ev["kind"]) == "take_fail" and str(ev.get("why", "")) == "missed")):
+					acc["tries"] += 1.0
+					if str(ev["kind"]) == "take":
+						acc["takes"] += 1.0
+					if not first_done:
+						first_done = true
+						acc["first_n"] += 1.0
+						if str(ev["kind"]) == "take":
+							acc["first"] += 1.0
 			if not it.is_empty() and str(it.get("looks", "")) == "charge" and int(it.get("seen", {}).get("level", 0)) >= 2:
 				if str(it["action"]) == "bluff_charge":
 					feints += 1
@@ -59,8 +74,10 @@ func _batch(sc: String, st: String, wolf: String, know: String, m: String) -> Di
 		if meat > 0:
 			acc["got"] += 1.0
 		acc["meat"] += meat
-		if tc.outcome == "enemy_left" and str(tc.units[tc.enemy_index()]["out_reason"]) in ["hurt", "patience"]:
+		if tc.outcome == "enemy_left" and str(tc.units[tc.enemy_index()]["out_reason"]) == "hurt":
 			acc["drove"] += 1.0
+		elif tc.outcome == "enemy_left" and str(tc.units[tc.enemy_index()]["out_reason"]) == "patience":
+			acc["bored"] += 1.0
 		if float(u["hp"]) < hp0 * 0.9:
 			acc["hurt"] += 1.0
 		if str(u["out_reason"]) == "knocked":
@@ -74,7 +91,7 @@ func _batch(sc: String, st: String, wolf: String, know: String, m: String) -> Di
 		acc["outs"][tc.outcome] = int(acc["outs"].get(tc.outcome, 0)) + 1
 	var n := float(RUNS)
 	return {"got": acc["got"] / n, "meat": acc["meat"] / n, "drove": acc["drove"] / n, "hurt": acc["hurt"] / n, "knocked": acc["knocked"] / n,
-		"rounds": acc["rounds"] / n, "fooled": acc["fooled"] / max(1.0, acc["feints"]), "mate_hurt": acc["mate_hurt"] / n, "outs": JSON.stringify(acc["outs"])}
+		"rounds": acc["rounds"] / n, "fooled": acc["fooled"] / max(1.0, acc["feints"]), "mate_hurt": acc["mate_hurt"] / n, "bored": acc["bored"] / n, "try_ok": acc["takes"] / max(1.0, acc["tries"]), "first": acc["first"] / max(1.0, acc["first_n"]), "outs": JSON.stringify(acc["outs"])}
 
 # --- 固定打法 ---
 

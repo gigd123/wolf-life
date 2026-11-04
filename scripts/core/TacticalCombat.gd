@@ -541,6 +541,15 @@ func _ai_intent(i: int) -> Dictionary:
 		for a in ["swipe", "bite"]:
 			if acts.has(a) and zone_cells(i, a, pos, turned).has(tp):
 				cands.append([float(sc["attack"]) * food_bonus + bold * 2.0 + bitten_bonus + chase - (1.5 if a == "bite" and acts.has("swipe") else 0.0), a, pos, turned, nothing, "attack"])
+		# 旁邊另一隻狼也打得到（例如伴侶從背後叼肉時）：順手揮過去，分數低一點
+		for k in units.size():
+			if k == t or not active(k) or not player_side(k) or map.dist(pos, units[k]["pos"]) > 1.5:
+				continue
+			var tk: Vector2i = units[k]["pos"]
+			var turned_k := TacticalGrid.turn_toward(facing, TacticalGrid.dir_toward(pos, tk), turn_steps)
+			for a in ["swipe", "bite"]:
+				if acts.has(a) and zone_cells(i, a, pos, turned_k).has(tk):
+					cands.append([float(sc["attack"]) * food_bonus + bold * 2.0 - float(ai.get("other_attack_less", 1.0)) - (1.5 if a == "bite" and acts.has("swipe") else 0.0), a, pos, turned_k, nothing, "attack_other:%d" % k])
 		if acts.has("pounce") and d >= 1.5 and d <= float(_acfg("pounce").get("range", 3)) + 0.5:
 			cands.append([float(sc["pounce"]) + bold * 2.0 - (1.5 if n_threats >= 2 else 0.0), "pounce", pos, want, tp, "pounce"])
 		if acts.has("charge") and turned == want and d >= 1.5 and d <= float(_acfg("charge").get("length", 4)) + 0.5 and _clear_line(i, pos, want, tp):
@@ -608,7 +617,11 @@ func _ai_intent(i: int) -> Dictionary:
 		if v > bs:
 			bs = v
 			best = c
-	return _intent(i, str(best[1]), best[2], best[3], best[4], str(best[5]))
+	var why: String = str(best[5])
+	if why.begins_with("attack_other:"):
+		u["attention"] = int(why.split(":")[1])
+		why = "attack"
+	return _intent(i, str(best[1]), best[2], best[3], best[4], why)
 
 func _intent(i: int, action: String, move: Vector2i, facing: Vector2i, target: Vector2i, why: String) -> Dictionary:
 	var it := {"action": action, "move": move, "facing": facing, "target": target, "why": why}
@@ -646,8 +659,8 @@ func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: 
 				state = "eating"
 			elif TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], from) == "front" and map.dist(units[e]["pos"], from) <= 2.5:
 				state = "facing"
-			elif int(units[e].get("attention", -1)) == i and map.dist(units[e]["pos"], from) <= 2.0:
-				# 牠沒在吃、正盯著你：從側面靠近牠也看得到
+			elif not bool(units[e]["eating"]) and int(units[e].get("attention", -1)) == i and map.dist(units[e]["pos"], from) <= 2.0:
+				# 牠沒在吃、正盯著你：從側面靠近牠也看得到（還在吃的話，這一回合才走過來算 away）
 				state = "facing"
 		p = float(w.get(state, 0.5))
 		factors.append(["take." + state, 0.0])
@@ -1204,6 +1217,9 @@ func ally_mode(i: int) -> String:
 		return "escape"
 	if str(u["carrying"]) != "":
 		return "carry"
+	# 拖太久還沒機會：自己判斷算了、離開（只在「交給牠判斷」時）
+	if str(u["command"]) == "auto" and rounds >= int(ac.get("leave_rounds", 999)):
+		return "escape"
 	var cmd: String = str(u["command"])
 	if cmd != "auto":
 		if cmd == "take" and (carcass.is_empty() or int(carcass["segments"]) <= 0):
@@ -1297,8 +1313,17 @@ func _ally_plan(i: int) -> Dictionary:
 	var u: Dictionary = units[i]
 	var e := enemy_index()
 	var zone := _shown_zone_for(i)
+	# 牠（或交給本能的你）不會每次都照預告完美閃開：有時看錯或衝得太投入，這一回合當作沒看到範圍。
+	# 用固定的種子擲（同一回合重算結果不變）
+	var mr := RandomNumberGenerator.new()
+	mr.seed = hash([rng.seed, rounds, i, "misread"])
+	var misread: bool = mr.randf() < float(cfg["ally"].get("misread", 0.0))
+	if misread:
+		zone = {}
 	var m := ally_mode(i)
 	var p := {"mode": m}
+	if misread:
+		p["misread"] = true
 	match m:
 		"escape", "carry":
 			if map.on_edge(u["pos"]):
