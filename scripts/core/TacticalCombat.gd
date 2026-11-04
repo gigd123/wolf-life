@@ -494,6 +494,9 @@ func _ai_intent(i: int) -> Dictionary:
 	var at_food: bool = has_food and map.adjacent(pos, carcass["pos"])
 	var nothing := Vector2i(-1, -1)
 	var t := _update_attention(i)
+	# 被咬（或肉被叼走）的那一回合可以猛然轉身
+	if bool(u.get("just_bitten", false)):
+		turn_steps = int(_opp_cfg(i).get("turn_when_bitten", turn_steps))
 	# 放棄：血量低、耐心用完、殘骸吃光了
 	var give: float = float(cfg["give_up"].get(sp, 0.3)) * (1.0 - bold * 0.3)
 	if hp_ratio < give or float(u["stamina"]) <= 0.0:
@@ -514,15 +517,17 @@ func _ai_intent(i: int) -> Dictionary:
 		var food_bonus: float = float(ai["stake_food"]) if at_food else 1.0
 		# 剛被咬：先回頭對付咬牠的
 		var bitten_bonus: float = float(ai.get("bitten_bonus", 3.0)) if bool(u.get("just_bitten", false)) else 0.0
+		# 叼走牠的肉的那隻：追
+		var chase: float = float(ai.get("chase_bonus", 3.0)) if str(units[t]["carrying"]) != "" else 0.0
 		# 攻擊：轉過去之後對方在範圍裡
 		for a in ["swipe", "bite"]:
 			if acts.has(a) and zone_cells(i, a, pos, turned).has(tp):
-				cands.append([float(sc["attack"]) * food_bonus + bold * 2.0 + bitten_bonus - (1.5 if a == "bite" and acts.has("swipe") else 0.0), a, pos, turned, nothing, "attack"])
+				cands.append([float(sc["attack"]) * food_bonus + bold * 2.0 + bitten_bonus + chase - (1.5 if a == "bite" and acts.has("swipe") else 0.0), a, pos, turned, nothing, "attack"])
 		if acts.has("pounce") and d >= 1.5 and d <= float(_acfg("pounce").get("range", 3)) + 0.5:
 			cands.append([float(sc["pounce"]) + bold * 2.0 - (1.5 if n_threats >= 2 else 0.0), "pounce", pos, want, tp, "pounce"])
 		if acts.has("charge") and turned == want and d >= 1.5 and d <= float(_acfg("charge").get("length", 4)) + 0.5 and _clear_line(i, pos, want, tp):
 			# 守著食物時多半只是假衝嚇你（記述：灰熊在殘骸旁常虛張聲勢）
-			cands.append([float(sc["charge"]) + bold * 2.0 - (float(ai.get("charge_food_less", 1.5)) if has_food else 0.0), "charge", pos, want, nothing, "charge"])
+			cands.append([float(sc["charge"]) + bold * 2.0 + chase - (float(ai.get("charge_food_less", 1.5)) if has_food and chase == 0.0 else 0.0), "charge", pos, want, nothing, "charge"])
 			if acts.has("bluff_charge"):
 				cands.append([float(sc["bluff_guard"] if has_food else sc["bluff_open"]) - bold * 1.5, "bluff_charge", pos, want, nothing, "bluff"])
 		# 沒辦法馬上打：轉身面對
@@ -551,6 +556,11 @@ func _ai_intent(i: int) -> Dictionary:
 		# 後退
 		if acts.has("back_off") and (n_threats >= 2 or hp_ratio < 0.5):
 			cands.append([float(sc["back_off"]) - bold, "back_off", pos, facing, nothing, "back_off"])
+		# 追叼走肉的
+		if chase > 0.0 and d > 1.5:
+			var toc := _step_toward(i, tp, true)
+			if toc != pos:
+				cands.append([float(sc["approach_food"]) + chase, "move", toc, TacticalGrid.dir_toward(toc, tp), nothing, "chase"])
 		# 沒有殘骸：靠近（大膽的）或觀望
 		if not has_food and d > 1.5:
 			var to3 := _step_toward(i, tp, true)
@@ -600,7 +610,7 @@ func plan(i: int, p: Dictionary) -> void:
 	plans[i] = p
 
 # 狼的動作機率（第 4 步會依知識改變「顯示」；實際機率只看這裡）。回傳 {chance, factors:[[鍵, 加減]]}
-func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: bool = false, kind: String = "piece") -> Dictionary:
+func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: bool = false, kind: String = "piece", moved: bool = false) -> Dictionary:
 	var u: Dictionary = units[i]
 	var w := _wcfg(action)
 	var factors: Array = []
@@ -621,6 +631,9 @@ func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: 
 		if kind != "piece":
 			p += float(w.get(kind, 0.0))
 			factors.append(["take." + kind, float(w.get(kind, 0.0))])
+		if moved:
+			p += float(w.get("moved", 0.0))
+			factors.append(["take.moved", float(w.get("moved", 0.0))])
 		if active(e) and intents.has(e) and str(intents[e]["action"]) == "guard":
 			p += float(w.get("guard", 0.0))
 			factors.append(["take.guard", float(w.get("guard", 0.0))])
@@ -693,8 +706,22 @@ func _resolve_sync() -> void:
 				_ev("blocked", {"who": i})
 	for i in intents.keys():
 		units[i]["facing"] = intents[i]["facing"]
+		_react_turn(i)
 		_maybe_change(i)
 	_act_in_order(sprinted)
+
+# 出手前朝牠盯著的（或最近的）轉一次：灰熊 45°、美洲獅不限（同步與輪流都一樣；不然繞到背後就永遠打不到）
+func _react_turn(i: int) -> void:
+	var it: Dictionary = intents[i]
+	if not ATTACKS.has(str(it["action"])) or str(it["action"]) in ["charge", "bluff_charge", "pounce"]:
+		return
+	var t: int = int(units[i].get("attention", -1))
+	if t < 0 or not active(t):
+		t = _nearest_threat(i)
+	if t < 0 or map.dist(units[i]["pos"], units[t]["pos"]) > 1.5:
+		return
+	var want := TacticalGrid.dir_toward(units[i]["pos"], units[t]["pos"])
+	units[i]["facing"] = TacticalGrid.turn_toward(units[i]["facing"], want, int(_opp_cfg(i).get("turn_steps", -1)))
 
 # 預告後輪流：你方先動（移動＋出手），對手朝最近的威脅轉一次再出手
 func _resolve_alternate() -> void:
@@ -714,12 +741,8 @@ func _resolve_alternate() -> void:
 		if it["move"] != units[i]["pos"] and unit_at(it["move"], i) < 0:
 			units[i]["pos"] = it["move"]
 			units[i]["eating"] = false
-		var t := _nearest_threat(i)
-		if t >= 0 and str(it["action"]) != "flee":
-			var want := TacticalGrid.dir_toward(units[i]["pos"], units[t]["pos"])
-			units[i]["facing"] = TacticalGrid.turn_toward(it["facing"], want, 1)
-		else:
-			units[i]["facing"] = it["facing"]
+		units[i]["facing"] = it["facing"]
+		_react_turn(i)
 		_maybe_change(i)
 		_do_enemy_action(i)
 
@@ -803,7 +826,9 @@ func _do_enemy_action(i: int) -> Array:
 			return hit_units
 		"eat":
 			if at_carcass(i):
-				carcass["segments"] = int(carcass["segments"]) - 1
+				u["eat_count"] = int(u.get("eat_count", 0)) + 1
+				if int(u["eat_count"]) % int(_ai_cfg().get("eat_per_segment", 1)) == 0:
+					carcass["segments"] = int(carcass["segments"]) - 1
 				u["eating"] = true
 				_ev("eat", {"who": i, "left": int(carcass["segments"])})
 			return hit_units
@@ -892,10 +917,15 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			if not take_kinds(i).has(kind):
 				_ev("take_fail", {"who": i, "why": "cannot"})
 				return
-			var ch: float = float(wolf_chance(i, "take", -1, u["pos"], sprinted, kind)["chance"])
+			var ch: float = float(wolf_chance(i, "take", -1, u["pos"], sprinted, kind, plans.get(i, {}).has("move"))["chance"])
 			if rng.randf() < ch:
 				var n := take_from_carcass(i, kind)
 				_ev("take", {"who": i, "segments": n, "how": kind})
+				# 肉被叼走：對手的注意力轉到小偷，下一回合可以猛然轉身
+				var e := enemy_index()
+				if active(e):
+					units[e]["bitten_by"] = i
+					units[e]["eating"] = false
 			else:
 				_ev("take_fail", {"who": i, "why": "missed"})
 		"bite", "pounce", "harass":
@@ -1100,7 +1130,7 @@ func action_options(i: int, from: Vector2i = Vector2i(-1, -1), sprinted := false
 	var save_pos: Vector2i = units[i]["pos"]
 	units[i]["pos"] = from
 	for k in take_kinds(i):
-		var c2: Dictionary = wolf_chance(i, "take", -1, from, sprinted, k)
+		var c2: Dictionary = wolf_chance(i, "take", -1, from, sprinted, k, from != save_pos)
 		out.append({"id": "take", "kind": k, "chance": c2["chance"], "factors": c2["factors"], "show": display_chance(i, float(c2["chance"]), sp)})
 	units[i]["pos"] = save_pos
 	for a2 in ["dodge", "observe", "wait"]:

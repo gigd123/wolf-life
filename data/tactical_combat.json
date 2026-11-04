@@ -24,7 +24,7 @@
   "knowledge_presets": { "novice": 0, "experienced": 2, "veteran": 3 },
   "opponents": {
     "_comment": "assume。move 小跑格數、charge_move 衝刺格數；terrain_cost 覆寫地形代價（灰熊爬大石頭比較慢：狼跳上去可以爭取一兩回合，但躲不久，規格第五節）；turn_steps 每回合最多轉幾個 45°（-1 不限）；actions 能用的動作（共用動作庫，每種只能用做得到的）。",
-    "grizzly_bear": { "hp": 260, "move": 3.0, "charge_move": 5.0, "turn_steps": 1, "strength": 95, "speed": 55,
+    "grizzly_bear": { "hp": 400, "move": 3.0, "charge_move": 5.0, "turn_steps": 1, "turn_when_bitten": -1, "strength": 95, "speed": 55,
       "actions": ["swipe", "charge", "bluff_charge", "bite", "turn", "move", "back_off", "eat", "guard", "back_to_wall", "flee"],
       "impassable": "cTt", "terrain_cost": { "B": 4.0 } },
     "cougar": { "hp": 110, "move": 4.0, "charge_move": 6.0, "turn_steps": -1, "strength": 70, "speed": 75,
@@ -51,7 +51,7 @@
     "bite": { "base": 0.55, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.15 }, "after_sprint": -0.1, "dmg": [8, 14], "breath": -4.0, "init": 10 },
     "pounce": { "base": 0.5, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.2 }, "after_sprint": -0.1, "dmg": [12, 20], "breath": -10.0, "range": 2, "init": 6 },
     "harass": { "base": 0.65, "skill_div": 150.0, "side": { "rear": 0.15, "side": 0.1, "front": -0.1 }, "after_sprint": -0.05, "dmg": [3, 6], "drain": 8.0, "breath": -6.0, "init": 12 },
-    "take": { "eating": 0.85, "away": 0.65, "facing": 0.25, "skill_div": 200.0, "leg": -0.2, "whole": -0.05, "guard": -0.2, "init": 2 },
+    "take": { "eating": 0.75, "away": 0.5, "facing": 0.2, "skill_div": 200.0, "leg": -0.2, "whole": -0.05, "guard": -0.2, "moved": -0.15, "init": 2 },
     "dodge": { "breath": -6.0, "init": 15 },
     "dodge_mult": 0.4,
     "guard": { "init": 0 },
@@ -59,9 +59,9 @@
     "wait": { "breath": 5.0, "init": 0 }
   },
   "initiative": { "jitter": 15.0, "interrupt": 0.5 },
-  "enemy_stamina": { "grizzly_bear": 100.0, "cougar": 70.0 },
+  "enemy_stamina": { "grizzly_bear": 220.0, "cougar": 70.0 },
   "give_up": { "_comment": "血量低於這個比例就逃（個性大膽的再低一點：× (1 − bold × 0.3)）。耐心（stamina）用完也走。", "grizzly_bear": 0.3, "cougar": 0.45 },
-  "_ai_comment": "第 3 步：對手的 AI。每回合替能用的動作打分（scores 是基本分），加上情境的加減與一點亂數（noise），選最高的。bold 個性的範圍（-1 膽小 ～ 1 大膽）：大膽的攻擊分數高、比較晚放棄。attention：被咬就把注意力轉到咬牠的那隻；守食物時看最靠近殘骸的；否則看最近的。patience：每回合被兩隻以上圍住 surrounded_drain、沒有殘骸也沒被逼近時 idle_drain（遭遇戰牠會失去興趣）。climb_hurt：美洲獅血量低於這個比例、或被兩隻以上圍住時想上樹（樹在 climb_search 格內）。wall_search：背靠岩壁找幾格內的峭壁。bitten_bonus：剛被咬時回頭攻擊、轉身的加分。charge_food_less：守著食物時真衝撞的減分（多半是假衝）。assume。",
+  "_ai_comment": "第 3 步：對手的 AI。每回合替能用的動作打分（scores 是基本分），加上情境的加減與一點亂數（noise），選最高的。bold 個性的範圍（-1 膽小 ～ 1 大膽）：大膽的攻擊分數高、比較晚放棄。attention：被咬就把注意力轉到咬牠的那隻；守食物時看最靠近殘骸的；否則看最近的。patience：每回合被兩隻以上圍住 surrounded_drain、沒有殘骸也沒被逼近時 idle_drain（遭遇戰牠會失去興趣）。climb_hurt：美洲獅血量低於這個比例、或被兩隻以上圍住時想上樹（樹在 climb_search 格內）。wall_search：背靠岩壁找幾格內的峭壁。bitten_bonus：剛被咬時回頭攻擊、轉身的加分。charge_food_less：守著食物時真衝撞的減分（多半是假衝）。chase_bonus：有狼叼走牠的肉時，追那隻（靠近、衝撞、攻擊）的加分。eat_per_segment：吃幾次才少一段（一場戰鬥只有幾分鐘，牠吃不完一頭馬鹿）。turn_when_bitten：被咬的那一回合可以猛然轉身（-1 不限）。assume。",
   "ai": {
     "noise": 1.5,
     "bold": { "grizzly_bear": [-0.3, 0.7], "cougar": [-0.7, 0.3] },
@@ -75,7 +75,9 @@
     "wall_search": 3,
     "stake_food": 1.3,
     "bitten_bonus": 3.0,
-    "charge_food_less": 1.5
+    "charge_food_less": 1.5,
+    "chase_bonus": 3.0,
+    "eat_per_segment": 3
   },
   "_info_comment": "第 4 步：預告的資訊等級（0 模糊、1 部分、2 明確、3 熟悉）= base + 知識（這個動作見過的次數 ≥ know_2 加 1、≥ know_3 再加 1）+ 感知（≥ perception_good 加 1、< perception_poor 減 1）− 遠（> far 格）− 視線被擋（中間有 los_block 的地形）− 夜晚 + 觀察過（+1），夾在 0～3。feint_hint：實際是假動作、而且看得清楚（明確以上）時，依「假動作」見過幾次（0～3）提示「可能是假動作」的機率；false_hint：不是假動作卻提示的機率（同樣依見過假動作的次數）。機率顯示依這種動物的經驗（見過的動作次數平均）：0 風險高低＋寬範圍（± range0）、1 範圍（± range1）、2 約略（以 round2 為單位）、3 精確；觀察過那一回合高一級。learn_dist：看到牠出手（這個距離內、視線沒被擋）就記一次，最多 3。assume。",
   "info": {
