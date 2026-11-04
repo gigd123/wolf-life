@@ -1405,7 +1405,10 @@ func _small_pounce_replaceable(d: Dictionary) -> bool:
 
 func _maybe_small_pounce(mode: String) -> bool:
 	var cfg := _small_pounce_cfg()
-	if cfg.is_empty() or not (cfg.get("modes", []) as Array).has(mode) or not RNGService.chance(float(cfg.get("chance", 0.0))):
+	var ch: float = float(cfg.get("chance", 0.0))
+	if wolf.age_years < float(cfg.get("young_age", 0.0)):
+		ch = float(cfg.get("young_chance", ch))
+	if cfg.is_empty() or not (cfg.get("modes", []) as Array).has(mode) or not RNGService.chance(ch):
 		return false
 	var cands := small_pounce_candidates(current_region)
 	if cands.is_empty():

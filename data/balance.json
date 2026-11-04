@@ -417,9 +417,9 @@
         "radius": { "big": 2, "small": 1 },
         "discard": { "early": 0.0, "peak": 0.03, "decline": 0.02 }, "leave_discard": 0.5, "leftover_value": 8, "max_leftovers": 4 } }
   },
-  "_small_pounce_comment": "田鼠與地松鼠的小撲（Phase 2g 第 2 步，探索事件、不進戰術地圖）：探索（trail、ridge、border）的結果是平淡的（什麼都沒發現、採集物、陳舊的獵物線索；冬眠的洞口、逆風除外）時，擲 chance 換成小動物，再從這一區有的地形、這一季有的動物裡挑（weight）——不蓋掉獵物、殘骸這些發現（2026-10-22 一生模擬：原本每次探索先擲 10%，取代了小狼原本的發現，1～2 歲挨餓反而多；使用者選 A）。有小動物的區域平淡結果約 22%，chance 0.45 → 整體約 10%（2026-11-04 試玩回饋「出現有點多」改成 0.25，約 5～6%）；地點換成那個地形。夏季前半＝夏季第 summer_early_until_day 天以前。成功率 = chance（冬季的田鼠在雪下 snow_chance）+ Σ（能力 − 50）÷ stat_divisor，夾在 min～max。撲過去：體力 −stamina，不花時段；成功飽食度 +hunger（一小口）；技巧成長 = learn_per_unit × skill_units（約狩獵撲中一次的六分之一，2026-10-22 使用者選 A 從三分之一減半；失敗再 × growth.fail_mult），同一天第 repeat_free 次之後每次再 × growth.repeat_decay。照常過日子：未滿 auto.max_age 歲、體力 ≥ auto.min_stamina 才撲。",
+  "_small_pounce_comment": "田鼠與地松鼠的小撲（Phase 2g 第 2 步，探索事件、不進戰術地圖）：探索（trail、ridge、border）的結果是平淡的（什麼都沒發現、採集物、陳舊的獵物線索；冬眠的洞口、逆風除外）時，擲 chance 換成小動物，再從這一區有的地形、這一季有的動物裡挑（weight）——不蓋掉獵物、殘骸這些發現（2026-10-22 一生模擬：原本每次探索先擲 10%，取代了小狼原本的發現，1～2 歲挨餓反而多；使用者選 A）。有小動物的區域平淡結果約 22%，chance 0.45 → 整體約 10%（2026-11-04 試玩回饋「出現有點多」改成 0.25，約 5～6%；未滿 young_age 歲用 young_chance 0.32，約 7%，使用者想讓小狼多一點）；地點換成那個地形。夏季前半＝夏季第 summer_early_until_day 天以前。成功率 = chance（冬季的田鼠在雪下 snow_chance）+ Σ（能力 − 50）÷ stat_divisor，夾在 min～max。撲過去：體力 −stamina，不花時段；成功飽食度 +hunger（一小口）；技巧成長 = learn_per_unit × skill_units（約狩獵撲中一次的六分之一，2026-10-22 使用者選 A 從三分之一減半；失敗再 × growth.fail_mult），同一天第 repeat_free 次之後每次再 × growth.repeat_decay。照常過日子：未滿 auto.max_age 歲、體力 ≥ auto.min_stamina 才撲。",
   "small_pounce": {
-    "chance": 0.25, "modes": ["trail", "ridge", "border"], "summer_early_until_day": 5,
+    "chance": 0.25, "young_chance": 0.32, "young_age": 1.0, "modes": ["trail", "ridge", "border"], "summer_early_until_day": 5,
     "stamina": 2, "skill_units": 0.165, "repeat_free": 1,
     "stat_divisor": 200.0, "min": 0.15, "max": 0.85,
     "animals": {
