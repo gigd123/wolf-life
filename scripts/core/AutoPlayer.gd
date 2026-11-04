@@ -393,6 +393,23 @@ func _explore_once() -> void:
 	if d.get("kind", "") == "cougar_ambush":
 		play_combat(GameState.start_cougar_ambush_combat())
 		return
+	# 灰熊藏的獵物：謹慎的、不餓的離開；餓了先觀察，看起來熊不在才偷吃
+	if d.get("kind", "") == "grizzly_cache":
+		if style == "cautious" or GameState.wolf.hunger >= 60:
+			GameState.leave_grizzly_cache()
+			return
+		var looks: String = GameState.grizzly_cache_observe() if style != "assault" else ("present" if str(d.get("sign", "")).begins_with("present") else "absent")
+		if not GameState.wolf.alive:
+			return
+		if looks == "absent" or GameState.wolf.hunger < 25:
+			var res: Dictionary = GameState.eat_grizzly_cache()
+			if res["charge"]:
+				play_combat(GameState.start_combat("grizzly_bear", "adult", "carcass"))
+			if GameState.is_feeding():
+				_feed_loop()
+		else:
+			GameState.leave_grizzly_cache()
+		return
 	if d.get("kind", "") == "cougar_cache":
 		if GameState.wolf.hunger < 70 and style != "cautious":
 			GameState.eat_cougar_cache()
@@ -487,7 +504,7 @@ func _routine_notable(d: Dictionary) -> bool:
 			_encounter = res["encounter"]
 		return false
 	# 其他狼的氣味標記、陳舊的危險痕跡照常略過（記在摘要裡太細）；新鮮的危險、殘骸、苔原狼交給玩家
-	if kind in ["carcass", "she_wolf", "pack_sign", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "pack_remains"]:
+	if kind in ["carcass", "she_wolf", "pack_sign", "tundra_wolves", "tundra_mob", "tundra_hunt", "tundra_den", "tundra_den_bear", "overmarked", "challenger", "cougar_ambush", "cougar_cache", "grizzly_cache", "pack_remains"]:
 		return true
 	return kind == "clue" and d.get("source_kind", "") == "threat" and (d.get("fresh", false) or d.get("clue", "") == "sight")
 
@@ -576,6 +593,9 @@ func _scavenger(ev: String) -> void:
 		return
 	if ev in ["cougar", "black_bear", "coyote"]:
 		play_combat(GameState.start_combat(ev, "adult", "carcass"))
+		return
+	if ev == "grizzly_return":
+		play_combat(GameState.start_combat("grizzly_bear", "adult", "carcass"))
 		return
 	if ev == "challenger":
 		if style == "cautious":

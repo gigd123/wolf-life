@@ -1053,6 +1053,12 @@ func _build_debug_overlay() -> void:
 		debug_overlay.visible = false
 		_show_playtest_stats()
 	)
+	_debug_button(event_row3, tr("debug.event.grizzly_cache"), func():
+		debug_overlay.visible = false
+		GameState.debug_grizzly_cache()
+		_show_discovery(GameState.current_discovery)
+		_refresh()
+	)
 	_debug_button(event_row3, tr("debug.event.bear_scavenge"), func():
 		debug_overlay.visible = false
 		GameState.start_feeding("white_tailed_deer", "adult", "stream")
@@ -1848,6 +1854,9 @@ func _show_discovery(d: Dictionary) -> void:
 	if d.get("kind", "") == "challenger":
 		_show_challenger(d, false)
 		return
+	if d.get("kind", "") == "grizzly_cache":
+		_show_grizzly_cache(d)
+		return
 	if d.get("kind", "") in ["cougar_ambush", "cougar_cache"]:
 		_show_cougar(d)
 		return
@@ -2387,6 +2396,13 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 	# 美洲獅回來找牠的獵物、黑熊被氣味引來（Phase 2 第 3 步）
 	if event == "ranch_patrol":
 		_show_ranch_encounter(GameState.start_ranch_encounter("eating", str(GameState.current_feeding.get("terrain", ""))))
+		return
+	# 灰熊回來找牠藏的獵物（2026-11-04）：直接打起來，可以撤退
+	if event == "grizzly_return":
+		var gt: String = tr("grizzly_cache.return" + ("" if GameState.is_identified("grizzly_bear") else ".first"))
+		_log(gt)
+		combat_intro = gt
+		_begin_combat(GameState.start_combat("grizzly_bear", "adult", "carcass"), "attack")
 		return
 	if event in ["cougar", "black_bear", "coyote"]:
 		var known: bool = GameState.is_identified(event)
@@ -3979,6 +3995,51 @@ func _show_cougar(d: Dictionary) -> void:
 			GameState.clear_discovery()
 			encounter_overlay.visible = false
 			_refresh())
+	encounter_overlay.visible = true
+
+# 灰熊藏的獵物（2026-11-04，提案 docs/proposals/grizzly-cache.md B）：看跡象 → 觀察、偷吃、離開。
+func _show_grizzly_cache(d: Dictionary) -> void:
+	var known: String = "known" if d.get("known", false) else "unknown"
+	var lines: Array[String] = [tr("grizzly_cache.found." + known).replace("{animal}", _prey_name(str(d.get("animal_id", "elk")), "adult")),
+		tr("grizzly_cache.sign." + str(d.get("sign", "absent.tracks")))]
+	if str(d.get("observed", "")) != "":
+		lines.append(tr("grizzly_cache.observed.%s.%s" % [d["observed"], known]))
+	var text: String = "".join(lines)
+	_log(lines.back() if str(d.get("observed", "")) != "" else text)
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
+	var carcass_tex: Texture2D = ArtLibrary.carcass(str(d.get("animal_id", "elk")))
+	if carcass_tex != null:
+		encounter_sprite.show_static(carcass_tex)
+	_clear_children(encounter_buttons_box)
+	_refresh()
+	if GameState.wolf != null and not GameState.wolf.alive:
+		_on_wolf_died(GameState.wolf.death_cause)
+		return
+	if str(d.get("observed", "")) == "":
+		_add_encounter_button(tr("grizzly_cache.observe") + "（%d%%）" % int(round(GameState.grizzly_observe_chance() * 100.0)), func():
+			GameState.grizzly_cache_observe()
+			if GameState.wolf != null and not GameState.wolf.alive:
+				_on_wolf_died(GameState.wolf.death_cause)
+				return
+			_show_grizzly_cache(GameState.current_discovery))
+	_add_encounter_button(tr("grizzly_cache.eat"), func():
+		var res: Dictionary = GameState.eat_grizzly_cache()
+		if not res["charge"]:
+			_show_feeding()
+			return
+		var ct: String = tr("grizzly_cache.charge" + ("" if d.get("known", false) else ".first"))
+		if float(res["damage"]) > 0.0:
+			ct += tr("encounter.direct_hit").replace("{n}", str(int(round(float(res["damage"])))))
+		_log(ct)
+		combat_intro = ct
+		_refresh()
+		_begin_combat(GameState.start_combat("grizzly_bear", "adult", "carcass"), "attack"))
+	_add_encounter_button(tr("ui.leave"), func():
+		GameState.leave_grizzly_cache()
+		encounter_overlay.visible = false
+		_refresh())
 	encounter_overlay.visible = true
 
 # 猞猁（Phase 2 第 6 步）：看到牠；牠剛抓到雪兔時可以趕走牠搶下來，或悄悄靠近叼走（Phase 2g 第 3 步）。

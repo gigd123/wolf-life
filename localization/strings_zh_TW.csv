@@ -2356,3 +2356,22 @@ debug.p3.leader_old,除錯：鄰群帶頭的公狼 7 歲了，撞上牠們時可
 debug.p3.cannot_join,除錯：要 2 歲以上、沒有伴侶才能補上空缺。
 debug.p3.vacancy,除錯：鄰群帶頭的公狼死了，那隻母狼在{region}。
 debug.p3.mate_died,除錯：伴侶死了。
+grizzly_cache.found.known,一堆被扒起來的土和枝葉，底下埋著一頭{animal}，只露出一截腿。是灰熊藏的，牠會分好幾天吃，常常就睡在附近。
+grizzly_cache.found.unknown,一堆被扒起來的土和枝葉，堆得比你還高，底下埋著一頭{animal}。土上有一股很重的陌生味道。
+grizzly_cache.sign.present.ravens,幾隻渡鴉停在高處的枝頭盯著土堆，卻沒有一隻敢落下來。
+grizzly_cache.sign.present.bed,旁邊的灌木底下，草被壓出一個很大的窩，壓痕還沒彈回來。
+grizzly_cache.sign.present.scat,土堆旁有一坨新鮮的糞，還帶著濕氣。
+grizzly_cache.sign.absent.ravens,幾隻渡鴉落在土堆上，大搖大擺地啄著露出來的肉。
+grizzly_cache.sign.absent.tracks,繞著土堆的大腳印邊緣已經乾了，是好一陣子前留下的。
+grizzly_cache.sign.absent.scat,土堆旁的糞已經乾硬了。
+grizzly_cache.observed.present.known,你趴在下風處看了很久。灌木底下好像有一團褐色的東西動了一下，灰熊大概就睡在那裡。
+grizzly_cache.observed.present.unknown,你趴在下風處看了很久。灌木底下好像有一團巨大的褐色東西動了一下，藏肉的傢伙大概就睡在那裡。
+grizzly_cache.observed.absent.known,你趴在下風處看了很久，四周沒有動靜，風裡的熊味也是舊的。牠大概走開了。
+grizzly_cache.observed.absent.unknown,你趴在下風處看了很久，四周沒有動靜，那股陌生的味道也是舊的。藏肉的傢伙大概走開了。
+grizzly_cache.observe,趴在下風處觀察（一個時段）
+grizzly_cache.eat,扒開來偷吃
+grizzly_cache.charge,你才扒開土，灌木底下的灰熊就咆哮著衝了出來。
+grizzly_cache.charge.first,你才扒開土，灌木底下一團巨大的褐色東西咆哮著衝了出來，是一頭熊。
+grizzly_cache.return,你正吃著，林子裡傳來沉重的腳步聲。灰熊回來找牠藏的獵物，直接朝你衝了過來。
+grizzly_cache.return.first,你正吃著，林子裡傳來沉重的腳步聲。一頭巨大的熊回來找牠藏的獵物，直接朝你衝了過來。
+debug.event.grizzly_cache,灰熊藏的獵物

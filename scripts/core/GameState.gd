@@ -1593,6 +1593,80 @@ func eat_cougar_cache() -> void:
 	life_log["cougar_caches"] = int(life_log.get("cougar_caches", 0)) + 1
 	state_changed.emit()
 
+# --- 灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/grizzly-cache.md）---
+func _grizzly_cache_cfg() -> Dictionary:
+	return GameData.balance.get("grizzly_cache", {})
+
+# 探索時：一堆被土蓋住的屍體。熊可能還睡在附近（present），畫面只給跡象。
+func _maybe_grizzly_cache(force := false) -> bool:
+	var cfg := _grizzly_cache_cfg()
+	if cfg.is_empty() or (not force and (blizzard_here() or current_map() == "ranch")):
+		return false
+	var season: String = GameTime.current_season()
+	var bear: float = float(EncounterSystem.region_data(current_region).get("competitor_weights", {}).get("grizzly_bear", {}).get(season, 0))
+	var here: float = min(1.0, bear / float(cfg.get("weight_norm", 2.0))) * float(cfg.get("season_mult", {}).get(season, 0.0))
+	if not force and (here <= 0.0 or not RNGService.chance(float(cfg.get("cache_chance", 0.05)) * here)):
+		return false
+	var prey: Dictionary = EncounterSystem.region_data(current_region).get("prey_weights", {})
+	var weights := {}
+	for a in (cfg.get("cache_animals", {}) as Dictionary).keys():
+		if prey.has(a):
+			weights[a] = cfg["cache_animals"][a]
+	if weights.is_empty():
+		weights = {"mule_deer": 1}
+	var present: bool = RNGService.chance(float(cfg.get("present", {}).get(season, 0.3)))
+	var sign_present: bool = present if RNGService.chance(float(cfg.get("sign_truth", 0.75))) else not present
+	var signs: Array = ["ravens", "bed", "scat"] if sign_present else ["ravens", "tracks", "scat"]
+	current_discovery = {"kind": "grizzly_cache", "location": _random_terrain(current_region), "animal_id": str(RNGService.weighted_pick(weights)),
+		"present": present, "sign": ("present." if sign_present else "absent.") + str(signs[RNGService.randi_range(0, signs.size() - 1)]),
+		"known": is_identified("grizzly_bear"), "observed": ""}
+	life_log["grizzly_caches_found"] = int(life_log.get("grizzly_caches_found", 0)) + 1
+	return true
+
+func grizzly_observe_chance() -> float:
+	var o: Dictionary = _grizzly_cache_cfg().get("observe", {})
+	return clamp(float(o.get("base", 0.7)) + (wolf.perception - 50.0) / float(o.get("divisor", 100.0)), float(o.get("min", 0.55)), float(o.get("max", 0.95)))
+
+# 觀察：花一個時段，感知越高越準。回傳看出來的結果（"present"／"absent"，可能看錯）。
+func grizzly_cache_observe() -> String:
+	var d: Dictionary = current_discovery
+	record_decision("grizzly_cache.observe")
+	var right: bool = RNGService.chance(grizzly_observe_chance())
+	var seen: bool = bool(d.get("present", false)) == right
+	d["observed"] = "present" if seen else "absent"
+	GameTime.advance_turns(int(_grizzly_cache_cfg().get("observe_turns", 4)))
+	_check_death()
+	state_changed.emit()
+	return str(d["observed"])
+
+# 偷吃：熊在 → 牠衝出來（charge_hit_chance 先挨一下），回傳 {charge, damage}；熊不在 → 開始吃，每段可能回來。
+func eat_grizzly_cache() -> Dictionary:
+	var d: Dictionary = current_discovery
+	var cfg := _grizzly_cache_cfg()
+	clear_discovery()
+	record_decision("grizzly_cache.eat")
+	start_feeding(str(d.get("animal_id", "elk")), "adult", str(d.get("location", "")))
+	current_feeding["segments_left"] = max(1, int(current_feeding.get("segments_left", 1)) - 1)
+	current_feeding["grizzly_cache"] = true
+	life_log["grizzly_caches_eaten"] = int(life_log.get("grizzly_caches_eaten", 0)) + 1
+	var res := {"charge": bool(d.get("present", false)), "damage": 0.0}
+	if res["charge"]:
+		life_log["grizzly_cache_charges"] = int(life_log.get("grizzly_cache_charges", 0)) + 1
+		if RNGService.chance(float(cfg.get("charge_hit_chance", 0.3))):
+			var dr: Array = cfg.get("charge_damage", [10, 22])
+			var hit := FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(dr[0]), int(dr[1]))), FightRules.opponent_profile("grizzly_bear", "adult").get("parts", {}), "grizzly_cache.charge", false)
+			res["damage"] = float(hit["damage"])
+	state_changed.emit()
+	return res
+
+# 除錯：直接發現（不管這一區、季節）；熊在不在照這一季的機率
+func debug_grizzly_cache() -> void:
+	_maybe_grizzly_cache(true)
+
+func leave_grizzly_cache() -> void:
+	record_decision("grizzly_cache.leave")
+	clear_discovery()
+
 func start_cougar_ambush_combat() -> Combat:
 	var d: Dictionary = current_discovery
 	clear_discovery()
@@ -2090,6 +2164,9 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		return current_discovery
 	# 美洲獅：伏擊、藏起來的獵物（Phase 2 第 3 步）
 	if _maybe_cougar():
+		state_changed.emit()
+		return current_discovery
+	if _maybe_grizzly_cache():
 		state_changed.emit()
 		return current_discovery
 	# 年輕的挑戰者（1.9b 第 2 步）
@@ -4637,6 +4714,8 @@ func feed_once() -> Dictionary:
 		# 美洲獅回來找牠藏的獵物；黑熊被氣味引來（Phase 2 第 3 步）
 		elif bool(current_feeding.get("cougar", false)) and RNGService.chance(float(_cougar_cfg().get("return_chance", 0.25))):
 			event = "cougar"
+		elif bool(current_feeding.get("grizzly_cache", false)) and RNGService.chance(float(_grizzly_cache_cfg().get("return_chance", 0.2))):
+			event = "grizzly_return"
 		elif RNGService.chance(float(_black_bear_cfg().get("feed_chance", 0.06)) * black_bear_mult()):
 			event = "black_bear"
 		elif RNGService.chance(float(_coyote_cfg().get("feed_chance", 0.1)) * coyote_mult()):

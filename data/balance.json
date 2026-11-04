@@ -379,6 +379,12 @@
     "challenger": { "first_days": [5, 15], "return_days": [10, 16], "yield_return_mult": 0.6, "grow": 3, "explore_chance": 0.5 },
     "lie_down": { "min_elder_years": 3.0, "max_health_below": 70 }
   },
+  "_grizzly_cache_comment": "灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/grizzly-cache.md）：探索時 cache_chance × 這一區這一季灰熊的權重（competitor_weights，÷ weight_norm、最多 1）× season_mult 發現一堆被土蓋住的屍體（cache_animals）。present 是熊還睡在附近的機率（依季節）。跡象：sign_truth 的機率照實際（熊在／不在）給跡象，否則給相反的。觀察：花 observe_turns 回合，看對的機率 = observe.base + (感知 − 50) ÷ observe.divisor，夾在 min～max。偷吃：熊在 → 牠衝出來，charge_hit_chance 先挨一下（charge_damage），接著戰鬥（可以撤退）；熊不在 → 牠已經吃掉一段，每吃一段 return_chance 回來，直接戰鬥（不先挨打）。",
+  "grizzly_cache": { "cache_chance": 0.05, "weight_norm": 2.0, "season_mult": { "spring": 1.0, "summer": 0.3, "autumn": 0.6, "winter": 0.0 },
+    "cache_animals": { "elk": 2, "mule_deer": 2, "white_tailed_deer": 1, "moose": 1, "bison": 1, "caribou": 1 },
+    "present": { "spring": 0.5, "summer": 0.3, "autumn": 0.3 }, "sign_truth": 0.75,
+    "observe_turns": 4, "observe": { "base": 0.7, "divisor": 100.0, "min": 0.55, "max": 0.95 },
+    "charge_hit_chance": 0.3, "charge_damage": [10, 22], "return_chance": 0.2 },
   "_cougar_comment": "美洲獅（Phase 2 第 3 步）：regions 是牠出沒的區域與倍率。探索時 cache_chance 發現牠藏起來的獵物（被草和土蓋住，cache_animals），可以偷吃（牠已經吃掉一段），每吃一段 return_chance 牠回來；ambush：清晨、黃昏、深夜在牠的區域探索時，ambush_chance 的機率被撲擊（次成年、老年、帶傷的狼 × vulnerable_mult），先挨一下（ambush_damage），接著戰鬥或撤退。",
   "cougar": { "regions": { "mountain_canyon": 1.0, "mountain_foothills": 0.7, "mountain_meadow": 0.4, "mountain_headwaters": 0.5, "forest_west": 0.6 },
     "cache_chance": 0.05, "cache_animals": { "mule_deer": 3, "elk": 1, "bighorn_sheep": 1, "white_tailed_deer": 2 }, "return_chance": 0.25,
