@@ -66,6 +66,12 @@ func _ready() -> void:
 	tactical_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_hunt/TacticalHunt.tscn"))
 	box.add_child(tactical_btn)
 
+	# HD-2D 戰術場景測試（prototypes/hd2d_tactical/，2026-11-04；和遊戲進度無關）
+	var hd2d_btn := Button.new()
+	hd2d_btn.text = tr("menu.hd2d_test")
+	hd2d_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/hd2d_tactical/HD2DTactical.tscn"))
+	box.add_child(hd2d_btn)
+
 	var visual_test_btn := Button.new()
 	visual_test_btn.text = "3D Visual Test (prototype)"
 	visual_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/visual_test/VisualTest.tscn"))

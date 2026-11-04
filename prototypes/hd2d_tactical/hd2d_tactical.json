@@ -1,0 +1,20 @@
+{
+  "_comment": "HD-2D 戰術場景測試（2026-11-04，prototypes/hd2d_tactical/）的數值。和遊戲進度無關。tile_px：一格幾像素（32／48 比較）。step_scales：分段縮放時，畫布放大到螢幕的整數倍（近、中、遠），每一段都是一個材質像素對齊一個畫布像素。smooth：無段縮放時，螢幕上一格的像素範圍與滾輪每格的倍率。level_height：地形高一階的世界高度（一格寬 = 1）。camera_pitch：鏡頭往下看的角度。",
+  "map_w": 32,
+  "map_h": 16,
+  "tile_px": [32, 48],
+  "step_scales": [3, 2, 1],
+  "smooth": { "min_tile": 16.0, "max_tile": 160.0, "wheel_mult": 1.12 },
+  "level_height": 0.5,
+  "camera_pitch": -40.0,
+  "pan_speed": 12.0,
+  "edge_scroll_px": 6,
+  "move_step_sec": 0.18,
+  "jump_up_levels": 2,
+  "climb_levels": 1,
+  "drop_levels": 3,
+  "light": { "pitch": -24.0, "yaw": -55.0, "energy": 1.25, "color": [1.0, 0.86, 0.68] },
+  "ambient": { "color": [0.48, 0.54, 0.66], "energy": 0.55 },
+  "fog": { "color": [0.72, 0.76, 0.84], "density": 0.004 },
+  "tilt_shift": { "focus": 0.52, "band": 0.24, "max_blur": 1.6 }
+}

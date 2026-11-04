@@ -1,0 +1,43 @@
+// 地形方塊：上面與側面用不同的像素材質，UV 照世界座標（相鄰格子的材質接得起來），可以疊格線。
+shader_type spatial;
+render_mode cull_back;
+
+uniform sampler2D top_tex : source_color, filter_nearest, repeat_enable;
+uniform sampler2D side_tex : source_color, filter_nearest, repeat_enable;
+uniform float texels_per_unit = 32.0; // 一格（世界 1 單位）幾個材質像素 = tile_px
+uniform float top_size = 64.0;
+uniform float side_size = 64.0;
+uniform bool show_grid = true;
+uniform vec4 grid_color : source_color = vec4(0.08, 0.08, 0.1, 0.35);
+uniform float side_shade = 0.82;
+
+varying vec3 wpos;
+varying vec3 wnorm;
+
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnorm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+
+void fragment() {
+	vec3 col;
+	if (wnorm.y > 0.5) {
+		// 對齊材質像素：先換成材質像素座標再取整，避免縮小時的接縫
+		vec2 t = floor(wpos.xz * texels_per_unit) + 0.5;
+		col = texture(top_tex, t / top_size).rgb;
+		if (show_grid) {
+			vec2 f = fract(wpos.xz);
+			float px = 1.0 / texels_per_unit;
+			if (f.x < px || f.y < px) {
+				col = mix(col, grid_color.rgb, grid_color.a);
+			}
+		}
+	} else {
+		vec2 uv = abs(wnorm.x) > 0.5 ? vec2(wpos.z, -wpos.y) : vec2(wpos.x, -wpos.y);
+		vec2 t = floor(uv * texels_per_unit) + 0.5;
+		col = texture(side_tex, t / side_size).rgb * side_shade;
+	}
+	ALBEDO = col;
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
+}

@@ -2375,3 +2375,24 @@ grizzly_cache.charge.first,你才扒開土，灌木底下一團巨大的褐色�
 grizzly_cache.return,你正吃著，林子裡傳來沉重的腳步聲。灰熊回來找牠藏的獵物，直接朝你衝了過來。
 grizzly_cache.return.first,你正吃著，林子裡傳來沉重的腳步聲。一頭巨大的熊回來找牠藏的獵物，直接朝你衝了過來。
 debug.event.grizzly_cache,灰熊藏的獵物
+menu.hd2d_test,HD-2D 測試
+hd2d.title,HD-2D 戰術場景測試
+hd2d.zoom_mode.step,縮放：分段
+hd2d.zoom_mode.smooth,縮放：無段
+hd2d.tile,每格：{n} 像素
+hd2d.zoom_in,放大
+hd2d.zoom_out,縮小
+hd2d.overview.map,全貌：俯視圖（Tab）
+hd2d.overview.far,全貌：拉遠
+hd2d.focus,回到狼（F）
+hd2d.grid,格線（G）
+hd2d.dof,景深
+hd2d.back,返回主選單
+hd2d.level.0,近
+hd2d.level.1,中
+hd2d.level.2,遠
+hd2d.info.step,分段縮放（{level}，畫布放大 {s} 倍）・一格 {n} 像素・畫面約 {w}×{h} 格
+hd2d.info.smooth,無段縮放（螢幕上一格 {t} 像素）・素材一格 {n} 像素・畫面約 {w}×{h} 格
+hd2d.info.far,拉遠看全貌（再按一次「全貌：拉遠」或滾輪回到原本的縮放）
+hd2d.help,左鍵：走到那一格（岩石台跳得上去、碎石坡走得上去）　滾輪：縮放　右鍵或中鍵拖曳、WASD、滑鼠移到畫面邊緣：捲動
+hd2d.overview.help,點一格把鏡頭移過去（Tab 關閉）
