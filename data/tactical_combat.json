@@ -172,6 +172,24 @@
       "wolf": [8, 6],
       "opponent": { "id": "cougar", "pos": [7, 5], "facing": [1, 1], "ambush": true }
     },
+    "grizzly_guard_facing": {
+      "_comment": "模擬用（通過標準的「不利的局勢」）：灰熊守在殘骸旁、面對你，你背後是峭壁。",
+      "map": [
+        "................",
+        "................",
+        "....f...........",
+        "................",
+        "................",
+        "................",
+        "............f...",
+        "................",
+        "....cccccccc....",
+        "....cccccccc...."
+      ],
+      "carcass": [8, 5, "elk"],
+      "wolf": [8, 7],
+      "opponent": { "id": "grizzly_bear", "pos": [8, 4], "facing": [0, 1] }
+    },
     "grizzly_arrives_mate": { "base": "grizzly_arrives", "with_mate": true },
     "grizzly_on_carcass_mate": { "base": "grizzly_on_carcass", "with_mate": true }
   }
