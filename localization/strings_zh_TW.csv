@@ -2539,3 +2539,4 @@ tcombat.end.retreated,你撤出了戰場，帶走 {n} 段肉。
 tcombat.end.knocked,你被打倒了（原型裡不會死）。帶走 {n} 段肉。
 tcombat.end.timeout,回合用完了。帶走 {n} 段肉。
 tcombat.factor.take.moved,這一回合才走過來
+tcombat.ev.dropped,{who}被打得鬆了口，肉掉在地上。

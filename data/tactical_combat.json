@@ -46,7 +46,7 @@
     "flee": { "zone": "", "init": 0 }
   },
   "change_chance": { "grizzly_bear": 0.08, "cougar": 0.12 },
-  "_wolf_comment": "狼的主要動作（規格第四節）。base：基本機率；skill_div：(技巧 − 50) ÷ skill_div；side：前／側／後的加減；after_sprint：這回合衝刺過再出手的減成；dmg：傷害（× 力量 ÷ 60）；breath：花的喘（負的是花）。take：叼肉的機率依對手的狀態（在吃、面向別處、面向你）。assume。",
+  "_wolf_comment": "狼的主要動作（規格第四節）。base：基本機率；skill_div：(技巧 − 50) ÷ skill_div；side：前／側／後的加減；after_sprint：這回合衝刺過再出手的減成；dmg：傷害（× 力量 ÷ 60）；breath：花的喘（負的是花）。take：叼肉的機率依對手的狀態（在吃、面向別處、面向你或正盯著你）；moved：這一回合才走過來。drop_on_hit：叼著肉被打中時把肉甩掉的機率。assume。",
   "wolf": {
     "bite": { "base": 0.55, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.15 }, "after_sprint": -0.1, "dmg": [8, 14], "breath": -4.0, "init": 10 },
     "pounce": { "base": 0.5, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.2 }, "after_sprint": -0.1, "dmg": [12, 20], "breath": -10.0, "range": 2, "init": 6 },
@@ -54,6 +54,7 @@
     "take": { "eating": 0.75, "away": 0.5, "facing": 0.2, "skill_div": 200.0, "leg": -0.2, "whole": -0.05, "guard": -0.2, "moved": -0.15, "init": 2 },
     "dodge": { "breath": -6.0, "init": 15 },
     "dodge_mult": 0.4,
+    "drop_on_hit": 0.5,
     "guard": { "init": 0 },
     "observe": { "breath": 8.0, "init": 0 },
     "wait": { "breath": 5.0, "init": 0 }

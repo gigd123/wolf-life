@@ -623,6 +623,9 @@ func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: 
 				state = "eating"
 			elif TacticalGrid.side_of(units[e]["pos"], units[e]["facing"], from) == "front" and map.dist(units[e]["pos"], from) <= 2.5:
 				state = "facing"
+			elif int(units[e].get("attention", -1)) == i and map.dist(units[e]["pos"], from) <= 2.0:
+				# 牠沒在吃、正盯著你：從側面靠近牠也看得到
+				state = "facing"
 		p = float(w.get(state, 0.5))
 		factors.append(["take." + state, 0.0])
 		var sk: float = (float(u["stats"]["skill"]) - 50.0) / float(w.get("skill_div", 200.0))
@@ -800,6 +803,10 @@ func _hurt(i: int, dmg: float, by: int) -> void:
 	var u: Dictionary = units[i]
 	u["hp"] = max(0.0, float(u["hp"]) - dmg)
 	_ev("hit", {"who": by, "target": i, "dmg": dmg})
+	# 叼著肉被打中：有機會把肉甩掉
+	if player_side(i) and str(u["carrying"]) != "" and rng.randf() < float(cfg["wolf"].get("drop_on_hit", 0.5)):
+		drop_carried(i)
+		_ev("dropped", {"who": i})
 	if player_side(i) and float(u["hp"]) <= 0.0:
 		drop_carried(i)
 		u["out"] = true
@@ -928,6 +935,11 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 					units[e]["eating"] = false
 			else:
 				_ev("take_fail", {"who": i, "why": "missed"})
+				# 叼失敗：牠發現了，下一回合可以猛然轉身對付你
+				var e2 := enemy_index()
+				if active(e2):
+					units[e2]["bitten_by"] = i
+					units[e2]["eating"] = false
 		"bite", "pounce", "harass":
 			if str(u["carrying"]) != "":
 				_ev("cannot", {"who": i, "why": "carrying"})
