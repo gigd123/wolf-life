@@ -9,7 +9,9 @@ extends RefCounted
 # 第 2 步：回合流程。begin_round() 對手表態 → plan() 你方的移動＋一個動作 → resolve() 依 mode 結算：
 #   sync 同步：雙方移動 → 變卦 → 照先後出手（對手打範圍、狼打目標）→ 先打中的可能打斷後出手的
 #   alternate 預告後輪流：你方先移動、出手 → 對手朝最近的威脅轉一次（≤45°）→ 變卦 → 出手
-# 之後的步驟：動作庫與 AI（第 3 步，現在對手用 _simple_intent 的簡單規則）、資訊等級、伴侶的合作。
+# 第 3 步：對手的 AI（_ai_intent 打分）：注意力（被咬看咬牠的、守食物看最靠近殘骸的）、守食物、假衝（守食物時常見）、
+#   背靠岩壁（被圍、受傷）、美洲獅上樹（受傷或被圍；上樹＝離開，殘骸留下）、放棄（血量、耐心、殘骸吃光）、個性（bold）。
+# 之後的步驟：資訊等級、伴侶的合作。
 
 const CFG_PATH := "res://data/tactical_combat.json"
 const HUNT_CFG_PATH := "res://data/tactical_hunt.json"
@@ -80,7 +82,10 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 		"stats": {"strength": float(od["strength"]), "speed": float(od["speed"])}, "hp": float(od["hp"]), "hp_max": float(od["hp"]),
 		"breath": 0.0, "breath_max": 0.0, "carrying": "", "carry_segments": 0, "out": false, "out_reason": "",
 		"eating": bool(o.get("eating", false)), "ambush": bool(o.get("ambush", false)),
-		"stamina": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)), "stamina_max": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0))})
+		"stamina": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)), "stamina_max": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)),
+		"attention": -1, "bitten_by": -1})
+	var br: Array = cfg["ai"]["bold"].get(str(o["id"]), [0.0, 0.0])
+	units.back()["bold"] = rng.randf_range(float(br[0]), float(br[1]))
 	carcass = {}
 	if sc.has("carcass"):
 		var cc: Array = sc["carcass"]
@@ -353,7 +358,8 @@ func begin_round() -> Dictionary:
 	events.clear()
 	for i in units.size():
 		if active(i) and not player_side(i):
-			intents[i] = _simple_intent(i)
+			_drain_patience(i)
+			intents[i] = _ai_intent(i)
 	return intents
 
 func _nearest_threat(i: int) -> int:
@@ -370,52 +376,195 @@ func _nearest_threat(i: int) -> int:
 func _actions_of(i: int) -> Array:
 	return _opp_cfg(i).get("actions", [])
 
-# intent：{action（實際）, looks（看起來像）, move（表態時要走到的格子）, facing, target（撲擊的格子）, zone}
-func _simple_intent(i: int) -> Dictionary:
+# intent：{action（實際）, looks（看起來像）, move（表態時要走到的格子）, facing, target（撲擊的格子）, zone, why}
+# 第 3 步：AI（打分）。對手只會用 opponents.*.actions 裡的動作。
+func _ai_cfg() -> Dictionary:
+	return cfg["ai"]
+
+# 注意力：被咬就看咬牠的；有殘骸時看最靠近殘骸的；否則看最近的
+func _update_attention(i: int) -> int:
 	var u: Dictionary = units[i]
-	var acts := _actions_of(i)
+	var b: int = int(u.get("bitten_by", -1))
+	u["just_bitten"] = false
+	if b >= 0 and active(b):
+		u["attention"] = b
+		u["bitten_by"] = -1
+		u["just_bitten"] = true
+		return b
+	var cur: int = int(u.get("attention", -1))
+	if not carcass.is_empty() and int(carcass["segments"]) > 0 and map.dist(u["pos"], carcass["pos"]) <= 2.5:
+		var best := -1
+		var bd := INF
+		for k in units.size():
+			if active(k) and player_side(k):
+				var d: float = map.dist(units[k]["pos"], carcass["pos"])
+				if d < bd:
+					bd = d
+					best = k
+		if best >= 0 and bd <= 2.5:
+			u["attention"] = best
+			return best
+	if cur >= 0 and active(cur) and map.dist(u["pos"], units[cur]["pos"]) <= 3.0:
+		return cur
+	u["attention"] = _nearest_threat(i)
+	return int(u["attention"])
+
+# 圍住：兩隻以上在 2 格內、而且在牠不同的兩側（前／側／後）
+func surrounded(i: int) -> bool:
+	var sides := {}
+	var n := 0
+	for k in units.size():
+		if active(k) and player_side(k) and map.dist(units[i]["pos"], units[k]["pos"]) <= 2.5:
+			n += 1
+			var sd := TacticalGrid.side_of(units[i]["pos"], units[i]["facing"], units[k]["pos"])
+			var lr: int = signi(int(round(Vector2(units[k]["pos"] - units[i]["pos"]).cross(Vector2(units[i]["facing"])))))
+			sides[sd + str(lr)] = true
+	return n >= 2 and sides.size() >= 2
+
+func _drain_patience(i: int) -> void:
+	var u: Dictionary = units[i]
+	var ai := _ai_cfg()
+	if surrounded(i):
+		u["stamina"] = max(0.0, float(u["stamina"]) - float(ai["surrounded_drain"]))
 	var t := _nearest_threat(i)
+	var near: bool = t >= 0 and map.dist(u["pos"], units[t]["pos"]) <= 2.5
+	if carcass.is_empty() and not near and rounds > 1:
+		u["stamina"] = max(0.0, float(u["stamina"]) - float(ai["idle_drain"]))
+
+func _near_terrain(c: Vector2i, chars: String, radius: int) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	var bd := INF
+	for y in range(c.y - radius, c.y + radius + 1):
+		for x in range(c.x - radius, c.x + radius + 1):
+			var q := Vector2i(x, y)
+			if map.in_bounds(q) and chars.contains(map.terrain(q)):
+				var d: float = map.dist(c, q)
+				if d < bd:
+					bd = d
+					best = q
+	return best
+
+func _adjacent_to_terrain(c: Vector2i, chars: String) -> bool:
+	for d in TacticalGrid.DIRS:
+		if chars.contains(map.terrain(c + d)):
+			return true
+	return false
+
+# 往 goal 走（停在旁邊）：回傳可以走到、離 goal 最近的格子
+func _step_toward(i: int, goal: Vector2i, stop_adjacent := true) -> Vector2i:
+	var r := reachable(i)
+	var pos: Vector2i = units[i]["pos"]
+	var best: Vector2i = pos
+	var bd: float = map.dist(pos, goal)
+	for c in r.keys():
+		var d: float = map.dist(c, goal)
+		if (not stop_adjacent or d >= 1.0) and d < bd - 0.01:
+			bd = d
+			best = c
+	return best
+
+func _ai_intent(i: int) -> Dictionary:
+	var u: Dictionary = units[i]
+	var ai := _ai_cfg()
+	var sc: Dictionary = ai["scores"]
+	var acts := _actions_of(i)
+	var sp: String = str(u["species"])
+	var bold: float = float(u.get("bold", 0.0))
 	var pos: Vector2i = u["pos"]
 	var facing: Vector2i = u["facing"]
-	var it := {"action": "turn", "move": pos, "facing": facing, "target": Vector2i(-1, -1)}
-	if float(u["hp"]) < float(u["hp_max"]) * float(cfg["give_up"].get(str(u["species"]), 0.3)) \
-			or float(u["stamina"]) <= 0.0:
-		it["action"] = "flee"
-	elif t >= 0:
+	var turn_steps: int = int(_opp_cfg(i).get("turn_steps", -1))
+	var hp_ratio: float = float(u["hp"]) / max(1.0, float(u["hp_max"]))
+	var has_food: bool = not carcass.is_empty() and int(carcass["segments"]) > 0
+	var at_food: bool = has_food and map.adjacent(pos, carcass["pos"])
+	var nothing := Vector2i(-1, -1)
+	var t := _update_attention(i)
+	# 放棄：血量低、耐心用完、殘骸吃光了
+	var give: float = float(cfg["give_up"].get(sp, 0.3)) * (1.0 - bold * 0.3)
+	if hp_ratio < give or float(u["stamina"]) <= 0.0:
+		return _intent(i, "flee", pos, facing, nothing, "hurt" if hp_ratio < give else "patience")
+	if not carcass.is_empty() and int(carcass["segments"]) <= 0 and t >= 0 and map.dist(pos, units[t]["pos"]) > 2.0:
+		return _intent(i, "flee", pos, facing, nothing, "food_gone")
+	var cands: Array = [] # [分數, action, move, facing, target, why]
+	var noise: float = float(ai["noise"])
+	if t >= 0:
 		var tp: Vector2i = units[t]["pos"]
-		var want := TacticalGrid.dir_toward(pos, tp)
-		var turned := TacticalGrid.turn_toward(facing, want, int(_opp_cfg(i).get("turn_steps", -1)))
 		var d: float = map.dist(pos, tp)
-		if map.adjacent(pos, tp):
-			it["facing"] = turned
-			it["action"] = "swipe" if acts.has("swipe") and rng.randf() < 0.6 else "bite"
-		elif acts.has("pounce") and d <= float(_acfg("pounce").get("range", 3)) + 0.5:
-			it["facing"] = want
-			it["action"] = "pounce"
-			it["target"] = tp
-		elif acts.has("charge") and turned == want and d <= float(_acfg("charge").get("length", 4)) + 0.5 and _clear_line(i, pos, want, tp):
-			it["facing"] = want
-			it["action"] = "bluff_charge" if acts.has("bluff_charge") and rng.randf() < 0.4 else "charge"
-		elif bool(u["eating"]) and at_carcass(i) and d > 3.0:
-			it["action"] = "eat"
-		elif at_carcass(i):
-			it["facing"] = turned
-			it["action"] = "guard"
-		else:
-			# 走近一點（停在對方旁邊）
-			var r := reachable(i)
-			var best: Vector2i = pos
-			var bd: float = d
-			for c in r.keys():
-				var dd: float = map.dist(c, tp)
-				if dd >= 1.0 and dd < bd:
-					bd = dd
-					best = c
-			it["action"] = "move"
-			it["move"] = best
-			it["facing"] = TacticalGrid.dir_toward(best, tp)
-	it["looks"] = str(_acfg(str(it["action"])).get("looks_like", it["action"]))
-	it["zone"] = zone_cells(i, str(it["action"]), it["move"], it["facing"], it["target"])
+		var want := TacticalGrid.dir_toward(pos, tp)
+		var turned := TacticalGrid.turn_toward(facing, want, turn_steps)
+		var n_threats := 0
+		for k in units.size():
+			if active(k) and player_side(k) and map.dist(pos, units[k]["pos"]) <= 3.0:
+				n_threats += 1
+		var food_bonus: float = float(ai["stake_food"]) if at_food else 1.0
+		# 剛被咬：先回頭對付咬牠的
+		var bitten_bonus: float = float(ai.get("bitten_bonus", 3.0)) if bool(u.get("just_bitten", false)) else 0.0
+		# 攻擊：轉過去之後對方在範圍裡
+		for a in ["swipe", "bite"]:
+			if acts.has(a) and zone_cells(i, a, pos, turned).has(tp):
+				cands.append([float(sc["attack"]) * food_bonus + bold * 2.0 + bitten_bonus - (1.5 if a == "bite" and acts.has("swipe") else 0.0), a, pos, turned, nothing, "attack"])
+		if acts.has("pounce") and d >= 1.5 and d <= float(_acfg("pounce").get("range", 3)) + 0.5:
+			cands.append([float(sc["pounce"]) + bold * 2.0 - (1.5 if n_threats >= 2 else 0.0), "pounce", pos, want, tp, "pounce"])
+		if acts.has("charge") and turned == want and d >= 1.5 and d <= float(_acfg("charge").get("length", 4)) + 0.5 and _clear_line(i, pos, want, tp):
+			# 守著食物時多半只是假衝嚇你（記述：灰熊在殘骸旁常虛張聲勢）
+			cands.append([float(sc["charge"]) + bold * 2.0 - (float(ai.get("charge_food_less", 1.5)) if has_food else 0.0), "charge", pos, want, nothing, "charge"])
+			if acts.has("bluff_charge"):
+				cands.append([float(sc["bluff_guard"] if has_food else sc["bluff_open"]) - bold * 1.5, "bluff_charge", pos, want, nothing, "bluff"])
+		# 沒辦法馬上打：轉身面對
+		if turned != facing and not zone_cells(i, "swipe", pos, facing).has(tp):
+			cands.append([float(sc["turn"]) + (1.0 if d <= 2.0 else 0.0) + bitten_bonus, "turn", pos, turned, nothing, "turn"])
+		# 守食物
+		if at_food and acts.has("guard") and d <= 3.0:
+			cands.append([float(sc["guard"]) + (1.0 if n_threats >= 2 else 0.0), "guard", pos, turned, nothing, "guard"])
+		# 背靠岩壁：被圍、受傷
+		if acts.has("back_to_wall") and (n_threats >= 2 or hp_ratio < 0.6) and not _adjacent_to_terrain(pos, "c"):
+			var wall := _near_terrain(pos, "c", int(ai["wall_search"]))
+			if wall.x >= 0:
+				var to := _step_toward(i, wall, true)
+				if to != pos:
+					cands.append([float(sc["back_to_wall"]) + (1.5 if surrounded(i) else 0.0) - bold, "back_to_wall", to, TacticalGrid.dir_toward(wall, to), nothing, "wall"])
+		# 上樹（美洲獅）：受傷或被圍
+		if acts.has("climb") and (hp_ratio < float(ai["climb_hurt"]) or n_threats >= 2):
+			if _adjacent_to_terrain(pos, "T"):
+				cands.append([float(sc["climb"]) - bold * 2.0, "climb", pos, facing, nothing, "climb"])
+			else:
+				var tree := _near_terrain(pos, "T", int(ai["climb_search"]))
+				if tree.x >= 0:
+					var to2 := _step_toward(i, tree, true)
+					if to2 != pos:
+						cands.append([float(sc["climb"]) - 1.5 - bold * 2.0, "move", to2, TacticalGrid.dir_toward(pos, tree), nothing, "to_tree"])
+		# 後退
+		if acts.has("back_off") and (n_threats >= 2 or hp_ratio < 0.5):
+			cands.append([float(sc["back_off"]) - bold, "back_off", pos, facing, nothing, "back_off"])
+		# 沒有殘骸：靠近（大膽的）或觀望
+		if not has_food and d > 1.5:
+			var to3 := _step_toward(i, tp, true)
+			if to3 != pos:
+				cands.append([float(sc["approach_threat"]) + bold * 2.0, "move", to3, TacticalGrid.dir_toward(to3, tp), nothing, "approach"])
+		# 在殘骸旁、威脅還遠：吃
+		if at_food and acts.has("eat"):
+			var safe: bool = d > float(ai["eat_safe_dist"])
+			cands.append([float(sc["eat"]) if safe else 1.0, "eat", pos, facing, nothing, "eat"])
+	elif at_food and acts.has("eat"):
+		cands.append([float(sc["eat"]), "eat", pos, facing, nothing, "eat"])
+	# 走向殘骸
+	if has_food and not at_food:
+		var to4 := _step_toward(i, carcass["pos"], true)
+		if to4 != pos:
+			cands.append([float(sc["approach_food"]), "move", to4, TacticalGrid.dir_toward(to4, carcass["pos"]), nothing, "to_food"])
+	cands.append([float(sc["idle"]), "turn", pos, facing, nothing, "idle"])
+	var best: Array = cands[0]
+	var bs := -INF
+	for c in cands:
+		var v: float = float(c[0]) + rng.randf_range(0.0, noise)
+		if v > bs:
+			bs = v
+			best = c
+	return _intent(i, str(best[1]), best[2], best[3], best[4], str(best[5]))
+
+func _intent(i: int, action: String, move: Vector2i, facing: Vector2i, target: Vector2i, why: String) -> Dictionary:
+	var it := {"action": action, "move": move, "facing": facing, "target": target, "why": why}
+	it["looks"] = str(_acfg(action).get("looks_like", action))
+	it["zone"] = zone_cells(i, action, move, facing, target)
 	return it
 
 func _clear_line(i: int, from: Vector2i, d: Vector2i, to: Vector2i) -> bool:
@@ -627,8 +776,8 @@ func _do_enemy_action(i: int) -> Array:
 	match a:
 		"flee":
 			u["out"] = true
-			u["out_reason"] = "fled"
-			_ev("fled", {"who": i})
+			u["out_reason"] = str(it.get("why", "fled"))
+			_ev("fled", {"who": i, "why": str(it.get("why", ""))})
 			return hit_units
 		"back_off":
 			var away: Vector2i = u["pos"] - u["facing"]
@@ -642,7 +791,14 @@ func _do_enemy_action(i: int) -> Array:
 				u["eating"] = true
 				_ev("eat", {"who": i, "left": int(carcass["segments"])})
 			return hit_units
-		"move", "turn":
+		"move", "turn", "back_to_wall":
+			if a == "back_to_wall":
+				_ev("back_to_wall", {"who": i})
+			return hit_units
+		"climb":
+			u["out"] = true
+			u["out_reason"] = "climbed"
+			_ev("climbed", {"who": i})
 			return hit_units
 	var ac := _acfg(a)
 	var zone: Array
@@ -740,6 +896,7 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			units[t]["hp"] = max(0.0, float(units[t]["hp"]) - dmg)
 			units[t]["stamina"] = max(0.0, float(units[t].get("stamina", 0.0)) - float(w.get("drain", dmg * 0.5)))
 			units[t]["eating"] = false
+			units[t]["bitten_by"] = i
 			_ev("bite", {"who": i, "target": t, "dmg": dmg, "kind": a})
 			if a == "harass":
 				# 咬一下就退一格

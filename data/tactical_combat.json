@@ -60,7 +60,23 @@
   },
   "initiative": { "jitter": 15.0, "interrupt": 0.5 },
   "enemy_stamina": { "grizzly_bear": 100.0, "cougar": 70.0 },
-  "give_up": { "_comment": "第 2 步的簡單規則（第 3 步改成 AI 的一部分）：血量或耐心低於這個比例就逃。", "grizzly_bear": 0.3, "cougar": 0.45 },
+  "give_up": { "_comment": "血量低於這個比例就逃（個性大膽的再低一點：× (1 − bold × 0.3)）。耐心（stamina）用完也走。", "grizzly_bear": 0.3, "cougar": 0.45 },
+  "_ai_comment": "第 3 步：對手的 AI。每回合替能用的動作打分（scores 是基本分），加上情境的加減與一點亂數（noise），選最高的。bold 個性的範圍（-1 膽小 ～ 1 大膽）：大膽的攻擊分數高、比較晚放棄。attention：被咬就把注意力轉到咬牠的那隻；守食物時看最靠近殘骸的；否則看最近的。patience：每回合被兩隻以上圍住 surrounded_drain、沒有殘骸也沒被逼近時 idle_drain（遭遇戰牠會失去興趣）。climb_hurt：美洲獅血量低於這個比例、或被兩隻以上圍住時想上樹（樹在 climb_search 格內）。wall_search：背靠岩壁找幾格內的峭壁。bitten_bonus：剛被咬時回頭攻擊、轉身的加分。charge_food_less：守著食物時真衝撞的減分（多半是假衝）。assume。",
+  "ai": {
+    "noise": 1.5,
+    "bold": { "grizzly_bear": [-0.3, 0.7], "cougar": [-0.7, 0.3] },
+    "scores": { "attack": 6.0, "pounce": 5.5, "charge": 4.5, "bluff_guard": 4.5, "bluff_open": 3.0, "eat": 6.0, "guard": 4.0, "approach_food": 5.0,
+      "approach_threat": 2.5, "turn": 3.0, "back_to_wall": 4.5, "climb": 7.0, "back_off": 1.5, "idle": 1.0 },
+    "eat_safe_dist": 2.5,
+    "surrounded_drain": 6.0,
+    "idle_drain": 7.0,
+    "climb_hurt": 0.7,
+    "climb_search": 4,
+    "wall_search": 3,
+    "stake_food": 1.3,
+    "bitten_bonus": 3.0,
+    "charge_food_less": 1.5
+  },
   "scenarios": {
     "_comment": "原型的固定情境（規格第九節）。map 每列一樣長；units：wolf（你）、mate（伴侶）、對手；facing 是面向（dx, dy）；carcass：[x, y, 種類]；eating：對手開場在吃。",
     "grizzly_arrives": {

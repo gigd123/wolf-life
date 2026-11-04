@@ -3,6 +3,8 @@ extends SceneTree
 # 第 1 步：情境載入、單位、殘骸、移動範圍（喘、叼肉依大小變慢、大塊不能衝刺）、地形擋路、叼肉與放下、撤出地圖。
 # 第 2 步：表態與範圍、同步結算（閃出範圍就打不到、目標走掉就撲空、衝撞停在第一個撞到的、假衝不傷人、閃避、變卦、先後與打斷）、
 #   預告後輪流（對手出手前最多轉 45°）、叼肉的機率、結束（對手走了、撤出、被打倒、時間到）、兩種模式隨機打完不出錯。
+# 第 3 步：物種只用自己能用的動作；注意力（被咬就看咬牠的）；威脅遠時吃、近時守或打；守食物時假衝比遭遇時多；
+#   被圍背靠岩壁；美洲獅受傷上樹（殘骸留下）；放棄（血量、耐心、殘骸吃光）；個性不同。
 # 用法：bash tools/run_sim.sh tactical_combat_rules
 var fails := 0
 
@@ -73,6 +75,7 @@ func _run() -> void:
 	_check(TacticalGrid.side_of(Vector2i(5, 5), Vector2i(1, 0), Vector2i(3, 5)) == "rear" and TacticalGrid.side_of(Vector2i(5, 5), Vector2i(1, 0), Vector2i(6, 5)) == "front" \
 		and TacticalGrid.side_of(Vector2i(5, 5), Vector2i(1, 0), Vector2i(5, 6)) == "side", "前、側、後")
 	_step2()
+	_step3()
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	quit()
 
@@ -267,3 +270,141 @@ func _random_plan(tc: TacticalCombat, i: int) -> Dictionary:
 	p["target"] = tc.enemy_index()
 	p["kind"] = "piece"
 	return p
+
+func _step3() -> void:
+	print("第 3 步")
+	# 物種只用自己能用的動作
+	var used := {"grizzly_bear": {}, "cougar": {}}
+	for sc in ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate"]:
+		for s in 30:
+			var tc := TacticalCombat.new()
+			tc.setup(sc, {"seed": s})
+			var guard := 0
+			while not tc.done and guard < 30:
+				guard += 1
+				var its: Dictionary = tc.begin_round()
+				for k in its.keys():
+					used[str(tc.units[k]["species"])][str(its[k]["action"])] = true
+				for i in tc.units.size():
+					if tc.active(i) and tc.player_side(i):
+						tc.plan(i, _random_plan(tc, i))
+				tc.resolve()
+	var ok := true
+	for sp in used.keys():
+		var allowed: Array = TacticalCombat.new().cfg["opponents"][sp]["actions"]
+		for a in used[sp].keys():
+			if not allowed.has(a) and a != "flee":
+				ok = false
+				print("    %s 用了 %s" % [sp, a])
+	_check(ok and not used["grizzly_bear"].has("climb") and not used["grizzly_bear"].has("pounce") and not used["cougar"].has("charge"),
+		"只用自己能用的動作（灰熊 %s；美洲獅 %s）" % [", ".join(used["grizzly_bear"].keys()), ", ".join(used["cougar"].keys())])
+	# 注意力：被咬就看咬牠的
+	var tc := TacticalCombat.new()
+	tc.setup("grizzly_arrives_mate", {"seed": 5})
+	var e: int = tc.enemy_index()
+	tc.units[e]["pos"] = Vector2i(9, 5)
+	tc.units[0]["pos"] = Vector2i(8, 5)
+	tc.units[1]["pos"] = Vector2i(10, 6)
+	tc.units[e]["bitten_by"] = 1
+	var it: Dictionary = tc.begin_round()[e]
+	_check(int(tc.units[e]["attention"]) == 1 and TacticalGrid.side_of(Vector2i(9, 5), it["facing"], Vector2i(10, 6)) != "rear", "被伴侶咬了：注意力轉到伴侶、轉身面向牠")
+	# 威脅遠時吃
+	var eat := 0
+	var near_eat := 0
+	for s in 100:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_on_carcass", {"seed": s})
+		e = tc.enemy_index()
+		if str(tc.begin_round()[e]["action"]) == "eat": eat += 1
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_on_carcass", {"seed": s})
+		tc.units[0]["pos"] = Vector2i(9, 4)
+		if str(tc.begin_round()[tc.enemy_index()]["action"]) == "eat": near_eat += 1
+	_check(eat > 80 and near_eat < 25, "你在遠處時灰熊多半在吃（%d／100），你到殘骸旁就不太吃了（%d／100）" % [eat, near_eat])
+	# 守食物時假衝比遭遇時多
+	var bluff_food := 0
+	var bluff_open := 0
+	var charges_food := 0
+	var charges_open := 0
+	for s in 400:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_arrives", {"seed": s})
+		e = tc.enemy_index()
+		tc.units[e]["pos"] = Vector2i(8, 5)
+		tc.units[e]["facing"] = Vector2i(-1, 0)
+		tc.units[0]["pos"] = Vector2i(5, 5)
+		var a1: String = str(tc.begin_round()[e]["action"])
+		if a1 == "bluff_charge": bluff_food += 1
+		if a1 in ["bluff_charge", "charge"]: charges_food += 1
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_open", {"seed": s})
+		e = tc.enemy_index()
+		tc.units[e]["pos"] = Vector2i(8, 5)
+		tc.units[0]["pos"] = Vector2i(5, 5)
+		var a2: String = str(tc.begin_round()[e]["action"])
+		if a2 == "bluff_charge": bluff_open += 1
+		if a2 in ["bluff_charge", "charge"]: charges_open += 1
+	_check(float(bluff_food) / max(1, charges_food) > float(bluff_open) / max(1, charges_open), "守食物時的衝撞多半是假衝（%d／%d），遭遇時比較少（%d／%d）" % [bluff_food, charges_food, bluff_open, charges_open])
+	# 被圍：背靠岩壁
+	var wall := 0
+	for s in 100:
+		tc = TacticalCombat.new()
+		tc.setup("cougar_cache", {"seed": s})
+		e = tc.enemy_index()
+		tc.carcass = {}
+		tc.units[e]["pos"] = Vector2i(3, 5)
+		tc.units[e]["facing"] = Vector2i(1, 0)
+		tc.units[e]["bold"] = 0.0
+		tc.cfg["opponents"]["cougar"]["actions"].erase("climb")
+		tc.units[0]["pos"] = Vector2i(4, 5)
+		tc.units.append(tc._make_wolf("mate", "ally", Vector2i(3, 6), tc.units[0]["stats"].duplicate()))
+		if str(tc.begin_round()[e]["action"]) == "back_to_wall": wall += 1
+	_check(wall > 20, "美洲獅被兩隻圍住、旁邊有峭壁：常背靠岩壁（%d／100）" % wall)
+	# 美洲獅受傷上樹，殘骸留下
+	var climbed := 0
+	for s in 50:
+		tc = TacticalCombat.new()
+		tc.setup("cougar_cache", {"seed": s})
+		e = tc.enemy_index()
+		tc.units[e]["pos"] = Vector2i(5, 3)
+		tc.units[e]["hp"] = float(tc.units[e]["hp_max"]) * 0.5
+		tc.units[0]["pos"] = Vector2i(6, 4)
+		var guard2 := 0
+		while not tc.done and guard2 < 6:
+			guard2 += 1
+			tc.begin_round()
+			tc.plan(0, {"action": "wait"})
+			tc.resolve()
+		if str(tc.units[e]["out_reason"]) == "climbed":
+			climbed += 1
+			ok = int(tc.carcass["segments"]) > 0
+	_check(climbed > 15, "美洲獅受傷、樹在旁邊：常上樹（%d／50），殘骸留下" % climbed)
+	# 放棄：耐心用完（遭遇戰你一直保持距離）
+	var left := 0
+	for s in 30:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_open", {"seed": s})
+		e = tc.enemy_index()
+		tc.units[0]["pos"] = Vector2i(0, 0)
+		tc.units[e]["pos"] = Vector2i(15, 9)
+		tc.cfg["ai"]["scores"]["approach_threat"] = -10.0
+		var g := 0
+		while not tc.done and g < 30:
+			g += 1
+			tc.begin_round()
+			tc.plan(0, {"action": "wait"})
+			tc.resolve()
+		if tc.outcome == "enemy_left" and str(tc.units[e]["out_reason"]) == "patience": left += 1
+	_check(left > 20, "遭遇戰你一直保持距離：灰熊失去興趣走了（%d／30）" % left)
+	# 殘骸吃光就走
+	tc = TacticalCombat.new()
+	tc.setup("grizzly_on_carcass", {"seed": 1})
+	tc.carcass["segments"] = 0
+	_check(str(tc.begin_round()[tc.enemy_index()]["action"]) == "flee", "殘骸吃光了，灰熊就走")
+	# 個性
+	var bolds := {}
+	for s in 20:
+		tc = TacticalCombat.new()
+		tc.setup("grizzly_open", {"seed": s})
+		bolds[snappedf(float(tc.units[tc.enemy_index()]["bold"]), 0.1)] = true
+	_check(bolds.size() >= 6, "每隻灰熊的個性不同（%d 種）" % bolds.size())
