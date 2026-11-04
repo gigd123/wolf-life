@@ -850,6 +850,7 @@ func _do_enemy_action(i: int) -> Array:
 			return hit_units
 	var ac := _acfg(a)
 	var zone: Array
+	_track(i, a)
 	if str(ac.get("zone", "")) == "line":
 		zone = zone_cells(i, a, u["pos"], u["facing"])
 		# 衝撞：一直線衝過去，停在第一個撞到的單位前並打中牠；假衝衝一兩格就停
@@ -1346,3 +1347,26 @@ func auto_plan(i: int) -> Dictionary:
 	var p := ally_plan(i)
 	units[i]["command"] = keep
 	return p
+
+# 衝撞、撲擊是撲向「目標」的動作：結算時朝牠盯著的那隻現在的位置修正（衝撞最多偏 turn_steps 個 45°；
+# 撲擊時目標離原本的落點 track_pounce 格內都追得到）。揮掌、咬已經在 _react_turn 轉過了。
+func _track(i: int, a: String) -> void:
+	if not (a in ["charge", "pounce"]):
+		return
+	var u: Dictionary = units[i]
+	var t: int = int(u.get("attention", -1))
+	if t < 0 or not active(t):
+		t = _nearest_threat(i)
+	if t < 0:
+		return
+	var tp: Vector2i = units[t]["pos"]
+	var it: Dictionary = intents[i]
+	if a == "charge":
+		if map.dist(u["pos"], tp) > float(_acfg("charge").get("length", 4)) + 0.5:
+			return
+		var want := TacticalGrid.dir_toward(u["pos"], tp)
+		u["facing"] = TacticalGrid.turn_toward(u["facing"], want, maxi(1, int(_opp_cfg(i).get("turn_steps", 1))))
+	else:
+		var old: Vector2i = it.get("target", tp)
+		if map.dist(old, tp) <= float(cfg["ai"].get("track_pounce", 1.5)) and map.dist(u["pos"], tp) <= float(_acfg("pounce").get("range", 3)) + 1.0:
+			it["target"] = tp
