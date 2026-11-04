@@ -31,6 +31,36 @@
       "actions": ["swipe", "pounce", "bite", "turn", "move", "back_off", "eat", "guard", "back_to_wall", "climb", "flee"],
       "impassable": "cTt" }
   },
+  "_actions_comment": "對手的動作庫（共用；每種動物能用哪些在 opponents.*.actions）。zone：front3 正面三格、front1 正前方一格、line 正前方一直線 length 格（停在第一個撞到的單位前並打中牠）、target2 選一格連同後面一格（撲擊）、around 正面五格（守食物）。hit 範圍裡的單位被打中的機率（閃避時 × wolf.dodge_mult）；dmg 傷害範圍；init 先後的加減；feint_to／feint_chance：表態成這個動作、實際做的可能是別的（假衝表態成衝撞）；change_chance：結算時臨時改成 back_off 的機率。assume。",
+  "actions": {
+    "swipe": { "zone": "front3", "hit": 0.85, "dmg": { "grizzly_bear": [18, 30], "cougar": [12, 20] }, "init": 0 },
+    "charge": { "zone": "line", "length": 4, "hit": 0.9, "dmg": { "grizzly_bear": [22, 36] }, "init": -5 },
+    "bluff_charge": { "zone": "line", "length": 2, "hit": 0.0, "dmg": {}, "init": -5, "looks_like": "charge" },
+    "pounce": { "zone": "target2", "range": 3, "hit": 0.8, "dmg": { "cougar": [15, 25] }, "init": 8 },
+    "bite": { "zone": "front1", "hit": 0.8, "dmg": { "grizzly_bear": [14, 24], "cougar": [10, 18] }, "init": 5 },
+    "guard": { "zone": "around", "hit": 0.6, "dmg": { "grizzly_bear": [14, 24], "cougar": [10, 16] }, "init": 0 },
+    "eat": { "zone": "", "init": -20 },
+    "move": { "zone": "", "init": 0 },
+    "turn": { "zone": "", "init": 0 },
+    "back_off": { "zone": "", "init": 0 },
+    "flee": { "zone": "", "init": 0 }
+  },
+  "change_chance": { "grizzly_bear": 0.08, "cougar": 0.12 },
+  "_wolf_comment": "狼的主要動作（規格第四節）。base：基本機率；skill_div：(技巧 − 50) ÷ skill_div；side：前／側／後的加減；after_sprint：這回合衝刺過再出手的減成；dmg：傷害（× 力量 ÷ 60）；breath：花的喘（負的是花）。take：叼肉的機率依對手的狀態（在吃、面向別處、面向你）。assume。",
+  "wolf": {
+    "bite": { "base": 0.55, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.15 }, "after_sprint": -0.1, "dmg": [8, 14], "breath": -4.0, "init": 10 },
+    "pounce": { "base": 0.5, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.2 }, "after_sprint": -0.1, "dmg": [12, 20], "breath": -10.0, "range": 2, "init": 6 },
+    "harass": { "base": 0.65, "skill_div": 150.0, "side": { "rear": 0.15, "side": 0.1, "front": -0.1 }, "after_sprint": -0.05, "dmg": [3, 6], "drain": 8.0, "breath": -6.0, "init": 12 },
+    "take": { "eating": 0.85, "away": 0.65, "facing": 0.25, "skill_div": 200.0, "leg": -0.2, "whole": -0.05, "guard": -0.2, "init": 2 },
+    "dodge": { "breath": -6.0, "init": 15 },
+    "dodge_mult": 0.4,
+    "guard": { "init": 0 },
+    "observe": { "breath": 8.0, "init": 0 },
+    "wait": { "breath": 5.0, "init": 0 }
+  },
+  "initiative": { "jitter": 15.0, "interrupt": 0.5 },
+  "enemy_stamina": { "grizzly_bear": 100.0, "cougar": 70.0 },
+  "give_up": { "_comment": "第 2 步的簡單規則（第 3 步改成 AI 的一部分）：血量或耐心低於這個比例就逃。", "grizzly_bear": 0.3, "cougar": 0.45 },
   "scenarios": {
     "_comment": "原型的固定情境（規格第九節）。map 每列一樣長；units：wolf（你）、mate（伴侶）、對手；facing 是面向（dx, dy）；carcass：[x, y, 種類]；eating：對手開場在吃。",
     "grizzly_arrives": {
