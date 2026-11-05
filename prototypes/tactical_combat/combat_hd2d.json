@@ -1,0 +1,28 @@
+{
+  "_comment": "戰鬥原型的 HD-2D 畫面（2026-11-05，CombatHD2D.gd）。只管畫面，規則照 data/tactical_combat.json。heights：地形字元的高度（階，一階 level_height）；top／side：上面與側面的材質（prototypes/hd2d_tactical/assets/tex_*.png）；tint：上面的顏色倍率。trees：大樹、小樹用哪張圖、縮放。units：單位用的圖（wolf 用 HD-2D 測試的狼；對手先用遊戲的佔位 spritesheet 第一格）、每格幾像素（越大越小）、顏色倍率。swap_px：螢幕上一格到這麼多像素時狼與樹換成 48 那套。",
+  "level_height": 0.5,
+  "camera_pitch": -52.0,
+  "margin": 0.6,
+  "swap_px": 44.0,
+  "heights": { ".": 0, "f": 0, "l": 0, "t": 0, "T": 0, "r": 1, "s": -1, "B": 2, "c": 4 },
+  "top": { ".": "grass", "f": "grass", "l": "dirt", "t": "grass", "T": "grass", "r": "rock", "s": "dirt", "B": "rock", "c": "rock" },
+  "side": { ".": "dirt", "f": "dirt", "l": "dirt", "t": "dirt", "T": "dirt", "r": "rock", "s": "dirt", "B": "rock", "c": "rock" },
+  "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7] },
+  "trees": { "T": { "art": "pine_dark", "scale": 1.0 }, "t": { "art": "pine_dark", "scale": 0.7 }, "f": { "art": "pine_dark", "scale": 0.45 } },
+  "units": {
+    "wolf": { "art": "hd2d_wolf", "modulate": [1.0, 1.0, 1.0] },
+    "mate": { "art": "hd2d_wolf", "modulate": [0.78, 0.84, 0.95] },
+    "grizzly_bear": { "sheet": "res://assets/art/sprites/animals/bear_adult_sheet.png", "frame": [80, 52], "px_per_cell": 34.0 },
+    "cougar": { "sheet": "res://assets/art/sprites/animals/cougar_sheet.png", "frame": [72, 32], "px_per_cell": 40.0 }
+  },
+  "carcass": { "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },
+  "colors": {
+    "creep": [0.45, 0.9, 0.45, 0.32], "trot": [0.95, 0.85, 0.3, 0.32], "sprint": [1.0, 0.55, 0.2, 0.32],
+    "zone_clear": [1.0, 0.1, 0.45, 0.5], "zone_partial": [1.0, 0.25, 0.6, 0.22],
+    "planned": [1.0, 1.0, 1.0, 0.55], "hover": [1.0, 0.92, 0.45, 0.35], "hit": [1.0, 0.15, 0.15, 0.7],
+    "attention": [1.0, 0.9, 0.4, 0.8], "path": [1.0, 1.0, 1.0, 0.7]
+  },
+  "ambient": { "color": [0.5, 0.55, 0.62], "energy": 0.6 },
+  "light": { "pitch": -30.0, "yaw": -50.0, "energy": 1.2, "color": [1.0, 0.88, 0.72] },
+  "tilt_shift": { "focus": 0.5, "band": 0.34, "max_blur": 1.0 }
+}

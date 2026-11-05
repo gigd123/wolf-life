@@ -14,6 +14,7 @@ uniform float side_size = 64.0;
 uniform bool show_grid = true;
 uniform vec4 grid_color : source_color = vec4(0.08, 0.08, 0.1, 0.35);
 uniform float side_shade = 0.82;
+uniform vec3 tint = vec3(1.0); // 上面的顏色乘上這個（戰鬥原型的密林畫深一點，2026-11-05）
 
 varying vec3 wpos;
 varying vec3 wnorm;
@@ -40,6 +41,9 @@ void fragment() {
 		vec2 uv = abs(wnorm.x) > 0.5 ? vec2(wpos.z, -wpos.y) : vec2(wpos.x, -wpos.y);
 		vec2 t = floor(uv * texels_per_unit) + 0.5;
 		col = (smooth_min ? texture(side_tex_s, uv * texels_per_unit / side_size).rgb : texture(side_tex, t / side_size).rgb) * side_shade;
+	}
+	if (wnorm.y > 0.5) {
+		col *= tint;
 	}
 	ALBEDO = col;
 	ROUGHNESS = 1.0;

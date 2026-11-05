@@ -2420,6 +2420,10 @@ tcombat.know.veteran,知識：熟悉
 tcombat.mode.sync,同步結算
 tcombat.mode.alternate,預告後輪流
 tcombat.new,新局
+tcombat.view.hd,畫面：HD-2D
+tcombat.view.2d,畫面：2D
+tcombat.hd.eating,在吃
+tcombat.hd.carrying,叼著肉
 tcombat.replay,重來
 tcombat.back,返回
 tcombat.hint,點綠、黃、橘的格子選這回合要走到哪（再點一次取消），再按右下的一個動作；按下去才結算。粉紅色的格子是看得到的預告範圍，黃色虛線是牠盯著誰。

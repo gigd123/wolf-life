@@ -34,6 +34,9 @@ var planned := Vector2i(-1, -1)
 var hover := Vector2i(-1, -1)
 var hit_cells: Array = []
 var seed := 1
+var hd: CombatHD2D # HD-2D 畫面（2026-11-05）；hd_on 時取代 2D 地圖
+var hd_on := true
+var hd_btn: Button
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -48,6 +51,13 @@ func _ready() -> void:
 	map.gui_input.connect(_map_input)
 	map.mouse_exited.connect(func(): hover = Vector2i(-1, -1); map.queue_redraw())
 	add_child(map)
+	hd = CombatHD2D.new()
+	hd.view = self
+	hd.position = MAP_ORIGIN
+	hd.size = map.size
+	hd.cell_hovered.connect(_on_hover)
+	hd.cell_clicked.connect(_on_click)
+	add_child(hd)
 	info = RichTextLabel.new()
 	info.position = Vector2(394, 2)
 	info.size = Vector2(242, 196)
@@ -69,6 +79,10 @@ func _ready() -> void:
 	wolf_pick.selected = 1
 	know_pick = _option(setup, KNOW.map(func(s): return tr("tcombat.know." + s)), 64)
 	mode_pick = _option(setup, MODES.map(func(s): return tr("tcombat.mode." + s)), 76)
+	hd_btn = Button.new()
+	hd_btn.theme_type_variation = &"SmallButton"
+	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
+	setup.add_child(hd_btn)
 	for pair in [["tcombat.new", func(): _new_game(true)], ["tcombat.replay", func(): _new_game(false)],
 			["tcombat.back", func(): get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")]]:
 		var b := Button.new()
@@ -113,7 +127,14 @@ func _new_game(new_seed: bool) -> void:
 	_log("[color=#aaaaaa]%s[/color]" % tr("tcombat.hint"))
 	tc.begin_round()
 	_log_tell()
+	hd.setup(tc)
+	_apply_hd()
 	_refresh()
+
+func _apply_hd() -> void:
+	hd.visible = hd_on
+	map.visible = not hd_on
+	hd_btn.text = tr("tcombat.view.hd" if hd_on else "tcombat.view.2d")
 
 func _log(t: String) -> void:
 	log_box.append_text(t + "\n")
@@ -137,18 +158,27 @@ func _center(c: Vector2i) -> Vector2:
 
 func _map_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseMotion:
-		var c := _cell_at(ev.position)
-		if c != hover:
-			hover = c
-			map.queue_redraw()
-			_refresh_info()
-	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and not tc.done:
-		var c := _cell_at(ev.position)
-		if c == tc.units[0]["pos"] or c == planned:
-			planned = Vector2i(-1, -1)
-		elif tc.reachable(0).has(c):
-			planned = c
-		_refresh()
+		_on_hover(_cell_at(ev.position))
+	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		_on_click(_cell_at(ev.position))
+
+# 2D 地圖與 HD-2D 畫面共用
+func _on_hover(c: Vector2i) -> void:
+	if c != hover:
+		hover = c
+		map.queue_redraw()
+		if hd_on:
+			hd.refresh()
+		_refresh_info()
+
+func _on_click(c: Vector2i) -> void:
+	if tc.done:
+		return
+	if c == tc.units[0]["pos"] or c == planned:
+		planned = Vector2i(-1, -1)
+	elif tc.reachable(0).has(c):
+		planned = c
+	_refresh()
 
 func _draw_map() -> void:
 	for y in tc.map.height:
@@ -223,6 +253,8 @@ func _draw_map() -> void:
 
 func _refresh() -> void:
 	map.queue_redraw()
+	if hd_on:
+		hd.refresh()
 	_refresh_info()
 	_build_actions()
 	_build_commands()
