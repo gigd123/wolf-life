@@ -4,6 +4,10 @@ render_mode cull_back;
 
 uniform sampler2D top_tex : source_color, filter_nearest, repeat_enable;
 uniform sampler2D side_tex : source_color, filter_nearest, repeat_enable;
+// 只用 48 一套、拉遠縮小時的比較：同一張材質用平滑縮小（mipmap）取樣
+uniform sampler2D top_tex_s : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D side_tex_s : source_color, filter_linear_mipmap, repeat_enable;
+uniform bool smooth_min = false;
 uniform float texels_per_unit = 32.0; // 一格（世界 1 單位）幾個材質像素 = tile_px
 uniform float top_size = 64.0;
 uniform float side_size = 64.0;
@@ -24,7 +28,7 @@ void fragment() {
 	if (wnorm.y > 0.5) {
 		// 對齊材質像素：先換成材質像素座標再取整，避免縮小時的接縫
 		vec2 t = floor(wpos.xz * texels_per_unit) + 0.5;
-		col = texture(top_tex, t / top_size).rgb;
+		col = smooth_min ? texture(top_tex_s, wpos.xz * texels_per_unit / top_size).rgb : texture(top_tex, t / top_size).rgb;
 		if (show_grid) {
 			vec2 f = fract(wpos.xz);
 			float px = 1.0 / texels_per_unit;
@@ -35,7 +39,7 @@ void fragment() {
 	} else {
 		vec2 uv = abs(wnorm.x) > 0.5 ? vec2(wpos.z, -wpos.y) : vec2(wpos.x, -wpos.y);
 		vec2 t = floor(uv * texels_per_unit) + 0.5;
-		col = texture(side_tex, t / side_size).rgb * side_shade;
+		col = (smooth_min ? texture(side_tex_s, uv * texels_per_unit / side_size).rgb : texture(side_tex, t / side_size).rgb) * side_shade;
 	}
 	ALBEDO = col;
 	ROUGHNESS = 1.0;

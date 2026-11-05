@@ -2395,6 +2395,13 @@ hd2d.info.step,分段縮放（{level}，畫布放大 {s} 倍）・一格 {n} 像
 hd2d.info.smooth,無段縮放（螢幕上一格 {t} 像素）・素材一格 {n} 像素・畫面約 {w}×{h} 格
 hd2d.info.far,拉遠看全貌（再按一次「全貌：拉遠」或滾輪回到原本的縮放）
 hd2d.help,左鍵：走到那一格（岩石台跳得上去、碎石坡走得上去）　滾輪：縮放　右鍵或中鍵拖曳、WASD、滑鼠移到畫面邊緣：捲動
+hd2d.art.fixed,素材：照「每格」
+hd2d.art.swap,素材：兩套自動切換
+hd2d.art.down48,素材：只用 48（縮小）
+hd2d.minify.nearest,縮小：最近點
+hd2d.minify.smooth,縮小：平滑
+hd2d.info.art.swap,兩套素材：拉近到一格約 44 像素換成 48 的素材，拉遠到 40 以下換回 32（現在用 {n}）
+hd2d.info.art.down48,只畫 48 一套：一格小於 48 像素時是把 48 的圖縮小顯示（看線條會不會糊或閃）
 hd2d.overview.help,點一格把鏡頭移過去（Tab 關閉）
 menu.tactical_combat,戰鬥原型
 tcombat.sc.grizzly_arrives,1 灰熊來搶你的馬鹿

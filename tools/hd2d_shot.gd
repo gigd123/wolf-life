@@ -1,5 +1,6 @@
 extends SceneTree
 # HD-2D 戰術場景測試的截圖（2026-11-04）：開 prototypes/hd2d_tactical/，照環境變數切模式，存成 PNG。
+# ART=fixed|swap|down48、MINF=0|1（只用 48 時縮小用平滑濾鏡）（2026-11-05）
 # 用法：TILE=32|48 SMOOTH=0|1 LEVEL=0|1|2 ZOOM=<無段時螢幕上一格的像素> VIEW=normal|far|map WALK=<x,y> OUT=<路徑> \
 #   xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/hd2d_shot.gd
 var f := 0
@@ -19,6 +20,8 @@ func _process(_d) -> bool:
 		v.smooth = _env("SMOOTH", "0") == "1"
 		v.level = int(_env("LEVEL", "0"))
 		v.smooth_tile = float(_env("ZOOM", "96"))
+		v.art_mode = _env("ART", "fixed")
+		v.smooth_min = _env("MINF", "0") == "1"
 		v._apply_tile()
 		var w := _env("WALK", "")
 		if w != "":

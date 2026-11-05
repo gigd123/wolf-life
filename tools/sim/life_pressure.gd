@@ -13,6 +13,10 @@ extends SceneTree
 # TACTICAL_ONLY=white_tailed_deer 時只有列出的動物走戰術地圖（對照 Phase 2c）；NO_CACHE=1 時不藏食物（對照 Phase 2e）；DENS_ONLY=forest_east 只從這些巢穴開始；NO_SALMON=1 沒有鮭魚洄流；NO_DAY_REST=1 自動玩家不在白天休息（對照 Phase 2j）；SALMON_SET='{...}' 覆寫鮭魚的設定
 
 const STAGES := ["subadult", "adult", "elder"]
+var _style := "average"
+# 2026-11-05 食物太充足：各階段一天結束時吃飽（≥ 70）的比例、每天取得的飽食度（對照每天消耗）
+var full_days := {"subadult": 0, "adult": 0, "elder": 0}
+var food_got := {"subadult": 0.0, "adult": 0.0, "elder": 0.0}
 const FOOD_CATS := ["大中型獵物", "小獵物", "殘骸撿食", "藏肉", "採集", "小撲", "猞猁的雪兔", "鮭魚", "其他"]
 
 # 食物來源分類（Phase 2g 第 4 步）：kill:／carcass: 這類「來源:動物」依動物大小分；其他照名稱
@@ -114,9 +118,11 @@ func _process(_d):
 	# TACTICAL_SET='{"allies": {"game": {...}}}'：覆寫 tactical_hunt.json 的部分設定（Phase 2i 校準用）
 	if OS.get_environment("TACTICAL_SET") != "":
 		GS.tactical_overrides = JSON.parse_string(OS.get_environment("TACTICAL_SET"))
+	# STYLE=cautious 之類：自動玩家的打法（預設 average；2026-11-05 食物太充足：比較會打獵的打法）
+	_style = OS.get_environment("STYLE") if OS.get_environment("STYLE") != "" else "average"
 	var dens: Array = Array(OS.get_environment("DENS_ONLY").split(",")) if OS.get_environment("DENS_ONLY") != "" else DENS
 	for r in runs:
-		var ap = AP.new("all", "average")
+		var ap = AP.new("all", _style)
 		if OS.get_environment("MATE") != "":
 			ap.mate_search = OS.get_environment("MATE")
 		ap.tactical = OS.get_environment("NO_TACTICAL") == ""
@@ -238,6 +244,9 @@ func _process(_d):
 				break
 			days[stage] += 1
 			var h: float = GS.wolf.hunger
+			if h >= 70.0:
+				full_days[stage] += 1
+			food_got[stage] += ft1 - ft0
 			# 對狼的荒年：暖冬、夏末到秋天、雪兔低谷（GameState.lean_effects；嚴冬對狼有利，不算）
 			var lean: bool = not GS.lean_effects()["kinds"].is_empty()
 			var yk: String = "lean" if lean else "normal"
@@ -365,6 +374,12 @@ func _process(_d):
 	for se in ["spring", "summer", "autumn", "winter"]:
 		sline += " %s %.2f 天" % [se, 10.0 * float(season_hungry.get(se, 0)) / max(1, int(season_days.get(se, 0)))]
 	print(sline)
+	var dec_sub: float = float(GS.get_node("/root/GameData").balance.get("hunger_decay_subadult", 5)) * 5.0
+	var dec_ad: float = float(GS.get_node("/root/GameData").balance.get("hunger_decay_per_period", 6)) * 5.0
+	for st in STAGES:
+		var dd: float = max(1.0, float(days[st]))
+		var need: float = dec_sub if st == "subadult" else dec_ad
+		print("  食物 %-8s 一天結束時吃飽（≥70）%3d%%；每天取得 %5.1f ÷ 消耗 %.0f ＝ %.2f 倍（打法 %s）" % [st, roundi(100.0 * full_days[st] / dd), food_got[st] / dd, need, food_got[st] / dd / need, _style])
 	print("  藏食物（%d 隻合計）：藏 %d 段、吃 %d 段、被挖走／燒掉／壞光 %d 份" % [runs, cache_log["caches_made"], cache_log["caches_eaten"], cache_log["caches_lost"]])
 	print("  體質（health_value）：6 歲時平均 %.0f（%d 隻）、死時平均 %.0f" % [hv_log[0] / max(1, hv_log[1]), hv_log[1], hv_log[2] / max(1, hv_log[3])])
 	print("  壽命：平均 %.1f、中位數 %.1f、最短 %.1f、最長 %.1f" % [total / ages.size(), ages[ages.size() / 2], ages[0], ages.back()])

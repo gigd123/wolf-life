@@ -4,6 +4,7 @@ extends Control
 #   - 分段縮放（畫布整數倍放大，像素乾淨）vs 無段縮放（滑順，像素可能不整齊）
 #   - 全貌：簡化的俯視圖 vs 拉很遠的 HD-2D 畫面
 #   - 一格 32 vs 48 像素
+#   - （2026-11-05）平常 32、拉近想看 48 的兩種做法：兩套素材依縮放自動切換 vs 只畫 48 一套、拉遠時縮小顯示
 # 素材是從使用者給的概念圖裁出來的（prep_assets.py），只用在這裡。
 # 專案用 Compatibility 渲染器（沒有內建景深），景深用 tilt_shift.gdshader 在 2D 畫面上做。
 
@@ -24,6 +25,11 @@ var side: Array = [] # [y][x] 側面材質
 var blocked := {} # 樹佔的格子（不能走）
 
 var tile_px := 32
+# 素材的做法（2026-11-05）："fixed" 照「每格」按鈕；"swap" 兩套素材，螢幕上一格夠大就換 48；"down48" 只用 48，拉遠時縮小
+const ART_MODES := ["fixed", "swap", "down48"]
+var art_mode := "fixed"
+var loaded_px := 0 # 目前載入的素材是幾像素的那套
+var smooth_min := false # 只用 48 時，縮小用平滑濾鏡（mipmap）還是最近點
 var smooth := false
 var level := 0 # 分段縮放：0 近、1 中、2 遠
 var smooth_tile := 96.0 # 無段縮放：螢幕上一格的像素
@@ -251,6 +257,8 @@ func _terrain_mat(top: String, side_kind: String) -> ShaderMaterial:
 	var st: Texture2D = load(DIR + "assets/tex_%s.png" % side_kind)
 	m.set_shader_parameter("top_tex", tt)
 	m.set_shader_parameter("side_tex", st)
+	m.set_shader_parameter("top_tex_s", tt)
+	m.set_shader_parameter("side_tex_s", st)
 	m.set_shader_parameter("top_size", float(tt.get_width()))
 	m.set_shader_parameter("side_size", float(st.get_width()))
 	terrain_mats[key] = m
@@ -325,24 +333,59 @@ func _blob_texture() -> ImageTexture:
 
 # 換一格幾像素：素材換成那個密度的版本，地形材質的像素密度跟著換
 func _apply_tile() -> void:
-	var ps := 1.0 / float(tile_px)
-	for t in trees:
-		var s: Sprite3D = t["sprite"]
-		s.texture = load(DIR + "assets/%s_%d.png" % [t["kind"], tile_px])
-		s.pixel_size = ps
-		s.offset = Vector2(0, s.texture.get_height() * 0.5 - 2)
-	_set_wolf_frame("wolf_stand")
-	moose.texture = load(DIR + "assets/moose_stand_%d.png" % tile_px)
-	moose.pixel_size = ps
-	moose.offset = Vector2(0, moose.texture.get_height() * 0.5 - 1)
-	for m in terrain_mats.values():
-		(m as ShaderMaterial).set_shader_parameter("texels_per_unit", float(tile_px))
+	_load_assets(_art_px())
 	_update_camera()
 
+# 這個縮放下該用哪一套素材
+func _art_px() -> int:
+	match art_mode:
+		"down48":
+			return 48
+		"swap":
+			if far_view:
+				return 32
+			var sw: Dictionary = cfg.get("swap", {"up": 44.0, "down": 40.0})
+			# 有一點落差（往上 up 才換 48、往下 down 才換回 32），停在門檻附近時不會一直跳
+			if loaded_px == 48:
+				return 48 if smooth_tile >= float(sw["down"]) else 32
+			return 48 if smooth_tile >= float(sw["up"]) else 32
+	return tile_px
+
+func _filter() -> int:
+	return BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS if art_mode == "down48" and smooth_min else BaseMaterial3D.TEXTURE_FILTER_NEAREST
+
+func _load_assets(px: int) -> void:
+	loaded_px = px
+	var ps := 1.0 / float(px)
+	for t in trees:
+		var s: Sprite3D = t["sprite"]
+		s.texture = load(DIR + "assets/%s_%d.png" % [t["kind"], px])
+		s.pixel_size = ps
+		s.texture_filter = _filter()
+		s.offset = Vector2(0, s.texture.get_height() * 0.5 - 2)
+	_set_wolf_frame("wolf_stand")
+	moose.texture = load(DIR + "assets/moose_stand_%d.png" % px)
+	moose.pixel_size = ps
+	moose.texture_filter = _filter()
+	moose.offset = Vector2(0, moose.texture.get_height() * 0.5 - 1)
+	for m in terrain_mats.values():
+		(m as ShaderMaterial).set_shader_parameter("texels_per_unit", float(px))
+		(m as ShaderMaterial).set_shader_parameter("smooth_min", art_mode == "down48" and smooth_min)
+
 func _set_wolf_frame(name: String) -> void:
-	wolf.texture = load(DIR + "assets/%s_%d.png" % [name, tile_px])
-	wolf.pixel_size = 1.0 / float(tile_px)
+	var px: int = loaded_px if loaded_px > 0 else tile_px
+	wolf.texture = load(DIR + "assets/%s_%d.png" % [name, px])
+	wolf.pixel_size = 1.0 / float(px)
+	wolf.texture_filter = _filter()
 	wolf.offset = Vector2(0, wolf.texture.get_height() * 0.5 - 1)
+
+func _cycle_art_mode() -> void:
+	art_mode = ART_MODES[(ART_MODES.find(art_mode) + 1) % ART_MODES.size()]
+	# 兩種新做法都是看「滑順地拉近拉遠」時的樣子：切到無段縮放
+	if art_mode != "fixed" and not smooth:
+		smooth = true
+		far_view = false
+	_apply_tile()
 
 # --- 鏡頭 ---
 func _window_px() -> Vector2i:
@@ -356,6 +399,8 @@ func _canvas_size() -> Vector2i:
 	return Vector2i(max(1, w.x / s), max(1, w.y / s))
 
 func _update_camera() -> void:
+	if loaded_px > 0 and _art_px() != loaded_px:
+		_load_assets(_art_px())
 	var canvas := _canvas_size()
 	if sub.size != canvas:
 		sub.size = canvas
@@ -371,7 +416,7 @@ func _update_camera() -> void:
 	elif smooth:
 		cam.size = float(canvas.y) / smooth_tile
 	else:
-		cam.size = float(canvas.y) / float(tile_px)
+		cam.size = float(canvas.y) / float(loaded_px if loaded_px > 0 else tile_px)
 	_clamp_target()
 	var fwd := -cam.global_transform.basis.z
 	var pos := cam_target - fwd * 30.0
@@ -603,6 +648,8 @@ func _build_ui() -> void:
 	outer.add_child(box)
 	buttons["mode"] = _btn(box, "", func(): smooth = not smooth; far_view = false; _update_camera())
 	buttons["tile"] = _btn(box, "", func(): tile_px = 48 if tile_px == 32 else 32; _apply_tile())
+	buttons["art"] = _btn(box, "", func(): _cycle_art_mode())
+	buttons["minf"] = _btn(box, "", func(): smooth_min = not smooth_min; _apply_tile())
 	_btn(box, tr("hd2d.zoom_in"), func(): _zoom(1))
 	_btn(box, tr("hd2d.zoom_out"), func(): _zoom(-1))
 	_btn(box, tr("hd2d.overview.map"), func(): _toggle_overview())
@@ -649,14 +696,20 @@ func _update_info() -> void:
 		return
 	(buttons["mode"] as Button).text = tr("hd2d.zoom_mode.smooth" if smooth else "hd2d.zoom_mode.step")
 	(buttons["tile"] as Button).text = tr("hd2d.tile").format({"n": tile_px})
+	(buttons["tile"] as Button).disabled = art_mode != "fixed"
+	(buttons["art"] as Button).text = tr("hd2d.art." + art_mode)
+	(buttons["minf"] as Button).text = tr("hd2d.minify.smooth" if smooth_min else "hd2d.minify.nearest")
+	(buttons["minf"] as Button).disabled = art_mode != "down48"
 	var vt := _visible_tiles()
 	var line: String
 	if far_view:
 		line = tr("hd2d.info.far")
 	elif smooth:
-		line = tr("hd2d.info.smooth").format({"t": int(round(smooth_tile)), "n": tile_px, "w": int(vt.x), "h": int(vt.y)})
+		line = tr("hd2d.info.smooth").format({"t": int(round(smooth_tile)), "n": loaded_px, "w": int(vt.x), "h": int(vt.y)})
 	else:
 		line = tr("hd2d.info.step").format({"level": tr("hd2d.level.%d" % level), "s": int(cfg["step_scales"][level]), "n": tile_px, "w": int(vt.x), "h": int(vt.y)})
+	if art_mode != "fixed":
+		line += "・" + tr("hd2d.info.art." + art_mode).format({"n": loaded_px})
 	info.text = line + "\n" + tr("hd2d.help")
 
 # 給俯視圖用：點一格把鏡頭移過去
