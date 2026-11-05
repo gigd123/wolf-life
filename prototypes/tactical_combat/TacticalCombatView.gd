@@ -59,8 +59,8 @@ func _ready() -> void:
 	hd.cell_clicked.connect(_on_click)
 	add_child(hd)
 	info = RichTextLabel.new()
-	info.position = Vector2(394, 2)
-	info.size = Vector2(242, 196)
+	info.position = Vector2(394, 28)
+	info.size = Vector2(242, 170)
 	info.bbcode_enabled = true
 	info.scroll_active = false
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -82,14 +82,20 @@ func _ready() -> void:
 	hd_btn = Button.new()
 	hd_btn.theme_type_variation = &"SmallButton"
 	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
-	setup.add_child(hd_btn)
+	# 畫面切換、新局、重來、返回放在右欄最上面（原本和選項同一列，太長會蓋到右下的動作按鈕，點不到，2026-11-05）
+	var top_row := HBoxContainer.new()
+	top_row.position = Vector2(394, 2)
+	top_row.add_theme_constant_override("separation", 3)
+	add_child(top_row)
+	top_row.add_child(hd_btn)
 	for pair in [["tcombat.new", func(): _new_game(true)], ["tcombat.replay", func(): _new_game(false)],
 			["tcombat.back", func(): get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")]]:
 		var b := Button.new()
 		b.text = tr(pair[0])
 		b.theme_type_variation = &"SmallButton"
+		b.custom_minimum_size = Vector2(36, 24)
 		b.pressed.connect(pair[1])
-		setup.add_child(b)
+		top_row.add_child(b)
 	log_box = RichTextLabel.new()
 	log_box.position = Vector2(4, 274)
 	log_box.size = Vector2(384, 82)
@@ -325,6 +331,7 @@ func _build_actions() -> void:
 			p["kind"] = o["kind"]
 		if o.has("factors") and int(o["show"]["tier"]) >= 2:
 			b.tooltip_text = "\n".join((o["factors"] as Array).map(func(f): return tr("tcombat.factor." + str(f[0])) + ("" if is_zero_approx(float(f[1])) else " %+d%%" % _pct(float(f[1])))))
+		b.custom_minimum_size = Vector2(36, 24) # 「等」這種一個字的按鈕太小、不好點
 		b.pressed.connect(func(): _commit(p))
 		actions_box.add_child(b)
 	var auto := Button.new()
