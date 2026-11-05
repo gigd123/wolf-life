@@ -7,8 +7,12 @@ static func t(key: String) -> String:
 	return TranslationServer.translate(key)
 
 # 已辨識才顯示真正的名字，否則是「未知的大型掠食者」之類的描述。
+# 沒有「未知」描述的動物（獵物、家畜）一律直接用名字（2026-11-04 試玩：牛、羊的知識紀錄顯示成原始鍵名）。
 static func source_name(source: String) -> String:
-	return t("animal." + source) if GameState.is_identified(source) else t("animal_unknown." + source)
+	if GameState.is_identified(source):
+		return t("animal." + source)
+	var key: String = "animal_unknown." + source
+	return t(key) if t(key) != key else t("animal." + source)
 
 static func prey_name(animal_id: String, life_stage: String) -> String:
 	var key: String = "prey_name.%s.%s" % [animal_id, life_stage]

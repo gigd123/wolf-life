@@ -3569,6 +3569,7 @@ func _write_playtest_log() -> String:
 		return ""
 	var text := JSON.stringify({"metrics": metrics_summary(), "life_log": life_log, "knowledge": knowledge.values(), "age_years": wolf.age_years,
 		"tendency": current_tendency(), "wolf": wolf.to_dict(), "region": current_region, "den": den_region,
+		"pack": {"size": pack_counted_size(), "mate_stage": mate_stage(), "young": young_members().size(), "territory": str(life_log.get("own_territory", ""))},
 		"time": {"season": GameTime.current_season(), "day": GameTime.day, "period": GameTime.current_period()}}, "  ")
 	file.store_string(text)
 	file.close()
