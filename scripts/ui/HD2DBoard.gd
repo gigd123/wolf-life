@@ -5,6 +5,7 @@ extends Control
 # 畫在 SubViewport，再放到這個 Control 的範圍（用螢幕的實際像素畫）。整張地圖固定放進畫面。
 # 子類別覆寫 paint()：每次畫面更新時呼叫 unit()、quad()、line()、label() 畫這一刻的狀態。
 # 點格子、滑鼠移動用訊號交回原本的畫面處理；邏輯完全不在這裡。
+# 滾輪縮放（cfg.zoom：max 最多放大幾倍、step 每格倍率）、右鍵或中鍵拖曳捲動。
 # cfg（JSON）：level_height、camera_pitch、margin、swap_px、heights／top／side／tint／trees（依地形字元）、ambient、light、tilt_shift、background。
 
 signal cell_hovered(c: Vector2i)
@@ -28,6 +29,11 @@ var mats := {}
 var art_px := 32
 var _blob: ImageTexture
 var _last_hover := Vector2i(-1, -1)
+# 縮放與捲動（滾輪縮放、右鍵或中鍵拖曳捲動；1 = 整張地圖放進畫面）
+var zoom := 1.0
+var focus := Vector2.ZERO # 鏡頭看的地面位置（x, z）
+var _fit_size := 1.0
+var _dragging := false
 
 func _init_board(cfg_path: String) -> void:
 	cfg = JSON.parse_string(FileAccess.get_file_as_string(cfg_path))
@@ -71,6 +77,8 @@ func build(w: int, h: int, terrain_fn: Callable) -> void:
 	_build_env()
 	_build_terrain()
 	art_px = 0
+	zoom = 1.0
+	focus = Vector2(map_w * 0.5, map_h * 0.5)
 	_on_resized()
 
 func _col(a: Array) -> Color:
@@ -220,18 +228,23 @@ func hd_wolf_texture(pose: String = "wolf_stand") -> Dictionary:
 	var px: int = art_px if art_px > 0 else 32
 	return {"tex": load(HD_DIR + "assets/%s_%d.png" % [pose, px]), "ps": 1.0 / float(px)}
 
-# 遊戲的動物圖（data/art.json 的 animals）：single 一張圖、sheet＋frame 取第一格、strips.walk 取第一格。
+# 遊戲的動物圖（data/art.json 的 animals）：single 一張圖、sheet 取第一格（沒寫 frame 用 frame_size）、strips.walk 取第一格；winter 時有 @winter 的用冬季的圖。
 # 寬度縮放到 width_cells 格。找不到時回傳空的字典。
-static func animal_texture(species: String, stage: String, width_cells: float) -> Dictionary:
+static func animal_texture(species: String, stage: String, width_cells: float, winter: bool = false) -> Dictionary:
 	var a: Dictionary = GameData.art.get("animals", {}).get(species, {})
 	var st: Dictionary = a.get(stage, a.get("adult", {}))
+	# 冬季換毛的動物（雪兔）有 @winter 的圖
+	if winter and a.has(stage + "@winter"):
+		st = a[stage + "@winter"]
 	var tex: Texture2D = null
 	if st.has("single"):
 		tex = ArtLibrary.texture(str(st["single"]))
-	elif st.has("sheet") and st.has("frame"):
+	elif st.has("sheet"):
+		# 沒寫 frame 的是預設的格子大小（art.json 的 frame_size）
+		var fr: Array = st.get("frame", GameData.art.get("frame_size", [48, 32]))
 		var at := AtlasTexture.new()
 		at.atlas = ArtLibrary.texture(str(st["sheet"]))
-		at.region = Rect2(0, 0, float(st["frame"][0]), float(st["frame"][1]))
+		at.region = Rect2(0, 0, float(fr[0]), float(fr[1]))
 		tex = at
 	elif st.has("strips") and st["strips"].has("walk"):
 		var wk: Dictionary = st["strips"]["walk"]
@@ -399,16 +412,36 @@ func _on_resized() -> void:
 	var m: float = float(cfg["margin"])
 	var need_h: float = map_h * sin(pitch) + max_lv * float(cfg["level_height"]) * cos(pitch) + m
 	var aspect := float(px.x) / float(px.y)
-	cam.size = max(need_h, (map_w + m) / aspect)
-	var center := Vector3(map_w * 0.5, 0.3, map_h * 0.5)
+	_fit_size = max(need_h, (map_w + m) / aspect)
+	_apply_camera()
+
+func _apply_camera() -> void:
+	cam.size = _fit_size / zoom
+	# 拉近時不讓鏡頭跑出地圖：看得到的範圍的一半
+	var aspect := float(sub.size.x) / float(maxi(1, sub.size.y))
+	var pitch := deg_to_rad(-float(cfg["camera_pitch"]))
+	var half_w: float = cam.size * aspect * 0.5
+	var half_d: float = cam.size * 0.5 / sin(pitch)
+	focus.x = clampf(focus.x, min(half_w, map_w * 0.5), max(map_w - half_w, map_w * 0.5))
+	focus.y = clampf(focus.y, min(half_d, map_h * 0.5), max(map_h - half_d, map_h * 0.5))
 	var fwd := -Basis.from_euler(cam.rotation).z
-	cam.position = center - fwd * 30.0
-	var tile_px: float = float(px.y) / cam.size
+	cam.position = Vector3(focus.x, 0.3, focus.y) - fwd * 30.0
+	var tile_px: float = float(sub.size.y) / cam.size
 	var want: int = 48 if tile_px >= float(cfg["swap_px"]) else 32
 	if want != art_px:
 		art_px = want
 		_load_trees()
 		refresh()
+
+# 畫面上的一點對到地面（高度 0）的位置 (x, z)
+func _ground_at(p: Vector2) -> Vector2:
+	var cp := p / size * Vector2(sub.size)
+	var o := cam.project_ray_origin(cp)
+	var n := cam.project_ray_normal(cp)
+	if absf(n.y) < 0.0001:
+		return Vector2(o.x, o.z)
+	var t := -o.y / n.y
+	return Vector2(o.x + n.x * t, o.z + n.z * t)
 
 # --- 輸入：滑鼠所在的格子 ---
 func _pick_cell(p: Vector2) -> Vector2i:
@@ -427,6 +460,27 @@ func _pick_cell(p: Vector2) -> Vector2i:
 	return Vector2i(-1, -1)
 
 func _on_input(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		var zc: Dictionary = cfg.get("zoom", {"max": 3.0, "step": 1.15})
+		var before := _ground_at(ev.position)
+		zoom = clampf(zoom * (float(zc["step"]) if ev.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / float(zc["step"])), 1.0, float(zc["max"]))
+		_apply_camera()
+		# 以滑鼠所在的位置為中心縮放
+		var after := _ground_at(ev.position)
+		focus += before - after
+		_apply_camera()
+		accept_event()
+		return
+	if ev is InputEventMouseButton and ev.button_index in [MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
+		_dragging = ev.pressed
+		accept_event()
+		return
+	if ev is InputEventMouseMotion and _dragging:
+		var a := _ground_at(ev.position - ev.relative)
+		var b := _ground_at(ev.position)
+		focus += a - b
+		_apply_camera()
+		return
 	if ev is InputEventMouseMotion:
 		var c := _pick_cell(ev.position)
 		if c != _last_hover:

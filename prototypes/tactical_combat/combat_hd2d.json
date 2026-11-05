@@ -4,6 +4,7 @@
   "camera_pitch": -52.0,
   "margin": 0.6,
   "swap_px": 44.0,
+  "zoom": { "max": 3.0, "step": 1.15 },
   "heights": { ".": 0, "f": 0, "l": 0, "t": 0, "T": 0, "r": 1, "s": -1, "B": 2, "c": 4 },
   "top": { ".": "grass", "f": "grass", "l": "dirt", "t": "grass", "T": "grass", "r": "rock", "s": "dirt", "B": "rock", "c": "rock" },
   "side": { ".": "dirt", "f": "dirt", "l": "dirt", "t": "dirt", "T": "dirt", "r": "rock", "s": "dirt", "B": "rock", "c": "rock" },

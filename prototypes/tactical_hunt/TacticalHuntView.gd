@@ -60,6 +60,10 @@ var game_mode: bool = false
 var on_done: Callable
 var setup_row: HBoxContainer
 var last_wolf_pos := Vector2i(-99, -99)
+# HD-2D 畫面（2026-11-05）：開著時取代 2D 地圖；同一次執行裡記住選擇（主遊戲每場狩獵都用同一個設定）
+static var hd_on := true
+var hd: HuntHD2D
+var hd_btn: Button
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -80,6 +84,21 @@ func _ready() -> void:
 	map.gui_input.connect(_map_input)
 	map.mouse_exited.connect(func(): hover = Vector2i(-1, -1); _refresh())
 	add_child(map)
+	hd = HuntHD2D.new()
+	hd.view = self
+	hd.position = MAP_ORIGIN
+	hd.size = map.size
+	hd.cell_hovered.connect(_on_hover)
+	hd.cell_clicked.connect(_on_click)
+	add_child(hd)
+	# 畫面切換：放在右欄下面（設定列在主遊戲裡會藏起來，這顆按鈕兩邊都要用得到）
+	hd_btn = Button.new()
+	hd_btn.theme_type_variation = &"SmallButton"
+	hd_btn.focus_mode = Control.FOCUS_NONE
+	hd_btn.position = Vector2(568, 234)
+	hd_btn.custom_minimum_size = Vector2(68, 22)
+	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
+	add_child(hd_btn)
 	info = RichTextLabel.new()
 	info.position = Vector2(568, 2)
 	info.size = Vector2(70, 230)
@@ -179,6 +198,8 @@ func start_from_game(th, done_cb: Callable) -> void:
 		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.mate_intro." + mrole))
 	elif h.wolves.size() > 1 or not h.pending_allies.is_empty():
 		lines.append("[color=#a0c8e8]%s[/color]" % tr("tactical.ui.ally_intro"))
+	hd.setup(h)
+	_apply_hd()
 	_after_action()
 
 # width：選單的寬度（設定列放不下時文字截斷，展開的清單照舊完整；群體狩獵實驗多一個選單後，2026-10-22）
@@ -228,6 +249,8 @@ func _new_hunt(new_seed: bool) -> void:
 		lines.append("苔原狼同伴：藍點的驅趕會繞到獵物另一側，你離獵物 7 格內就衝過去把牠往你這邊趕（你藏著不動或潛行時撲有埋伏加成）；橘點的追擊跟在你後面，獵物跑了就追。牠們咬住獵物時你撲上去更容易；你咬住時牠們會圍過來。")
 	if h.herd.size() > 1:
 		lines.append("鹿群：點一隻鹿設為目標（黃框）。身上有白點的小鹿是幼鹿，細線連到牠的生母；衝進鹿群 2 格內會讓牠們散開。")
+	hd.setup(h)
+	_apply_hd()
 	_after_action()
 
 # --- 輸入 ---
@@ -237,14 +260,25 @@ func _cell_at(p: Vector2) -> Vector2i:
 
 func _map_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseMotion:
-		var c := _cell_at(ev.position)
-		if c != hover:
-			hover = c
-			_refresh()
+		_on_hover(_cell_at(ev.position))
 	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		_on_click(_cell_at(ev.position))
+
+func _apply_hd() -> void:
+	hd.visible = hd_on
+	map.visible = not hd_on
+	hd_btn.text = tr("tactical.ui.view.hd" if hd_on else "tactical.ui.view.2d")
+
+# 2D 地圖與 HD-2D 畫面共用
+func _on_hover(c: Vector2i) -> void:
+	if c != hover:
+		hover = c
+		_refresh()
+
+func _on_click(c: Vector2i) -> void:
+	if true:
 		if h.done:
 			return
-		var c := _cell_at(ev.position)
 		if lock_armed:
 			lock_armed = false
 			if h.front_lock_targets().has(c):
@@ -383,6 +417,8 @@ func _build_buttons() -> void:
 
 func _refresh() -> void:
 	map.queue_redraw()
+	if hd_on and hd.h == h:
+		hd.refresh()
 	info.text = _info_text()
 	# 撲咬、前截鎖喉的機率有一長串因素：放在下方的大框；移動方式之類的短句照舊放右下角
 	var ht: String = _hover_text()
