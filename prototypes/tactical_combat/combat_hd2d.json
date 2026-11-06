@@ -18,7 +18,7 @@
   "logs": ["l"],
   "water": { "s": { "color": [0.32, 0.52, 0.62, 0.62], "lift": 0.12 } },
   "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7] },
-  "trees": { "T": { "art": "pine_dark", "scale": 1.15 }, "t": { "art": "pine_dark", "scale": 0.85 }, "f": { "art": "pine_dark", "scale": 0.8 } },
+  "trees": { "T": { "art": "pine_dark", "scale": 1.15 }, "t": { "art": "pine_dark", "scale": 0.85 }, "f": { "art": "pine_dark", "scale": 0.45, "chance": 0.45 } },
   "units": {
     "wolf": { "art": "hd2d_wolf", "modulate": [1.0, 1.0, 1.0] },
     "mate": { "art": "hd2d_wolf", "modulate": [0.78, 0.84, 0.95] },

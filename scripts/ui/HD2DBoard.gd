@@ -222,6 +222,8 @@ func _build_terrain() -> void:
 			if cfg["trees"].has(k):
 				# 同一種地形的樹稍微錯開，看起來不像排隊
 				var tcfg: Dictionary = cfg["trees"][k]
+				if _hash01(x, y, 13) >= float(tcfg.get("chance", 1.0)):
+					continue
 				var j := Vector3(((x * 37 + y * 11) % 7 - 3) * 0.04, 0, ((x * 13 + y * 29) % 7 - 3) * 0.03)
 				_add_tree(cell_center(c) + Vector3(0, 0, 0.1) + j, _tree_art(x, y, str(tcfg["art"])), float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
 			if k in cfg.get("logs", []):
@@ -256,7 +258,7 @@ func _build_terrain() -> void:
 
 func _add_tree(pos: Vector3, art: String, scale: float) -> void:
 	var s := _make_sprite(false)
-	tree_sprites.append({"sprite": s, "art": art, "scale": scale})
+	tree_sprites.append({"sprite": s, "art": art, "scale": scale, "cell": Vector2i(int(floor(pos.x)), int(floor(pos.z)))})
 	s.position = pos
 
 # 地圖外圍一圈地面與密林（cfg.border：width 幾格、ground 用哪一種地形的材質、tree_chance 每格有樹的機率、tree、scale）
@@ -359,11 +361,33 @@ func refresh() -> void:
 	for ch in overlay.get_children():
 		ch.queue_free()
 	paint()
+	var occupied: Array = []
 	for k in units.keys():
 		if not bool(units[k]["used"]):
 			(units[k]["sprite"] as Sprite3D).visible = false
 			(units[k]["shadow"] as MeshInstance3D).visible = false
 			(units[k]["label"] as Label3D).visible = false
+		else:
+			var sp: Vector3 = (units[k]["sprite"] as Sprite3D).position
+			occupied.append(Vector2i(int(floor(sp.x)), int(floor(sp.z))))
+	_fade_trees(occupied)
+
+# 擋在角色前面（鏡頭這一側、往下 1～3 格、左右 1 格內）的樹變半透明，看得到後面的動物
+func _fade_trees(cells: Array) -> void:
+	for t in tree_sprites:
+		var s: Sprite3D = t["sprite"]
+		var tc: Vector2i = t["cell"]
+		var front := false
+		for c in cells:
+			if absi(tc.x - c.x) <= 1 and tc.y - c.y >= 0 and tc.y - c.y <= 3:
+				front = true
+				break
+		if front:
+			s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISABLED
+			s.modulate = Color(1, 1, 1, 0.35)
+		else:
+			s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+			s.modulate = Color.WHITE
 
 func paint() -> void:
 	pass

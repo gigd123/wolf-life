@@ -1,5 +1,5 @@
 {
-  "_comment": "（2026-11-06 畫面加強：fog 霧、background 天空色、ground_mix 地面斑塊〔地形字元 → patch 材質或「tint:r,g,b」只換顏色（不用別的材質，免得和能走的格子的顏色混淆）、ratio 比例、scale 斑塊大小〕、border 地圖外圍的地面與密林、tree_mix 樹的種類輪替、start_zoom 開場放大幾倍〔對準狼〕，照 HD-2D 測試場景的氣氛）戰術狩獵的 HD-2D 畫面（2026-11-05，HuntHD2D.gd，共用 scripts/ui/HD2DBoard.gd）。只管畫面，規則照 data/tactical_hunt.json。地形字元：. 開闊、f 密林、l 倒木、r 岩坡、w 河（淺）、s 淺水、d 深水、c 峭壁、b 洞穴入口。heights：高度（階）——只是畫面，狼能不能走照原本的規則；top／side／tint：材質與顏色倍率（winter_top：冬季時上面換成雪）；trees：哪些地形畫樹（密林畫成一格一棵）；logs：畫成倒木；water：畫水面。species：戰術地圖的物種 → data/art.json 的動物、階段、寬幾格。",
+  "_comment": "（2026-11-06 畫面加強：fog 霧、background 天空色、ground_mix 地面斑塊〔地形字元 → patch 材質或「tint:r,g,b」只換顏色（不用別的材質，免得和能走的格子的顏色混淆）、ratio 比例、scale 斑塊大小〕、border 地圖外圍的地面與密林、tree_mix 樹的種類輪替、start_zoom 開場放大幾倍〔對準狼〕，照 HD-2D 測試場景的氣氛）戰術狩獵的 HD-2D 畫面（2026-11-05，HuntHD2D.gd，共用 scripts/ui/HD2DBoard.gd）。只管畫面，規則照 data/tactical_hunt.json。地形字元：. 開闊、f 密林、l 倒木、r 岩坡、w 河（淺）、s 淺水、d 深水、c 峭壁、b 洞穴入口。heights：高度（階）——只是畫面，狼能不能走照原本的規則；top／side／tint：材質與顏色倍率（winter_top：冬季時上面換成雪）；trees：哪些地形畫樹（scale 大小、chance 每格有樹的機率；密林是矮的小樹、約一半的格子，不擋住動物）；logs：畫成倒木；water：畫水面。species：戰術地圖的物種 → data/art.json 的動物、階段、寬幾格。",
   "level_height": 0.5,
   "background": [0.62, 0.68, 0.76],
   "fog": { "color": [0.72, 0.76, 0.84], "density": 0.0025 },
@@ -17,7 +17,7 @@
   "side": { ".": "dirt", "f": "dirt", "l": "dirt", "r": "rock", "w": "dirt", "s": "dirt", "d": "dirt", "c": "rock", "b": "dirt" },
   "winter_top": { ".": "snow", "f": "snow", "l": "snow", "b": "snow" },
   "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7], "b": [0.35, 0.3, 0.26] },
-  "trees": { "f": { "art": "pine_dark", "scale": 0.85 } },
+  "trees": { "f": { "art": "pine_dark", "scale": 0.45, "chance": 0.45 } },
   "logs": ["l"],
   "water": { "w": { "color": [0.3, 0.5, 0.62, 0.7], "lift": 0.35 }, "s": { "color": [0.36, 0.56, 0.62, 0.6], "lift": 0.38 }, "d": { "color": [0.16, 0.3, 0.46, 0.8], "lift": 0.75 } },
   "species": {
