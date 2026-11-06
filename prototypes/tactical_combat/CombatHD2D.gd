@@ -14,6 +14,7 @@ func _init() -> void:
 
 func setup(combat: TacticalCombat) -> void:
 	tc = combat
+	_out_seen.clear()
 	build(tc.map.width, tc.map.height, func(c: Vector2i) -> String: return tc.map.terrain(c))
 	refresh()
 
@@ -22,7 +23,7 @@ func _unit_art(i: int) -> Dictionary:
 	var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
-		return hd_wolf_texture("wolf_stalk" if str(u.get("last_mode", "")) == "creep" else "wolf_stand")
+		return hd_wolf_texture(str(cfg["wolf_poses"].get(_wolf_pose(i), cfg["wolf_poses"]["stand"])))
 	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、撲擊 crouch、衝撞 charge、守食物 rear、上一回合有移動 walk／walk_b 輪流、沒動 stand
 	var poses: Dictionary = uc.get("hd2d_poses", {})
 	if not poses.is_empty():
@@ -44,12 +45,67 @@ func _unit_art(i: int) -> Dictionary:
 		return hd_wolf_texture(str(poses.get(pose, poses.get("walk", ""))))
 	return HD2DBoard.animal_texture(str(u["species"]), "adult", float(uc.get("width_cells", 1.8)))
 
+# 狼的姿勢（2026-11-06 Gemini 的灰狼）：退出的那一回合照退出的原因；你方照上一回合做了什麼；對手的狼照牠這一回合的預告
+func _wolf_pose(i: int) -> String:
+	var u: Dictionary = tc.units[i]
+	if bool(u["out"]):
+		match str(u["out_reason"]):
+			"submit": return "submit"
+			"knocked", "died": return "down"
+		return "retreat"
+	if str(u["carrying"]) != "":
+		return "carry"
+	var moved: bool
+	if tc.player_side(i):
+		var act: String = str(tc.plans.get(i, {}).get("action", ""))
+		if act in ["bite", "pounce", "harass", "pin"]:
+			return "lunge"
+		if act == "threaten":
+			return "threaten"
+		if float(u["hp"]) <= float(u["hp_max"]) * float(cfg.get("hurt_ratio", 0.25)):
+			return "hurt"
+		var mode: String = str(u.get("last_mode", u.get("prev_mode", "")))
+		if mode == "creep":
+			return "stalk"
+		moved = mode != ""
+	else:
+		var looks: String = str(tc.intents.get(i, {}).get("looks", ""))
+		if looks in ["bite", "pin"]:
+			return "ready"
+		if looks == "threaten":
+			return "threaten"
+		if looks == "back_off":
+			return "retreat"
+		if float(u["hp"]) <= float(u["hp_max"]) * float(cfg.get("hurt_ratio", 0.25)):
+			return "hurt"
+		moved = looks == "move"
+	if moved:
+		return "walk" if tc.rounds % 2 == 0 else "stand"
+	return "stand"
+
+# 退出的單位留在原地一回合（看得到牠是示弱、被打倒還是撤走）：第一次看到牠退出的回合
+var _out_seen := {}
+
+func _show_unit(i: int) -> bool:
+	if tc.active(i):
+		_out_seen.erase(i)
+		return true
+	var u: Dictionary = tc.units[i]
+	if str(u["species"]) != "wolf" and not bool(_opp_cfg_wolf(i)):
+		return false # 熊、美洲獅走了就不畫（上樹、離開）
+	if not _out_seen.has(i):
+		_out_seen[i] = tc.rounds
+	return int(_out_seen[i]) == tc.rounds
+
+func _opp_cfg_wolf(i: int) -> bool:
+	return bool(tc.cfg["opponents"].get(str(tc.units[i]["species"]), {}).get("wolf", false))
+
 func paint() -> void:
 	if tc == null:
 		return
 	var col: Dictionary = cfg["colors"]
 	for i in tc.units.size():
-		if not tc.active(i):
+		if not _show_unit(i):
 			continue
 		var u: Dictionary = tc.units[i]
 		var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])

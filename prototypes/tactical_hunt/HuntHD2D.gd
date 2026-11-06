@@ -94,14 +94,14 @@ func paint() -> void:
 			quad(h.deer_pos, _col(col["weakest"]), 0.22, 0.06)
 	# 狼與同伴
 	var wf: Vector2i = view.wolf_facing if view != null else Vector2i(1, 0)
-	unit("wolf", hd_wolf_texture("wolf_stand"), h.wolf_pos, _flip(wf))
+	unit("wolf", hd_wolf_texture("hdwolf_stand"), h.wolf_pos, _flip(wf))
 	for k in range(1, h.wolves.size()):
 		var w: Dictionary = h.wolves[k]
 		var pos: Vector2i = w["pos"]
 		var role: String = str(w["role"])
 		var rc: Color = _col(col.get(role, col["chase"]))
 		var last: Array = view.ally_last.get(k, [pos, h.deer_pos - pos]) if view != null else [pos, h.deer_pos - pos]
-		unit("ally%d" % k, hd_wolf_texture("wolf_stand"), pos, _flip(last[1]), Color(0.82, 0.88, 0.98))
+		unit("ally%d" % k, hd_wolf_texture("hdwolf_stand"), pos, _flip(last[1]), Color(0.82, 0.88, 0.98))
 		quad(pos, rc, 0.24, 0.05)
 		if not h.done:
 			var aim0: Vector2i = w.get("aim", pos)
