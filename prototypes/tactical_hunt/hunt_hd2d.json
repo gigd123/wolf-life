@@ -20,6 +20,10 @@
   "trees": { "f": { "art": "pine_dark", "scale": 0.45, "chance": 0.45 } },
   "logs": ["l"],
   "water": { "w": { "color": [0.3, 0.5, 0.62, 0.7], "lift": 0.35 }, "s": { "color": [0.36, 0.56, 0.62, 0.6], "lift": 0.38 }, "d": { "color": [0.16, 0.3, 0.46, 0.8], "lift": 0.75 } },
+  "hd_art": { "_comment": "有 HD-2D 圖的獵物（prototypes/hd2d_tactical/assets/ 的圖名，_32／_48；winter：冬季換的圖）。沒寫的照 species 用遊戲的佔位圖。2026-11-06 沿用風格測試的高解析度原圖（prep_prey.py）",
+    "elk": { "name": "hd_elk_cow" }, "elk_bull": { "name": "hd_elk_bull" }, "elk_calf": { "name": "hd_elk_calf" },
+    "snowshoe_hare": { "name": "hd_snowhare_summer", "winter": "hd_snowhare_winter" }, "snowshoe_hare_young": { "name": "hd_snowhare_summer_young", "winter": "hd_snowhare_winter_young" },
+    "hare": { "name": "hd_snowhare_summer" }, "hare_young": { "name": "hd_snowhare_summer_young" } },
   "species": {
     "deer": ["white_tailed_deer", "adult", 1.3], "fawn": ["white_tailed_deer", "juvenile", 0.9],
     "elk": ["elk", "adult", 1.6], "elk_bull": ["elk", "buck", 1.8], "elk_calf": ["elk", "juvenile", 1.1],

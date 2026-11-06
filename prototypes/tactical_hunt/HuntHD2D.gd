@@ -39,6 +39,10 @@ func _species_key(i: int) -> String:
 func _art_for(key: String) -> Dictionary:
 	var e: Array = cfg["species"].get(key, cfg["species"]["deer"])
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
+	# 有 HD-2D 圖的獵物（hd_art）用那張
+	var hd: Dictionary = cfg.get("hd_art", {}).get(key, {})
+	if not hd.is_empty():
+		return hd_wolf_texture(str(hd.get("winter", hd["name"])) if winter else str(hd["name"]))
 	var a := HD2DBoard.animal_texture(str(e[0]), str(e[1]), float(e[2]), winter)
 	if a.is_empty():
 		e = cfg["species"]["deer"]
