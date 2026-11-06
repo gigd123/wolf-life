@@ -119,7 +119,7 @@
     "learn_dist": 5.0
   },
   "_ally_comment": "第 5 步：伴侶的簡化合作。指令 harass 牽制（站到和你不同的一側騷擾，吸引注意力）、take 叼肉（從對手背後的方向接近殘骸，牠沒看著時叼一塊）、back 退開（離對手 back_dist 格以上）、auto 自動（殘骸在、對手沒盯著牠 → 叼肉；對手盯著牠 → 退開；否則牽制）。血量低於 retreat_hp 自己撤；叼到肉就往邊緣撤。zone_penalty：走進看得到的預告範圍的扣分。assume。",
-  "ally": { "_self": "self_retreat_hp：交給本能的你血量低於這個就撤（同伴照 retreat_hp）；Phase 2k 第 6 步一生模擬校準", "self_retreat_hp": 0.55, "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
+  "ally": { "_self": "self_retreat_hp：交給本能的你血量低於這個就撤（同伴照 retreat_hp）；Phase 2k 第 6 步一生模擬校準", "self_retreat_hp": 0.55, "danger_ratio": 0.25, "risk_hits": 1.0, "_risk": "交給本能的你：剩下的血量扣掉對手 risk_hits 下最重的傷害就會到重傷線（danger_ratio，同 balance.combat）以下時也撤、示弱", "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
   "game": {
     "_comment": "主遊戲的戰術戰鬥（Phase 2k，SPEC「戰術戰鬥接進主遊戲」）。animals：改成戰術戰鬥的對手（其他照選單式）。terrain：依區域的地形產生 16×10 的戰場（每格放這種地形字元的機率；cliff_wall 在最上面一列放峭壁、water_band 在第 water_row 列放淺水）；keep_clear：起始位置與殘骸周圍幾格不放障礙。layouts：依情境的起始位置（wolf、mate、opponent、carcass；opponent 的 pos 為 edge 時從右邊的邊緣隨機一列進場）。carcass_size：殘骸大小依動物體型（small 整隻叼走）。turns_per_rounds：每幾回合算遊戲裡的 1 回合（finish_combat 已經加的不重複算）。heavy_ratio：重傷線（沿用 balance.combat.danger_ratio，這裡只給畫面標示用）。",
     "animals": ["grizzly_bear", "cougar", "black_bear", "stranger_wolf", "challenger", "tundra_wolf"],

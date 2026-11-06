@@ -205,6 +205,23 @@ func foe_of(i: int, from: Vector2i = Vector2i(-1, -1)) -> int:
 			best = k
 	return best if best >= 0 else enemy_index()
 
+# 再挨對手 risk_hits 下最重的就會掉到重傷線以下（第 6 步：老了血量上限低時，照比例撤會來不及）
+func _too_risky(i: int) -> bool:
+	var e := foe_of(i)
+	if not active(e):
+		return false
+	var worst := 0.0
+	for a in _actions_of(e):
+		var dr: Array = _acfg(str(a)).get("dmg", {}).get(str(units[e]["species"]), [])
+		if dr.size() == 2:
+			var m: float = float(dr[1])
+			if bool(_opp_cfg(e).get("wolf", false)):
+				m *= float(units[e]["stats"]["strength"]) / 60.0
+			worst = maxf(worst, m)
+	var ac: Dictionary = cfg["ally"]
+	var line: float = float(units[i]["hp_max"]) * float(ac.get("danger_ratio", 0.25))
+	return float(units[i]["hp"]) - worst * float(ac.get("risk_hits", 2.0)) <= line
+
 # 跟著你的成員優先對付你正在對付的那一隻（SPEC：你牽制時牠們從側面進）；離你太遠時對付自己最近的
 func _ally_foe(i: int) -> int:
 	if i != 0 and active(0):
@@ -1549,7 +1566,7 @@ func ally_mode(i: int) -> String:
 		return "duel"
 	# 交給本能的你比同伴早撤（Phase 2k 第 6 步：一生模擬裡撐到過了重傷線才撤、被打死的太多）
 	var rh: float = float(ac.get("self_retreat_hp", ac["retreat_hp"])) if i == 0 else float(ac["retreat_hp"])
-	if float(u["hp"]) < float(u["hp_max"]) * rh:
+	if float(u["hp"]) < float(u["hp_max"]) * rh or (i == 0 and _too_risky(i)):
 		return "escape"
 	if str(u["carrying"]) != "":
 		return "carry"
@@ -1777,8 +1794,8 @@ func _duel_plan(i: int, p: Dictionary) -> Dictionary:
 	if hp_ratio <= float(ad.get("auto_submit_hp", 0.3)) and pr < 1.0:
 		p["action"] = "submit"
 		return p
-	# 交給本能的你：血量低就示弱，不硬撐（第 6 步）
-	if i == 0 and hp_ratio <= float(ad.get("self_submit_hp", 0.4)):
+	# 交給本能的你：血量低就示弱，不硬撐（第 6 步）；血量上限低（老了）時看對手一下打多重
+	if i == 0 and (hp_ratio <= float(ad.get("self_submit_hp", 0.4)) or _too_risky(i)):
 		p["action"] = "submit"
 		return p
 	if map.adjacent(u["pos"], ep):
