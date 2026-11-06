@@ -6,6 +6,7 @@
 
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
+- 北美馴鹿 caribou_*：站寬 1.55 格（含角）；警覺、跑從同一張裁出來，吃草翻轉＋調色（SPECIAL）
 - 騾鹿母鹿 mule_deer_doe_*：站寬 1.4 格（PixelLab 的白尾鹿腿長脖子高，1.1 格就和這隻 1.4 格差不多高；騾鹿比白尾鹿壯、略大）
 
 用法：python3.12 -I prototypes/hd2d_tactical/prep_gemini_prey.py
@@ -24,6 +25,16 @@ ANIMALS = {
     "mule_deer_doe": (1.4, ["stand", "alert", "run", "graze"]),
     "mule_deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "mule_deer_fawn": (0.9, ["stand", "alert", "run", "graze"]),
+    "caribou": (1.55, ["stand", "alert", "run", "graze"]),
+}
+# 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
+# cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
+SPECIAL = {
+    # 馴鹿：Gemini 把「正面看著你」和「跑」和一副浮著的鹿角畫在同一張（左上那隻腳下還有一條黑線）→ 分別裁出來
+    "caribou_alert": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 0, 590, 592), "cells": 1.45},
+    "caribou_run": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 335, 1024, 1024), "cells": 1.9},
+    # 低頭吃草：面向左、1408×768、毛色偏紅褐 → 翻轉、照站那張調色
+    "caribou_graze": {"file": "caribou_graze_left.jpg", "flip": True, "cells": 1.95, "match": True},
 }
 # 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了
 CLEAN_GRASS = {}  # 例："mule_deer_buck_graze": (0.44, 0.76, 1.0, 1.0)（第一版吃草那張，現在換成重畫的乾淨版；舊的留在 mule_deer_buck_graze_v1_grass.jpg）
@@ -97,9 +108,27 @@ def remove_grass(c, box, gmin=3, keep_min=60, gap=14, opening=4):
     return c.crop(c.getbbox())
 
 
+def _load(animal, pose):
+    sp = SPECIAL.get("%s_%s" % (animal, pose), {})
+    path = os.path.join(SRC, sp.get("file", "%s_%s.jpg" % (animal, pose)))
+    if "crop" in sp or sp.get("flip"):
+        im = Image.open(path).convert("RGB")
+        if "crop" in sp:
+            im = im.crop(sp["crop"])
+        if sp.get("flip"):
+            from PIL import ImageOps
+            im = ImageOps.mirror(im)
+        tmp = os.path.join(SRC, "_tmp.png")
+        im.save(tmp)
+        c = pg.cut(tmp, "green")
+        os.remove(tmp)
+        return c
+    return pg.cut(path, "green")
+
+
 def main():
     for animal, (cells, poses) in ANIMALS.items():
-        cuts = {p: pg.cut(os.path.join(SRC, "%s_%s.jpg" % (animal, p)), "green") for p in poses}
+        cuts = {p: _load(animal, p) for p in poses}
         for p in poses:
             box = CLEAN_GRASS.get("%s_%s" % (animal, p))
             if box:
@@ -113,9 +142,13 @@ def main():
                 cuts[p] = c.crop(c.getbbox())
         px_per_cell = cuts["stand"].width / cells
         for p, c in cuts.items():
+            sp = SPECIAL.get("%s_%s" % (animal, p), {})
+            if sp.get("match"):
+                c = pw.match_palette(c, cuts["stand"])
             name = "hd_%s" % animal if p == "stand" else "hd_%s_%s" % (animal, p)
             for d in pg.DENSITIES:
-                out = pw.outline(pg.shrink(c, round(c.width / px_per_cell * d)))
+                cw = float(sp["cells"]) if "cells" in sp else c.width / px_per_cell
+                out = pw.outline(pg.shrink(c, round(cw * d)))
                 out.save(os.path.join(pg.OUT, "%s_%d.png" % (name, d)))
                 print(name, d, out.size)
 
