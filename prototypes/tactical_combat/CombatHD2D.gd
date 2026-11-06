@@ -23,7 +23,7 @@ func _unit_art(i: int) -> Dictionary:
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
 		return hd_wolf_texture("wolf_stalk" if str(u.get("last_mode", "")) == "creep" else "wolf_stand")
-	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、上一回合有移動 walk／walk_b 輪流、沒動 stand
+	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、撲擊 crouch、衝撞 charge、守食物 rear、上一回合有移動 walk／walk_b 輪流、沒動 stand
 	var poses: Dictionary = uc.get("hd2d_poses", {})
 	if not poses.is_empty():
 		# 上一回合有移動：走路（兩格輪流）；沒動：站著
@@ -37,6 +37,10 @@ func _unit_art(i: int) -> Dictionary:
 			pose = "swipe"
 		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) == "pounce" and poses.has("crouch"):
 			pose = "crouch" # 準備撲：伏低
+		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) == "charge" and poses.has("charge"):
+			pose = "charge" # 衝撞（假衝看起來一樣）
+		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) == "guard" and poses.has("rear"):
+			pose = "rear" # 守食物：用後腳站起來
 		return hd_wolf_texture(str(poses.get(pose, poses.get("walk", ""))))
 	return HD2DBoard.animal_texture(str(u["species"]), "adult", float(uc.get("width_cells", 1.8)))
 
