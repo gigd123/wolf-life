@@ -34,15 +34,19 @@ func _species_key(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i) and sp == "deer":
 		return "fawn"
+	if sp == "deer" and str(h.game_mods.get("life_stage", "")) == "buck":
+		return "deer_buck"
 	return sp
 
-func _art_for(key: String) -> Dictionary:
+func _art_for(key: String, state: String = "") -> Dictionary:
 	var e: Array = cfg["species"].get(key, cfg["species"]["deer"])
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
 	# 有 HD-2D 圖的獵物（hd_art）用那張
 	var hd: Dictionary = cfg.get("hd_art", {}).get(key, {})
 	if not hd.is_empty():
-		return hd_wolf_texture(str(hd.get("winter", hd["name"])) if winter else str(hd["name"]))
+		if winter and hd.has("winter"):
+			return hd_wolf_texture(str(hd["winter"]))
+		return hd_wolf_texture(str(hd.get(state, hd["name"])))
 	var a := HD2DBoard.animal_texture(str(e[0]), str(e[1]), float(e[2]), winter)
 	if a.is_empty():
 		e = cfg["species"]["deer"]
@@ -81,7 +85,7 @@ func paint() -> void:
 			line(cell_center(h.herd[i]["pos"]) + Vector3(0, 0.15, 0), cell_center(h.herd[m]["pos"]) + Vector3(0, 0.15, 0), _col(col["bond"]))
 		if i == h.target:
 			continue
-		unit("deer%d" % i, _art_for(_species_key(i)), h.herd[i]["pos"], _flip(h.herd[i]["facing"]))
+		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", ""))), h.herd[i]["pos"], _flip(h.herd[i]["facing"]))
 		if bool(h.herd[i].get("weakest", false)):
 			quad(h.herd[i]["pos"], _col(col["weakest"]), 0.22, 0.06)
 	if not hid:
@@ -91,7 +95,7 @@ func paint() -> void:
 				var v := Vector2(d).normalized() * float(h._flee_budget())
 				line(dc, dc + Vector3(v.x, 0, v.y), _col(col["intent"]))
 		var tint: Color = _col(col["held"]) if h.held else Color.WHITE
-		unit("deer%d" % h.target, _art_for(_species_key(h.target)), h.deer_pos, _flip(h.deer_facing), tint)
+		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", ""))), h.deer_pos, _flip(h.deer_facing), tint)
 		if h.herd.size() > 1:
 			frame(h.deer_pos, _col(col["picked"]), 0.04, 0.05)
 		if bool(h.herd[h.target].get("weakest", false)):

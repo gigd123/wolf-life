@@ -4513,6 +4513,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("game", {})
 	ctx["species"] = str(g.get("species_stage", {}).get(hunt.animal_id, {}).get(hunt.life_stage, g.get("species", {}).get(hunt.animal_id, "deer")))
 	ctx["season"] = GameTime.current_season()
+	ctx["life_stage"] = hunt.life_stage # 畫面用（白尾鹿雄鹿的圖）
 	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿
 	var stage_size: Dictionary = g.get("herd_size_stage", {}).get(hunt.animal_id, {})
 	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
