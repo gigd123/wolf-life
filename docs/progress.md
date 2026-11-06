@@ -3,6 +3,7 @@
 最後更新：2026-10-20
 
 ## 目前階段
+（2026-11-06）使用者選：戰鬥接進主遊戲 範圍 B（含黑熊、狼對狼）、被打倒 C（重傷後硬撐才會死）、時機 A；順序：規格 → HD-2D 畫面加強 → 出圖清單。規格草稿 `docs/proposals/tactical-combat-integration.md`（待使用者同意後寫入 SPEC，Phase 2k）。HD-2D 畫面加強（`HD2DBoard`，戰鬥、狩獵共用）：霧、天空色、光線、飽和度照測試場景；地面斑塊（`ground_mix`，只換顏色，免得和能走的格子混淆）；地圖外圍三格密林（`border`，鏡頭這一側不種樹）；樹加大、松樹與積雪松樹輪替（`tree_mix`，冬季全積雪）；狩獵開場放大 2 倍對準狼（`start_zoom`、`focus_on`）。出圖清單 `docs/art-request-hd2d-2026-11-06.md`（三批：戰鬥用的動物與狼的動作、獵物、地面與場景）。
 （2026-11-06）使用者與 ChatGPT 的方向補充（人生故事感為主、保留戰術與 HD-2D、先驗證整合體驗）→ Claude Code 的分析存成 `docs/direction-review-2026-11-06.md`。試玩紀錄加指標（使用者同意，只記錄）：`age_minutes` 每一歲的遊玩分鐘、`tactical_share` 戰術場景佔的時間（`GameState.in_tactical`）、選擇情境加 `family.none／mate／young／pups`、`cards_by_title` 卡片依標題的秒關率與平均停留。
 （2026-11-06）使用者要和 ChatGPT 討論方向：整理 `docs/status-and-direction-2026-11-06.md`（完成的內容、後續、試玩紀錄的警訊、主要風險與建議、想討論的問題）。
 （2026-11-05）戰術狩獵也套上 HD-2D（使用者要求）：HD-2D 畫面抽成共用的 `scripts/ui/HD2DBoard.gd`（地形方塊、樹、倒木、水面、角色、地面標示、點格子、滾輪縮放〔cfg.zoom〕與右鍵／中鍵拖曳捲動），戰鬥原型 `CombatHD2D` 與新的 `prototypes/tactical_hunt/HuntHD2D.gd`＋`hunt_hd2d.json` 都繼承它；狩獵畫面照 2D 的 `_draw_map` 畫同樣的標示（能走、紅框撲、紫框鎖喉、目的地、躲藏範圍、母子線、意圖線、目標黃框、最弱橘點、同伴角色點與虛線）；物種對到 art.json 的動物圖（沒寫 frame 的 sheet 用 frame_size、雪兔冬季圖），冬季地面換雪。主遊戲與原型都用（右欄下面「HD-2D／2D 地圖」，static 記住）。截圖工具 `tools/thunt_shot.gd`。邏輯不動。待使用者目視（試玩清單 TC）。

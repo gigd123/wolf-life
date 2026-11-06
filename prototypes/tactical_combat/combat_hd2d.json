@@ -1,7 +1,14 @@
 {
-  "_comment": "戰鬥原型的 HD-2D 畫面（2026-11-05，CombatHD2D.gd）。只管畫面，規則照 data/tactical_combat.json。heights：地形字元的高度（階，一階 level_height）；top／side：上面與側面的材質（prototypes/hd2d_tactical/assets/tex_*.png）；tint：上面的顏色倍率。trees：大樹、小樹用哪張圖、縮放。units：單位用的圖（wolf 用 HD-2D 測試的狼；對手用遊戲的佔位圖〔data/art.json 的 animals〕，width_cells 寬幾格）、顏色倍率。logs：畫成倒木的地形；water：畫水面的地形。swap_px：螢幕上一格到這麼多像素時狼與樹換成 48 那套。",
+  "_comment": "（2026-11-06 畫面加強：fog 霧、background 天空色、ground_mix 地面斑塊〔地形字元 → patch 材質或「tint:r,g,b」只換顏色（不用別的材質，免得和能走的格子的顏色混淆）、ratio 比例、scale 斑塊大小〕、border 地圖外圍的地面與密林、tree_mix 樹的種類輪替、start_zoom 開場放大幾倍〔對準狼〕，照 HD-2D 測試場景的氣氛）戰鬥原型的 HD-2D 畫面（2026-11-05，CombatHD2D.gd）。只管畫面，規則照 data/tactical_combat.json。heights：地形字元的高度（階，一階 level_height）；top／side：上面與側面的材質（prototypes/hd2d_tactical/assets/tex_*.png）；tint：上面的顏色倍率。trees：大樹、小樹用哪張圖、縮放。units：單位用的圖（wolf 用 HD-2D 測試的狼；對手用遊戲的佔位圖〔data/art.json 的 animals〕，width_cells 寬幾格）、顏色倍率。logs：畫成倒木的地形；water：畫水面的地形。swap_px：螢幕上一格到這麼多像素時狼與樹換成 48 那套。",
   "level_height": 0.5,
-  "camera_pitch": -52.0,
+  "background": [0.62, 0.68, 0.76],
+  "fog": { "color": [0.72, 0.76, 0.84], "density": 0.0025 },
+  "saturation": 1.0,
+  "ground_mix": { ".": { "patch": "tint:0.92,0.88,0.66", "ratio": 0.35, "scale": 4.0 }, "f": { "patch": "tint:0.55,0.62,0.5", "ratio": 0.4, "scale": 3.0 } },
+  "border": { "width": 3, "ground": "f", "tree_chance": 0.8, "tree": "pine_dark", "scale": [0.85, 1.15] },
+  "tree_mix": ["pine_dark", "pine_dark", "pine_snow"],
+  "start_zoom": 1.0,
+  "camera_pitch": -45.0,
   "margin": 0.6,
   "swap_px": 44.0,
   "zoom": { "max": 3.0, "step": 1.15 },
@@ -11,7 +18,7 @@
   "logs": ["l"],
   "water": { "s": { "color": [0.32, 0.52, 0.62, 0.62], "lift": 0.12 } },
   "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7] },
-  "trees": { "T": { "art": "pine_dark", "scale": 1.0 }, "t": { "art": "pine_dark", "scale": 0.7 }, "f": { "art": "pine_dark", "scale": 0.45 } },
+  "trees": { "T": { "art": "pine_dark", "scale": 1.15 }, "t": { "art": "pine_dark", "scale": 0.85 }, "f": { "art": "pine_dark", "scale": 0.8 } },
   "units": {
     "wolf": { "art": "hd2d_wolf", "modulate": [1.0, 1.0, 1.0] },
     "mate": { "art": "hd2d_wolf", "modulate": [0.78, 0.84, 0.95] },
@@ -25,7 +32,7 @@
     "planned": [1.0, 1.0, 1.0, 0.55], "hover": [1.0, 0.92, 0.45, 0.35], "hit": [1.0, 0.15, 0.15, 0.7],
     "attention": [1.0, 0.9, 0.4, 0.8], "path": [1.0, 1.0, 1.0, 0.7]
   },
-  "ambient": { "color": [0.5, 0.55, 0.62], "energy": 0.6 },
-  "light": { "pitch": -30.0, "yaw": -50.0, "energy": 1.2, "color": [1.0, 0.88, 0.72] },
-  "tilt_shift": { "focus": 0.5, "band": 0.34, "max_blur": 1.0 }
+  "ambient": { "color": [0.48, 0.54, 0.66], "energy": 0.55 },
+  "light": { "pitch": -24.0, "yaw": -55.0, "energy": 1.25, "color": [1.0, 0.86, 0.68] },
+  "tilt_shift": { "focus": 0.52, "band": 0.3, "max_blur": 1.4 }
 }

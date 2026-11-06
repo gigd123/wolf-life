@@ -81,6 +81,13 @@ func build(w: int, h: int, terrain_fn: Callable) -> void:
 	focus = Vector2(map_w * 0.5, map_h * 0.5)
 	_on_resized()
 
+# 鏡頭移到某一格、放大到 z 倍（開場拉近到狼附近用）
+func focus_on(c: Vector2i, z: float) -> void:
+	zoom = clampf(z, 1.0, float(cfg.get("zoom", {}).get("max", 3.0)))
+	focus = Vector2(c.x + 0.5, c.y + 0.5)
+	if cam != null and sub.size.x > 1:
+		_apply_camera()
+
 func _col(a: Array) -> Color:
 	return Color(float(a[0]), float(a[1]), float(a[2]), float(a[3]) if a.size() > 3 else 1.0)
 
@@ -94,6 +101,17 @@ func _build_env() -> void:
 	e.ambient_light_color = _col(amb["color"])
 	e.ambient_light_energy = float(amb["energy"])
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	# 霧、光暈、飽和度（照 HD-2D 測試場景的氣氛；cfg.fog 沒寫就不開）
+	var fog: Dictionary = cfg.get("fog", {})
+	if not fog.is_empty():
+		e.fog_enabled = true
+		e.fog_light_color = _col(fog["color"])
+		e.fog_density = float(fog["density"])
+	e.glow_enabled = true
+	e.glow_intensity = 0.3
+	e.glow_bloom = 0.03
+	e.adjustment_enabled = true
+	e.adjustment_saturation = float(cfg.get("saturation", 0.92))
 	env.environment = e
 	world.add_child(env)
 	var lc: Dictionary = cfg["light"]
@@ -123,12 +141,20 @@ func cell_center(c: Vector2i) -> Vector3:
 func in_map(c: Vector2i) -> bool:
 	return c.x >= 0 and c.y >= 0 and c.x < map_w and c.y < map_h
 
-func _terrain_mat(k: String) -> ShaderMaterial:
-	if mats.has(k):
-		return mats[k]
+# top_override：這一格上面換成別的材質（地面的斑塊，例如草地裡的泥地）
+# top_override 以「tint:」開頭時不換材質，只換顏色倍率（例如草地裡偏黃的乾草斑塊）
+func _terrain_mat(k: String, top_override: String = "") -> ShaderMaterial:
+	var key := k + "|" + top_override
+	var tint_override: Array = []
+	if top_override.begins_with("tint:"):
+		tint_override = Array(top_override.substr(5).split(",")).map(func(v): return float(v))
+		top_override = ""
+	if mats.has(key):
+		return mats[key]
 	var m := ShaderMaterial.new()
 	m.shader = load(HD_DIR + "terrain.gdshader")
-	var tt: Texture2D = load(HD_DIR + "assets/tex_%s.png" % str(cfg["top"].get(k, "grass")))
+	var top_name: String = top_override if top_override != "" else str(cfg["top"].get(k, "grass"))
+	var tt: Texture2D = load(HD_DIR + "assets/tex_%s.png" % top_name)
 	var st: Texture2D = load(HD_DIR + "assets/tex_%s.png" % str(cfg["side"].get(k, "dirt")))
 	m.set_shader_parameter("top_tex", tt)
 	m.set_shader_parameter("side_tex", st)
@@ -137,10 +163,44 @@ func _terrain_mat(k: String) -> ShaderMaterial:
 	m.set_shader_parameter("top_size", float(tt.get_width()))
 	m.set_shader_parameter("side_size", float(st.get_width()))
 	m.set_shader_parameter("show_grid", true)
-	var tint: Array = cfg["tint"].get(k, [1.0, 1.0, 1.0])
+	var tint: Array = tint_override if not tint_override.is_empty() else (cfg["tint"].get(k, [1.0, 1.0, 1.0]) if top_override == "" else [1.0, 1.0, 1.0])
 	m.set_shader_parameter("tint", Vector3(float(tint[0]), float(tint[1]), float(tint[2])))
-	mats[k] = m
+	mats[key] = m
 	return m
+
+# 平滑的值雜訊（0～1）：地面斑塊、樹的種類用，固定不隨重畫改變
+func _noise(x: float, y: float, sc: float, salt: int = 0) -> float:
+	var fx := x / sc
+	var fy := y / sc
+	var ix := int(floor(fx))
+	var iy := int(floor(fy))
+	var tx := fx - ix
+	var ty := fy - iy
+	tx = tx * tx * (3.0 - 2.0 * tx)
+	ty = ty * ty * (3.0 - 2.0 * ty)
+	var a := _hash01(ix, iy, salt)
+	var b := _hash01(ix + 1, iy, salt)
+	var c := _hash01(ix, iy + 1, salt)
+	var d := _hash01(ix + 1, iy + 1, salt)
+	return lerpf(lerpf(a, b, tx), lerpf(c, d, tx), ty)
+
+func _hash01(x: int, y: int, salt: int) -> float:
+	var h: int = (x * 73856093) ^ (y * 19349663) ^ (salt * 83492791) ^ (map_w * 2654435)
+	h = (h ^ (h >> 13)) * 1274126177
+	return float(absi(h) % 10007) / 10007.0
+
+# 這一格上面的斑塊（cfg.ground_mix：地形字元 → {patch 材質, ratio 佔多少, scale 斑塊大小}）
+func _patch_for(k: String, x: int, y: int) -> String:
+	var gm: Dictionary = cfg.get("ground_mix", {}).get(k, {})
+	if gm.is_empty():
+		return ""
+	return str(gm["patch"]) if _noise(x, y, float(gm.get("scale", 4.0)), 7) < float(gm.get("ratio", 0.25)) else ""
+
+func _tree_art(x: int, y: int, base: String) -> String:
+	var mix: Array = cfg.get("tree_mix", [])
+	if mix.is_empty():
+		return base
+	return str(mix[int(_noise(x, y, 3.0, 11) * mix.size()) % mix.size()])
 
 func _build_terrain() -> void:
 	mats.clear()
@@ -157,14 +217,13 @@ func _build_terrain() -> void:
 			box.size = Vector3(1, top - bottom, 1)
 			mi.mesh = box
 			mi.position = Vector3(x + 0.5, (top + bottom) * 0.5, y + 0.5)
-			mi.material_override = _terrain_mat(k)
+			mi.material_override = _terrain_mat(k, _patch_for(k, x, y))
 			world.add_child(mi)
 			if cfg["trees"].has(k):
 				# 同一種地形的樹稍微錯開，看起來不像排隊
-				var s := _make_sprite(false)
+				var tcfg: Dictionary = cfg["trees"][k]
 				var j := Vector3(((x * 37 + y * 11) % 7 - 3) * 0.04, 0, ((x * 13 + y * 29) % 7 - 3) * 0.03)
-				tree_sprites.append({"sprite": s, "kind": k})
-				s.position = cell_center(c) + Vector3(0, 0, 0.1) + j
+				_add_tree(cell_center(c) + Vector3(0, 0, 0.1) + j, _tree_art(x, y, str(tcfg["art"])), float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
 			if k in cfg.get("logs", []):
 				var lg := MeshInstance3D.new()
 				var cy := CylinderMesh.new()
@@ -191,8 +250,44 @@ func _build_terrain() -> void:
 				wm_i.material_override = wm
 				wm_i.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				world.add_child(wm_i)
+	_build_border(bottom)
 	overlay = Node3D.new()
 	world.add_child(overlay)
+
+func _add_tree(pos: Vector3, art: String, scale: float) -> void:
+	var s := _make_sprite(false)
+	tree_sprites.append({"sprite": s, "art": art, "scale": scale})
+	s.position = pos
+
+# 地圖外圍一圈地面與密林（cfg.border：width 幾格、ground 用哪一種地形的材質、tree_chance 每格有樹的機率、tree、scale）
+# 只是畫面：點不到、走不到，讓地圖不像浮在空中
+func _build_border(bottom: float) -> void:
+	var bd: Dictionary = cfg.get("border", {})
+	var w: int = int(bd.get("width", 0))
+	if w <= 0:
+		return
+	var gk: String = str(bd.get("ground", "."))
+	for y in range(-w, map_h + w):
+		for x in range(-w, map_w + w):
+			if x >= 0 and y >= 0 and x < map_w and y < map_h:
+				continue
+			var mi := MeshInstance3D.new()
+			var box := BoxMesh.new()
+			box.size = Vector3(1, -bottom, 1)
+			mi.mesh = box
+			mi.position = Vector3(x + 0.5, bottom * 0.5, y + 0.5)
+			mi.material_override = _terrain_mat(gk, _patch_for(gk, x, y))
+			world.add_child(mi)
+			# 離地圖越遠樹越密；最靠近地圖的那一圈稀一點，才看得到邊緣
+			var dist: int = maxi(maxi(-x, x - map_w + 1), maxi(-y, y - map_h + 1))
+			var ch: float = float(bd.get("tree_chance", 0.7)) * (0.55 if dist == 1 else 1.0)
+			# 鏡頭這一側（地圖下方）的樹會擋住最下面幾列：不種樹
+			if y >= map_h:
+				ch = 0.0
+			if _hash01(x, y, 5) < ch:
+				var j := Vector3((_hash01(x, y, 6) - 0.5) * 0.3, 0, (_hash01(x, y, 8) - 0.5) * 0.3)
+				var sc: Array = bd.get("scale", [0.8, 1.1])
+				_add_tree(Vector3(x + 0.5, 0, y + 0.6) + j, _tree_art(x, y, str(bd.get("tree", "pine_dark"))), lerpf(float(sc[0]), float(sc[1]), _hash01(x, y, 9)))
 
 func _make_sprite(blob: bool) -> Sprite3D:
 	var s := Sprite3D.new()
@@ -218,9 +313,8 @@ func _blob_texture() -> ImageTexture:
 func _load_trees() -> void:
 	for t in tree_sprites:
 		var s: Sprite3D = t["sprite"]
-		var tcfg: Dictionary = cfg["trees"][t["kind"]]
-		s.texture = load(HD_DIR + "assets/%s_%d.png" % [str(tcfg["art"]), art_px])
-		s.pixel_size = float(tcfg["scale"]) / float(art_px)
+		s.texture = load(HD_DIR + "assets/%s_%d.png" % [str(t["art"]), art_px])
+		s.pixel_size = float(t["scale"]) / float(art_px)
 		s.offset = Vector2(0, s.texture.get_height() * 0.5 - 2)
 
 # HD-2D 測試的狼（目前這一套的像素）

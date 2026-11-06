@@ -20,10 +20,14 @@ func setup(th) -> void:
 	if top.is_empty():
 		cfg["summer_top"] = (cfg["top"] as Dictionary).duplicate()
 		top = cfg["summer_top"].duplicate()
-	if str(h.game_mods.get("season", "")) == "winter":
+	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
+	if winter:
 		top.merge(cfg.get("winter_top", {}), true)
 	cfg["top"] = top
+	# 冬季的樹都積雪；外圍的地面跟著換
+	cfg["tree_mix"] = ["pine_snow"] if winter else ["pine_dark", "pine_dark", "pine_snow"]
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
+	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()
 
 func _species_key(i: int) -> String:
