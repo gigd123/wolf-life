@@ -23,10 +23,14 @@ func _unit_art(i: int) -> Dictionary:
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
 		return hd_wolf_texture("wolf_stalk" if str(u.get("last_mode", "")) == "creep" else "wolf_stand")
-	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、其他 walk
+	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、上一回合有移動 walk／walk_b 輪流、沒動 stand
 	var poses: Dictionary = uc.get("hd2d_poses", {})
 	if not poses.is_empty():
-		var pose := "walk"
+		# 上一回合有移動：走路（兩格輪流）；沒動：站著
+		var moved: bool = str(u.get("prev_mode", u.get("last_mode", ""))) != ""
+		var pose := "stand" if poses.has("stand") and not moved else "walk"
+		if pose == "walk" and poses.has("walk_b") and tc.rounds % 2 == 1:
+			pose = "walk_b"
 		if bool(u.get("eating", false)) and poses.has("eat"):
 			pose = "eat"
 		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) in ["swipe", "bite"] and poses.has("swipe"):
