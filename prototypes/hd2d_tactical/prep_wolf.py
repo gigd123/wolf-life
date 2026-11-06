@@ -3,7 +3,7 @@
 來源：Gemini 出的圖（arts/hd2d_2026-11-06/，綠底）。
 第二輪（wolf_r2_*，淺灰、黑框粗）是基準：walk 走路、submit 示弱（耳朵壓平、尾巴下垂）、down 帶傷倒地（被打倒）、
 threaten 豎毛露牙（示威）、stalk 壓低頭潛行、retreat 尾巴夾住的潛行（撤退、退開）、hurt 帶傷潛行（過了重傷線）、ready 豎毛壓低頭齜牙（準備咬、壓制）。
-第一輪（wolf_r1_*，偏灰褐、黑框細）補第二輪沒有的：stand 站、lunge 撲咬、carry 叼著肉；毛色乘倍率調到和第二輪的走路一樣。
+第一輪（wolf_r1_*，偏灰褐、黑框細）補第二輪沒有的：stand 站、lunge 撲咬、carry 叼著肉；照亮度的排名對應到第二輪走路那張的顏色（肉保留原色）。
 處理照 prep_grizzly.py：綠色色鍵去背、只留最大的一塊、縮成 32／48；縮小後外面補一圈 1 像素的深色外框（原圖的細黑框縮小後會不見）。
 寬幾格：照畫布換算（每張的狼都差不多佔滿 1024 的畫布），走路寬 1.35 格。
 
@@ -35,14 +35,39 @@ def outline(im, col=(30, 28, 28, 255)):
     return out
 
 
+def _lum(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def _is_meat(c):
+    r, g, b = c[:3]
+    return r > 90 and r > g * 1.45 and r > b * 1.25
+
+
+def match_palette(src, ref):
+    import bisect
+    rp = sorted([c[:3] for c in ref.getdata() if c[3]], key=_lum)
+    sp = src.load()
+    w, h = src.size
+    vals = sorted(_lum(sp[x, y]) for y in range(h) for x in range(w) if sp[x, y][3] and not _is_meat(sp[x, y]))
+    n, m = len(vals), len(rp)
+    for y in range(h):
+        for x in range(w):
+            c = sp[x, y]
+            if not c[3] or _is_meat(c):
+                continue
+            q = bisect.bisect_left(vals, _lum(c)) / max(1, n - 1)
+            r = rp[min(m - 1, int(q * (m - 1)))]
+            sp[x, y] = (r[0], r[1], r[2], 255)
+    return src
+
+
 def main():
     cuts = {n: pg.cut(os.path.join(pg.SRC, "wolf_r2_%s.jpg" % n), "green") for n in R2}
     r1 = {n: pg.cut(os.path.join(pg.SRC, "wolf_r1_%s.jpg" % n), "green") for n in R1}
-    target = pg.mean_rgb(cuts["walk"])
-    gain = [t / max(1.0, b) for t, b in zip(target, pg.mean_rgb(r1["stand"]))]
-    print("第一輪毛色倍率", [round(g, 3) for g in gain])
+    # 第一輪照亮度的排名對應到第二輪走路那張的顏色（色盤對應；比整張乘倍率更接近第二輪的淺灰），肉保留原色
     for n, c in r1.items():
-        cuts[n] = pg.apply_gain(c, gain)
+        cuts[n] = match_palette(c, cuts["walk"])
     ref = cuts["walk"].width
     for n, c in cuts.items():
         c.save(os.path.join(pg.SRC, "hdwolf_%s_src.png" % n))
