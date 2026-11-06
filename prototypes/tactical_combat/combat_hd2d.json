@@ -1,5 +1,5 @@
 {
-  "_comment": "（2026-11-06 畫面加強：fog 霧、background 天空色、ground_mix 地面斑塊〔地形字元 → patch 材質或「tint:r,g,b」只換顏色（不用別的材質，免得和能走的格子的顏色混淆）、ratio 比例、scale 斑塊大小〕、border 地圖外圍的地面與密林、tree_mix 樹的種類輪替、start_zoom 開場放大幾倍〔對準狼〕，照 HD-2D 測試場景的氣氛）戰鬥原型的 HD-2D 畫面（2026-11-05，CombatHD2D.gd）。只管畫面，規則照 data/tactical_combat.json。heights：地形字元的高度（階，一階 level_height）；top／side：上面與側面的材質（prototypes/hd2d_tactical/assets/tex_*.png）；tint：上面的顏色倍率。trees：大樹、小樹用哪張圖、縮放。units：單位用的圖（wolf 用 HD-2D 測試的狼；對手用遊戲的佔位圖〔data/art.json 的 animals〕，width_cells 寬幾格）、顏色倍率。logs：畫成倒木的地形；water：畫水面的地形。swap_px：螢幕上一格到這麼多像素時狼與樹換成 48 那套。",
+  "_comment": "（2026-11-06 畫面加強：fog 霧、background 天空色、ground_mix 地面斑塊〔地形字元 → patch 材質或「tint:r,g,b」只換顏色（不用別的材質，免得和能走的格子的顏色混淆）、ratio 比例、scale 斑塊大小〕、border 地圖外圍的地面與密林、tree_mix 樹的種類輪替、start_zoom 開場放大幾倍〔對準狼〕，照 HD-2D 測試場景的氣氛）戰鬥原型的 HD-2D 畫面（2026-11-05，CombatHD2D.gd）。只管畫面，規則照 data/tactical_combat.json。heights：地形字元的高度（階，一階 level_height）；top／side：上面與側面的材質（prototypes/hd2d_tactical/assets/tex_*.png）；tint：上面的顏色倍率。trees：大樹、小樹用哪張圖、縮放。units：單位用的圖（wolf 用 HD-2D 測試的狼；對手用遊戲的佔位圖〔data/art.json 的 animals〕，width_cells 寬幾格；hd2d_poses：有 HD-2D 新圖的動物，姿勢 → prototypes/hd2d_tactical/assets/ 的圖名〔_32／_48〕，在吃 eat、預告是揮掌或咬 swipe、其他 walk）、顏色倍率。logs：畫成倒木的地形；water：畫水面的地形。swap_px：螢幕上一格到這麼多像素時狼與樹換成 48 那套。",
   "level_height": 0.5,
   "background": [0.62, 0.68, 0.76],
   "fog": { "color": [0.72, 0.76, 0.84], "density": 0.0025 },
@@ -22,7 +22,7 @@
   "units": {
     "wolf": { "art": "hd2d_wolf", "modulate": [1.0, 1.0, 1.0] },
     "mate": { "art": "hd2d_wolf", "modulate": [0.78, 0.84, 0.95] },
-    "grizzly_bear": { "width_cells": 2.3 },
+    "grizzly_bear": { "width_cells": 2.3, "hd2d_poses": { "walk": "grizzly_walk", "eat": "grizzly_eat", "swipe": "grizzly_swipe" } },
     "cougar": { "width_cells": 1.8 }
   },
   "carcass": { "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },
