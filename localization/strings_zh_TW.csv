@@ -788,6 +788,13 @@ factor.combat.opening,閃開就有破綻
 factor.combat.outclassed,牠看得出打不過你
 factor.combat.tiring,消耗牠的體力
 knowledge.opponent,{animal}：上次交手，你沒佔到上風
+knowledge.combat_move,{animal}出手前有徵兆
+knowledge.combat_move.swipe,{animal}要揮掌前，會先把重心壓到後腳、肩膀轉向你
+knowledge.combat_move.bite,{animal}要咬之前，會低頭、往前探
+knowledge.combat_move.charge,{animal}真的要衝過來時，耳朵貼平、一聲不吭
+knowledge.combat_move.bluff_charge,{animal}常常衝到一半就停下來，那只是在嚇你
+knowledge.combat_move.pounce,{animal}要撲之前，會把身體伏低、尾巴尖輕輕抽動
+knowledge.combat_move.guard,{animal}守著食物時，會擋在你和食物之間，低吼不退
 day_summary.old_injury_new,傷口癒合了，但{part}留下了舊傷，天冷時也許還會作痛。
 day_summary.old_injury_flare,{part}的舊傷又隱隱作痛。
 day_summary.old_injury_calm,{part}的舊傷平息了。

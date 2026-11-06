@@ -2838,6 +2838,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"territory": return "territory|%s|%s" % [entry["animal"], entry["region"]]
 		"pack_land": return "pack_land|%s" % entry["region"]
 		"opponent": return "opponent|%s|%s" % [entry["animal"], entry["life_stage"]]
+		"combat_move": return "combat_move|%s|%s" % [entry["animal"], entry["move"]]
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -5296,7 +5297,7 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),
 			"eating": bool(op.get("eating", false)), "ambush": bool(op.get("ambush", false))}}
 	var opts := {"scenario_data": sc, "wolf_stats": _tc_wolf_stats(), "seed": rng.randi(), "mode": "sync",
-		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": life_log.get("tc_knowledge", {})}
+		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id)}
 	if with_carcass:
 		opts["carcass_data"] = carcass_data
 	# 跟著你的成員：這一步先帶第一隻（伴侶優先），第 5 步再帶全部
@@ -5387,11 +5388,8 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 					add_life_event("mate.hurt", {"who": n.id, "animal": c.animal_id})
 				n.health = max(1.0, float(mu["hp"]))
 			# 牠帶出來的肉也算你們的（吃進你的肚子：先簡化，同一份）
-	# 戰鬥裡學到的（看到對手出手幾次）存起來，下次遇到同一種對手照這個顯示
-	var tk: Dictionary = life_log.get("tc_knowledge", {})
-	for k in tc.knowledge.keys():
-		tk[k] = maxi(int(tk.get(k, 0)), int(tc.knowledge[k].get("count", 0)))
-	life_log["tc_knowledge"] = tk
+	# 戰鬥裡學到的（看到對手出手幾次）存進主遊戲的知識（似乎 → 通常 → 確定；Phase 2k 第 2 步）
+	_tc_store_knowledge(c.animal_id, tc)
 	c.decisions.append("fight.tactical")
 	# 時間：戰術戰鬥的回合比選單式多，照 turns_per_rounds 換算（finish_combat 會再加 1～2 回合）
 	var extra: int = maxi(0, int(tc.rounds / maxi(1, int(g.get("turns_per_rounds", 6)))) - 1)
@@ -5399,6 +5397,26 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		GameTime.advance_turns(extra)
 	c.set_meta("tactical", true)
 	_stat_inc("combat", c.animal_id + ".tactical." + tc.outcome)
+
+# 主遊戲的知識 → 戰術戰鬥的「見過幾次」（0～3）：對手的每個出手動作一筆 combat_move 知識
+func _tc_knowledge_counts(animal_id: String) -> Dictionary:
+	var out := {}
+	for move in TacticalCombat.ATTACKS:
+		out[animal_id + "|" + move] = knowledge_level({"type": "combat_move", "animal": animal_id, "move": move})
+	return out
+
+# 戰鬥裡多看到幾次，就照主遊戲的規則累積幾次（照常過日子時最多到「通常」，學到時跳「你學到：……」）
+func _tc_store_knowledge(animal_id: String, tc: TacticalCombat) -> void:
+	for move in TacticalCombat.ATTACKS:
+		var entry := {"type": "combat_move", "animal": animal_id, "move": move}
+		var now: int = int(tc.knowledge.get(animal_id + "|" + move, {}).get("count", 0))
+		var guard := 0
+		while knowledge_level(entry) < now and guard < 3:
+			guard += 1
+			var before: int = knowledge_level(entry)
+			learn(entry)
+			if knowledge_level(entry) == before:
+				break # 照常過日子時「確定」要自己經歷
 
 # 自動玩家、模擬：照「交給本能」打完
 func auto_tactical_combat(c: Combat) -> TacticalCombat:

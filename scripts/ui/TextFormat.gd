@@ -51,4 +51,7 @@ static func knowledge_text(entry: Dictionary) -> String:
 	text = text.replace("{season}", t("season." + str(entry.get("season", ""))))
 	text = text.replace("{prey}", prey_name(str(entry.get("animal", "")), str(entry.get("life_stage", "adult"))))
 	text = text.replace("{option}", t("knowledge.option." + str(entry.get("option", ""))))
+	# 戰鬥裡學到的對手動作（Phase 2k 第 2 步）：「灰熊要揮掌前……」
+	if entry["type"] == "combat_move":
+		text = t("knowledge.combat_move." + str(entry.get("move", ""))).replace("{animal}", source_name(str(entry.get("animal", ""))))
 	return level + text

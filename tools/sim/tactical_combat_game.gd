@@ -5,7 +5,7 @@ extends SceneTree
 #   3. 灰熊來搶你的殘骸：交給本能打完，結果寫回（撤出帶肉 → 吃下去、殘骸沒了；對手走了 → 殘骸留下）
 #   4. 從熊口搶（on_carcass）、遭遇（encounter）、伏擊（ambush）、美洲獅都打得完，時間有前進
 #   5. 跟著你的伴侶一起進場，受的傷記在牠身上
-#   6. 戰鬥裡學到的（見過幾次）存進 life_log.tc_knowledge
+#   6. 戰鬥裡學到的（見過幾次）存進主遊戲的知識 combat_move（第 2 步）：帶進下一場、學到時跳通知、照常過日子最多到「通常」
 #   7. 自動玩家 play_combat 走戰術戰鬥、不會卡住
 # 用法：bash tools/run_sim.sh tactical_combat_game
 var gs
@@ -143,11 +143,40 @@ func _run() -> void:
 	_fresh()
 	c = gs.start_combat("grizzly_bear", "adult", "encounter")
 	tc = gs.auto_tactical_combat(c)
-	var tk: Dictionary = gs.life_log.get("tc_knowledge", {})
 	var any := 0
-	for k in tk.keys():
-		any += int(tk[k])
-	_check(not tk.is_empty() and any > 0, "life_log.tc_knowledge 有紀錄（合計 %d）" % any)
+	for k in gs.knowledge.keys():
+		if str(k).begins_with("combat_move|grizzly_bear|"):
+			any += int(gs.knowledge[k]["count"])
+	_check(any > 0, "主遊戲的知識有 combat_move（合計 %d）" % any)
+	# 第 2 步：主遊戲的知識帶進下一場（見過幾次 → 預告看得比較清楚）
+	gs.knowledge[gs.knowledge_key({"type": "combat_move", "animal": "grizzly_bear", "move": "swipe"})] = {"type": "combat_move", "animal": "grizzly_bear", "move": "swipe", "count": 3}
+	c = gs.start_combat("grizzly_bear", "adult", "encounter")
+	tc = gs.start_tactical_combat(c)
+	_check(tc.know_count("grizzly_bear", "swipe") == 3, "確定的知識帶進戰鬥：揮掌見過 3 次（%d）" % tc.know_count("grizzly_bear", "swipe"))
+	# 戰鬥裡多看到一次 → 學到（跳「你學到」）
+	_fresh()
+	var learned := []
+	var cb := func(e): if str(e.get("type", "")) == "combat_move": learned.append(e)
+	gs.knowledge_learned.connect(cb)
+	c = gs.start_combat("grizzly_bear", "adult", "encounter")
+	tc = gs.start_tactical_combat(c)
+	tc.learn("grizzly_bear", "charge")
+	tc.learn("grizzly_bear", "charge")
+	gs.apply_tactical_combat(c, tc)
+	gs.knowledge_learned.disconnect(cb)
+	var lv: int = gs.knowledge_level({"type": "combat_move", "animal": "grizzly_bear", "move": "charge"})
+	_check(lv == 2 and learned.size() == 2, "戰鬥裡看到衝撞 2 次 → 知識【通常】、跳 2 次學到（%d、%d）" % [lv, learned.size()])
+	# 照常過日子：最多到「通常」
+	_fresh()
+	gs.routine_running = true
+	c = gs.start_combat("grizzly_bear", "adult", "encounter")
+	tc = gs.start_tactical_combat(c)
+	for k in 3:
+		tc.learn("grizzly_bear", "swipe")
+	gs.apply_tactical_combat(c, tc)
+	gs.routine_running = false
+	lv = gs.knowledge_level({"type": "combat_move", "animal": "grizzly_bear", "move": "swipe"})
+	_check(lv == 2, "照常過日子時最多到【通常】（%d）" % lv)
 
 	print("== 7. 自動玩家")
 	_fresh()

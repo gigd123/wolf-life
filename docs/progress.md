@@ -9,7 +9,7 @@
 （2026-11-06）Phase 2k 戰術戰鬥接進主遊戲寫入 SPEC（使用者同意）。CLAUDE.md 任務順序加第 19 項。
 - [ ] Phase 2k 戰術戰鬥接進主遊戲
   - [x] 1. 主遊戲的戰鬥接口（2026-11-06）：`GameState.uses_tactical_combat`（`data/tactical_combat.json` 的 `game.animals`：灰熊、美洲獅；`tactical_combat_off` 對照用）、`start_tactical_combat`（依 `c.terrain` 產生 16×10 戰場：`game.terrain` 每種地形放樹、倒木、大石頭、岩坡的機率，峭壁地形最上面一列岩壁、溪流第 8 列淺水，起始位置與殘骸周圍不放障礙；起始位置 `game.layouts`：在殘骸旁被搶 arrives、對手佔著殘骸 on_carcass、伏擊 ambush、其他遭遇 encounter；你的狼用主遊戲的能力與血量，跟著你的第一個成員當伴侶進場）、`_tc_hurt`（你被打中照 `FightRules.hurt_wolf`：還沒瀕危的一下不致死〔停在 1 → 被打倒〕，瀕危後被打到 0 → 死亡；伴侶照同樣的規則）、`apply_tactical_combat`（打傷趕走＝drove_off 打贏、對手失去興趣或上樹＝新的 parted 沒有勝負、撤出帶肉＝grab〔吃 N 段〕、其他＝retreated、死亡＝died；對手走了殘骸剩的段數〔含掉在地上的〕寫回；伴侶的傷；學到的見過幾次存 `life_log.tc_knowledge`；回合數每 6 回合多算 1 個遊戲回合），之後照原本的 `finish_combat`。畫面：`Game._begin_combat` 遇到戰術戰鬥開 `TacticalCombat.tscn`（`start_from_game`：藏設定列與原型按鈕，打完按「繼續」），從熊口搶肉改成「悄悄靠近」（on_carcass）＋放棄；戰鬥中過了重傷線標紅字。自動玩家 `play_combat` 走 `auto_tactical_combat`（交給本能）；熊佔著殘骸時謹慎型或受傷就放棄，其他的上前。`TacticalCombat`：`hurt_hook`、opts `scenario_data`／`wolf_stats`／`mate_stats`／`knowledge_counts`／`carcass_data`、結束原因 died。HD-2D：密林改成矮的小樹（約一半的格子）、擋在角色前面的樹半透明。R-125 `tactical_combat_game`；一生模擬（12 隻 ×2）壽命 10.1／10.5、戰死 1～2 隻、沒有卡住。`life_pressure` 加 `TC_OFF=1`（選單式對照，第 6 步校準用）。
-  - [ ] 2. 知識：戰鬥裡學到的存進主遊戲的知識
+  - [x] 2. 知識（2026-11-06）：主遊戲新的知識種類 `combat_move`（對手、動作；只記出手的動作 `TacticalCombat.ATTACKS`：揮掌、咬、衝撞、假衝、撲擊、守食物）。開打時每個動作的知識等級（0～3）當成「見過幾次」帶進戰鬥（`_tc_knowledge_counts`，預告看得清不清楚、機率顯示照這個）；打完戰鬥裡多看到幾次，就照主遊戲的 `learn()` 累積幾次（`_tc_store_knowledge`：學到時跳「你學到：【似乎】灰熊要揮掌前，會先把重心壓到後腳……」，照常過日子時最多到「通常」）。知識清單排在「對手」後面。第 1 步暫用的 `life_log.tc_knowledge` 拿掉（舊存檔不轉換）。文案 `knowledge.combat_move.*`。R-125 加 3 項。
   - [ ] 3. 黑熊
   - [ ] 4. 狼對狼一對一（示威、壓制、示弱）
   - [ ] 5. 多隻對手與狼群對狼群（你這邊的伴侶、子女、成員一起進場）
