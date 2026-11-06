@@ -363,6 +363,8 @@ func _process(_d):
 				fight_log["fights"] += int(cst[k])
 		if str(GS.wolf.death_cause) == "combat":
 			fight_log["combat_deaths"] += 1
+		if str(GS.wolf.death_cause) == "injury":
+			print("  傷重死亡：%.1f 歲，最後的傷 %s，一生重傷 %d 次" % [GS.wolf.age_years, GS.wolf.last_injury_source, GS.wolf.heavy_injury_count])
 		if str(GS.wolf.death_cause) == "starvation":
 			starved.append("%.1f 歲（%s）" % [GS.wolf.age_years, GS.den_region])
 		ages.append(GS.wolf.age_years)
