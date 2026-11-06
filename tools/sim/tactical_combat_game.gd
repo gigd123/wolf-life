@@ -38,6 +38,7 @@ func _run() -> void:
 	_fresh()
 	_check(gs.uses_tactical_combat(gs.start_combat("grizzly_bear", "adult", "encounter")), "灰熊走戰術戰鬥")
 	_check(gs.uses_tactical_combat(gs.start_combat("cougar", "adult", "encounter")), "美洲獅走戰術戰鬥")
+	_check(gs.uses_tactical_combat(gs.start_combat("black_bear", "adult", "carcass")), "黑熊走戰術戰鬥（第 3 步）")
 	_check(not gs.uses_tactical_combat(gs.start_combat("red_fox", "adult", "carcass")), "狐狸還是選單式")
 	gs.tactical_combat_off = true
 	_check(not gs.uses_tactical_combat(gs.start_combat("grizzly_bear", "adult", "encounter")), "關掉時灰熊也是選單式")
@@ -105,7 +106,7 @@ func _run() -> void:
 	_check(turns_moved == 40, "每場時間都有前進（%d／40）" % turns_moved)
 
 	print("== 4. 其他情境打得完")
-	for case in [["grizzly_bear", "carcass", "on_carcass"], ["grizzly_bear", "encounter", ""], ["cougar", "encounter", "ambush"], ["cougar", "carcass", ""]]:
+	for case in [["grizzly_bear", "carcass", "on_carcass"], ["grizzly_bear", "encounter", ""], ["cougar", "encounter", "ambush"], ["cougar", "carcass", ""], ["black_bear", "carcass", ""], ["black_bear", "encounter", ""]]:
 		var done_n := 0
 		var rounds := 0
 		for i in 15:

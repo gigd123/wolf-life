@@ -2423,6 +2423,8 @@ tcombat.sc.cougar_cache,4 美洲獅守著藏起來的鹿
 tcombat.sc.cougar_ambush,5 美洲獅伏擊
 tcombat.sc.grizzly_arrives_mate,6 灰熊來搶（有伴侶）
 tcombat.sc.grizzly_on_carcass_mate,7 灰熊在吃（有伴侶）
+tcombat.sc.black_bear_arrives,8 黑熊來搶
+tcombat.sc.black_bear_on_carcass,9 黑熊趴在殘骸上吃
 tcombat.wolf.novice,年輕的狼
 tcombat.wolf.average,普通的狼
 tcombat.wolf.veteran,老練的狼
@@ -2444,6 +2446,7 @@ tcombat.name.wolf,你
 tcombat.name.mate,伴侶
 tcombat.name.grizzly_bear,灰熊
 tcombat.name.cougar,美洲獅
+tcombat.name.black_bear,黑熊
 tcombat.info.enemy,{name}　血量 {hp}%　耐心 {pat}%
 tcombat.info.wolf,{name}　血量 {hp}／{max}　喘 {b}
 tcombat.info.carrying,　叼著 {n} 段

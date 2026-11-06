@@ -68,7 +68,11 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	var sc: Dictionary = opts["scenario_data"] if opts.has("scenario_data") else scs[p_scenario]
 	var with_mate: bool = bool(opts.get("with_mate", sc.get("with_mate", false)))
 	if sc.has("base"):
-		sc = scs[str(sc["base"])]
+		# base：照另一個情境的地圖與位置；opponent_id 換成別的對手（黑熊用灰熊的情境，Phase 2k 第 3 步）
+		var over: Dictionary = sc
+		sc = (scs[str(sc["base"])] as Dictionary).duplicate(true)
+		if over.has("opponent_id"):
+			sc["opponent"]["id"] = str(over["opponent_id"])
 	scenario_id = p_scenario
 	rng.seed = int(opts.get("seed", 1))
 	mode = str(opts.get("mode", "sync"))

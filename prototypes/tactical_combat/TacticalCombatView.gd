@@ -12,10 +12,10 @@ const COLORS := {
 	"c": Color("#45423d"), "T": Color("#1f3a22"), "t": Color("#2f5a33"), "B": Color("#9a958a"),
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"zone_clear": Color(1.0, 0.1, 0.45, 0.45), "zone_partial": Color(1.0, 0.2, 0.55, 0.18),
-	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "cougar": Color("#c8a06a"),
+	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "cougar": Color("#c8a06a"),
 	"carcass": Color("#6e2f22"), "planned": Color("#ffffff"), "hit": Color("#ff3030"),
 }
-const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate"]
+const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass"]
 const WOLVES := ["novice", "average", "veteran"]
 const KNOW := ["novice", "experienced", "veteran"]
 const MODES := ["sync", "alternate"]
@@ -256,7 +256,7 @@ func _draw_map() -> void:
 		var u: Dictionary = tc.units[i]
 		var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
 		var c: Vector2i = u["pos"]
-		var big: bool = str(u["species"]) == "grizzly_bear"
+		var big: bool = str(u["species"]) in ["grizzly_bear", "black_bear"]
 		map.draw_circle(_center(c), CELL * (0.46 if big else 0.36), Color(0, 0, 0, 0.6))
 		map.draw_circle(_center(c), CELL * (0.42 if big else 0.32), COLORS.get(key, Color.WHITE))
 		var f := Vector2(u["facing"]).normalized()
