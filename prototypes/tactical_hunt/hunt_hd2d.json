@@ -23,6 +23,7 @@
   "hd_art": { "_comment": "有 HD-2D 圖的獵物（prototypes/hd2d_tactical/assets/ 的圖名，_32／_48；winter：冬季換的圖）。沒寫的照 species 用遊戲的佔位圖；unaware／suspicious／stand／flee：依那隻鹿的狀態換的圖（白尾鹿母鹿：沒發現你低頭吃草、警覺或站定抬頭回看、逃跑走路那張；PixelLab 2026-11-06）；deer_buck：主遊戲的白尾鹿雄鹿。2026-11-06 沿用風格測試的高解析度原圖（prep_prey.py）",
     "deer": { "name": "hd_deer_doe", "unaware": "hd_deer_doe_graze", "suspicious": "hd_deer_doe_alert", "stand": "hd_deer_doe_alert", "flee": "hd_deer_doe_walk" },
     "deer_buck": { "name": "hd_deer_buck" },
+    "mule_deer": { "name": "hd_mule_deer_doe", "unaware": "hd_mule_deer_doe_graze", "suspicious": "hd_mule_deer_doe_alert", "stand": "hd_mule_deer_doe_alert", "flee": "hd_mule_deer_doe_run" },
     "elk": { "name": "hd_elk_cow" }, "elk_bull": { "name": "hd_elk_bull" }, "elk_calf": { "name": "hd_elk_calf" },
     "snowshoe_hare": { "name": "hd_snowhare_summer", "winter": "hd_snowhare_winter" }, "snowshoe_hare_young": { "name": "hd_snowhare_summer_young", "winter": "hd_snowhare_winter_young" },
     "hare": { "name": "hd_snowhare_summer" }, "hare_young": { "name": "hd_snowhare_summer_young" } },
