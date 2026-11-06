@@ -103,7 +103,7 @@ func _wolf_pose(i: int) -> String:
 			return "hurt"
 		moved = looks == "move"
 	if moved:
-		return "walk" if tc.rounds % 2 == 0 else "stand"
+		return "walk" if tc.rounds % 2 == 0 else ("walk_b" if cfg["wolf_poses"].has("walk_b") else "stand")
 	return "stand"
 
 # 退出的單位留在原地一回合（看得到牠是示弱、被打倒還是撤走）：第一次看到牠退出的回合
@@ -161,8 +161,13 @@ func paint() -> void:
 			quad(c, _col(col["hit"]), 0.5, 0.04)
 	if not tc.carcass.is_empty() and int(tc.carcass["segments"]) > 0:
 		var cc: Dictionary = cfg["carcass"]
-		var tex: Texture2D = load(str(cc.get(str(tc.carcass.get("animal", "")), cc["_default"])))
-		sprite_at(tex, 1.0 / float(cc["px_per_cell"]), tc.carcass["pos"])
+		var hdc: Dictionary = cc.get("hd", {})
+		if not hdc.is_empty():
+			var art: Dictionary = hd_wolf_texture(str(hdc.get(str(tc.carcass.get("animal", "")), hdc["_default"])))
+			sprite_at(art["tex"], float(art["ps"]), tc.carcass["pos"])
+		else:
+			var tex: Texture2D = load(str(cc.get(str(tc.carcass.get("animal", "")), cc["_default"])))
+			sprite_at(tex, 1.0 / float(cc["px_per_cell"]), tc.carcass["pos"])
 		label(cell_center(tc.carcass["pos"]) + Vector3(0.3, 0.7, 0), str(tc.carcass["segments"]), Color(1, 0.85, 0.75))
 	for d in tc.drops:
 		quad(d["pos"], Color(0.45, 0.18, 0.12, 0.9), 0.35, 0.05)

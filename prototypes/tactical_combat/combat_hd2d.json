@@ -28,7 +28,7 @@
   "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7] },
   "trees": { "T": { "art": "pine_dark", "scale": 1.15 }, "t": { "art": "pine_dark", "scale": 0.85 }, "f": { "art": "pine_dark", "scale": 0.45, "chance": 0.45 } },
   "wolf_poses": { "_comment": "狼（你、伴侶、同伴、對手的狼都一樣，各自調顏色）的姿勢 → prototypes/hd2d_tactical/assets/hdwolf_*（Gemini 2026-11-06，prep_wolf.py）。叼著肉 carry、上一回合咬或壓制 lunge、示威 threaten、對手預告要咬或壓制 ready、過了重傷線 hurt、潛行 stalk、移動 walk／stand 輪流、沒動 stand；退出的那一回合留在原地：示弱 submit、被打倒或倒下 down、撤退或逃走 retreat",
-    "stand": "hdwolf_stand", "walk": "hdwolf_walk", "stalk": "hdwolf_stalk", "threaten": "hdwolf_threaten", "ready": "hdwolf_ready",
+    "stand": "hdwolf_stand", "walk": "hdwolf_walk", "walk_b": "hdwolf_walk_b", "stalk": "hdwolf_stalk", "threaten": "hdwolf_threaten", "ready": "hdwolf_ready",
     "lunge": "hdwolf_lunge", "carry": "hdwolf_carry", "hurt": "hdwolf_hurt", "submit": "hdwolf_submit", "retreat": "hdwolf_retreat", "down": "hdwolf_down" },
   "units": {
     "wolf": { "art": "hd2d_wolf", "modulate": [1.0, 1.0, 1.0] },
@@ -43,7 +43,7 @@
     "member_2": { "art": "hd2d_wolf", "modulate": [0.86, 0.9, 0.86] },
     "cougar": { "width_cells": 1.8, "hd2d_poses": { "stand": "cougar_stand", "walk": "cougar_walk", "walk_b": "cougar_walk_b", "eat": "cougar_eat", "crouch": "cougar_crouch", "swipe": "cougar_pounce" } }
   },
-  "carcass": { "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },
+  "carcass": { "hd": { "_comment": "HD-2D 的殘骸（PixelLab 2026-11-06，prep_pixellab.py）：assets/ 的圖名", "elk": "hd_carcass_elk", "_default": "hd_carcass_deer" }, "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },
   "colors": {
     "creep": [0.45, 0.9, 0.45, 0.32], "trot": [0.95, 0.85, 0.3, 0.32], "sprint": [1.0, 0.55, 0.2, 0.32],
     "zone_clear": [1.0, 0.1, 0.45, 0.5], "zone_partial": [1.0, 0.25, 0.6, 0.22],
