@@ -71,7 +71,7 @@
     "harass": { "base": 0.65, "skill_div": 150.0, "side": { "rear": 0.15, "side": 0.1, "front": -0.1 }, "after_sprint": -0.05, "dmg": [3, 6], "drain": 8.0, "breath": -6.0, "init": 12 },
     "take": { "eating": 0.6, "away": 0.45, "facing": 0.08, "skill_div": 200.0, "leg": -0.2, "whole": -0.05, "guard": -0.2, "moved": -0.05, "init": 2 },
     "threaten": { "range": 3.0, "drain": 14.0, "breath": -2.0, "init": 0 },
-    "pin": { "base": 0.25, "str_div": 150.0, "skill_div": 200.0, "side": { "rear": 0.25, "side": 0.12, "front": -0.2 }, "hurt_bonus": 0.4, "breath": -12.0, "init": 8 },
+    "pin": { "base": 0.25, "str_div": 110.0, "skill_div": 200.0, "side": { "rear": 0.25, "side": 0.12, "front": -0.2 }, "hurt_bonus": 0.4, "breath": -12.0, "init": 8 },
     "submit": { "init": 30 },
     "dodge": { "breath": -6.0, "init": 15 },
     "dodge_mult": 0.4,
@@ -91,7 +91,7 @@
       "attack": 6.0, "attack_pr": 3.0, "threaten": 4.0, "threaten_fade": 0.25, "approach": 5.0, "back_off": 2.5, "flee_pr": 0.6,
       "auto_pin": 0.45, "auto_threaten_pr": 1.1, "auto_submit_hp": 0.3,
       "_comment5": "第 5 步（多隻）：group_radius／group_share 兩隻附近幾格內的同伴算進實力比、打幾折；target_friends 目標身邊每多一隻牠的同伴扣分、target_mob 自己這邊已經貼著目標的加分、target_keep 不換目標的加分（挑落單的）；auto_retreat_pr 交給本能時多隻對手、實力比低於這個就撤。",
-      "group_radius": 3.0, "group_share": 0.8, "target_friends": 1.5, "target_mob": 1.2, "target_keep": 1.0, "auto_retreat_pr": 0.75, "close_in": 3.0, "enemy_pin": true, "pin": 5.0, "pin_chance": 8.0 },
+      "group_radius": 3.0, "group_share": 0.8, "target_friends": 1.5, "target_mob": 1.2, "target_keep": 1.0, "auto_retreat_pr": 0.75, "close_in": 3.0, "enemy_pin": true, "pin": 3.5, "pin_chance": 8.0, "self_submit_hp": 0.4 },
     "scores": { "attack": 6.0, "pounce": 5.5, "charge": 4.5, "bluff_guard": 4.5, "bluff_open": 3.0, "eat": 6.0, "guard": 4.0, "approach_food": 5.0,
       "approach_threat": 2.5, "turn": 3.0, "back_to_wall": 4.5, "climb": 7.0, "back_off": 1.5, "idle": 1.0 },
     "eat_safe_dist": 3.5,
@@ -119,7 +119,7 @@
     "learn_dist": 5.0
   },
   "_ally_comment": "第 5 步：伴侶的簡化合作。指令 harass 牽制（站到和你不同的一側騷擾，吸引注意力）、take 叼肉（從對手背後的方向接近殘骸，牠沒看著時叼一塊）、back 退開（離對手 back_dist 格以上）、auto 自動（殘骸在、對手沒盯著牠 → 叼肉；對手盯著牠 → 退開；否則牽制）。血量低於 retreat_hp 自己撤；叼到肉就往邊緣撤。zone_penalty：走進看得到的預告範圍的扣分。assume。",
-  "ally": { "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
+  "ally": { "_self": "self_retreat_hp：交給本能的你血量低於這個就撤（同伴照 retreat_hp）；Phase 2k 第 6 步一生模擬校準", "self_retreat_hp": 0.55, "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
   "game": {
     "_comment": "主遊戲的戰術戰鬥（Phase 2k，SPEC「戰術戰鬥接進主遊戲」）。animals：改成戰術戰鬥的對手（其他照選單式）。terrain：依區域的地形產生 16×10 的戰場（每格放這種地形字元的機率；cliff_wall 在最上面一列放峭壁、water_band 在第 water_row 列放淺水）；keep_clear：起始位置與殘骸周圍幾格不放障礙。layouts：依情境的起始位置（wolf、mate、opponent、carcass；opponent 的 pos 為 edge 時從右邊的邊緣隨機一列進場）。carcass_size：殘骸大小依動物體型（small 整隻叼走）。turns_per_rounds：每幾回合算遊戲裡的 1 回合（finish_combat 已經加的不重複算）。heavy_ratio：重傷線（沿用 balance.combat.danger_ratio，這裡只給畫面標示用）。",
     "animals": ["grizzly_bear", "cougar", "black_bear", "stranger_wolf", "challenger", "tundra_wolf"],

@@ -1547,7 +1547,9 @@ func ally_mode(i: int) -> String:
 	var e0 := _ally_foe(i)
 	if active(e0) and bool(_opp_cfg(e0).get("wolf", false)) and str(u["carrying"]) == "":
 		return "duel"
-	if float(u["hp"]) < float(u["hp_max"]) * float(ac["retreat_hp"]):
+	# 交給本能的你比同伴早撤（Phase 2k 第 6 步：一生模擬裡撐到過了重傷線才撤、被打死的太多）
+	var rh: float = float(ac.get("self_retreat_hp", ac["retreat_hp"])) if i == 0 else float(ac["retreat_hp"])
+	if float(u["hp"]) < float(u["hp_max"]) * rh:
 		return "escape"
 	if str(u["carrying"]) != "":
 		return "carry"
@@ -1773,6 +1775,10 @@ func _duel_plan(i: int, p: Dictionary) -> Dictionary:
 		p["action"] = "retreat" if map.on_edge(p["move"]) else ("dodge" if zone.has(p["move"]) else "wait")
 		return p
 	if hp_ratio <= float(ad.get("auto_submit_hp", 0.3)) and pr < 1.0:
+		p["action"] = "submit"
+		return p
+	# 交給本能的你：血量低就示弱，不硬撐（第 6 步）
+	if i == 0 and hp_ratio <= float(ad.get("self_submit_hp", 0.4)):
 		p["action"] = "submit"
 		return p
 	if map.adjacent(u["pos"], ep):
