@@ -82,6 +82,45 @@ def cut(path, kind):
                 continue
             bg[y * w + x] = True
             q.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
+        # 被身體包住的棋盤格空隙（例如尾巴和後腳之間）：灌水灌不到，另外找。
+        # 一塊「像背景的顏色」裡同時有不少亮白和淺灰（棋盤格的兩種格子）才算，免得把白色的口鼻、胸口挖掉
+        seen = [False] * (w * h)
+        for i in range(w * h):
+            if bg[i] or seen[i] or not isbg(px[i % w, i // w]):
+                continue
+            comp = []
+            q2 = deque([i])
+            seen[i] = True
+            while q2:
+                j = q2.popleft()
+                comp.append(j)
+                x, y = j % w, j // w
+                for k in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= k[0] < w and 0 <= k[1] < h:
+                        kk = k[1] * w + k[0]
+                        if not seen[kk] and not bg[kk] and isbg(px[k[0], k[1]]):
+                            seen[kk] = True
+                            q2.append(kk)
+            whites = sum(1 for j in comp if min(px[j % w, j // w]) > 238)
+            greys = sum(1 for j in comp if max(px[j % w, j // w]) < 226)
+            is_checker = len(comp) > 150 and whites > len(comp) * 0.2 and greys > len(comp) * 0.2
+            # 小縫只露出白色那一格：一塊幾乎全白、四周大多是黑色輪廓線（白色的口鼻、胸口旁邊是毛色，不是黑線）
+            is_hole = False
+            if not is_checker and len(comp) > 30 and whites > len(comp) * 0.5:
+                cs = set(comp)
+                edge = 0
+                dark = 0
+                for j in comp:
+                    x, y = j % w, j // w
+                    for k in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                        if 0 <= k[0] < w and 0 <= k[1] < h and (k[1] * w + k[0]) not in cs:
+                            edge += 1
+                            if max(px[k[0], k[1]]) < 70:
+                                dark += 1
+                is_hole = edge > 0 and dark > edge * 0.35
+            if is_checker or is_hole:
+                for j in comp:
+                    bg[j] = True
         alpha = [not v for v in bg]
     keep = largest_blob(alpha, w, h)
     out = Image.new("RGBA", (w, h))

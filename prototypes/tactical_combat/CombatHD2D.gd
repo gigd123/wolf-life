@@ -35,6 +35,8 @@ func _unit_art(i: int) -> Dictionary:
 			pose = "eat"
 		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) in ["swipe", "bite"] and poses.has("swipe"):
 			pose = "swipe"
+		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) == "pounce" and poses.has("crouch"):
+			pose = "crouch" # 準備撲：伏低
 		return hd_wolf_texture(str(poses.get(pose, poses.get("walk", ""))))
 	return HD2DBoard.animal_texture(str(u["species"]), "adult", float(uc.get("width_cells", 1.8)))
 
