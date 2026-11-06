@@ -34,8 +34,9 @@ func _species_key(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i) and sp == "deer":
 		return "fawn"
-	if sp == "deer" and str(h.game_mods.get("life_stage", "")) == "buck":
-		return "deer_buck"
+	# 公鹿（主遊戲）：沒有自己的戰術物種的（白尾鹿、騾鹿）用 <物種>_buck 的圖
+	if str(h.game_mods.get("life_stage", "")) == "buck" and not h.is_fawn(i) and cfg.get("hd_art", {}).has(sp + "_buck"):
+		return sp + "_buck"
 	return sp
 
 func _art_for(key: String, state: String = "") -> Dictionary:

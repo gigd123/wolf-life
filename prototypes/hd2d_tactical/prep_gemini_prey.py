@@ -4,6 +4,7 @@
 （Gemini 每張都畫滿畫布，所以用畫布寬度換算，不用每張的身體寬度）。
 處理照 prep_grizzly.py：綠色色鍵去背、只留最大的一塊、縮成 32／48、補 1 像素深色外框（同 prep_wolf.py）。
 
+- 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張清掉草與浮著的頭（CLEAN_GRASS）
 - 騾鹿母鹿 mule_deer_doe_*：站寬 1.4 格（PixelLab 的白尾鹿腿長脖子高，1.1 格就和這隻 1.4 格差不多高；騾鹿比白尾鹿壯、略大）
 
 用法：python3.12 -I prototypes/hd2d_tactical/prep_gemini_prey.py
@@ -14,17 +15,100 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import prep_grizzly as pg  # noqa: E402
 import prep_wolf as pw  # noqa: E402
+from PIL import Image  # noqa: E402
 
 SRC = os.path.join(pg.ROOT, "arts", "gemini_prey_2026-11-06")
 # 動物 → (站那張身體寬幾格, [姿勢])；輸出 hd_<動物>_<姿勢>（站是 hd_<動物>）
 ANIMALS = {
     "mule_deer_doe": (1.4, ["stand", "alert", "run", "graze"]),
+    "mule_deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
 }
+# 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了
+CLEAN_GRASS = {"mule_deer_buck_graze": (0.44, 0.76, 1.0, 1.0)}
+
+
+
+def remove_grass(c, box, gmin=3, keep_min=60, gap=14, opening=4):
+    """Gemini 順手畫的草（2026-11-06 騾鹿公鹿低頭吃草那張）：box（比例）裡
+    1. 偏綠（綠比紅多 gmin 以上；鹿毛是暖灰色、紅 ≥ 綠）的去掉；
+    2. 旁邊沒有亮色像素的深色線條（草葉的輪廓）去掉；
+    3. 形態學 opening 去掉比 2×opening 細的線條（草葉；腳、蹄子很粗）；
+    4. 小於 keep_min 的碎塊去掉；被草蓋住的短空隙（gap 以內）用上面的顏色補。"""
+    p=c.load(); w,h=c.size
+    x0,y0,x1,y1=[int(v) for v in (box[0]*w,box[1]*h,box[2]*w,box[3]*h)]
+    for y in range(y0,y1):
+        for x in range(x0,x1):
+            r,g,b,a=p[x,y]
+            if a and g>r+gmin:
+                p[x,y]=(0,0,0,0)
+    for it in range(4):
+        rm=[]
+        for y in range(y0,y1):
+            for x in range(x0,x1):
+                r,g,b,a=p[x,y]
+                if not a or max(r,g,b)>=75: continue
+                ok=False
+                for dx in (-1,0,1):
+                    for dy in (-1,0,1):
+                        xx,yy=x+dx,y+dy
+                        if 0<=xx<w and 0<=yy<h:
+                            q=p[xx,yy]
+                            if q[3] and max(q[:3])>=75: ok=True
+                if not ok: rm.append((x,y))
+        for x,y in rm: p[x,y]=(0,0,0,0)
+    # 細線（草葉）：框內做形態學 opening（侵蝕 n 次再膨脹 n 次，只在原本有的像素裡），比 2n 細的線條會消失；腳、蹄子很粗不受影響
+    n=opening
+    mask={(x,y) for y in range(y0,y1) for x in range(x0,x1) if p[x,y][3]}
+    cur=set(mask)
+    for _ in range(n):
+        cur={(x,y) for (x,y) in cur if all((x+dx,y+dy) in cur or not (x0<=x+dx<x1 and y0<=y+dy<y1) for dx,dy in ((1,0),(-1,0),(0,1),(0,-1)))}
+    for _ in range(n):
+        cur=cur|{(x+dx,y+dy) for (x,y) in cur for dx,dy in ((1,0),(-1,0),(0,1),(0,-1)) if (x+dx,y+dy) in mask}
+    for xy in mask-cur:
+        p[xy[0],xy[1]]=(0,0,0,0)
+    # 碎塊：留下夠大的（蹄子、腳的下半截），丟掉草的殘線
+    from collections import deque
+    seen=[[False]*w for _ in range(h)]
+    for y in range(h):
+        for x in range(w):
+            if seen[y][x] or not p[x,y][3]: continue
+            comp=[]; q=deque([(x,y)]); seen[y][x]=True
+            while q:
+                cx,cy=q.popleft(); comp.append((cx,cy))
+                for nx,ny in ((cx+1,cy),(cx-1,cy),(cx,cy+1),(cx,cy-1)):
+                    if 0<=nx<w and 0<=ny<h and not seen[ny][nx] and p[nx,ny][3]:
+                        seen[ny][nx]=True; q.append((nx,ny))
+            if len(comp)<keep_min:
+                for cx,cy in comp: p[cx,cy]=(0,0,0,0)
+    # 被草蓋住的空隙：同一行上下 gap 像素內都有東西時，用上面的顏色補
+    for x in range(x0,x1):
+        y=y0
+        while y<y1:
+            if p[x,y][3]:
+                y+=1; continue
+            top=y-1
+            yy=y
+            while yy<y1 and not p[x,yy][3]: yy+=1
+            if top>=0 and p[x,top][3] and yy<y1 and yy-y<=gap:
+                for k in range(y,yy): p[x,k]=p[x,top]
+            y=yy
+    return c.crop(c.getbbox())
 
 
 def main():
     for animal, (cells, poses) in ANIMALS.items():
         cuts = {p: pg.cut(os.path.join(SRC, "%s_%s.jpg" % (animal, p)), "green") for p in poses}
+        for p in poses:
+            box = CLEAN_GRASS.get("%s_%s" % (animal, p))
+            if box:
+                c = remove_grass(cuts[p], box)
+                w, h = c.size
+                keep = pg.largest_blob([c.getpixel((i % w, i // w))[3] > 0 for i in range(w * h)], w, h)
+                px = c.load()
+                for i in range(w * h):
+                    if not keep[i]:
+                        px[i % w, i // w] = (0, 0, 0, 0)
+                cuts[p] = c.crop(c.getbbox())
         px_per_cell = cuts["stand"].width / cells
         for p, c in cuts.items():
             name = "hd_%s" % animal if p == "stand" else "hd_%s_%s" % (animal, p)
