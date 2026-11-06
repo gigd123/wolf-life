@@ -363,6 +363,9 @@ func _process(_d):
 				fight_log["fights"] += int(cst[k])
 		if str(GS.wolf.death_cause) == "combat":
 			fight_log["combat_deaths"] += 1
+			var rc: Array = GS.life_log.get("recent_combats", [])
+			var lastc: Dictionary = rc.back() if not rc.is_empty() else {}
+			print("  戰死：%s，開打時血量 %.0f／%.0f、受傷 %s" % [str(GS.life_log.get("death_detail", {})), float(lastc.get("wolf_start_hp", -1)), float(lastc.get("wolf_hp_max", -1)), str(GS.wolf.injury)])
 		if str(GS.wolf.death_cause) == "injury":
 			print("  傷重死亡：%.1f 歲，最後的傷 %s，一生重傷 %d 次" % [GS.wolf.age_years, GS.wolf.last_injury_source, GS.wolf.heavy_injury_count])
 		if str(GS.wolf.death_cause) == "starvation":
