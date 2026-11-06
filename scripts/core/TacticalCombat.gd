@@ -1083,6 +1083,9 @@ func _act_in_order(sprinted: Dictionary) -> void:
 			hit_units = _do_enemy_action(i)
 		# 先打中的可能打斷還沒出手的
 		for k in hit_units:
+			# 示弱、撤退是放棄打鬥，不會被打斷（第 6 步：被打斷的示弱讓已經重傷的狼多挨一回合）
+			if str(plans.get(k, {}).get("action", "")) in ["submit", "retreat"]:
+				continue
 			if not acted.has(k) and rng.randf() < float(cfg["initiative"]["interrupt"]):
 				interrupted[k] = true
 				_ev("interrupted", {"who": k})
