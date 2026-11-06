@@ -62,6 +62,7 @@ func _process(_d):
 	var cache_log := {"caches_made": 0, "caches_eaten": 0, "caches_lost": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
 	var deaths := {}; var ages: Array = []
+	var fight_log := {"heavy": 0, "years": 0.0, "fights": 0, "combat_deaths": 0}
 	var fam := {"lives": 0, "mated": 0, "mated_age": 0.0, "mated_life": 0.0, "single_life": 0.0, "litters": 0, "born": 0, "grown": 0, "left": 0, "mate_died": 0, "handed": 0, "founded": 0, "joined": 0, "end_size": 0}
 	var hv_log := [0.0, 0, 0.0, 0]
 	var fam_death := {}
@@ -353,6 +354,15 @@ func _process(_d):
 		for k in GS.life_log.get("lynx_choices", {}).keys():
 			lynx_log[k] = int(lynx_log.get(k, 0)) + int(GS.life_log["lynx_choices"][k])
 		deaths[GS.wolf.death_cause] = int(deaths.get(GS.wolf.death_cause, 0)) + 1
+		# Phase 2k 第 6 步：戰鬥與重傷（TC_OFF 對照用）
+		fight_log["heavy"] += GS.wolf.heavy_injury_count
+		fight_log["years"] += GS.wolf.age_years - 0.67
+		var cst: Dictionary = GS.life_log.get("stats", {}).get("combat", {})
+		for k in cst.keys():
+			if str(k).ends_with(".started"):
+				fight_log["fights"] += int(cst[k])
+		if str(GS.wolf.death_cause) == "combat":
+			fight_log["combat_deaths"] += 1
 		if str(GS.wolf.death_cause) == "starvation":
 			starved.append("%.1f 歲（%s）" % [GS.wolf.age_years, GS.den_region])
 		ages.append(GS.wolf.age_years)
@@ -393,6 +403,8 @@ func _process(_d):
 		var hs: Array = hurt_src.keys()
 		hs.sort_custom(func(x, y): return int(hurt_src[x]) > int(hurt_src[y]))
 		print("  掉血 > 15 的那一步（前 15）：", hs.slice(0, 15).map(func(k): return "%s ×%d" % [k, hurt_src[k]]))
+	print("  戰鬥（%s）：每年 %.2f 場、每年重傷 %.2f 次、戰死 %d／%d 隻（%.0f%%）" % ["選單式 TC_OFF" if GS.tactical_combat_off else "戰術戰鬥", fight_log["fights"] / maxf(0.01, fight_log["years"]),
+		fight_log["heavy"] / maxf(0.01, fight_log["years"]), fight_log["combat_deaths"], runs, 100.0 * fight_log["combat_deaths"] / maxf(1.0, float(runs))])
 	print("  死因：", deaths, "；餓死：", ", ".join(starved) if not starved.is_empty() else "無")
 	for a in duel_ages:
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))

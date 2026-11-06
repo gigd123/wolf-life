@@ -44,6 +44,8 @@ var events: Array = []
 # 第 4 步：知識（「物種|動作」→ {count 0～3, category, source}；category／source 是給之後的傳承預留的欄位）、觀察
 var knowledge := {}
 var night := false
+var season := "" # 主遊戲的季節、時段（只給畫面用：冬天的雪地、時段光線；Phase 2k 第 6 步）
+var period := ""
 var observed := {} # 這一回合選了觀察的單位 → 下一回合資訊高一級
 # 主遊戲（Phase 2k）：你方被打中時交給主遊戲算傷（重傷線、會不會死）。(i, dmg, by) -> {hp, knocked, died}；沒設定時照原型（打到 0 被打倒、不會死）
 var hurt_hook: Callable
@@ -94,6 +96,8 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	observed.clear()
 	obs_bonus.clear()
 	night = bool(opts.get("night", false))
+	season = str(opts.get("season", ""))
+	period = str(opts.get("period", ""))
 	var wp: Dictionary = (cfg["wolf_profiles"][str(opts.get("wolf_profile", "average"))] as Dictionary).duplicate()
 	if opts.has("wolf_stats"):
 		wp = (opts["wolf_stats"] as Dictionary).duplicate()

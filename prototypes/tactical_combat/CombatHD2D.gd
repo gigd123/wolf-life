@@ -15,6 +15,7 @@ func _init() -> void:
 func setup(combat: TacticalCombat) -> void:
 	tc = combat
 	_out_seen.clear()
+	_apply_season_period()
 	build(tc.map.width, tc.map.height, func(c: Vector2i) -> String: return tc.map.terrain(c))
 	refresh()
 
@@ -44,6 +45,28 @@ func _unit_art(i: int) -> Dictionary:
 			pose = "rear" # 守食物：用後腳站起來
 		return hd_wolf_texture(str(poses.get(pose, poses.get("walk", ""))))
 	return HD2DBoard.animal_texture(str(u["species"]), "adult", float(uc.get("width_cells", 1.8)))
+
+# 主遊戲（Phase 2k 第 6 步）：冬天地面換雪、樹都積雪、不畫地面的草色斑塊；清晨、黃昏、夜裡、黎明前換光線
+var _base_cfg: Dictionary = {}
+
+func _apply_season_period() -> void:
+	if _base_cfg.is_empty():
+		_base_cfg = cfg.duplicate(true)
+	cfg = _base_cfg.duplicate(true)
+	if tc.season == "winter":
+		(cfg["top"] as Dictionary).merge(cfg.get("winter_top", {}), true)
+		cfg["tree_mix"] = ["pine_snow"]
+		cfg["ground_mix"] = {}
+		var tr2: Dictionary = cfg["trees"]
+		for k in tr2.keys():
+			tr2[k]["art"] = "pine_snow"
+		cfg["border"]["tree"] = "pine_snow"
+		(cfg["tint"] as Dictionary).merge(cfg.get("winter_tint", {}), true)
+		(cfg["colors"] as Dictionary).merge(cfg.get("winter_colors", {}), true)
+		(cfg["colors"] as Dictionary).erase("_comment")
+	var pd: Dictionary = cfg.get("periods", {}).get(tc.period, {})
+	for k in pd.keys():
+		cfg[k] = pd[k]
 
 # 狼的姿勢（2026-11-06 Gemini 的灰狼）：退出的那一回合照退出的原因；你方照上一回合做了什麼；對手的狼照牠這一回合的預告
 func _wolf_pose(i: int) -> String:

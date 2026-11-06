@@ -5416,7 +5416,8 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),
 			"eating": bool(op.get("eating", false)), "ambush": bool(op.get("ambush", false))}}
 	var opts := {"scenario_data": sc, "wolf_stats": _tc_wolf_stats(), "seed": rng.randi(), "mode": "sync",
-		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id)}
+		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id),
+		"season": GameTime.current_season(), "period": GameTime.current_period()}
 	if with_carcass:
 		opts["carcass_data"] = carcass_data
 	# 狼對狼（第 4 步）：具名的狼照牠自己的能力與血量；牠的賭注：趕你出牠的地盤時最拚、搶殘骸次之
