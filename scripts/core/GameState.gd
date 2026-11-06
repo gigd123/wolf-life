@@ -5199,6 +5199,221 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 	_stat_inc("combat", animal_id + ".started")
 	return c
 
+# =====================================================================
+# Phase 2k：戰術戰鬥接進主遊戲（SPEC「戰術戰鬥接進主遊戲」）
+# 打起來那一段換成 TacticalCombat：start_tactical_combat 依區域產生戰場、帶入你的狼與跟著你的成員；
+# 打完 apply_tactical_combat 把結果寫回這一場 Combat（outcome、傷、肉），再照原本的 finish_combat 結算。
+# =====================================================================
+
+var tactical_combat_off := false # 模擬對照用：關掉時一律用選單式
+
+func _tc_game_cfg() -> Dictionary:
+	return _tc_cfg_cache().get("game", {})
+
+var _tc_cfg: Dictionary = {}
+func _tc_cfg_cache() -> Dictionary:
+	if _tc_cfg.is_empty():
+		_tc_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/tactical_combat.json"))
+	return _tc_cfg
+
+# 這一場要不要用戰術戰鬥（對手在清單上、不是模擬的對照組）
+func uses_tactical_combat(c: Combat) -> bool:
+	return not tactical_combat_off and (_tc_game_cfg().get("animals", []) as Array).has(c.animal_id)
+
+# 依情境選起始位置：在殘骸旁被搶 arrives、對手佔著殘骸 on_carcass、伏擊 ambush、其他遭遇 encounter
+func _tc_layout(c: Combat) -> String:
+	if c.has_meta("tc_layout"):
+		return str(c.get_meta("tc_layout"))
+	if c.context == "carcass":
+		return "arrives"
+	if c.phase == Combat.Phase.EXCHANGE and c.damage_taken > 0.0:
+		return "ambush"
+	return "encounter"
+
+# 依地形產生 16×10 的戰場（keep：不放障礙的格子）
+func _tc_map(terrain: String, keep: Array, rng: RandomNumberGenerator) -> Array:
+	var g := _tc_game_cfg()
+	var tcfg: Dictionary = g["terrain"].get(terrain, g["terrain"]["_default"])
+	var w := 16
+	var h := 10
+	var rows: Array = []
+	for y in h:
+		var row := ""
+		for x in w:
+			var ch := "."
+			if bool(tcfg.get("cliff_wall", false)) and y == 0:
+				ch = "c"
+			elif bool(tcfg.get("water_band", false)) and y == int(g.get("water_row", 8)):
+				ch = "s"
+			else:
+				var r := rng.randf()
+				var acc := 0.0
+				for k in ["T", "t", "f", "l", "B", "r"]:
+					acc += float(tcfg.get(k, 0.0))
+					if r < acc:
+						ch = k
+						break
+			# 起始位置、殘骸附近不放擋路的東西
+			var near := false
+			for kc in keep:
+				if maxi(absi(int(kc.x) - x), absi(int(kc.y) - y)) <= int(g.get("keep_clear", 1)):
+					near = true
+			if near and ch in ["T", "t", "B", "c", "l"]:
+				ch = "."
+			row += ch
+		rows.append(row)
+	return rows
+
+func _tc_wolf_stats() -> Dictionary:
+	return {"speed": wolf.speed, "strength": wolf.strength, "skill": wolf.skill, "perception": wolf.perception,
+		"stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max}
+
+func start_tactical_combat(c: Combat) -> TacticalCombat:
+	var g := _tc_game_cfg()
+	var layout_id := _tc_layout(c)
+	var lay: Dictionary = g["layouts"][layout_id]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = RNGService.randi_range(1, 1 << 30)
+	var opos: Vector2i
+	var op: Dictionary = lay["opponent"]
+	if str(op.get("pos", "")) == "edge":
+		opos = Vector2i(15, rng.randi_range(2, 7))
+	else:
+		opos = Vector2i(int(op["pos"][0]), int(op["pos"][1]))
+	var wpos := Vector2i(int(lay["wolf"][0]), int(lay["wolf"][1]))
+	var keep: Array = [wpos, opos, Vector2i(int(lay["mate"][0]), int(lay["mate"][1]))]
+	var carcass_data := {}
+	var with_carcass: bool = lay.has("carcass") and not current_feeding.is_empty() and int(current_feeding.get("segments_left", 0)) > 0
+	if with_carcass:
+		var cp := Vector2i(int(lay["carcass"][0]), int(lay["carcass"][1]))
+		keep.append(cp)
+		var aid: String = str(current_feeding.get("animal_id", ""))
+		var size: String = str(GameData.animals.get(aid, {}).get("size", "medium"))
+		var cs: String = str(g["carcass_size"].get(size, "large"))
+		carcass_data = {"pos": cp, "animal": aid, "segments": int(current_feeding["segments_left"]), "size": cs,
+			"small_whole": cs == "small", "whole_size": "small", "leg": [2, 3]}
+	var sc := {"map": _tc_map(c.terrain, keep, rng), "wolf": [wpos.x, wpos.y], "mate": lay["mate"],
+		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),
+			"eating": bool(op.get("eating", false)), "ambush": bool(op.get("ambush", false))}}
+	var opts := {"scenario_data": sc, "wolf_stats": _tc_wolf_stats(), "seed": rng.randi(), "mode": "sync",
+		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": life_log.get("tc_knowledge", {})}
+	if with_carcass:
+		opts["carcass_data"] = carcass_data
+	# 跟著你的成員：這一步先帶第一隻（伴侶優先），第 5 步再帶全部
+	var mate_id := ""
+	if c.has_meta("follower"):
+		var n: NpcWolf = npcs.get(str(c.get_meta("follower")), null)
+		if n != null and n.alive:
+			mate_id = n.id
+			opts["with_mate"] = true
+			opts["mate_stats"] = {"speed": n.speed, "strength": n.strength, "skill": n.skill, "perception": n.perception,
+				"stamina": 80.0, "health": n.health, "health_max": n.health_max}
+	var tc := TacticalCombat.new()
+	tc.setup("", opts)
+	if with_carcass and bool(lay.get("wolf_eating", false)):
+		tc.units[0]["eating"] = false # 你在殘骸旁（「在吃」只用在對手）
+	tc.hurt_hook = _tc_hurt.bind(c, tc)
+	c.set_meta("tc_mate", mate_id)
+	c.set_meta("tc_layout_used", layout_id)
+	c.set_meta("tc_start_carcass", int(carcass_data.get("segments", 0)))
+	return tc
+
+# 你方被打中：你照主遊戲的傷勢規則（重傷線前的一下不會致死）；伴侶照同樣的規則算在牠身上
+func _tc_hurt(i: int, dmg: float, by: int, c: Combat, tc: TacticalCombat) -> Dictionary:
+	var parts: Dictionary = c.opp.get("parts", {})
+	if i == 0:
+		var lethal: bool = FightRules.in_danger(wolf)
+		var before: float = wolf.health
+		FightRules.hurt_wolf(wolf, dmg, parts, c.animal_id + "." + c.context, lethal)
+		c.damage_taken += before - wolf.health
+		var died: bool = lethal and wolf.health <= 0.0
+		return {"hp": max(0.0, wolf.health), "died": died, "knocked": not lethal and dmg >= before}
+	var u: Dictionary = tc.units[i]
+	var hp0: float = float(u["hp"])
+	var lethal_m: bool = hp0 <= float(u["hp_max"]) * float(FightRules.combat_cfg().get("danger_ratio", 0.25))
+	var hp1: float = hp0 - dmg
+	if not lethal_m:
+		hp1 = max(1.0, hp1)
+	return {"hp": max(0.0, hp1), "died": lethal_m and hp1 <= 0.0, "knocked": not lethal_m and dmg >= hp0}
+
+# 打完：結果寫回這一場 Combat，之後照原本的 finish_combat 結算
+func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
+	var g := _tc_game_cfg()
+	c.rounds = tc.rounds
+	c.phase = Combat.Phase.DONE
+	var e := tc.enemy_index()
+	var eu: Dictionary = tc.units[e]
+	c.opp_hp = c.opp_hp_max * clampf(float(eu["hp"]) / maxf(1.0, float(eu["hp_max"])), 0.0, 1.0)
+	var meat: int = tc.meat_taken()
+	var why: String = str(eu["out_reason"])
+	match tc.outcome:
+		"died":
+			c.outcome = "died"
+			wolf.health = 0.0
+		"enemy_left":
+			# 打傷趕走＝打贏；失去興趣、殘骸吃光、上樹（還沒受重傷）＝沒有勝負，對手自己走了
+			var hurt_off: bool = why == "hurt" or (why == "climbed" and float(eu["hp"]) < float(eu["hp_max"]) * 0.6)
+			c.outcome = "drove_off" if hurt_off else "parted"
+		_:
+			if c.context == "carcass" and meat > 0:
+				c.outcome = "grab"
+			else:
+				c.outcome = "retreated"
+	# 殘骸：對手走了 → 剩下的（含掉在地上的）還是你的；你帶走的段數吃下去；你撤出、被打倒 → 殘骸留給對手
+	c.set_meta("tc_meat", meat)
+	if c.context == "carcass" and not current_feeding.is_empty():
+		var left: int = int(tc.carcass.get("segments", 0)) if not tc.carcass.is_empty() else 0
+		for d in tc.drops:
+			left += int(d.get("segments", 0))
+		if c.outcome in ["drove_off", "parted"]:
+			current_feeding["segments_left"] = left
+			if left <= 0:
+				current_feeding = {}
+		c.set_meta("tc_left", left)
+	# 伴侶的傷
+	var mid: String = str(c.get_meta("tc_mate", ""))
+	var mi := tc.index_of("mate")
+	if mid != "" and mi >= 0:
+		var n: NpcWolf = npcs.get(mid, null)
+		if n != null:
+			var mu: Dictionary = tc.units[mi]
+			if str(mu["out_reason"]) == "died":
+				n.health = 0.0
+				n.alive = false
+				n.death_cause = "combat." + c.animal_id
+				add_life_event("member.died", {"who": n.id, "cause": "combat", "animal": c.animal_id})
+			else:
+				if float(mu["hp"]) < n.health - 0.5:
+					add_life_event("mate.hurt", {"who": n.id, "animal": c.animal_id})
+				n.health = max(1.0, float(mu["hp"]))
+			# 牠帶出來的肉也算你們的（吃進你的肚子：先簡化，同一份）
+	# 戰鬥裡學到的（看到對手出手幾次）存起來，下次遇到同一種對手照這個顯示
+	var tk: Dictionary = life_log.get("tc_knowledge", {})
+	for k in tc.knowledge.keys():
+		tk[k] = maxi(int(tk.get(k, 0)), int(tc.knowledge[k].get("count", 0)))
+	life_log["tc_knowledge"] = tk
+	c.decisions.append("fight.tactical")
+	# 時間：戰術戰鬥的回合比選單式多，照 turns_per_rounds 換算（finish_combat 會再加 1～2 回合）
+	var extra: int = maxi(0, int(tc.rounds / maxi(1, int(g.get("turns_per_rounds", 6)))) - 1)
+	if extra > 0 and wolf.alive:
+		GameTime.advance_turns(extra)
+	c.set_meta("tactical", true)
+	_stat_inc("combat", c.animal_id + ".tactical." + tc.outcome)
+
+# 自動玩家、模擬：照「交給本能」打完
+func auto_tactical_combat(c: Combat) -> TacticalCombat:
+	var tc := start_tactical_combat(c)
+	var guard := 0
+	while not tc.done and guard < 60:
+		guard += 1
+		tc.begin_round()
+		if tc.done:
+			break
+		tc.plan(0, tc.auto_plan(0))
+		tc.resolve()
+	apply_tactical_combat(c, tc)
+	return tc
+
 # 最近 5 場戰鬥的逐回合紀錄寫進 life_log（試玩紀錄會一起匯出，QA-49）。
 func _record_combat_log(c: Combat) -> void:
 	var list: Array = life_log.get("recent_combats", [])
@@ -5368,7 +5583,8 @@ func _carcass_after_combat(c: Combat) -> void:
 			log_message.emit(tr("fox.killed.left").replace("{animal}", tr("animal." + c.animal_id)))
 		return
 	match c.outcome:
-		"drove_off":
+		"drove_off", "parted":
+			# 戰術戰鬥：對手走了，剩下的殘骸還是你的（段數已經在 apply_tactical_combat 寫回）
 			return
 		"share":
 			# 讓狼獾吃掉一段，換牠離開
@@ -5390,8 +5606,11 @@ func _carcass_after_combat(c: Combat) -> void:
 					current_feeding["with_tundra"] = true
 			return
 		"grab":
-			_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), float(current_feeding.get("segment_value", 0)))
-			wolf.hunger += float(current_feeding.get("segment_value", 0))
+			# 戰術戰鬥：帶出戰場幾段就吃幾段（選單式固定 1 段）
+			var segs: int = int(c.get_meta("tc_meat", 1))
+			var gain: float = float(current_feeding.get("segment_value", 0)) * segs
+			_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), gain)
+			wolf.hunger += gain
 			current_feeding = {}
 		"ignore":
 			if not current_feeding.is_empty():
@@ -6467,7 +6686,8 @@ func _follower_combat_help(c: Combat) -> void:
 	c.set_meta("follower", n.id)
 
 func _after_follower_combat(c: Combat) -> void:
-	if not c.has_meta("follower") or c.rounds <= 0:
+	# 戰術戰鬥：伴侶在場上自己受傷，已經算過（apply_tactical_combat）
+	if not c.has_meta("follower") or c.rounds <= 0 or c.has_meta("tactical"):
 		return
 	var n: NpcWolf = npcs.get(str(c.get_meta("follower")), null)
 	var cfg: Dictionary = _pack_life_cfg().get("combat", {})

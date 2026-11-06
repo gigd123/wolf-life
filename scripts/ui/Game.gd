@@ -2494,6 +2494,16 @@ func _show_bear_steal(text: String) -> void:
 	_set_creature(encounter_sprite, "grizzly_bear", "adult", "idle")
 	_set_terrain_bg(encounter_bg, str(GameState.current_feeding.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
+	# Phase 2k：從熊口搶肉改在戰術地圖上（靠近、看準時機叼一塊或撕一條腿、撤出）
+	if not GameState.tactical_combat_off and (GameState._tc_game_cfg().get("animals", []) as Array).has("grizzly_bear"):
+		encounter_detail.text = tr("bear_steal.hint.tactical")
+		_add_encounter_button(tr("bear_steal.approach"), func():
+			var bc: Combat = GameState.start_combat("grizzly_bear", "adult", "carcass")
+			bc.set_meta("tc_layout", "on_carcass")
+			_begin_combat(bc, "move"))
+		_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
+		encounter_overlay.visible = true
+		return
 	_add_encounter_button(tr("bear_steal.bite") + "　" + _chance_text(GameState.bear_steal_chance("bite"), "grizzly_bear"),
 		_on_bear_steal.bind("bite"))
 	var carry_key: String = "bear_steal.carry_whole" if GameState.bear_carry_is_whole() else "bear_steal.carry_leg"
@@ -4476,11 +4486,35 @@ func _show_pack_meet(event: Dictionary) -> void:
 func _begin_combat(c: Combat, opp_action: String = "idle") -> void:
 	encounter_overlay.visible = false
 	current_combat = c
+	# Phase 2k：灰熊、美洲獅……打起來那一段換成戰術戰鬥
+	if GameState.uses_tactical_combat(c):
+		_open_tactical_combat(c)
+		return
 	c.set_meta("tundra_relation_before", GameState.tundra_relation_key()) # 戰鬥後只有關係改變時才寫（1.7-3）
 	combat_notes = []
 	combat_wolf_pose = "hurt" if opp_action == "attack" else "threaten"
 	combat_opp_action = opp_action
 	_render_combat()
+
+const TACTICAL_COMBAT_SCENE := "res://prototypes/tactical_combat/TacticalCombat.tscn"
+var tactical_combat_view: Control = null
+
+func _open_tactical_combat(c: Combat) -> void:
+	hunt_overlay.visible = false
+	var view: Control = load(TACTICAL_COMBAT_SCENE).instantiate()
+	add_child(view)
+	tactical_combat_view = view
+	GameState.in_tactical = true # 試玩指標：戰術場景佔的時間
+	var tc: TacticalCombat = GameState.start_tactical_combat(c)
+	view.start_from_game(tc, func():
+		GameState.in_tactical = false
+		GameState.apply_tactical_combat(c, tc)
+		tactical_combat_view = null
+		view.queue_free()
+		_finish_combat_ui()
+		if session_active and not session_check_pending:
+			session_check_pending = true
+			_check_session_end.call_deferred(), combat_intro)
 
 func _render_combat() -> void:
 	var c := current_combat

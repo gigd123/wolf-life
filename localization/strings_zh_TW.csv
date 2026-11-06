@@ -765,6 +765,7 @@ combat.result.drove_off,你趕走了{animal}。
 combat.result.mob.drove_off,{animal}撐不住了，丟下馴鹿殘骸，一跛一跛地逃進了雪坡後面。
 combat.result.mob.killed,{animal}死在馴鹿殘骸旁，苔原狼鬆開了嘴。
 combat.result.retreated,你撤退了。
+combat.result.parted,{animal}沒再糾纏，自己走開了。
 combat.result.yield,你退開了，{animal}沒有追來。
 combat.result.abandon,你放棄了獵物，退到安全的地方。
 combat.result.grab,你叼走一大塊肉，迅速退開。
@@ -1459,6 +1460,8 @@ explore.hidden_young,母鹿在附近徘徊不走——牠的孩子大概就躲�
 fox.killed.eaten,你餓壞了，連{animal}也吃了下去。
 fox.killed.left,你把{animal}的屍體丟在一旁，沒有吃牠。
 bear_steal.hint,牠低頭撕咬著肉，背對著你。單憑你自己守不住，也搶不回來——但牠吃得專心的時候，也許能偷到一點。
+bear_steal.hint.tactical,牠低頭在吃，背對著風。靠近的話，要看準牠沒注意的時候叼一塊就走。
+bear_steal.approach,悄悄靠近
 bear_steal.bite,趁牠低頭，衝進去咬一塊就跑
 bear_steal.carry_whole,整個叼了就跑
 bear_steal.carry_leg,撕下一整條後腿拖走
@@ -2551,5 +2554,10 @@ tcombat.end.enemy_left,對手走了。你們帶走 {n} 段肉。
 tcombat.end.retreated,你撤出了戰場，帶走 {n} 段肉。
 tcombat.end.knocked,你被打倒了（原型裡不會死）。帶走 {n} 段肉。
 tcombat.end.timeout,回合用完了。帶走 {n} 段肉。
+tcombat.end.died,你倒下了，再也沒有站起來。
+tcombat.end.knocked.game,你被打倒了，掙扎著退出戰場，傷得很重。帶走 {n} 段肉。
+tcombat.ev.died,{who}倒下了，再也沒有站起來。
+tcombat.info.out.died,　（倒下了）
+tcombat.info.heavy,　重傷：再被打倒會死
 tcombat.factor.take.moved,這一回合才走過來
 tcombat.ev.dropped,{who}被打得鬆了口，肉掉在地上。

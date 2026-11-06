@@ -605,6 +605,14 @@ func _scavenger(ev: String) -> void:
 		return
 	if ev == "bear" and not GameState.is_identified("grizzly_bear"):
 		GameState.resolve_scavenger(ev, "abandon" if style == "cautious" else "grab")
+	elif ev == "bear" and style != "assault" and not GameState.tactical_combat_off and (GameState._tc_game_cfg().get("animals", []) as Array).has("grizzly_bear"):
+		# Phase 2k：從熊口搶肉在戰術地圖上（交給本能）；謹慎的、受傷時直接放棄
+		if style == "cautious" or GameState.wolf.injury != Wolf.Injury.NONE:
+			GameState.resolve_scavenger(ev, "abandon")
+		else:
+			var bc: Combat = GameState.start_combat("grizzly_bear", "adult", "carcass")
+			bc.set_meta("tc_layout", "on_carcass")
+			play_combat(bc)
 	elif ev == "bear" and style != "assault":
 		# 認得的灰熊（1.8 第 7 步）：健康時咬一塊就跑，成功率夠高可以再試；謹慎的直接放棄
 		while style != "cautious" and GameState.is_feeding() and GameState.wolf.alive and GameState.wolf.injury == Wolf.Injury.NONE \
@@ -785,6 +793,11 @@ func _ranch_step() -> bool:
 # 戰鬥：強攻型會打（灰熊搶食時守住），打到瀕危就撤退；其他打法對灰熊退讓（叼走一塊或放棄），
 # 對狐狸先威嚇再咬。
 func play_combat(c: Combat) -> void:
+	# Phase 2k：戰術戰鬥照「交給本能」打完
+	if GameState.uses_tactical_combat(c):
+		GameState.auto_tactical_combat(c)
+		GameState.finish_combat(c)
+		return
 	var guard := 0
 	while c.phase != Combat.Phase.DONE and not done() and guard < 30:
 		guard += 1

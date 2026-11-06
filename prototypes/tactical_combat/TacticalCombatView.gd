@@ -37,6 +37,11 @@ var seed := 1
 var hd: CombatHD2D # HD-2D 畫面（2026-11-05）；hd_on 時取代 2D 地圖
 var hd_on := true
 var hd_btn: Button
+# 主遊戲（Phase 2k）：start_from_game 帶入主遊戲開好的這一場；打完按「繼續」呼叫 on_done
+var game_mode := false
+var on_done: Callable
+var setup_row: HBoxContainer
+var proto_buttons: Array = []
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -74,6 +79,7 @@ func _ready() -> void:
 	setup.position = Vector2(4, 248)
 	setup.add_theme_constant_override("separation", 3)
 	add_child(setup)
+	setup_row = setup
 	scenario_pick = _option(setup, SCENARIOS.map(func(s): return tr("tcombat.sc." + s)), 120)
 	wolf_pick = _option(setup, WOLVES.map(func(s): return tr("tcombat.wolf." + s)), 54)
 	wolf_pick.selected = 1
@@ -96,6 +102,7 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(36, 24)
 		b.pressed.connect(pair[1])
 		top_row.add_child(b)
+		proto_buttons.append(b)
 	log_box = RichTextLabel.new()
 	log_box.position = Vector2(4, 274)
 	log_box.size = Vector2(384, 82)
@@ -130,6 +137,26 @@ func _new_game(new_seed: bool) -> void:
 	log_box.clear()
 	hit_cells.clear()
 	planned = Vector2i(-1, -1)
+	_log("[color=#aaaaaa]%s[/color]" % tr("tcombat.hint"))
+	tc.begin_round()
+	_log_tell()
+	hd.setup(tc)
+	_apply_hd()
+	_refresh()
+
+# 主遊戲用：換成主遊戲開好的這一場（GameState.start_tactical_combat），打完按「繼續」呼叫 done_cb
+func start_from_game(combat: TacticalCombat, done_cb: Callable, intro: String = "") -> void:
+	game_mode = true
+	on_done = done_cb
+	setup_row.visible = false
+	for b in proto_buttons:
+		(b as Button).visible = false
+	tc = combat
+	log_box.clear()
+	hit_cells.clear()
+	planned = Vector2i(-1, -1)
+	if intro != "":
+		_log(intro)
 	_log("[color=#aaaaaa]%s[/color]" % tr("tcombat.hint"))
 	tc.begin_round()
 	_log_tell()
@@ -279,7 +306,8 @@ func _refresh_info() -> void:
 	var lines: Array[String] = []
 	var e := tc.enemy_index()
 	if tc.done:
-		lines.append("[b]%s[/b]" % tr("tcombat.end." + tc.outcome).format({"n": tc.meat_taken()}))
+		var ek: String = "tcombat.end." + tc.outcome + (".game" if game_mode and tr("tcombat.end." + tc.outcome + ".game") != "tcombat.end." + tc.outcome + ".game" else "")
+		lines.append("[b]%s[/b]" % tr(ek).format({"n": tc.meat_taken()}))
 	if e >= 0:
 		var u: Dictionary = tc.units[e]
 		lines.append(tr("tcombat.info.enemy").format({"name": _name(e), "hp": _pct(float(u["hp"]) / float(u["hp_max"])), "pat": _pct(float(u["stamina"]) / max(1.0, float(u["stamina_max"])))}))
@@ -296,6 +324,9 @@ func _refresh_info() -> void:
 		var line: String = tr("tcombat.info.wolf").format({"name": _name(i), "hp": int(w["hp"]), "max": int(w["hp_max"]), "b": int(w["breath"])})
 		if str(w["carrying"]) != "":
 			line += tr("tcombat.info.carrying").format({"n": int(w["carry_segments"])})
+		# 主遊戲：過了重傷線（再被打到 0 會死）
+		if game_mode and not bool(w["out"]) and float(w["hp"]) <= float(w["hp_max"]) * float(FightRules.combat_cfg().get("danger_ratio", 0.25)):
+			line += "[color=#ff5050]%s[/color]" % tr("tcombat.info.heavy")
 		if bool(w["out"]):
 			line += tr("tcombat.info.out." + str(w["out_reason"]))
 		elif str(w["side"]) == "ally":
@@ -312,6 +343,15 @@ func _refresh_info() -> void:
 func _build_actions() -> void:
 	for c in actions_box.get_children():
 		c.queue_free()
+	if game_mode and tc.done:
+		var cont := Button.new()
+		cont.text = tr("ui.continue")
+		cont.theme_type_variation = &"SmallButton"
+		cont.custom_minimum_size = Vector2(60, 24)
+		cont.focus_mode = Control.FOCUS_NONE
+		cont.pressed.connect(func(): if on_done.is_valid(): on_done.call())
+		actions_box.add_child(cont)
+		return
 	if tc.done or not tc.active(0):
 		return
 	var from: Vector2i = planned if planned.x >= 0 else tc.units[0]["pos"]
@@ -435,6 +475,9 @@ func _event_text(ev: Dictionary) -> String:
 			var parts: PackedStringArray = str(ev["key"]).split("|")
 			return "[color=#a0d0ff]%s[/color]" % tr("tcombat.ev.learned").format({"animal": tr("tcombat.name." + parts[0]), "act": tr("tcombat.enemy_act." + parts[1]), "n": int(ev["count"])})
 		"end":
-			return "[b]%s[/b]" % tr("tcombat.end." + str(ev["outcome"])).format({"n": int(ev["meat"])})
+			var ek2: String = "tcombat.end." + str(ev["outcome"])
+			if game_mode and tr(ek2 + ".game") != ek2 + ".game":
+				ek2 += ".game"
+			return "[b]%s[/b]" % tr(ek2).format({"n": int(ev["meat"])})
 	var key := "tcombat.ev." + k
 	return tr(key).format(fmt) if tr(key) != key else ""

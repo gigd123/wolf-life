@@ -45,6 +45,8 @@ var events: Array = []
 var knowledge := {}
 var night := false
 var observed := {} # 這一回合選了觀察的單位 → 下一回合資訊高一級
+# 主遊戲（Phase 2k）：你方被打中時交給主遊戲算傷（重傷線、會不會死）。(i, dmg, by) -> {hp, knocked, died}；沒設定時照原型（打到 0 被打倒、不會死）
+var hurt_hook: Callable
 var obs_bonus := {} # 這一回合的觀察加成（上一回合觀察過）
 
 func _init() -> void:
@@ -59,9 +61,11 @@ func _move_cfg() -> Dictionary:
 	return m
 
 # opts：wolf_profile（novice/average/veteran）、knowledge（novice/experienced/veteran）、mode（sync/alternate）、seed、with_mate
+# 主遊戲（Phase 2k）另外傳：scenario_data（直接給情境的字典，取代 p_scenario）、wolf_stats／mate_stats（能力與血量，取代 wolf_profile）、
+# knowledge_counts（「物種|動作」→ 見過幾次，蓋過 knowledge 的預設）、carcass_data（殘骸的字典：pos、animal、segments、size……）
 func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	var scs: Dictionary = cfg["scenarios"]
-	var sc: Dictionary = scs[p_scenario]
+	var sc: Dictionary = opts["scenario_data"] if opts.has("scenario_data") else scs[p_scenario]
 	var with_mate: bool = bool(opts.get("with_mate", sc.get("with_mate", false)))
 	if sc.has("base"):
 		sc = scs[str(sc["base"])]
@@ -83,9 +87,11 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	obs_bonus.clear()
 	night = bool(opts.get("night", false))
 	var wp: Dictionary = (cfg["wolf_profiles"][str(opts.get("wolf_profile", "average"))] as Dictionary).duplicate()
+	if opts.has("wolf_stats"):
+		wp = (opts["wolf_stats"] as Dictionary).duplicate()
 	units.append(_make_wolf("wolf", "player", _v(sc["wolf"]), wp))
 	if with_mate and sc.has("mate"):
-		units.append(_make_wolf("mate", "ally", _v(sc["mate"]), wp.duplicate()))
+		units.append(_make_wolf("mate", "ally", _v(sc["mate"]), (opts["mate_stats"] as Dictionary).duplicate() if opts.has("mate_stats") else wp.duplicate()))
 	var o: Dictionary = sc["opponent"]
 	var od: Dictionary = cfg["opponents"][str(o["id"])]
 	units.append({"id": str(o["id"]), "side": "enemy", "species": str(o["id"]), "pos": _v(o["pos"]), "facing": _v(o.get("facing", [-1, 0])),
@@ -98,9 +104,12 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	units.back()["bold"] = rng.randf_range(float(br[0]), float(br[1]))
 	knowledge.clear()
 	for act in od["actions"]:
-		knowledge[str(o["id"]) + "|" + str(act)] = {"count": knowledge_level, "category": "experience", "source": "self"}
+		var kk: String = str(o["id"]) + "|" + str(act)
+		knowledge[kk] = {"count": int(opts.get("knowledge_counts", {}).get(kk, knowledge_level)), "category": "experience", "source": "self"}
 	carcass = {}
-	if sc.has("carcass"):
+	if opts.has("carcass_data"):
+		carcass = (opts["carcass_data"] as Dictionary).duplicate()
+	elif sc.has("carcass"):
 		var cc: Array = sc["carcass"]
 		var cd: Dictionary = cfg["carcass"][str(cc[2])]
 		carcass = {"pos": Vector2i(int(cc[0]), int(cc[1])), "animal": str(cc[2]), "segments": int(cd["segments"]),
@@ -837,8 +846,27 @@ func _act_in_order(sprinted: Dictionary) -> void:
 
 func _hurt(i: int, dmg: float, by: int) -> void:
 	var u: Dictionary = units[i]
-	u["hp"] = max(0.0, float(u["hp"]) - dmg)
+	var hooked := {}
+	if player_side(i) and hurt_hook.is_valid():
+		hooked = hurt_hook.call(i, dmg, by)
+		u["hp"] = float(hooked.get("hp", max(0.0, float(u["hp"]) - dmg)))
+	else:
+		u["hp"] = max(0.0, float(u["hp"]) - dmg)
 	_ev("hit", {"who": by, "target": i, "dmg": dmg})
+	# 主遊戲：已經重傷還留在場上被打到 0 → 死亡；還沒重傷被打到 0 → 停在 1、被打倒（SPEC Phase 2k「被打倒與死亡」）
+	if not hooked.is_empty():
+		if bool(hooked.get("died", false)):
+			drop_carried(i)
+			u["out"] = true
+			u["out_reason"] = "died"
+			_ev("died", {"who": i})
+			return
+		if bool(hooked.get("knocked", false)):
+			drop_carried(i)
+			u["out"] = true
+			u["out_reason"] = "knocked"
+			_ev("knocked", {"who": i})
+			return
 	# 叼著肉被打中：有機會把肉甩掉
 	if player_side(i) and str(u["carrying"]) != "" and rng.randf() < float(cfg["wolf"].get("drop_on_hit", 0.5)):
 		drop_carried(i)
@@ -1014,7 +1042,8 @@ func _check_end() -> void:
 		outcome = "enemy_left"
 	elif not active(0):
 		done = true
-		outcome = "knocked" if str(units[0]["out_reason"]) == "knocked" else "retreated"
+		var why0: String = str(units[0]["out_reason"])
+		outcome = why0 if why0 in ["knocked", "died"] else "retreated"
 	elif not any_player:
 		done = true
 		outcome = "retreated"

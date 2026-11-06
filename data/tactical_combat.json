@@ -94,6 +94,39 @@
   },
   "_ally_comment": "第 5 步：伴侶的簡化合作。指令 harass 牽制（站到和你不同的一側騷擾，吸引注意力）、take 叼肉（從對手背後的方向接近殘骸，牠沒看著時叼一塊）、back 退開（離對手 back_dist 格以上）、auto 自動（殘骸在、對手沒盯著牠 → 叼肉；對手盯著牠 → 退開；否則牽制）。血量低於 retreat_hp 自己撤；叼到肉就往邊緣撤。zone_penalty：走進看得到的預告範圍的扣分。assume。",
   "ally": { "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
+  "game": {
+    "_comment": "主遊戲的戰術戰鬥（Phase 2k，SPEC「戰術戰鬥接進主遊戲」）。animals：改成戰術戰鬥的對手（其他照選單式）。terrain：依區域的地形產生 16×10 的戰場（每格放這種地形字元的機率；cliff_wall 在最上面一列放峭壁、water_band 在第 water_row 列放淺水）；keep_clear：起始位置與殘骸周圍幾格不放障礙。layouts：依情境的起始位置（wolf、mate、opponent、carcass；opponent 的 pos 為 edge 時從右邊的邊緣隨機一列進場）。carcass_size：殘骸大小依動物體型（small 整隻叼走）。turns_per_rounds：每幾回合算遊戲裡的 1 回合（finish_combat 已經加的不重複算）。heavy_ratio：重傷線（沿用 balance.combat.danger_ratio，這裡只給畫面標示用）。",
+    "animals": ["grizzly_bear", "cougar"],
+    "terrain": {
+      "dense_forest": { "T": 0.07, "t": 0.08, "f": 0.16, "l": 0.03 },
+      "forest_edge": { "T": 0.04, "t": 0.05, "f": 0.07, "l": 0.01 },
+      "clearing": { "t": 0.03, "f": 0.03, "B": 0.01 },
+      "fallen_logs": { "l": 0.1, "t": 0.04, "T": 0.02, "f": 0.04 },
+      "treeline": { "t": 0.06, "T": 0.02, "B": 0.02 },
+      "stream": { "t": 0.04, "B": 0.02, "water_band": true },
+      "river": { "B": 0.02, "water_band": true },
+      "river_willow": { "t": 0.06, "f": 0.05, "water_band": true },
+      "rocky": { "B": 0.06, "r": 0.05 },
+      "scree": { "r": 0.14, "B": 0.03 },
+      "cliff": { "B": 0.04, "r": 0.04, "cliff_wall": true },
+      "alpine_meadow": { "B": 0.03 },
+      "esker": { "r": 0.06, "B": 0.02 },
+      "prairie": { "B": 0.005 },
+      "rolling_hills": { "B": 0.01 },
+      "open_tundra": { "B": 0.01 },
+      "_default": { "t": 0.04, "B": 0.01 }
+    },
+    "water_row": 8,
+    "keep_clear": 1,
+    "layouts": {
+      "arrives": { "wolf": [6, 5], "mate": [6, 6], "carcass": [7, 5], "opponent": { "pos": "edge", "facing": [-1, 0] }, "wolf_eating": true },
+      "on_carcass": { "wolf": [2, 5], "mate": [2, 6], "carcass": [9, 5], "opponent": { "pos": [10, 5], "facing": [1, 0], "eating": true } },
+      "encounter": { "wolf": [4, 5], "mate": [4, 6], "opponent": { "pos": [10, 5], "facing": [-1, 0] } },
+      "ambush": { "wolf": [8, 5], "mate": [9, 6], "opponent": { "pos": [7, 5], "facing": [1, 0], "ambush": true } }
+    },
+    "carcass_size": { "large": "large", "medium": "large", "small": "small" },
+    "turns_per_rounds": 6
+  },
   "scenarios": {
     "_comment": "原型的固定情境（規格第九節）。map 每列一樣長；units：wolf（你）、mate（伴侶）、對手；facing 是面向（dx, dy）；carcass：[x, y, 種類]；eating：對手開場在吃。",
     "grizzly_arrives": {
