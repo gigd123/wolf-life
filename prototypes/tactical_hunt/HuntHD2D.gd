@@ -34,6 +34,10 @@ func _species_key(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i) and sp == "deer":
 		return "fawn"
+	# 同一群的成鹿混用兩種圖（馴鹿：公鹿、母鹿）：序號 % every == keep 的用原本的，其他用 mixed.key
+	var mx: Dictionary = cfg.get("hd_art", {}).get(sp, {}).get("mixed", {})
+	if not mx.is_empty() and not h.is_fawn(i) and i % int(mx.get("every", 2)) != int(mx.get("keep", 0)):
+		return str(mx["key"])
 	# 公鹿（主遊戲）：沒有自己的戰術物種的（白尾鹿、騾鹿）用 <物種>_buck 的圖
 	if str(h.game_mods.get("life_stage", "")) == "buck" and not h.is_fawn(i) and cfg.get("hd_art", {}).has(sp + "_buck"):
 		return sp + "_buck"

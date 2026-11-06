@@ -6,7 +6,8 @@
 
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
-- 北美馴鹿 caribou_*：站寬 1.55 格（含角）；警覺、跑從同一張裁出來，吃草翻轉＋調色（SPECIAL）
+- 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；只有站、跑
+- 北美馴鹿（公鹿）caribou_*：站寬 1.55 格（含角）；警覺、跑從同一張裁出來，吃草翻轉＋調色（SPECIAL）
 - 騾鹿母鹿 mule_deer_doe_*：站寬 1.4 格（PixelLab 的白尾鹿腿長脖子高，1.1 格就和這隻 1.4 格差不多高；騾鹿比白尾鹿壯、略大）
 
 用法：python3.12 -I prototypes/hd2d_tactical/prep_gemini_prey.py
@@ -26,6 +27,7 @@ ANIMALS = {
     "mule_deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "mule_deer_fawn": (0.9, ["stand", "alert", "run", "graze"]),
     "caribou": (1.55, ["stand", "alert", "run", "graze"]),
+    "caribou_cow": (1.35, ["stand", "run"]),
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
