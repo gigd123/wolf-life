@@ -4511,6 +4511,10 @@ func _open_tactical_combat(c: Combat) -> void:
 		GameState.apply_tactical_combat(c, tc)
 		tactical_combat_view = null
 		view.queue_free()
+		# 狼示弱了：接著在選單式的畫面選「放牠走」或「追擊」
+		if c.phase != Combat.Phase.DONE:
+			_render_combat()
+			return
 		_finish_combat_ui()
 		if session_active and not session_check_pending:
 			session_check_pending = true

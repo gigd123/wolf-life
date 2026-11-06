@@ -2425,6 +2425,7 @@ tcombat.sc.grizzly_arrives_mate,6 灰熊來搶（有伴侶）
 tcombat.sc.grizzly_on_carcass_mate,7 灰熊在吃（有伴侶）
 tcombat.sc.black_bear_arrives,8 黑熊來搶
 tcombat.sc.black_bear_on_carcass,9 黑熊趴在殘骸上吃
+tcombat.sc.wolf_duel,10 和黑狼對峙
 tcombat.wolf.novice,年輕的狼
 tcombat.wolf.average,普通的狼
 tcombat.wolf.veteran,老練的狼
@@ -2447,6 +2448,8 @@ tcombat.name.mate,伴侶
 tcombat.name.grizzly_bear,灰熊
 tcombat.name.cougar,美洲獅
 tcombat.name.black_bear,黑熊
+tcombat.name.stranger_wolf,黑狼
+tcombat.name.challenger,年輕的狼
 tcombat.info.enemy,{name}　血量 {hp}%　耐心 {pat}%
 tcombat.info.wolf,{name}　血量 {hp}／{max}　喘 {b}
 tcombat.info.carrying,　叼著 {n} 段
@@ -2472,6 +2475,8 @@ tcombat.tell.partial.flee,牠好像想走。
 tcombat.tell.partial.back_off,牠在往後退。
 tcombat.tell.partial.back_to_wall,牠往岩壁那邊退。
 tcombat.tell.partial.climb,牠盯著旁邊的樹。
+tcombat.tell.partial.threaten,牠站定了，盯著你。
+tcombat.tell.partial.submit,牠的尾巴垂下來了。
 tcombat.tell.clear.swipe,牠抬起前掌，要揮掌。
 tcombat.tell.clear.charge,牠壓低身子、重心往前，要衝過來。
 tcombat.tell.clear.bluff_charge,牠壓低身子、重心往前，要衝過來。
@@ -2485,6 +2490,8 @@ tcombat.tell.clear.flee,牠準備離開。
 tcombat.tell.clear.back_off,牠在往後退。
 tcombat.tell.clear.back_to_wall,牠往岩壁退，想護住背後。
 tcombat.tell.clear.climb,牠要爬上樹。
+tcombat.tell.clear.threaten,牠豎起頸毛、低吼，在逼你退。
+tcombat.tell.clear.submit,牠夾起尾巴、壓低身子，要示弱了。
 tcombat.tell.feint,（可能是虛張聲勢）
 tcombat.show.0,風險{risk}・約 {lo}～{hi}%
 tcombat.show.1,約 {lo}～{hi}%
@@ -2504,6 +2511,9 @@ tcombat.act.observe,觀察
 tcombat.act.wait,等
 tcombat.act.retreat,撤出
 tcombat.act.drop,放下
+tcombat.act.threaten,示威
+tcombat.act.pin,壓制
+tcombat.act.submit,示弱
 tcombat.auto,交給本能
 tcombat.cmd.title,伴侶：
 tcombat.cmd.auto,自動
@@ -2521,6 +2531,8 @@ tcombat.factor.take.facing,牠正面對著你
 tcombat.factor.take.leg,撕一條腿比較費力
 tcombat.factor.take.whole,整個叼走
 tcombat.factor.take.guard,牠護著殘骸
+tcombat.factor.strength_diff,力量差
+tcombat.factor.target_hurt,牠受了傷
 tcombat.enemy_act.swipe,揮掌
 tcombat.enemy_act.charge,衝撞
 tcombat.enemy_act.bluff_charge,虛張聲勢的衝撞
@@ -2532,6 +2544,10 @@ tcombat.ev.changed,{who}臨時改變主意，往後退。
 tcombat.ev.hit,{who}打中了{target}（血量 −{dmg}）。
 tcombat.ev.miss,{who}沒打中{target}。
 tcombat.ev.knocked,{who}被打倒了。
+tcombat.ev.threaten,{who}豎起頸毛，低聲吼著。
+tcombat.ev.submit,{who}夾起尾巴、伏低身子退開了。
+tcombat.ev.pinned,{who}從旁邊撲上去，把{target}壓倒在地。
+tcombat.ev.pin_fail,{who}撲上去想壓住{target}，被甩開了。
 tcombat.ev.fled.hurt,{who}受了傷，掉頭走了。
 tcombat.ev.fled.patience,{who}失去了耐心，走開了。
 tcombat.ev.fled.food_gone,肉吃完了，{who}走了。
@@ -2565,6 +2581,9 @@ tcombat.end.retreated,你撤出了戰場，帶走 {n} 段肉。
 tcombat.end.knocked,你被打倒了（原型裡不會死）。帶走 {n} 段肉。
 tcombat.end.timeout,回合用完了。帶走 {n} 段肉。
 tcombat.end.died,你倒下了，再也沒有站起來。
+tcombat.end.enemy_submit,牠示弱了。
+tcombat.end.submit,你示弱退開了。
+tcombat.info.out.submit,　（示弱了）
 tcombat.end.knocked.game,你被打倒了，掙扎著退出戰場，傷得很重。帶走 {n} 段肉。
 tcombat.ev.died,{who}倒下了，再也沒有站起來。
 tcombat.info.out.died,　（倒下了）

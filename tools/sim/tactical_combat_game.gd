@@ -142,12 +142,17 @@ func _run() -> void:
 
 	print("== 6. 學到的存起來")
 	_fresh()
-	c = gs.start_combat("grizzly_bear", "adult", "encounter")
-	tc = gs.auto_tactical_combat(c)
+	# 單場可能一開打就結束、沒看到招式：最多打 5 場
 	var any := 0
-	for k in gs.knowledge.keys():
-		if str(k).begins_with("combat_move|grizzly_bear|"):
-			any += int(gs.knowledge[k]["count"])
+	for t in 5:
+		c = gs.start_combat("grizzly_bear", "adult", "encounter")
+		tc = gs.auto_tactical_combat(c)
+		for k in gs.knowledge.keys():
+			if str(k).begins_with("combat_move|grizzly_bear|"):
+				any += int(gs.knowledge[k]["count"])
+		if any > 0:
+			break
+		gs.wolf.health = gs.wolf.health_max
 	_check(any > 0, "主遊戲的知識有 combat_move（合計 %d）" % any)
 	# 第 2 步：主遊戲的知識帶進下一場（見過幾次 → 預告看得比較清楚）
 	gs.knowledge[gs.knowledge_key({"type": "combat_move", "animal": "grizzly_bear", "move": "swipe"})] = {"type": "combat_move", "animal": "grizzly_bear", "move": "swipe", "count": 3}
@@ -179,6 +184,50 @@ func _run() -> void:
 	lv = gs.knowledge_level({"type": "combat_move", "animal": "grizzly_bear", "move": "swipe"})
 	_check(lv == 2, "照常過日子時最多到【通常】（%d）" % lv)
 
+	print("== 8. 狼對狼（第 4 步）")
+	_fresh()
+	gs.wolf.strength = 90.0
+	var sw = gs.stranger()
+	_check(sw != null, "有黑狼")
+	if sw != null:
+		c = gs.start_stranger_combat("meet")
+		_check(gs.uses_tactical_combat(c), "黑狼走戰術戰鬥")
+		tc = gs.start_tactical_combat(c)
+		var ei: int = tc.enemy_index()
+		_check(absf(float(tc.units[ei]["stats"]["strength"]) - sw.strength) < 0.01 and absf(float(tc.units[ei]["hp_max"]) - sw.health_max) < 0.01, "黑狼的能力、血量照牠自己的")
+		# 牠示弱 → 接著選放牠走／追擊
+		tc.units[ei]["out"] = true
+		tc.units[ei]["out_reason"] = "submit"
+		tc._check_end()
+		gs.apply_tactical_combat(c, tc)
+		var ids: Array = c.options().map(func(o): return str(o["id"]))
+		_check(c.opp_submitted and c.phase != _phase_done() and ids.has("let_go") and ids.has("pursue"), "牠示弱：接著可以放牠走或追擊（%s）" % str(ids))
+		c.choose("let_go")
+		gs.finish_combat(c)
+		_check(c.outcome == "drove_off", "放牠走＝打贏（%s）" % c.outcome)
+		# 你示弱
+		_fresh()
+		c = gs.start_stranger_combat("meet")
+		tc = gs.start_tactical_combat(c)
+		tc.plan(0, {"action": "submit"})
+		tc.begin_round()
+		tc.plan(0, {"action": "submit"})
+		tc.resolve()
+		gs.apply_tactical_combat(c, tc)
+		_check(c.outcome == "submit", "你示弱：outcome submit（%s）" % c.outcome)
+		gs.finish_combat(c)
+		# 自動玩家打完
+		_fresh()
+		var ap2 = load("res://scripts/core/AutoPlayer.gd").new("all", "assault")
+		var c2 = gs.start_stranger_combat("territory")
+		ap2.play_combat(c2)
+		_check(c2.phase == _phase_done() and c2.outcome != "", "自動玩家對黑狼打完（%s）" % c2.outcome)
+		_fresh()
+		var c3 = gs.start_challenger_combat("meet")
+		_check(gs.uses_tactical_combat(c3), "年輕挑戰者走戰術戰鬥")
+		ap2.play_combat(c3)
+		_check(c3.phase == _phase_done(), "自動玩家對挑戰者打完（%s）" % c3.outcome)
+
 	print("== 7. 自動玩家")
 	_fresh()
 	var ap = load("res://scripts/core/AutoPlayer.gd").new("all", "average")
@@ -188,3 +237,7 @@ func _run() -> void:
 
 	print("全部通過" if fails == 0 else "失敗 %d 項" % fails)
 	quit(1 if fails > 0 else 0)
+
+# Combat.gd 用到自動載入的 GameData，-s 腳本不能在編譯時直接引用 Combat，改成執行時載入
+func _phase_done() -> int:
+	return int(load("res://scripts/core/Combat.gd").Phase.DONE)

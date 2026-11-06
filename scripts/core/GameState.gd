@@ -5300,6 +5300,11 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id)}
 	if with_carcass:
 		opts["carcass_data"] = carcass_data
+	# 狼對狼（第 4 步）：具名的狼照牠自己的能力與血量；牠的賭注：趕你出牠的地盤時最拚、搶殘骸次之
+	if c.npc != null:
+		opts["opponent_stats"] = {"strength": c.npc.strength, "speed": c.npc.speed, "skill": c.npc.skill, "perception": c.npc.perception,
+			"health": c.npc.health, "health_max": c.npc.health_max}
+		opts["stake"] = float(g.get("wolf_stake", {}).get(c.context, 1.0))
 	# 跟著你的成員：這一步先帶第一隻（伴侶優先），第 5 步再帶全部
 	var mate_id := ""
 	if c.has_meta("follower"):
@@ -5351,6 +5356,17 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		"died":
 			c.outcome = "died"
 			wolf.health = 0.0
+		"enemy_submit":
+			# 牠示弱（第 4 步）：接著照選單式選「放牠走」或「追擊」；不會示弱的對手直接算趕走
+			if c.can_submit or bool(c.opp.get("can_submit", false)):
+				c.opp_submitted = true
+				c.phase = Combat.Phase.EXCHANGE
+				c.outcome = ""
+			else:
+				c.outcome = "drove_off"
+		"submit":
+			# 你示弱：照選單式的「示弱」（不算輸、記得現在的自己還不是牠的對手）
+			c.outcome = "submit"
 		"enemy_left":
 			# 打傷趕走＝打贏；失去興趣、殘骸吃光、上樹（還沒受重傷）＝沒有勝負，對手自己走了
 			var hurt_off: bool = why == "hurt" or (why == "climbed" and float(eu["hp"]) < float(eu["hp_max"]) * 0.6)

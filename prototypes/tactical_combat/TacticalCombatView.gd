@@ -12,10 +12,10 @@ const COLORS := {
 	"c": Color("#45423d"), "T": Color("#1f3a22"), "t": Color("#2f5a33"), "B": Color("#9a958a"),
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"zone_clear": Color(1.0, 0.1, 0.45, 0.45), "zone_partial": Color(1.0, 0.2, 0.55, 0.18),
-	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "cougar": Color("#c8a06a"),
+	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "stranger_wolf": Color("#3a3838"), "challenger": Color("#c8b490"), "cougar": Color("#c8a06a"),
 	"carcass": Color("#6e2f22"), "planned": Color("#ffffff"), "hit": Color("#ff3030"),
 }
-const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass"]
+const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass", "wolf_duel"]
 const WOLVES := ["novice", "average", "veteran"]
 const KNOW := ["novice", "experienced", "veteran"]
 const MODES := ["sync", "alternate"]

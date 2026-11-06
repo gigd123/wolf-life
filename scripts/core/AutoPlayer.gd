@@ -796,6 +796,11 @@ func play_combat(c: Combat) -> void:
 	# Phase 2k：戰術戰鬥照「交給本能」打完
 	if GameState.uses_tactical_combat(c):
 		GameState.auto_tactical_combat(c)
+		# 狼示弱了：照原本的選單式選放牠走或追擊
+		var g2 := 0
+		while c.phase != Combat.Phase.DONE and not done() and g2 < 10:
+			g2 += 1
+			c.choose(_combat_choice(c))
 		GameState.finish_combat(c)
 		return
 	var guard := 0
