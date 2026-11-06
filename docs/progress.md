@@ -5,7 +5,7 @@
 ## 目前階段
 （2026-11-06）Phase 2k 戰術戰鬥接進主遊戲寫入 SPEC（使用者同意）。CLAUDE.md 任務順序加第 19 項。
 - [ ] Phase 2k 戰術戰鬥接進主遊戲
-  - [ ] 1. 主遊戲的戰鬥接口：依區域產生戰場、你的狼與伴侶、結果送回主遊戲（肉、傷、時間、被打倒與死亡）；灰熊與美洲獅的所有情境取代選單式；自動玩家；回歸測試
+  - [x] 1. 主遊戲的戰鬥接口（2026-11-06）：`GameState.uses_tactical_combat`（`data/tactical_combat.json` 的 `game.animals`：灰熊、美洲獅；`tactical_combat_off` 對照用）、`start_tactical_combat`（依 `c.terrain` 產生 16×10 戰場：`game.terrain` 每種地形放樹、倒木、大石頭、岩坡的機率，峭壁地形最上面一列岩壁、溪流第 8 列淺水，起始位置與殘骸周圍不放障礙；起始位置 `game.layouts`：在殘骸旁被搶 arrives、對手佔著殘骸 on_carcass、伏擊 ambush、其他遭遇 encounter；你的狼用主遊戲的能力與血量，跟著你的第一個成員當伴侶進場）、`_tc_hurt`（你被打中照 `FightRules.hurt_wolf`：還沒瀕危的一下不致死〔停在 1 → 被打倒〕，瀕危後被打到 0 → 死亡；伴侶照同樣的規則）、`apply_tactical_combat`（打傷趕走＝drove_off 打贏、對手失去興趣或上樹＝新的 parted 沒有勝負、撤出帶肉＝grab〔吃 N 段〕、其他＝retreated、死亡＝died；對手走了殘骸剩的段數〔含掉在地上的〕寫回；伴侶的傷；學到的見過幾次存 `life_log.tc_knowledge`；回合數每 6 回合多算 1 個遊戲回合），之後照原本的 `finish_combat`。畫面：`Game._begin_combat` 遇到戰術戰鬥開 `TacticalCombat.tscn`（`start_from_game`：藏設定列與原型按鈕，打完按「繼續」），從熊口搶肉改成「悄悄靠近」（on_carcass）＋放棄；戰鬥中過了重傷線標紅字。自動玩家 `play_combat` 走 `auto_tactical_combat`（交給本能）；熊佔著殘骸時謹慎型或受傷就放棄，其他的上前。`TacticalCombat`：`hurt_hook`、opts `scenario_data`／`wolf_stats`／`mate_stats`／`knowledge_counts`／`carcass_data`、結束原因 died。HD-2D：密林改成矮的小樹（約一半的格子）、擋在角色前面的樹半透明。R-125 `tactical_combat_game`；一生模擬（12 隻 ×2）壽命 10.1／10.5、戰死 1～2 隻、沒有卡住。`life_pressure` 加 `TC_OFF=1`（選單式對照，第 6 步校準用）。
   - [ ] 2. 知識：戰鬥裡學到的存進主遊戲的知識
   - [ ] 3. 黑熊
   - [ ] 4. 狼對狼一對一（示威、壓制、示弱）
@@ -198,6 +198,7 @@
 ## 數值換算紀錄
 | 規格數值 | 程式數值 | 說明 |
 | --- | --- | --- |
+| Phase 2k 重傷線 30%【假設】 | 沿用 `balance.combat.danger_ratio` 0.25 | 和選單式戰鬥的「瀕危」一致：還沒瀕危的一下不致死、瀕危後被打到 0 才會死（2026-11-06） |
 | 1.7 行動體力：探索 −2、採集 −1、找睡處 −1、追蹤 −3、回到殘骸 −1（SPEC 初始值） | 探索 −3、採集 −2、找睡處 −2、追蹤 −3、回到殘骸 −1、移動 −3、跨地圖 −10 | 依 `1.7-numbers-draft.xlsx` 第 1 張表（2026-10-08 使用者同意先照初版）；SPEC 寫的是初始值，數字以資料檔為準 |
 | 老死機率（Phase 3 整體校準，2026-11-02 使用者選 B：只調老死，各種玩法壽命約 9 歲以上） | `elder_death_base_chance` 0.005→0.003、`elder_death_age_factor` 0.008→0.003、`elder_death_health_value_factor` 0.0005→0.0008 | 體質 80 起、6 歲時平均剩 31～45、死時 1～5（幾乎用完），所以只降基本機率沒用（0.001 仍 8.8～9.1）；決定壽命的是體質用完後每年增加的機率。life_pressure 各 40 隻：從不找伴侶 10.3、認真找 10.2（原 8.5／8.5）；老年挨餓 8.1～8.6 天；餓死 4／40（10%，多在 8 歲以上） |
 | 依實力差距提早示弱 | `combat.morale` start 1.05、slope 2.5、max 0.5、threaten_mult 0.8 | 力量值比 1.05 以下不影響 |
