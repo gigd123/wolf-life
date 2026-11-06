@@ -4,7 +4,8 @@
 （Gemini 每張都畫滿畫布，所以用畫布寬度換算，不用每張的身體寬度）。
 處理照 prep_grizzly.py：綠色色鍵去背、只留最大的一塊、縮成 32／48、補 1 像素深色外框（同 prep_wolf.py）。
 
-- 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張清掉草與浮著的頭（CLEAN_GRASS）
+- 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
+- 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 騾鹿母鹿 mule_deer_doe_*：站寬 1.4 格（PixelLab 的白尾鹿腿長脖子高，1.1 格就和這隻 1.4 格差不多高；騾鹿比白尾鹿壯、略大）
 
 用法：python3.12 -I prototypes/hd2d_tactical/prep_gemini_prey.py
@@ -22,9 +23,10 @@ SRC = os.path.join(pg.ROOT, "arts", "gemini_prey_2026-11-06")
 ANIMALS = {
     "mule_deer_doe": (1.4, ["stand", "alert", "run", "graze"]),
     "mule_deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
+    "mule_deer_fawn": (0.9, ["stand", "alert", "run", "graze"]),
 }
 # 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了
-CLEAN_GRASS = {"mule_deer_buck_graze": (0.44, 0.76, 1.0, 1.0)}
+CLEAN_GRASS = {}  # 例："mule_deer_buck_graze": (0.44, 0.76, 1.0, 1.0)（第一版吃草那張，現在換成重畫的乾淨版；舊的留在 mule_deer_buck_graze_v1_grass.jpg）
 
 
 
