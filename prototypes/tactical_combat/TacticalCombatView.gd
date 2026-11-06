@@ -12,10 +12,10 @@ const COLORS := {
 	"c": Color("#45423d"), "T": Color("#1f3a22"), "t": Color("#2f5a33"), "B": Color("#9a958a"),
 	"creep": Color(0.45, 0.9, 0.45, 0.35), "trot": Color(0.95, 0.85, 0.3, 0.35), "sprint": Color(1.0, 0.55, 0.2, 0.35),
 	"zone_clear": Color(1.0, 0.1, 0.45, 0.45), "zone_partial": Color(1.0, 0.2, 0.55, 0.18),
-	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "stranger_wolf": Color("#3a3838"), "challenger": Color("#c8b490"), "cougar": Color("#c8a06a"),
+	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "stranger_wolf": Color("#3a3838"), "challenger": Color("#c8b490"), "tundra_wolf": Color("#e8e4dc"), "pack_wolf": Color("#5a524a"), "member_1": Color("#b8a898"), "cougar": Color("#c8a06a"),
 	"carcass": Color("#6e2f22"), "planned": Color("#ffffff"), "hit": Color("#ff3030"),
 }
-const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass", "wolf_duel"]
+const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass", "wolf_duel", "tundra_pair", "pack_clash"]
 const WOLVES := ["novice", "average", "veteran"]
 const KNOW := ["novice", "experienced", "veteran"]
 const MODES := ["sync", "alternate"]
@@ -176,7 +176,16 @@ func _name(i: int) -> String:
 	if i < 0 or i >= tc.units.size():
 		return ""
 	var u: Dictionary = tc.units[i]
-	return tr("tcombat.name." + (str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])))
+	if u.has("name"):
+		return str(u["name"]) # 主遊戲帶進來的名字（成員、同一種的第二隻……）
+	var base: String = tr("tcombat.name." + (str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])))
+	if str(u["species"]) == "wolf" and base.begins_with("tcombat.name."):
+		return tr("tcombat.name.member") + str(u["id"]).trim_prefix("member_") # 同伴1、同伴2
+	# 同一種有好幾隻：加編號
+	var same: Array = tc.enemies().filter(func(k): return str(tc.units[k]["species"]) == str(u["species"]))
+	if str(u["side"]) == "enemy" and same.size() > 1:
+		return base + str(same.find(i) + 1)
+	return base
 
 # --- 地圖 ---
 
@@ -308,9 +317,13 @@ func _refresh_info() -> void:
 	if tc.done:
 		var ek: String = "tcombat.end." + tc.outcome + (".game" if game_mode and tr("tcombat.end." + tc.outcome + ".game") != "tcombat.end." + tc.outcome + ".game" else "")
 		lines.append("[b]%s[/b]" % tr(ek).format({"n": tc.meat_taken()}))
-	if e >= 0:
+	for e2 in tc.enemies():
+		e = e2
 		var u: Dictionary = tc.units[e]
-		lines.append(tr("tcombat.info.enemy").format({"name": _name(e), "hp": _pct(float(u["hp"]) / float(u["hp_max"])), "pat": _pct(float(u["stamina"]) / max(1.0, float(u["stamina_max"])))}))
+		var eline: String = tr("tcombat.info.enemy").format({"name": _name(e), "hp": _pct(float(u["hp"]) / float(u["hp_max"])), "pat": _pct(float(u["stamina"]) / max(1.0, float(u["stamina_max"])))})
+		if bool(u["out"]):
+			eline += tr("tcombat.info.enemy_out." + str(u["out_reason"])) if tr("tcombat.info.enemy_out." + str(u["out_reason"])) != "tcombat.info.enemy_out." + str(u["out_reason"]) else tr("tcombat.info.enemy_out.left")
+		lines.append(eline)
 		if tc.intents.has(e) and tc.active(e):
 			var seen: Dictionary = tc.intents[e].get("seen", {})
 			var t: String = tr("tcombat.tell." + str(seen.get("text", "vague")))
@@ -366,7 +379,7 @@ func _build_actions() -> void:
 		b.text = label
 		b.theme_type_variation = &"SmallButton"
 		b.focus_mode = Control.FOCUS_NONE
-		var p := {"action": id, "target": e}
+		var p := {"action": id, "target": int(o.get("target", e))}
 		if o.has("kind"):
 			p["kind"] = o["kind"]
 		if o.has("factors") and int(o["show"]["tier"]) >= 2:

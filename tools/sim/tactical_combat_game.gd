@@ -33,6 +33,44 @@ func _fresh() -> void:
 	gs.wolf.perception = 60.0
 	gs.wolf.hunger = 50.0
 
+# 有伴侶與 n_young 隻滿 2 歲、跟著你的子女（照 pack_hunt_rules 的 _pack）
+func _with_pack(n_young: int):
+	_fresh()
+	gs.wolf.age_years = 4.0
+	gs.pending_events.clear()
+	gs._spawn_she_wolf()
+	var m = gs.she_wolf()
+	m.territory = gs.current_region
+	m.relation = 8
+	gs.she_approach()
+	gs.pending_events.clear()
+	gt.season_index = 0
+	gs.breeding()["pregnant"] = true
+	gs.breeding()["winter_fed"] = 1.0
+	gs._give_birth()
+	gs.pending_events.clear()
+	var ps: Array = gs.pups()
+	for i in ps.size():
+		if i < n_young:
+			ps[i].age_years = 2.0
+			gs._grow_young()
+			ps[i].task = "follow"
+		else:
+			ps[i].die("test")
+	m.task = "follow"
+	gs.breeding().erase("prev_task")
+	gt.season_index = 2
+	return m
+
+# 單位不重疊、都站在走得過去的格子
+func _no_overlap(tc) -> bool:
+	var seen := {}
+	for u in tc.units:
+		if seen.has(u["pos"]) or "cTt".contains(tc.map.terrain(u["pos"])):
+			return false
+		seen[u["pos"]] = true
+	return true
+
 func _run() -> void:
 	print("== 1. 哪些走戰術戰鬥")
 	_fresh()
@@ -227,6 +265,98 @@ func _run() -> void:
 		_check(gs.uses_tactical_combat(c3), "年輕挑戰者走戰術戰鬥")
 		ap2.play_combat(c3)
 		_check(c3.phase == _phase_done(), "自動玩家對挑戰者打完（%s）" % c3.outcome)
+
+	print("== 9. 多隻（第 5 步）")
+	var mate9 = _with_pack(3)
+	var fol: Array = gs.followers()
+	_check(fol.size() == 4, "伴侶＋3 隻子女跟著你（%d）" % fol.size())
+	c = gs.start_combat("grizzly_bear", "adult", "encounter")
+	tc = gs.start_tactical_combat(c)
+	var allies9: Array = range(tc.units.size()).filter(func(k): return str(tc.units[k]["side"]) == "ally")
+	_check(allies9.size() == 3 and tc.index_of("mate") >= 0 and tc.index_of("member_1") >= 0 and tc.index_of("member_2") >= 0, "你這邊最多 4 隻：伴侶＋2 隻成員（%d）" % allies9.size())
+	_check(_no_overlap(tc), "進場的位置不重疊、走得過去")
+	# 每種起始位置 × 20 張地圖（含殘骸）都不重疊
+	var bad := []
+	for lay in ["arrives", "on_carcass", "encounter", "ambush"]:
+		for t9 in 20:
+			gs.current_feeding = {"animal_id": "elk", "segments_left": 6, "terrain": "forest_edge"}
+			var cc9 = gs.start_combat("grizzly_bear", "adult", "carcass" if lay in ["arrives", "on_carcass"] else "encounter")
+			cc9.set_meta("tc_layout", lay)
+			var tt = gs.start_tactical_combat(cc9)
+			var ok9: bool = _no_overlap(tt) and (tt.carcass.is_empty() or not tt.units.any(func(u): return u["pos"] == tt.carcass["pos"]))
+			if not ok9:
+				bad.append(lay)
+	gs.current_feeding = {}
+	_check(bad.is_empty(), "四種起始位置各 20 張地圖都不重疊（%s）" % str(bad))
+	var mem: Dictionary = c.get_meta("tc_members", {})
+	_check(str(mem.get("mate", "")) == mate9.id, "可以下指令的是伴侶")
+	# 成員的傷寫回：被打 20、另一隻倒下
+	var m1: int = tc.index_of("member_1")
+	var n1 = gs.npcs[str(mem["member_1"])]
+	var hp_before: float = n1.health
+	tc._hurt(m1, 20.0, tc.enemy_index())
+	var m2: int = tc.index_of("member_2")
+	var n2 = gs.npcs[str(mem["member_2"])]
+	tc.units[m2]["hp"] = 5.0
+	tc._hurt(m2, 30.0, tc.enemy_index())
+	gs.apply_tactical_combat(c, tc)
+	_check(absf(n1.health - (hp_before - 20.0)) < 0.6, "成員被打 20：記在牠身上（%.0f → %.0f）" % [hp_before, n1.health])
+	_check(not n2.alive, "重傷的成員還留在場上被打到 0：死亡")
+	# 苔原狼一對：兩隻都進場、能力照各自的
+	_fresh()
+	var pair: Array = gs.tundra_pair()
+	_check(pair.size() == 2, "苔原狼有一對")
+	if pair.size() == 2:
+		c = gs.start_tundra_combat("meet")
+		_check(gs.uses_tactical_combat(c), "苔原狼走戰術戰鬥")
+		tc = gs.start_tactical_combat(c)
+		var foes9: Array = tc.enemies()
+		_check(foes9.size() == 2 and absf(float(tc.units[foes9[1]]["hp_max"]) - pair[1].health_max) < 0.01, "兩隻苔原狼都進場、第二隻照牠自己的血量")
+		_check(_no_overlap(tc), "苔原狼的位置不重疊")
+		for k in foes9:
+			tc.units[k]["out"] = true
+			tc.units[k]["out_reason"] = "fled"
+		tc.units[foes9[1]]["hp"] = 40.0
+		tc._check_end()
+		_check(tc.outcome == "routed", "兩隻都走了：routed（%s）" % tc.outcome)
+		gs.apply_tactical_combat(c, tc)
+		_check(c.outcome == "drove_off" and absf(pair[1].health - 40.0) < 0.6, "＝打贏、第二隻的傷寫回（%s、%.0f）" % [c.outcome, pair[1].health])
+		gs.finish_combat(c)
+		_fresh()
+		var ap9 = load("res://scripts/core/AutoPlayer.gd").new("all", "assault")
+		var c9 = gs.start_tundra_combat("carcass")
+		ap9.play_combat(c9)
+		_check(c9.phase == _phase_done(), "自動玩家對一對苔原狼打完（%s）" % c9.outcome)
+	# 鄰群：撲上去打改成戰術戰鬥
+	_with_pack(1)
+	gs.current_region = "mountain_canyon"
+	gs.meet_pack_id = "mountain"
+	var mp = gs.pack_by_id("mountain")
+	mp.young = [1.5, 2.0, 0.5]
+	_check(gs.uses_tactical_pack_fight(), "鄰群的衝突走戰術戰鬥")
+	tc = gs.start_pack_tactical()
+	_check(tc.enemies().size() == 3 and str(tc.units[tc.enemy_index()]["species"]) == "pack_wolf", "牠們帶頭的＋2 隻進場（%d）" % tc.enemies().size())
+	_check(_no_overlap(tc), "鄰群的位置不重疊")
+	for k in tc.enemies():
+		tc.units[k]["out"] = true
+		tc.units[k]["out_reason"] = "submit"
+	tc._check_end()
+	var r9: Dictionary = gs.finish_pack_tactical(tc)
+	_check(r9["won"] and mp.young.size() == 2 and gs.pack_attitude_of(mp) == "wary", "牠們都退走＝打贏：少一隻年輕的、之後戒備你")
+	gs.current_region = "mountain_canyon"
+	tc = gs.start_pack_tactical()
+	tc.plan(0, {"action": "submit"})
+	tc.begin_round()
+	tc.plan(0, {"action": "submit"})
+	tc.resolve()
+	r9 = gs.finish_pack_tactical(tc)
+	_check(not r9["won"] and gs.current_region != "mountain_canyon", "你示弱＝輸：被趕走（%s）" % gs.current_region)
+	gs.current_region = "mountain_canyon"
+	r9 = gs.auto_pack_tactical()
+	_check(r9.has("won"), "交給本能打得完（%s）" % ("贏" if r9["won"] else ("各自退開" if r9.get("parted", false) else "輸")))
+	gs.tactical_combat_off = true
+	_check(not gs.uses_tactical_pack_fight(), "對照組：選單式")
+	gs.tactical_combat_off = false
 
 	print("== 7. 自動玩家")
 	_fresh()

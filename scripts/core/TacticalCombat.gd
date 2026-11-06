@@ -73,6 +73,10 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 		sc = (scs[str(sc["base"])] as Dictionary).duplicate(true)
 		if over.has("opponent_id"):
 			sc["opponent"]["id"] = str(over["opponent_id"])
+		# 其他欄位（多隻對手 extra_enemies、成員 allies、伴侶的位置 mate……）蓋過 base 的
+		for k in over.keys():
+			if not (str(k) in ["base", "opponent_id"]):
+				sc[k] = over[k]
 	scenario_id = p_scenario
 	rng.seed = int(opts.get("seed", 1))
 	mode = str(opts.get("mode", "sync"))
@@ -96,30 +100,27 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	units.append(_make_wolf("wolf", "player", _v(sc["wolf"]), wp))
 	if with_mate and sc.has("mate"):
 		units.append(_make_wolf("mate", "ally", _v(sc["mate"]), (opts["mate_stats"] as Dictionary).duplicate() if opts.has("mate_stats") else wp.duplicate()))
+	# 第 5 步：跟著你的其他成員（自動行動，不能下指令）
+	for a in sc.get("allies", []):
+		var au := _make_wolf(str(a["id"]), "ally", _v(a["pos"]), (a["stats"] as Dictionary).duplicate() if a.has("stats") else wp.duplicate())
+		if a.has("name"):
+			au["name"] = str(a["name"])
+		units.append(au)
 	var o: Dictionary = sc["opponent"]
-	var od: Dictionary = cfg["opponents"][str(o["id"])]
-	units.append({"id": str(o["id"]), "side": "enemy", "species": str(o["id"]), "pos": _v(o["pos"]), "facing": _v(o.get("facing", [-1, 0])),
-		"stats": {"strength": float(od["strength"]), "speed": float(od["speed"])}, "hp": float(od["hp"]), "hp_max": float(od["hp"]),
-		"breath": 0.0, "breath_max": 0.0, "carrying": "", "carry_segments": 0, "out": false, "out_reason": "",
-		"eating": bool(o.get("eating", false)), "ambush": bool(o.get("ambush", false)),
-		"stamina": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)), "stamina_max": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)),
-		"attention": -1, "bitten_by": -1})
-	var br: Array = cfg["ai"]["bold"].get(str(o["id"]), [0.0, 0.0])
-	units.back()["bold"] = rng.randf_range(float(br[0]), float(br[1]))
-	# 主遊戲：對手的能力與血量（具名的狼照牠自己的；Phase 2k 第 4 步）、這一場的賭注（在牠的地盤、有殘骸時比較拚）
-	if opts.has("opponent_stats"):
-		var os: Dictionary = opts["opponent_stats"]
-		var eu: Dictionary = units.back()
-		for k in ["strength", "speed", "skill", "perception"]:
-			if os.has(k):
-				eu["stats"][k] = float(os[k])
-		eu["hp_max"] = float(os.get("health_max", eu["hp_max"]))
-		eu["hp"] = float(os.get("health", eu["hp_max"]))
-	units.back()["stake"] = float(opts.get("stake", 1.0))
+	_add_enemy(o, opts.get("opponent_stats", {}), float(opts.get("stake", 1.0)))
+	# 第 5 步：多隻對手（苔原狼一對、鄰群 2～3 隻）：每隻各自的能力與血量
+	for x in sc.get("extra_enemies", []):
+		_add_enemy(x, x.get("stats", {}), float(opts.get("stake", 1.0)))
 	knowledge.clear()
-	for act in od["actions"]:
-		var kk: String = str(o["id"]) + "|" + str(act)
-		knowledge[kk] = {"count": int(opts.get("knowledge_counts", {}).get(kk, knowledge_level)), "category": "experience", "source": "self"}
+	var species_seen := {}
+	for k0 in units.size():
+		if str(units[k0]["side"]) != "enemy" or species_seen.has(str(units[k0]["species"])):
+			continue
+		var sp0: String = str(units[k0]["species"])
+		species_seen[sp0] = true
+		for act in cfg["opponents"][sp0]["actions"]:
+			var kk: String = sp0 + "|" + str(act)
+			knowledge[kk] = {"count": int(opts.get("knowledge_counts", {}).get(kk, knowledge_level)), "category": "experience", "source": "self"}
 	carcass = {}
 	if opts.has("carcass_data"):
 		carcass = (opts["carcass_data"] as Dictionary).duplicate()
@@ -129,6 +130,28 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 		carcass = {"pos": Vector2i(int(cc[0]), int(cc[1])), "animal": str(cc[2]), "segments": int(cd["segments"]),
 			"size": str(cd.get("size", "large")), "small_whole": bool(cd.get("small_whole", false)),
 			"whole_size": str(cd.get("whole_size", "small")), "leg": cd.get("leg_segments", [2, 3])}
+
+# 對手：o 是情境的 {id（物種）, pos, facing, eating, ambush, uid（同一種有好幾隻時的單位 id）, name}；os 是主遊戲的能力與血量
+func _add_enemy(o: Dictionary, os: Dictionary, stake: float) -> void:
+	var od: Dictionary = cfg["opponents"][str(o["id"])]
+	units.append({"id": str(o.get("uid", o["id"])), "side": "enemy", "species": str(o["id"]), "pos": _v(o["pos"]), "facing": _v(o.get("facing", [-1, 0])),
+		"stats": {"strength": float(od["strength"]), "speed": float(od["speed"]), "skill": float(od.get("skill", 50)), "perception": float(od.get("perception", 50))}, "hp": float(od["hp"]), "hp_max": float(od["hp"]),
+		"breath": 0.0, "breath_max": 0.0, "carrying": "", "carry_segments": 0, "out": false, "out_reason": "",
+		"eating": bool(o.get("eating", false)), "ambush": bool(o.get("ambush", false)),
+		"stamina": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)), "stamina_max": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)),
+		"attention": -1, "bitten_by": -1})
+	var eu: Dictionary = units.back()
+	var br: Array = cfg["ai"]["bold"].get(str(o["id"]), [0.0, 0.0])
+	eu["bold"] = rng.randf_range(float(br[0]), float(br[1]))
+	if o.has("name"):
+		eu["name"] = str(o["name"])
+	# 主遊戲：對手的能力與血量（具名的狼照牠自己的；Phase 2k 第 4 步）、這一場的賭注（在牠的地盤、有殘骸時比較拚）
+	for k in ["strength", "speed", "skill", "perception"]:
+		if os.has(k):
+			eu["stats"][k] = float(os[k])
+	eu["hp_max"] = float(os.get("health_max", eu["hp_max"]))
+	eu["hp"] = float(os.get("health", eu["hp_max"]))
+	eu["stake"] = stake
 
 func _v(a: Array) -> Vector2i:
 	return Vector2i(int(a[0]), int(a[1]))
@@ -153,6 +176,45 @@ func enemy_index() -> int:
 		if str(units[i]["side"]) == "enemy":
 			return i
 	return -1
+
+# 第 5 步：多隻對手
+func enemies() -> Array:
+	var out: Array = []
+	for i in units.size():
+		if str(units[i]["side"]) == "enemy":
+			out.append(i)
+	return out
+
+func active_enemies() -> Array:
+	return enemies().filter(func(k): return active(k))
+
+# 這隻（從 from 這一格）面對的是哪一隻對手：最近的；一樣近時挑傷得比較重的。都走了時回傳第一隻（不在場上）
+func foe_of(i: int, from: Vector2i = Vector2i(-1, -1)) -> int:
+	if from.x < 0:
+		from = units[i]["pos"]
+	var best := -1
+	var bs := INF
+	for k in active_enemies():
+		var sc: float = map.dist(from, units[k]["pos"]) + float(units[k]["hp"]) / maxf(1.0, float(units[k]["hp_max"])) * 0.3
+		if sc < bs:
+			bs = sc
+			best = k
+	return best if best >= 0 else enemy_index()
+
+# 跟著你的成員優先對付你正在對付的那一隻（SPEC：你牽制時牠們從側面進）；離你太遠時對付自己最近的
+func _ally_foe(i: int) -> int:
+	if i != 0 and active(0):
+		var f0 := foe_of(0)
+		if active(f0) and map.dist(units[0]["pos"], units[f0]["pos"]) <= 2.5 and map.dist(units[i]["pos"], units[f0]["pos"]) <= 6.0:
+			return f0
+	return foe_of(i)
+
+func _active_count() -> int:
+	var n := 0
+	for k in units.size():
+		if active(k):
+			n += 1
+	return n
 
 func active(i: int) -> bool:
 	return i >= 0 and i < units.size() and not bool(units[i]["out"])
@@ -654,6 +716,74 @@ func _power(i: int) -> float:
 	var u: Dictionary = units[i]
 	return float(u["stats"]["strength"]) * (0.4 + 0.6 * float(u["hp"]) / maxf(1.0, float(u["hp_max"])))
 
+# 一群對一群的實力比（第 5 步）：i 這一邊對 t 這一邊；兩隻附近 3 格內的同伴也算（打個八折）。一對一時就是兩隻的實力比
+func _group_pr(i: int, t: int) -> float:
+	var mine := _power(i)
+	var theirs := _power(t)
+	var near: float = float(_ai_cfg().get("wolf", {}).get("group_radius", 3.0))
+	var share: float = float(_ai_cfg().get("wolf", {}).get("group_share", 0.8))
+	for k in units.size():
+		if k == i or k == t or not active(k):
+			continue
+		if minf(map.dist(units[k]["pos"], units[i]["pos"]), map.dist(units[k]["pos"], units[t]["pos"])) > near:
+			continue
+		if player_side(k) == player_side(i):
+			mine += _power(k) * share
+		else:
+			theirs += _power(k) * share
+	return mine / maxf(1.0, theirs)
+
+# 對手的狼挑誰（第 5 步，SPEC：圍住落單的那一隻）：被咬就看咬牠的；否則挑近、身邊同伴少、已經有自己這邊的狼在旁邊的
+func _wolf_target(i: int) -> int:
+	var u: Dictionary = units[i]
+	var b: int = int(u.get("bitten_by", -1))
+	u["just_bitten"] = false
+	if b >= 0 and active(b):
+		u["attention"] = b
+		u["bitten_by"] = -1
+		u["just_bitten"] = true
+		return b
+	var aw: Dictionary = _ai_cfg().get("wolf", {})
+	var best := -1
+	var bs := INF
+	for k in units.size():
+		if not active(k) or not player_side(k):
+			continue
+		var sc: float = map.dist(u["pos"], units[k]["pos"])
+		for m in units.size():
+			if m == k or m == i or not active(m) or map.dist(units[m]["pos"], units[k]["pos"]) > 2.5:
+				continue
+			sc += float(aw.get("target_friends", 1.5)) if player_side(m) else -float(aw.get("target_mob", 1.2))
+		if k == int(u.get("attention", -1)):
+			sc -= float(aw.get("target_keep", 1.0)) # 不要每回合換目標
+		if sc < bs:
+			bs = sc
+			best = k
+	u["attention"] = best
+	return best
+
+# 包抄（第 5 步）：已經有同伴貼著目標時，走到目標旁、離同伴最遠的一格（側面、背後優先）
+func _flank_goal(i: int, t: int) -> Vector2i:
+	var tp: Vector2i = units[t]["pos"]
+	var mates: Array = active_enemies().filter(func(k): return k != i and map.dist(units[k]["pos"], tp) <= 2.5)
+	if mates.is_empty():
+		return Vector2i(-1, -1)
+	var best := Vector2i(-1, -1)
+	var bs := -INF
+	for d in TacticalGrid.DIRS:
+		var c: Vector2i = tp + d
+		if not map.in_bounds(c) or _impassable(i).contains(map.terrain(c)) or (blocks_for(i).has(c) and c != units[i]["pos"]):
+			continue
+		var spread := INF
+		for m in mates:
+			spread = minf(spread, map.dist(c, units[m]["pos"]))
+		var sd := TacticalGrid.side_of(tp, units[t]["facing"], c)
+		var sc: float = spread + (1.5 if sd == "rear" else (0.8 if sd == "side" else 0.0)) - map.dist(units[i]["pos"], c) * 0.4
+		if sc > bs:
+			bs = sc
+			best = c
+	return best
+
 # 狼對狼的對手 AI（Phase 2k 第 4 步；SPEC：多半是示威、壓制與退讓）：
 # 依實力差距（pr）、這一場的賭注（stake：在牠的地盤、有殘骸時比較拚）、血量與耐心，決定靠近、示威、咬，或示弱、逃走。
 func _ai_wolf(i: int) -> Dictionary:
@@ -664,12 +794,16 @@ func _ai_wolf(i: int) -> Dictionary:
 	var nothing := Vector2i(-1, -1)
 	var bold: float = float(u.get("bold", 0.0))
 	var stake: float = float(u.get("stake", 1.0))
-	var t := _update_attention(i)
+	var t := _wolf_target(i)
 	var hp_ratio: float = float(u["hp"]) / maxf(1.0, float(u["hp_max"]))
 	var give: float = float(cfg["give_up"].get(str(u["species"]), 0.4)) * (1.0 - bold * 0.3) / stake
 	if t < 0:
 		return _intent(i, "flee", pos, facing, nothing, "patience")
-	var pr: float = _power(i) / maxf(1.0, _power(t))
+	var pr: float = _group_pr(i, t)
+	# 被圍、寡不敵眾時比較早放棄（第 5 步）
+	# （只在多隻的戰鬥；一對一照第 4 步校準過的放棄線）
+	if pr < 1.0 and _active_count() > 2:
+		give = minf(0.9, give / maxf(0.35, pr))
 	# 打不過了、耐心沒了：示弱（大多數）或直接逃
 	if hp_ratio < give or float(u["stamina"]) <= 0.0:
 		if pr < float(aw.get("flee_pr", 0.6)):
@@ -684,10 +818,17 @@ func _ai_wolf(i: int) -> Dictionary:
 	if map.adjacent(pos, tp):
 		cands.append([float(aw.get("attack", 6.0)) + (pr - 1.0) * float(aw.get("attack_pr", 3.0)) + bold * 2.0 + (2.0 if bool(u.get("just_bitten", false)) else 0.0), "bite", pos, want, nothing, "attack"])
 		cands.append([float(aw.get("threaten", 4.0)) + stake * early * 2.0 - (pr - 1.0), "threaten", pos, want, nothing, "threaten"])
+		# 從側面、背後撲上去壓住（第 5 步：對手的狼也會；被包抄的那隻最危險）
+		if bool(aw.get("enemy_pin", true)) and TacticalGrid.side_of(tp, units[t]["facing"], pos) != "front":
+			var pc: float = float(wolf_chance(i, "pin", t, pos)["chance"])
+			cands.append([float(aw.get("pin", 5.0)) + (pc - 0.4) * float(aw.get("pin_chance", 8.0)) + bold, "pin", pos, want, nothing, "pin"])
 		if pr < 1.0:
 			cands.append([float(aw.get("back_off", 2.5)) + (1.0 - pr) * 3.0 - bold, "back_off", pos, want, nothing, "back_off"])
 	else:
 		var to := _step_toward(i, tp, true)
+		var fg := _flank_goal(i, t)
+		if fg.x >= 0:
+			to = _step_toward(i, fg, false)
 		if to != pos:
 			cands.append([float(aw.get("approach", 5.0)) + (pr - 1.0) * 2.0 + bold, "move", to, TacticalGrid.dir_toward(to, tp), nothing, "approach"])
 		if d <= 3.5:
@@ -731,7 +872,7 @@ func wolf_chance(i: int, action: String, target: int, from: Vector2i, sprinted: 
 	var factors: Array = []
 	var p := 0.0
 	if action == "take":
-		var e := enemy_index()
+		var e := foe_of(i, from)
 		var state := "away"
 		if active(e):
 			if bool(units[e]["eating"]) and not moved:
@@ -998,6 +1139,21 @@ func _do_enemy_action(i: int) -> Array:
 			_ev("threaten", {"who": i})
 			_witness(i, a)
 			return hit_units
+		"pin":
+			# 撲上去壓住：被壓住的那隻示弱、退出（第 5 步）
+			var pt: int = int(u.get("attention", -1))
+			if pt < 0 or not active(pt) or not map.adjacent(u["pos"], units[pt]["pos"]):
+				_ev("pin_fail", {"who": i, "target": pt})
+				return hit_units
+			if rng.randf() < float(wolf_chance(i, "pin", pt, u["pos"])["chance"]):
+				_ev("pinned", {"who": i, "target": pt})
+				drop_carried(pt)
+				units[pt]["out"] = true
+				units[pt]["out_reason"] = "submit"
+				_ev("submit", {"who": pt})
+			else:
+				_ev("pin_fail", {"who": i, "target": pt})
+			return hit_units
 		"submit":
 			# 夾尾巴伏低、退開：這一場到此為止（你可以放牠走或追擊，主遊戲照選單式處理）
 			u["out"] = true
@@ -1081,14 +1237,15 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			_ev("drop", {"who": i})
 		"threaten":
 			# 示威（只對狼）：豎毛低吼；你越比牠強，牠的耐心掉得越快
-			var e3 := enemy_index()
-			if active(e3) and map.dist(u["pos"], units[e3]["pos"]) <= float(w.get("range", 3.0)) + 0.5:
-				var ratio: float = clampf(_power(i) / maxf(1.0, _power(e3)), 0.4, 2.0)
-				units[e3]["stamina"] = maxf(0.0, float(units[e3].get("stamina", 0.0)) - float(w.get("drain", 14.0)) * ratio)
+			# 多隻時：範圍裡的每一隻狼都算（第 5 步）
+			for e3 in active_enemies():
+				if bool(_opp_cfg(e3).get("wolf", false)) and map.dist(u["pos"], units[e3]["pos"]) <= float(w.get("range", 3.0)) + 0.5:
+					var ratio: float = clampf(_power(i) / maxf(1.0, _power(e3)), 0.4, 2.0)
+					units[e3]["stamina"] = maxf(0.0, float(units[e3].get("stamina", 0.0)) - float(w.get("drain", 14.0)) * ratio)
 			_ev("threaten", {"who": i})
 		"pin":
 			# 壓制（只對狼）：從側面或背後撲上去壓住；成功時牠多半示弱
-			var t3: int = int(p.get("target", enemy_index()))
+			var t3: int = int(p.get("target", foe_of(i)))
 			if not active(t3) or not map.adjacent(u["pos"], units[t3]["pos"]):
 				_ev("whiff", {"who": i, "target": t3})
 				return
@@ -1121,14 +1278,14 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 				var n := take_from_carcass(i, kind)
 				_ev("take", {"who": i, "segments": n, "how": kind})
 				# 肉被叼走：對手的注意力轉到小偷，下一回合可以猛然轉身
-				var e := enemy_index()
+				var e := foe_of(i)
 				if active(e):
 					units[e]["bitten_by"] = i
 					units[e]["eating"] = false
 			else:
 				_ev("take_fail", {"who": i, "why": "missed"})
 				# 叼失敗：牠發現了，下一回合可以猛然轉身對付你
-				var e2 := enemy_index()
+				var e2 := foe_of(i)
 				if active(e2):
 					units[e2]["bitten_by"] = i
 					units[e2]["eating"] = false
@@ -1136,7 +1293,7 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			if str(u["carrying"]) != "":
 				_ev("cannot", {"who": i, "why": "carrying"})
 				return
-			var t: int = int(p.get("target", enemy_index()))
+			var t: int = int(p.get("target", foe_of(i)))
 			if not _can_reach_target(i, a, t, u["pos"]):
 				_ev("whiff", {"who": i, "target": t})
 				return
@@ -1164,9 +1321,13 @@ func _check_end() -> void:
 	for i in units.size():
 		if player_side(i) and active(i):
 			any_player = true
-	if not active(e):
+	var foes := enemies()
+	if active_enemies().is_empty():
 		done = true
-		outcome = "enemy_submit" if str(units[e]["out_reason"]) == "submit" else "enemy_left"
+		if foes.size() > 1:
+			outcome = "routed" # 第 5 步：多隻對手都走了（示弱、逃走）
+		else:
+			outcome = "enemy_submit" if str(units[e]["out_reason"]) == "submit" else "enemy_left"
 	elif not active(0):
 		done = true
 		var why0: String = str(units[0]["out_reason"])
@@ -1324,14 +1485,14 @@ func display_chance(viewer: int, chance: float, species: String) -> Dictionary:
 func action_options(i: int, from: Vector2i = Vector2i(-1, -1), sprinted := false) -> Array:
 	if from.x < 0:
 		from = units[i]["pos"]
-	var e := enemy_index()
+	var e := foe_of(i, from)
 	var sp: String = str(units[e]["species"]) if e >= 0 else ""
 	var out: Array = []
 	var carrying: bool = str(units[i]["carrying"]) != ""
 	for a in ["bite", "pounce", "harass"]:
 		if active(e) and not carrying and (map.adjacent(from, units[e]["pos"]) or (a == "pounce" and map.dist(from, units[e]["pos"]) <= float(_wcfg("pounce").get("range", 2)) + 0.5)):
 			var c: Dictionary = wolf_chance(i, a, e, from, sprinted)
-			out.append({"id": a, "chance": c["chance"], "factors": c["factors"], "show": display_chance(i, float(c["chance"]), sp)})
+			out.append({"id": a, "target": e, "chance": c["chance"], "factors": c["factors"], "show": display_chance(i, float(c["chance"]), sp)})
 	var save_pos: Vector2i = units[i]["pos"]
 	units[i]["pos"] = from
 	for k in take_kinds(i):
@@ -1344,7 +1505,7 @@ func action_options(i: int, from: Vector2i = Vector2i(-1, -1), sprinted := false
 			out.append({"id": "threaten"})
 		if map.adjacent(from, units[e]["pos"]):
 			var c3: Dictionary = wolf_chance(i, "pin", e, from, sprinted)
-			out.append({"id": "pin", "chance": c3["chance"], "factors": c3["factors"], "show": display_chance(i, float(c3["chance"]), sp)})
+			out.append({"id": "pin", "target": e, "chance": c3["chance"], "factors": c3["factors"], "show": display_chance(i, float(c3["chance"]), sp)})
 	for a2 in ["dodge", "observe", "wait"]:
 		out.append({"id": a2})
 	if active(e) and bool(_opp_cfg(e).get("wolf", false)):
@@ -1379,7 +1540,7 @@ func ally_mode(i: int) -> String:
 	var u: Dictionary = units[i]
 	var ac: Dictionary = cfg["ally"]
 	# 對手是狼：照一對一的打法（打不過時示弱，不是逃出戰場；Phase 2k 第 4 步）
-	var e0 := enemy_index()
+	var e0 := _ally_foe(i)
 	if active(e0) and bool(_opp_cfg(e0).get("wolf", false)) and str(u["carrying"]) == "":
 		return "duel"
 	if float(u["hp"]) < float(u["hp_max"]) * float(ac["retreat_hp"]):
@@ -1394,7 +1555,7 @@ func ally_mode(i: int) -> String:
 		if cmd == "take" and (carcass.is_empty() or int(carcass["segments"]) <= 0):
 			return "harass"
 		return cmd
-	var e := enemy_index()
+	var e := _ally_foe(i)
 	if not active(e):
 		return "back"
 	# 對手是狼：一對一的打法（Phase 2k 第 4 步）
@@ -1425,7 +1586,7 @@ func _ally_move(i: int, goal: Vector2i, zone: Dictionary, stop_adjacent := false
 	var ac: Dictionary = cfg["ally"]
 	var best: Vector2i = u["pos"]
 	var bs := -INF
-	var e := enemy_index()
+	var e := foe_of(i)
 	for c in r.keys():
 		var d: float = map.dist(c, goal)
 		if stop_adjacent and d < 0.5:
@@ -1459,7 +1620,7 @@ func _creep_toward(i: int, goal: Vector2i, zone: Dictionary) -> Vector2i:
 
 func _nearest_edge_away(i: int) -> Vector2i:
 	var u: Dictionary = units[i]
-	var e := enemy_index()
+	var foes := active_enemies()
 	var best: Vector2i = u["pos"]
 	var bs := -INF
 	for y in map.height:
@@ -1468,8 +1629,11 @@ func _nearest_edge_away(i: int) -> Vector2i:
 			if not map.on_edge(c) or _impassable(i).contains(map.terrain(c)):
 				continue
 			var sc: float = -map.dist(u["pos"], c)
-			if active(e):
-				sc += map.dist(units[e]["pos"], c) * 0.7
+			if not foes.is_empty():
+				var md := INF
+				for e in foes:
+					md = minf(md, map.dist(units[e]["pos"], c))
+				sc += md * 0.7
 			if sc > bs:
 				bs = sc
 				best = c
@@ -1483,7 +1647,7 @@ func ally_plan(i: int) -> Dictionary:
 
 func _ally_plan(i: int) -> Dictionary:
 	var u: Dictionary = units[i]
-	var e := enemy_index()
+	var e := _ally_foe(i)
 	var zone := _shown_zone_for(i)
 	# 牠（或交給本能的你）不會每次都照預告完美閃開：有時看錯或衝得太投入，這一回合當作沒看到範圍。
 	# 用固定的種子擲（同一回合重算結果不變）
@@ -1583,17 +1747,30 @@ func _ally_plan(i: int) -> Dictionary:
 # 狼對狼的自動打法（交給本能、伴侶）：打不過就示弱；相鄰時壓制機會夠高就壓，否則繞到側面咬；
 # 還沒貼近時，比牠強就先示威，不然貼上去
 func _duel_plan(i: int, p: Dictionary) -> Dictionary:
-	var e := enemy_index()
+	var e := _ally_foe(i)
 	var u: Dictionary = units[i]
 	var ep: Vector2i = units[e]["pos"]
 	var ef: Vector2i = units[e]["facing"]
 	var ad: Dictionary = _ai_cfg().get("wolf", {})
-	var pr: float = _power(i) / maxf(1.0, _power(e))
+	var pr: float = _group_pr(i, e)
 	var hp_ratio: float = float(u["hp"]) / maxf(1.0, float(u["hp_max"]))
+	var zone := _shown_zone_for(i)
+	# 多隻對手、寡不敵眾（第 5 步，SPEC：獨狼被圍多半該撤退）：你（交給本能時）往離牠們最遠的邊緣撤；同伴跟著你，你撤出就結束
+	var n_side := 0
+	for k in units.size():
+		if active(k) and player_side(k):
+			n_side += 1
+	if i == 0 and active_enemies().size() > 1 and active_enemies().size() > n_side and pr < float(ad.get("auto_retreat_pr", 0.75)):
+		p["mode"] = "escape"
+		if map.on_edge(u["pos"]):
+			p["action"] = "retreat"
+			return p
+		p["move"] = _ally_move(i, _nearest_edge_away(i), zone)
+		p["action"] = "retreat" if map.on_edge(p["move"]) else ("dodge" if zone.has(p["move"]) else "wait")
+		return p
 	if hp_ratio <= float(ad.get("auto_submit_hp", 0.3)) and pr < 1.0:
 		p["action"] = "submit"
 		return p
-	var zone := _shown_zone_for(i)
 	if map.adjacent(u["pos"], ep):
 		var pc: float = float(wolf_chance(i, "pin", e, u["pos"])["chance"])
 		if pc >= float(ad.get("auto_pin", 0.45)):
@@ -1612,6 +1789,14 @@ func _duel_plan(i: int, p: Dictionary) -> Dictionary:
 		return p
 	if pr >= float(ad.get("auto_threaten_pr", 1.1)) and rounds <= 2 and map.dist(u["pos"], ep) <= 3.5:
 		p["action"] = "threaten"
+		return p
+	# 多隻的戰鬥、還離得遠（第 5 步）：先靠到牠前方 2 格、和同伴站在一起，不要一口氣衝到牠背後（同時移動時會被擋住、跑散）
+	if _active_count() > 2 and map.dist(u["pos"], ep) > float(ad.get("close_in", 3.0)):
+		var dv := Vector2(u["pos"] - ep).normalized() * 2.0
+		var g2 := Vector2i(clampi(ep.x + roundi(dv.x), 0, map.width - 1), clampi(ep.y + roundi(dv.y), 0, map.height - 1))
+		p["move"] = _ally_move(i, g2, zone)
+		p["action"] = "threaten" if map.dist(p["move"], ep) <= float(_wcfg("threaten").get("range", 3.0)) + 0.5 and pr >= 1.0 else "wait"
+		p["target"] = e
 		return p
 	var bestc: Vector2i = ep
 	var bs := -INF

@@ -4461,11 +4461,12 @@ func _show_pack_meet(event: Dictionary) -> void:
 		_add_encounter_button(tr("pack.option.challenge"), func():
 			_begin_combat(GameState.start_pack_challenge())
 		)
-	# 撲上去打（Phase 3 第 7 步）
-	_add_encounter_button(tr("pack.option.fight").replace("{p}", str(roundi(GameState.pack_fight_chance() * 100.0))), func():
-		var alone: bool = GameState.team_size() <= 1
-		var r: Dictionary = GameState.pack_fight()
-		var msg: String = tr("pack.fight." + ("won" if r["won"] else "lost") + (".alone" if alone else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
+	# 撲上去打（Phase 3 第 7 步）；Phase 2k 第 5 步起在戰術地圖上打（你、跟著你的成員對牠們）
+	var tactical_fight: bool = GameState.uses_tactical_pack_fight()
+	var fight_label: String = tr("pack.option.fight.tactical") if tactical_fight else tr("pack.option.fight").replace("{p}", str(roundi(GameState.pack_fight_chance() * 100.0)))
+	var fight_done := func(r: Dictionary, alone: bool) -> void:
+		var res_key: String = "parted" if bool(r.get("parted", false)) else ("won" if r["won"] else "lost")
+		var msg: String = tr("pack.fight." + res_key + (".alone" if alone else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
 		if str(r.get("member_lost", "")) != "":
 			msg += tr("pack.fight.member_lost")
 		if GameState.wolf != null and not GameState.wolf.alive:
@@ -4474,6 +4475,13 @@ func _show_pack_meet(event: Dictionary) -> void:
 			_on_wolf_died(GameState.wolf.death_cause)
 			return
 		after.call(msg)
+	_add_encounter_button(fight_label, func():
+		var alone: bool = GameState.team_size() <= 1
+		if tactical_fight:
+			encounter_overlay.visible = false
+			_open_pack_tactical(func(r: Dictionary): fight_done.call(r, alone))
+			return
+		fight_done.call(GameState.pack_fight(), alone)
 	)
 	_add_encounter_button(tr("pack.option.flee").replace("{p}", str(roundi((1.0 - GameState.pack_flee_caught_chance()) * 100.0))), func():
 		var r: Dictionary = GameState.pack_flee()
@@ -4519,6 +4527,24 @@ func _open_tactical_combat(c: Combat) -> void:
 		if session_active and not session_check_pending:
 			session_check_pending = true
 			_check_session_end.call_deferred(), combat_intro)
+
+# 鄰群的衝突（Phase 2k 第 5 步）：戰術戰鬥打完交給 done_cb（結果同 pack_fight）
+func _open_pack_tactical(done_cb: Callable) -> void:
+	hunt_overlay.visible = false
+	var view: Control = load(TACTICAL_COMBAT_SCENE).instantiate()
+	add_child(view)
+	tactical_combat_view = view
+	GameState.in_tactical = true
+	var tc: TacticalCombat = GameState.start_pack_tactical()
+	view.start_from_game(tc, func():
+		GameState.in_tactical = false
+		var r: Dictionary = GameState.finish_pack_tactical(tc)
+		tactical_combat_view = null
+		view.queue_free()
+		done_cb.call(r)
+		if session_active and not session_check_pending:
+			session_check_pending = true
+			_check_session_end.call_deferred(), "")
 
 func _render_combat() -> void:
 	var c := current_combat

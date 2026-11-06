@@ -2314,6 +2314,9 @@ tactical.ally.tip.pack,同伴（{role}）：{what}
 tactical.factor.ally_holding.pack,同伴拖住了牠
 tactical.ally.ambush_strike.pack,{animal}衝過來的那一刻，趴著等的同伴撲了出來！
 pack.option.fight,撲上去打（勝算 {p}%）
+pack.option.fight.tactical,撲上去打
+pack.fight.parted,你們和牠們咬了幾口、互相逼視，誰也沒有退。最後雙方各自散開，你們退到{region}。
+pack.fight.parted.alone,你和牠們咬了幾口、互相逼視，誰也沒有退。最後你退到{region}。
 pack.fight.won,你們撲了上去，咬成一團。{who}丟下一隻受傷的同伴，退走了。
 pack.fight.lost,你們撲了上去，卻被牠們的數量壓了回來。你們帶著傷逃到{region}。
 pack.fight.member_lost,有一隻沒有跟上來。
@@ -2426,6 +2429,8 @@ tcombat.sc.grizzly_on_carcass_mate,7 灰熊在吃（有伴侶）
 tcombat.sc.black_bear_arrives,8 黑熊來搶
 tcombat.sc.black_bear_on_carcass,9 黑熊趴在殘骸上吃
 tcombat.sc.wolf_duel,10 和黑狼對峙
+tcombat.sc.tundra_pair,11 被一對苔原狼圍住
+tcombat.sc.pack_clash,12 狼群對狼群（三對三）
 tcombat.wolf.novice,年輕的狼
 tcombat.wolf.average,普通的狼
 tcombat.wolf.veteran,老練的狼
@@ -2450,6 +2455,12 @@ tcombat.name.cougar,美洲獅
 tcombat.name.black_bear,黑熊
 tcombat.name.stranger_wolf,黑狼
 tcombat.name.challenger,年輕的狼
+tcombat.name.tundra_wolf,苔原狼
+tcombat.name.pack_wolf,鄰群的狼
+tcombat.name.member,同伴
+tcombat.info.enemy_out.submit,　（示弱了）
+tcombat.info.enemy_out.left,　（走了）
+tcombat.end.routed,牠們都退走了。
 tcombat.info.enemy,{name}　血量 {hp}%　耐心 {pat}%
 tcombat.info.wolf,{name}　血量 {hp}／{max}　喘 {b}
 tcombat.info.carrying,　叼著 {n} 段
@@ -2460,6 +2471,7 @@ tcombat.info.mode.take,去叼肉
 tcombat.info.mode.back,退開
 tcombat.info.mode.escape,受傷撤退
 tcombat.info.mode.carry,叼著肉撤
+tcombat.info.mode.duel,和牠對峙
 tcombat.info.carcass,殘骸：剩 {n} 段
 tcombat.in_zone,這一格在牠看起來要打的範圍裡
 tcombat.level.0,（看不清楚）
@@ -2476,6 +2488,7 @@ tcombat.tell.partial.back_off,牠在往後退。
 tcombat.tell.partial.back_to_wall,牠往岩壁那邊退。
 tcombat.tell.partial.climb,牠盯著旁邊的樹。
 tcombat.tell.partial.threaten,牠站定了，盯著你。
+tcombat.tell.partial.pin,牠壓低身子，繞到你旁邊。
 tcombat.tell.partial.submit,牠的尾巴垂下來了。
 tcombat.tell.clear.swipe,牠抬起前掌，要揮掌。
 tcombat.tell.clear.charge,牠壓低身子、重心往前，要衝過來。
@@ -2491,6 +2504,7 @@ tcombat.tell.clear.back_off,牠在往後退。
 tcombat.tell.clear.back_to_wall,牠往岩壁退，想護住背後。
 tcombat.tell.clear.climb,牠要爬上樹。
 tcombat.tell.clear.threaten,牠豎起頸毛、低吼，在逼你退。
+tcombat.tell.clear.pin,牠繞到你側面，準備撲上來把你壓倒。
 tcombat.tell.clear.submit,牠夾起尾巴、壓低身子，要示弱了。
 tcombat.tell.feint,（可能是虛張聲勢）
 tcombat.show.0,風險{risk}・約 {lo}～{hi}%
@@ -2539,6 +2553,7 @@ tcombat.enemy_act.bluff_charge,虛張聲勢的衝撞
 tcombat.enemy_act.pounce,撲擊
 tcombat.enemy_act.bite,咬
 tcombat.enemy_act.guard,護食
+tcombat.enemy_act.pin,壓制
 tcombat.ev.blocked,{who}被擋住了，沒走過去。
 tcombat.ev.changed,{who}臨時改變主意，往後退。
 tcombat.ev.hit,{who}打中了{target}（血量 −{dmg}）。

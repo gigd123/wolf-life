@@ -4195,12 +4195,24 @@ func pack_fight() -> Dictionary:
 	record_decision("pack.fight")
 	var f: Dictionary = _pack_meet_cfg().get("fight", {})
 	var won: bool = RNGService.chance(pack_fight_chance())
-	_pack_record("meet", "fight_won" if won else "fight_lost")
-	var res := {"won": won, "region": current_region, "member_lost": ""}
 	_pack_bite("fight_damage_won" if won else "fight_damage")
 	for m in followers():
 		if RNGService.chance(float(f.get("member_hurt", 0.5))):
 			m.health = max(1.0, m.health - RNGService.randf_range(10.0, 25.0))
+	var lost_id := ""
+	if not won:
+		var fol := followers()
+		if not fol.is_empty() and RNGService.chance(float(f.get("member_death", 0.3))):
+			var v: NpcWolf = fol[RNGService.randi_range(0, fol.size() - 1)]
+			v.die("pack_fight")
+			_on_npc_died(v)
+			lost_id = v.id
+	return _pack_fight_after(mp, won, lost_id)
+
+# 撲上去打的後果（選單式與戰術戰鬥共用）：贏了牠們少一隻年輕的、照對峙贏了佔區域；輸了被趕走、這一帶的食物沒了
+func _pack_fight_after(mp: WolfPack, won: bool, lost_id: String) -> Dictionary:
+	_pack_record("meet", "fight_won" if won else "fight_lost")
+	var res := {"won": won, "region": current_region, "member_lost": lost_id}
 	if won:
 		_set_pack_rel(mp, "wary")
 		_standoff_won_here(mp)
@@ -4210,17 +4222,81 @@ func pack_fight() -> Dictionary:
 		add_life_event("pack.fight", {"pack": mp.id, "won": true})
 	else:
 		_set_pack_rel(mp, "scorn")
-		var fol := followers()
-		if not fol.is_empty() and RNGService.chance(float(f.get("member_death", 0.3))):
-			var v: NpcWolf = fol[RNGService.randi_range(0, fol.size() - 1)]
-			v.die("pack_fight")
-			_on_npc_died(v)
-			res["member_lost"] = v.id
 		add_life_event("pack.fight", {"pack": mp.id, "won": false, "lost": res["member_lost"]})
 		res["region"] = _pack_leave(true)
 	_check_death()
 	state_changed.emit()
 	return res
+
+# 撲上去打改成戰術戰鬥（Phase 2k 第 5 步）：你、跟著你的成員（含你最多 4 隻）對牠們帶頭的與伴侶、子女（最多 3 隻）
+func uses_tactical_pack_fight() -> bool:
+	return not tactical_combat_off
+
+var pack_tc_combat: Combat = null
+
+func start_pack_tactical() -> TacticalCombat:
+	var mp := meet_pack()
+	if mp == black_pack:
+		identify("stranger_wolf")
+	record_decision("pack.fight")
+	var c := Combat.new(wolf, "stranger_wolf", "adult", "territory")
+	var leader := pack_leader_of(mp)
+	if leader != null and leader.alive:
+		c.set_npc(leader)
+	c.terrain = _random_terrain(current_region)
+	c.tendency = current_tendency()
+	if not followers().is_empty():
+		c.set_meta("follower", (followers()[0] as NpcWolf).id)
+	c.set_meta("tc_pack", mp.id)
+	c.set_meta("tc_layout", "encounter")
+	pack_tc_combat = c
+	var tc := start_tactical_combat(c)
+	tc.hurt_hook = _tc_hurt.bind(c, tc)
+	return tc
+
+# 打完：牠們都退走＝贏；你撤出、示弱、被打倒＝輸（被趕走）；拖到時間＝雙方各自退開（照撤退）。成員的傷、死亡照戰鬥裡的結果
+func finish_pack_tactical(tc: TacticalCombat) -> Dictionary:
+	var c := pack_tc_combat
+	pack_tc_combat = null
+	var mp := meet_pack()
+	c.rounds = tc.rounds
+	var before: Array = followers().map(func(n): return n.id)
+	_tc_write_members(tc, c.get_meta("tc_members", {}), "pack_fight", "pack_wolf")
+	var lost_id := ""
+	for id in before:
+		var n: NpcWolf = npcs.get(str(id), null)
+		if n != null and not n.alive:
+			lost_id = n.id
+	var leader: NpcWolf = c.npc
+	var li := tc.enemy_index()
+	if leader != null and li >= 0:
+		leader.health = clampf(float(tc.units[li]["hp"]), 1.0, leader.health_max)
+	var extra: int = maxi(0, int(tc.rounds / maxi(1, int(_tc_game_cfg().get("turns_per_rounds", 6)))) - 1)
+	if extra > 0 and wolf.alive:
+		GameTime.advance_turns(extra)
+	_stat_inc("combat", "pack.tactical." + tc.outcome)
+	if tc.outcome == "timeout":
+		_pack_record("meet", "fight_parted")
+		var r := {"won": false, "parted": true, "region": _pack_leave(false), "member_lost": lost_id}
+		return r
+	var won: bool = tc.outcome in ["routed", "enemy_left", "enemy_submit"]
+	if tc.outcome == "died":
+		die_in_combat("pack_wolf", "adult", "territory")
+	var res := _pack_fight_after(mp, won, lost_id)
+	return res
+
+# 自動玩家、模擬：照「交給本能」打完
+func auto_pack_tactical() -> Dictionary:
+	var tc := start_pack_tactical()
+	var guard := 0
+	while not tc.done and guard < 60:
+		guard += 1
+		tc.begin_round()
+		if tc.done:
+			break
+		tc.plan(0, tc.auto_plan(0))
+		tc.resolve()
+	return finish_pack_tactical(tc)
 
 # 對峙贏了（SPEC Phase 3「領域與鄰群」）：在你的地盤上 → 清掉這一區被試探的紀錄；在牠們的領域（不是核心）→ 你標記了的話，換季時變成你的
 func _standoff_won_here(p: WolfPack) -> void:
@@ -5265,6 +5341,44 @@ func _tc_map(terrain: String, keep: Array, rng: RandomNumberGenerator) -> Array:
 		rows.append(row)
 	return rows
 
+# 某一格兩旁的位置（上下各兩格；避開 avoid）：第 5 步多隻進場時站的地方
+func _tc_spots(center: Vector2i, avoid: Vector2i) -> Array:
+	var out: Array = []
+	for d in [Vector2i(-1, -2), Vector2i(-1, 2), Vector2i(-2, 0), Vector2i(0, -2), Vector2i(0, 2)]:
+		var dd: Vector2i = d if center.x < 8 else Vector2i(-d.x, d.y)
+		var c2: Vector2i = center + dd
+		c2 = Vector2i(clampi(c2.x, 0, 15), clampi(c2.y, 0, 9))
+		if c2 != avoid and c2 != center and not out.has(c2):
+			out.append(c2)
+	return out
+
+# 這一場還有哪些對手一起進場（第 5 步）：[{npc（NpcWolf 或 null）, stats}]。苔原狼一對時另一隻；鄰群：伴侶與滿 1 歲的子女（帶頭的之外最多 2 隻）
+func _tc_extra_foes(c: Combat) -> Array:
+	var out: Array = []
+	if c.animal_id == "tundra_wolf":
+		for n in tundra_pair():
+			if n != c.npc:
+				out.append({"npc": n, "stats": {"strength": n.strength, "speed": n.speed, "skill": n.skill, "perception": n.perception, "health": n.health, "health_max": n.health_max}})
+	elif c.has_meta("tc_pack"):
+		var p := pack_by_id(str(c.get_meta("tc_pack")))
+		if p == null:
+			p = meet_pack()
+		var pm: Dictionary = _tc_game_cfg().get("pack_members", {})
+		var base: NpcWolf = c.npc
+		var ref := {"strength": base.strength if base != null else 75.0, "speed": base.speed if base != null else 65.0,
+			"skill": base.skill if base != null else 60.0, "perception": base.perception if base != null else 60.0, "health_max": base.health_max if base != null else 105.0}
+		var ratios: Array = []
+		if p.has_mate():
+			ratios.append(float(pm.get("mate", 0.88)))
+		for a in p.young:
+			if float(a) >= 1.0:
+				ratios.append(float(pm.get("adult" if float(a) >= 2.0 else "young", 0.8 if float(a) >= 2.0 else 0.72)))
+		for k in mini(ratios.size(), int(_tc_game_cfg().get("side_max", 4)) - 2):
+			var r: float = ratios[k]
+			out.append({"npc": null, "stats": {"strength": ref["strength"] * r, "speed": ref["speed"], "skill": ref["skill"] * r, "perception": ref["perception"],
+				"health": ref["health_max"] * (0.6 + 0.4 * r), "health_max": ref["health_max"] * (0.6 + 0.4 * r)}})
+	return out
+
 func _tc_wolf_stats() -> Dictionary:
 	return {"speed": wolf.speed, "strength": wolf.strength, "skill": wolf.skill, "perception": wolf.perception,
 		"stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max}
@@ -5283,6 +5397,11 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		opos = Vector2i(int(op["pos"][0]), int(op["pos"][1]))
 	var wpos := Vector2i(int(lay["wolf"][0]), int(lay["wolf"][1]))
 	var keep: Array = [wpos, opos, Vector2i(int(lay["mate"][0]), int(lay["mate"][1]))]
+	# 第 5 步：其他成員站在你兩旁、其他對手站在牠兩旁
+	var ally_spots: Array = _tc_spots(wpos, Vector2i(int(lay["mate"][0]), int(lay["mate"][1])))
+	var foe_spots: Array = _tc_spots(opos, Vector2i(-1, -1))
+	keep.append_array(ally_spots)
+	keep.append_array(foe_spots)
 	var carcass_data := {}
 	var with_carcass: bool = lay.has("carcass") and not current_feeding.is_empty() and int(current_feeding.get("segments_left", 0)) > 0
 	if with_carcass:
@@ -5305,21 +5424,51 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		opts["opponent_stats"] = {"strength": c.npc.strength, "speed": c.npc.speed, "skill": c.npc.skill, "perception": c.npc.perception,
 			"health": c.npc.health, "health_max": c.npc.health_max}
 		opts["stake"] = float(g.get("wolf_stake", {}).get(c.context, 1.0))
-	# 跟著你的成員：這一步先帶第一隻（伴侶優先），第 5 步再帶全部
+	# 跟著你的成員（第 5 步：全部，含你最多 4 隻）：第一隻（伴侶優先）可以下指令，其他的自動行動
 	var mate_id := ""
+	var members: Dictionary = {} # 單位 id → NPC id
 	if c.has_meta("follower"):
+		var fol: Array = followers()
 		var n: NpcWolf = npcs.get(str(c.get_meta("follower")), null)
 		if n != null and n.alive:
-			mate_id = n.id
-			opts["with_mate"] = true
-			opts["mate_stats"] = {"speed": n.speed, "strength": n.strength, "skill": n.skill, "perception": n.perception,
-				"stamina": 80.0, "health": n.health, "health_max": n.health_max}
+			fol.erase(n)
+			fol.push_front(n)
+		var cap: int = int(g.get("side_max", 4)) - 1
+		var allies: Array = []
+		for k in mini(cap, fol.size()):
+			var m: NpcWolf = fol[k]
+			var st := {"speed": m.speed, "strength": m.strength, "skill": m.skill, "perception": m.perception, "stamina": 80.0, "health": m.health, "health_max": m.health_max}
+			if k == 0:
+				mate_id = m.id
+				opts["with_mate"] = true
+				opts["mate_stats"] = st
+				members["mate"] = m.id
+			elif k - 1 < ally_spots.size():
+				var uid := "member_%d" % k
+				allies.append({"id": uid, "pos": [ally_spots[k - 1].x, ally_spots[k - 1].y], "stats": st})
+				members[uid] = m.id
+		sc["allies"] = allies
+	# 第 5 步：多隻對手（苔原狼一對）
+	var extra_npcs: Array = _tc_extra_foes(c)
+	var extras: Array = []
+	var foe_ids: Dictionary = {}
+	var foe_species: String = "pack_wolf" if c.has_meta("tc_pack") else c.animal_id
+	sc["opponent"]["id"] = foe_species
+	for k in mini(extra_npcs.size(), foe_spots.size()):
+		var x: Dictionary = extra_npcs[k]
+		var uid2 := "%s_%d" % [foe_species, k + 2]
+		extras.append({"id": foe_species, "uid": uid2, "pos": [foe_spots[k].x, foe_spots[k].y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"]})
+		if x["npc"] != null:
+			foe_ids[uid2] = (x["npc"] as NpcWolf).id
+	sc["extra_enemies"] = extras
 	var tc := TacticalCombat.new()
 	tc.setup("", opts)
 	if with_carcass and bool(lay.get("wolf_eating", false)):
 		tc.units[0]["eating"] = false # 你在殘骸旁（「在吃」只用在對手）
 	tc.hurt_hook = _tc_hurt.bind(c, tc)
 	c.set_meta("tc_mate", mate_id)
+	c.set_meta("tc_members", members)
+	c.set_meta("tc_foes", foe_ids)
 	c.set_meta("tc_layout_used", layout_id)
 	c.set_meta("tc_start_carcass", int(carcass_data.get("segments", 0)))
 	return tc
@@ -5367,6 +5516,9 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		"submit":
 			# 你示弱：照選單式的「示弱」（不算輸、記得現在的自己還不是牠的對手）
 			c.outcome = "submit"
+		"routed":
+			# 多隻對手都退走了（第 5 步）＝打贏
+			c.outcome = "drove_off"
 		"enemy_left":
 			# 打傷趕走＝打贏；失去興趣、殘骸吃光、上樹（還沒受重傷）＝沒有勝負，對手自己走了
 			var hurt_off: bool = why == "hurt" or (why == "climbed" and float(eu["hp"]) < float(eu["hp_max"]) * 0.6)
@@ -5387,23 +5539,15 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 			if left <= 0:
 				current_feeding = {}
 		c.set_meta("tc_left", left)
-	# 伴侶的傷
-	var mid: String = str(c.get_meta("tc_mate", ""))
-	var mi := tc.index_of("mate")
-	if mid != "" and mi >= 0:
-		var n: NpcWolf = npcs.get(mid, null)
-		if n != null:
-			var mu: Dictionary = tc.units[mi]
-			if str(mu["out_reason"]) == "died":
-				n.health = 0.0
-				n.alive = false
-				n.death_cause = "combat." + c.animal_id
-				add_life_event("member.died", {"who": n.id, "cause": "combat", "animal": c.animal_id})
-			else:
-				if float(mu["hp"]) < n.health - 0.5:
-					add_life_event("mate.hurt", {"who": n.id, "animal": c.animal_id})
-				n.health = max(1.0, float(mu["hp"]))
-			# 牠帶出來的肉也算你們的（吃進你的肚子：先簡化，同一份）
+	# 伴侶與其他成員的傷（第 5 步：每一隻）
+	_tc_write_members(tc, c.get_meta("tc_members", {}), "combat." + c.animal_id, c.animal_id)
+	# 一起進場的其他對手（苔原狼的另一隻）：血量寫回
+	var foes: Dictionary = c.get_meta("tc_foes", {})
+	for uid in foes.keys():
+		var fi := tc.index_of(str(uid))
+		var fn: NpcWolf = npcs.get(str(foes[uid]), null)
+		if fi >= 0 and fn != null:
+			fn.health = clampf(float(tc.units[fi]["hp"]), 1.0, fn.health_max)
 	# 戰鬥裡學到的（看到對手出手幾次）存進主遊戲的知識（似乎 → 通常 → 確定；Phase 2k 第 2 步）
 	_tc_store_knowledge(c.animal_id, tc)
 	c.decisions.append("fight.tactical")
@@ -5413,6 +5557,23 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		GameTime.advance_turns(extra)
 	c.set_meta("tactical", true)
 	_stat_inc("combat", c.animal_id + ".tactical." + tc.outcome)
+
+# 成員的傷寫回 NPC：倒下（重傷後還留在場上被打到 0）→ 死亡；其他照剩下的血量（members：單位 id → NPC id）
+func _tc_write_members(tc: TacticalCombat, members: Dictionary, cause: String, animal: String) -> void:
+	for uid in members.keys():
+		var mi := tc.index_of(str(uid))
+		var n: NpcWolf = npcs.get(str(members[uid]), null)
+		if mi < 0 or n == null or not n.alive:
+			continue
+		var mu: Dictionary = tc.units[mi]
+		if str(mu["out_reason"]) == "died":
+			n.health = 0.0
+			n.die(cause)
+			_on_npc_died(n)
+		else:
+			if float(mu["hp"]) < n.health - 0.5:
+				add_life_event("mate.hurt", {"who": n.id, "animal": animal})
+			n.health = max(1.0, float(mu["hp"]))
 
 # 主遊戲的知識 → 戰術戰鬥的「見過幾次」（0～3）：對手的每個出手動作一筆 combat_move 知識
 func _tc_knowledge_counts(animal_id: String) -> Dictionary:

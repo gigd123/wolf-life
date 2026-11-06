@@ -26,6 +26,10 @@
     "black_bear": { "width_cells": 1.9, "hd2d_poses": { "stand": "black_bear_stand", "walk": "black_bear_walk", "walk_b": "black_bear_stand", "eat": "black_bear_eat", "swipe": "black_bear_swipe", "charge": "black_bear_charge", "rear": "black_bear_rear" } },
     "stranger_wolf": { "art": "hd2d_wolf", "modulate": [0.38, 0.36, 0.36] },
     "challenger": { "art": "hd2d_wolf", "modulate": [0.9, 0.82, 0.7] },
+    "tundra_wolf": { "art": "hd2d_wolf", "modulate": [1.12, 1.1, 1.06] },
+    "pack_wolf": { "art": "hd2d_wolf", "modulate": [0.6, 0.56, 0.52] },
+    "member_1": { "art": "hd2d_wolf", "modulate": [0.92, 0.86, 0.8] },
+    "member_2": { "art": "hd2d_wolf", "modulate": [0.86, 0.9, 0.86] },
     "cougar": { "width_cells": 1.8, "hd2d_poses": { "stand": "cougar_stand", "walk": "cougar_walk", "walk_b": "cougar_walk_b", "eat": "cougar_eat", "crouch": "cougar_crouch", "swipe": "cougar_pounce" } }
   },
   "carcass": { "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },
