@@ -3015,8 +3015,10 @@ func _open_tactical() -> void:
 	var view: Control = load(TACTICAL_SCENE).instantiate()
 	add_child(view)
 	tactical_view = view
+	GameState.in_tactical = true # 試玩指標：戰術場景佔的時間
 	view.start_from_game(GameState.start_tactical(current_hunt), func(th):
 		tactical_view = null
+		GameState.in_tactical = false
 		var ok: bool = th.result == "caught"
 		if th.result == "gave_up":
 			current_hunt.condition_known = current_hunt.condition_known or th.condition_known
@@ -4668,7 +4670,7 @@ func _show_card(title: String, body: String, bg: Texture2D = null) -> void:
 	btn.text = tr("ui.continue")
 	var shown_ms: int = Time.get_ticks_msec()
 	btn.pressed.connect(func():
-		GameState.metric_card((Time.get_ticks_msec() - shown_ms) / 1000.0) # 試玩指標：1 秒內就按「繼續」＝沒在讀
+		GameState.metric_card((Time.get_ticks_msec() - shown_ms) / 1000.0, title) # 試玩指標：1 秒內就按「繼續」＝沒在讀（依標題分開記）
 		card_overlay.visible = false
 		_refresh()
 	)

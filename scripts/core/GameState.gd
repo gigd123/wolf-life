@@ -3441,11 +3441,20 @@ func metrics() -> Dictionary:
 		life_log["metrics"] = {}
 	return life_log["metrics"]
 
+# 2026-11-06 試玩指標（使用者同意，只記錄不影響遊戲）：in_tactical 為 true 時是在戰術場景裡（畫面層設定）
+var in_tactical := false
+
 func metric_play_time(delta: float) -> void:
 	if wolf == null or not wolf.alive or auto_playing:
 		return
 	var m := metrics()
 	m["play_seconds"] = float(m.get("play_seconds", 0.0)) + delta
+	# 每一歲的遊玩時間（0 = 未滿 1 歲）、戰術場景佔多少時間
+	var ay: Dictionary = m.get_or_add("age_seconds", {})
+	var ak := str(int(floor(wolf.age_years)))
+	ay[ak] = float(ay.get(ak, 0.0)) + delta
+	if in_tactical:
+		m["tactical_seconds"] = float(m.get("tactical_seconds", 0.0)) + delta
 	var stage: String = ["subadult", "adult", "elder"][wolf.life_stage()]
 	var st: Dictionary = m.get("stage_seconds", {})
 	st[stage] = float(st.get(stage, 0.0)) + delta
@@ -3479,15 +3488,33 @@ func _choice_context() -> Array:
 	tags.append("stamina." + ("low" if wolf.stamina < 30.0 else ("mid" if wolf.stamina < 70.0 else "high")))
 	tags.append("period." + GameTime.current_period())
 	tags.append("stage." + ["subadult", "adult", "elder"][wolf.life_stage()])
+	# 家庭狀態（2026-11-06）：有家庭前後，冒險的比例有沒有變
+	var fam := "none"
+	if not pups().is_empty():
+		fam = "pups"
+	elif not young_members().is_empty():
+		fam = "young"
+	elif has_mate():
+		fam = "mate"
+	tags.append("family." + fam)
 	return tags
 
-func metric_card(seconds: float) -> void:
+func metric_card(seconds: float, title: String = "") -> void:
 	if auto_playing:
 		return
 	var m := metrics()
 	m["cards"] = int(m.get("cards", 0)) + 1
 	if seconds < 1.0:
 		m["quick_cards"] = int(m.get("quick_cards", 0)) + 1
+	# 依卡片標題：[出現次數, 秒關次數, 總停留秒數]（2026-11-06：哪些卡片會讀、哪些被略過）
+	if title != "":
+		var bt: Dictionary = m.get_or_add("cards_by_title", {})
+		var row: Array = bt.get(title, [0, 0, 0.0])
+		row[0] = int(row[0]) + 1
+		if seconds < 1.0:
+			row[1] = int(row[1]) + 1
+		row[2] = float(row[2]) + minf(seconds, 120.0)
+		bt[title] = row
 
 # 文字問題（TextWatch）：原始翻譯鍵、沒替換的佔位。同一個片段只記一次，最多 TEXT_ISSUE_MAX 筆。
 const TEXT_ISSUE_MAX := 50
@@ -3522,8 +3549,18 @@ func metrics_summary() -> Dictionary:
 			float(m["tactical_detail"][k]["chosen"]) / max(1, int(m["tactical_detail"][k]["pounces"])), float(m["tactical_detail"][k]["best"]) / max(1, int(m["tactical_detail"][k]["pounces"])),
 			JSON.stringify(m["tactical_detail"][k]["end"]), JSON.stringify(m["tactical_detail"][k].get("give_up", {}))]),
 		"stage_minutes": (m.get("stage_seconds", {}) as Dictionary).keys().map(func(k): return "%s %.1f" % [k, float(m["stage_seconds"][k]) / 60.0]),
+		# 2026-11-06：每一歲的遊玩分鐘、戰術場景佔的比例、卡片依標題的秒關率與平均停留（出現最多的 25 種）
+		"age_minutes": (m.get("age_seconds", {}) as Dictionary).keys().map(func(k): return "%s歲 %.1f" % [k, float(m["age_seconds"][k]) / 60.0]),
+		"tactical_share": snapped(float(m.get("tactical_seconds", 0.0)) / maxf(1.0, float(m.get("play_seconds", 0.0))), 0.01),
+		"cards_by_title": _cards_by_title_summary(m),
 		"text_issues": (m.get("text_issues", {}) as Dictionary).keys().map(func(k): return "%s %s @ %s「%s」" % [m["text_issues"][k]["kind"], k,
 			m["text_issues"][k]["where"], m["text_issues"][k]["text"]])}
+
+func _cards_by_title_summary(m: Dictionary) -> Array:
+	var bt: Dictionary = m.get("cards_by_title", {})
+	var keys: Array = bt.keys()
+	keys.sort_custom(func(a, b): return int(bt[a][0]) > int(bt[b][0]))
+	return keys.slice(0, 25).map(func(k): return "%s %d次 秒關%.2f 平均%.1f秒" % [k, int(bt[k][0]), float(bt[k][1]) / maxf(1.0, float(bt[k][0])), float(bt[k][2]) / maxf(1.0, float(bt[k][0]))])
 
 # 戰術狩獵的細節（2026-10-22 試玩討論第 1 項：區分「能力不夠」和「還不熟」）：依年齡（未滿 1 歲、1～2 歲、成年、老年）記
 # 場數、交給本能的場數、自己撲的次數、選的命中率與當下能選到的最高命中率的總和、怎麼結束的。
