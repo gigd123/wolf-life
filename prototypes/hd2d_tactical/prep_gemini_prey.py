@@ -10,7 +10,7 @@
 - 白尾鹿幼鹿 deer_fawn_*：站寬 0.8 格（四張同一個比例；戰術物種 fawn）
 - 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
-- 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
+- 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體 pronghorn_kid_* 4 個姿勢（0.85 格；跑那張身體畫得比較長 → 照身體長度指定）
 - 牧場的羊 sheep_*：站寬 1.3 格（美麗諾羊，和狼差不多高、身體比較寬）
 - 牧場母牛 cattle_cow_*：站寬 2.6 格（2026-11-07 放大：原本 1.75 格因為長角佔掉寬度，身體比狼還矮；現在約狼的 1.4 倍高）（德州長角牛，含角）；跑那張腳邊的沙土清掉；站定反擊第一版畫了一隻小牛趴在腳下（_cattle_cow_fight_with_calf.jpg，不用），重出的 fight＝低頭用長角對著你、刨地；小牛 cattle_calf_* 4 個姿勢（站是走路回頭看那張）
 - 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_* 暫時用母羊縮小到 0.75 格
@@ -59,7 +59,7 @@ ANIMALS = {
     "deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
-    "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
+    "pronghorn_kid": (0.85, ["stand", "alert", "run", "graze"]),
     "sheep": (1.3, ["stand", "alert", "run", "graze"]),
     "cattle_cow": (2.6, ["stand", "alert", "run", "graze", "fight"]),
     "cattle_calf": (1.45, ["stand", "alert", "run", "graze"]),
@@ -84,6 +84,7 @@ SPECIAL = {
     # 低頭吃草：面向左、1408×768、毛色偏紅褐 → 翻轉、照站那張調色
     # 野兔跑：1256×848（使用者附真實照片當參考才畫對），身體畫得比較大 → 照身體長度指定
     "hare_run": {"cells": 0.78},
+    "pronghorn_kid_run": {"cells": 1.1},
     "bison_calf_alert": {"cells": 1.2},
     # 小旱獺：四張畫布大小不同（警覺 1109×944、其他 1408×768），身體畫得差不多大 → 警覺照身高對齊
     "marmot_young_alert": {"cells": 0.36},
