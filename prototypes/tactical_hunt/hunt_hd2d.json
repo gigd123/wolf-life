@@ -37,6 +37,8 @@
     "mule_deer": { "name": "hd_mule_deer_doe", "unaware": "hd_mule_deer_doe_graze", "suspicious": "hd_mule_deer_doe_alert", "stand": "hd_mule_deer_doe_alert", "flee": "hd_mule_deer_doe_run" },
     "elk": { "name": "hd_elk_cow", "unaware": "hd_elk_cow_graze", "suspicious": "hd_elk_cow_alert", "stand": "hd_elk_cow_alert", "flee": "hd_elk_cow_run" }, "elk_bull": { "name": "hd_elk_bull", "unaware": "hd_elk_bull_graze", "suspicious": "hd_elk_bull_alert", "stand": "hd_elk_bull_alert", "flee": "hd_elk_bull_run" }, "elk_calf": { "name": "hd_elk_calf", "unaware": "hd_elk_calf_graze", "suspicious": "hd_elk_calf_alert", "stand": "hd_elk_calf_alert", "flee": "hd_elk_calf_run" },
     "snowshoe_hare": { "name": "hd_snowhare_summer", "winter": "hd_snowhare_winter" }, "snowshoe_hare_young": { "name": "hd_snowhare_summer_young", "winter": "hd_snowhare_winter_young" },
+    "bison": { "name": "hd_bison", "unaware": "hd_bison_graze", "suspicious": "hd_bison_alert", "stand": "hd_bison_fight", "flee": "hd_bison_run" },
+    "bison_calf": { "name": "hd_bison_calf", "unaware": "hd_bison_calf_graze", "suspicious": "hd_bison_calf_alert", "stand": "hd_bison_calf_alert", "flee": "hd_bison_calf_run" },
     "hare": { "name": "hd_hare", "unaware": "hd_hare_graze", "suspicious": "hd_hare_alert", "stand": "hd_hare_alert", "flee": "hd_hare_run" },
     "hare_young": { "name": "hd_hare_young", "unaware": "hd_hare_young_graze", "suspicious": "hd_hare_young_alert", "stand": "hd_hare_young_alert", "flee": "hd_hare_young_run" } },
   "species": {
