@@ -30,7 +30,7 @@
     "caribou": { "mixed": { "key": "caribou_cow", "every": 3, "keep": 0 }, "name": "hd_caribou", "unaware": "hd_caribou_graze", "suspicious": "hd_caribou_alert", "stand": "hd_caribou_alert", "flee": "hd_caribou_run" },
     "mule_deer_calf": { "name": "hd_mule_deer_fawn", "unaware": "hd_mule_deer_fawn_graze", "suspicious": "hd_mule_deer_fawn_alert", "stand": "hd_mule_deer_fawn_alert", "flee": "hd_mule_deer_fawn_run" },
     "mule_deer": { "name": "hd_mule_deer_doe", "unaware": "hd_mule_deer_doe_graze", "suspicious": "hd_mule_deer_doe_alert", "stand": "hd_mule_deer_doe_alert", "flee": "hd_mule_deer_doe_run" },
-    "elk": { "name": "hd_elk_cow", "unaware": "hd_elk_cow_graze", "suspicious": "hd_elk_cow_alert", "stand": "hd_elk_cow_alert", "flee": "hd_elk_cow_run" }, "elk_bull": { "name": "hd_elk_bull" }, "elk_calf": { "name": "hd_elk_calf", "unaware": "hd_elk_calf_graze", "suspicious": "hd_elk_calf_alert", "stand": "hd_elk_calf_alert", "flee": "hd_elk_calf_run" },
+    "elk": { "name": "hd_elk_cow", "unaware": "hd_elk_cow_graze", "suspicious": "hd_elk_cow_alert", "stand": "hd_elk_cow_alert", "flee": "hd_elk_cow_run" }, "elk_bull": { "name": "hd_elk_bull", "unaware": "hd_elk_bull_graze", "suspicious": "hd_elk_bull_alert", "stand": "hd_elk_bull_alert", "flee": "hd_elk_bull_run" }, "elk_calf": { "name": "hd_elk_calf", "unaware": "hd_elk_calf_graze", "suspicious": "hd_elk_calf_alert", "stand": "hd_elk_calf_alert", "flee": "hd_elk_calf_run" },
     "snowshoe_hare": { "name": "hd_snowhare_summer", "winter": "hd_snowhare_winter" }, "snowshoe_hare_young": { "name": "hd_snowhare_summer_young", "winter": "hd_snowhare_winter_young" },
     "hare": { "name": "hd_snowhare_summer" }, "hare_young": { "name": "hd_snowhare_summer_young" } },
   "species": {
