@@ -16,7 +16,7 @@
 - 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_* 暫時用母羊縮小到 0.75 格
 - 大角羊公羊 bighorn_ram_*：站寬 1.4 格（含角）；跑那張腳邊的沙土不連在身上，去背時拿掉；fight＝低頭用角對著你
 - 美洲野牛 bison_*：站寬 2.65 格（2026-11-07 放大到約狼的 1.6 倍高，和駝鹿同一個壓縮程度）；fight＝站定反擊（尾巴翹直、前蹄刨地；刨地的動作線不連在身上，只留最大的一塊時去掉）；小牛暫時用成年縮小到 1.2 格
-- 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔暫時用成年縮小
+- 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔 hare_young_* 4 個姿勢（0.42 格；警覺和站幾乎一樣，耳朵稍微高一點）
 - 旱獺 marmot_*：站寬 0.7 格（含尾巴）；警覺是坐起來張望；小旱獺 marmot_young_* 4 個姿勢（0.5 格；警覺重出了一次才坐起來）
 - 河狸 beaver_*：站寬 0.85 格（含尾巴）；吃草那張是坐著啃樹枝；小河狸 beaver_kit_* 4 個姿勢（0.55 格；跑那張腳邊的土屑不連在身上，去背時拿掉）
 - 馬鹿公鹿 elk_bull_*：站寬 1.85 格（含角；取代風格測試的單張 hd_elk_bull）
@@ -69,7 +69,7 @@ ANIMALS = {
     "bison": (2.65, ["stand", "alert", "run", "graze", "fight"]),
     "bison_calf": (1.6, ["stand", "alert", "run", "graze"], "bison"),
     "hare": (0.6, ["stand", "alert", "run", "graze"]),
-    "hare_young": (0.42, ["stand", "alert", "run", "graze"], "hare"),
+    "hare_young": (0.42, ["stand", "alert", "run", "graze"]),
     "marmot": (0.7, ["stand", "alert", "run", "graze"]),
     "marmot_young": (0.5, ["stand", "alert", "run", "graze"]),
     "beaver": (0.85, ["stand", "alert", "run", "graze"]),
@@ -86,7 +86,7 @@ SPECIAL = {
     "hare_run": {"cells": 0.78},
     # 小旱獺：四張畫布大小不同（警覺 1109×944、其他 1408×768），身體畫得差不多大 → 警覺照身高對齊
     "marmot_young_alert": {"cells": 0.36},
-    "hare_young_run": {"file": "hare_run.jpg", "cells": 0.55},
+    "hare_young_run": {"cells": 0.58},
     "deer_doe_graze": {"cells": 1.2},
     "deer_doe_run": {"cells": 1.45},
     # 白尾鹿雄鹿：四張都是 1408×768，但站那張畫得比其他三張小 → 其他三張照身體長度指定
