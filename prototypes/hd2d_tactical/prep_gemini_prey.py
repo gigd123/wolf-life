@@ -11,6 +11,7 @@
 - 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
+- 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_* 暫時用母羊縮小到 0.75 格
 - 大角羊公羊 bighorn_ram_*：站寬 1.4 格（含角）；跑那張腳邊的沙土不連在身上，去背時拿掉；fight＝低頭用角對著你
 - 美洲野牛 bison_*：站寬 2.0 格；fight＝站定反擊（尾巴翹直、前蹄刨地；刨地的動作線不連在身上，只留最大的一塊時去掉）；小牛暫時用成年縮小到 1.2 格
 - 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔暫時用成年縮小
@@ -57,6 +58,8 @@ ANIMALS = {
     "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
     "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
+    "bighorn_ewe": (1.15, ["stand", "alert", "run", "graze"]),
+    "bighorn_lamb": (0.75, ["stand", "alert", "run", "graze"], "bighorn_ewe"),
     "bighorn_ram": (1.4, ["stand", "alert", "run", "graze", "fight"]),
     "bison": (2.0, ["stand", "alert", "run", "graze", "fight"]),
     "bison_calf": (1.2, ["stand", "alert", "run", "graze"], "bison"),
@@ -86,6 +89,8 @@ SPECIAL = {
     "deer_buck_run": {"cells": 1.7},
     "caribou_graze": {"file": "caribou_graze_left.jpg", "flip": True, "cells": 1.95, "match": True},
 }
+# 要清掉沙土的圖（範圍比例，左上右下）：沙土是偏暖的淺褐色（紅比藍多 18 以上、亮），腿是灰白色、蹄是黑的，不受影響
+CLEAN_DUST = {"bighorn_ewe_run": (0.0, 0.7, 0.4, 1.0)}
 # 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了
 CLEAN_GRASS = {}  # 例："mule_deer_buck_graze": (0.44, 0.76, 1.0, 1.0)（第一版吃草那張，現在換成重畫的乾淨版；舊的留在 mule_deer_buck_graze_v1_grass.jpg）
 
@@ -184,6 +189,21 @@ def main():
         src_animal = spec[2] if len(spec) > 2 else animal
         cuts = {p: _load(src_animal, p) for p in poses}
         for p in poses:
+            dbox = CLEAN_DUST.get("%s_%s" % (animal, p))
+            if dbox:
+                c = cuts[p]
+                px = c.load()
+                w, h = c.size
+                for y in range(int(dbox[1] * h), int(dbox[3] * h)):
+                    for x in range(int(dbox[0] * w), int(dbox[2] * w)):
+                        r, g, b, a = px[x, y]
+                        if a and r - b > 18 and r > 110:
+                            px[x, y] = (0, 0, 0, 0)
+                keep = pg.largest_blob([px[i % w, i // w][3] > 0 for i in range(w * h)], w, h)
+                for i in range(w * h):
+                    if not keep[i]:
+                        px[i % w, i // w] = (0, 0, 0, 0)
+                cuts[p] = c.crop(c.getbbox())
             box = CLEAN_GRASS.get("%s_%s" % (animal, p))
             if box:
                 c = remove_grass(cuts[p], box)
