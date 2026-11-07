@@ -7,6 +7,7 @@
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；警覺那張頭只抬高一點（之後可以重出）
+- 旱獺 marmot_*：站寬 0.7 格（含尾巴）；警覺是坐起來張望；小旱獺 marmot_young_* 暫時用成年的縮小到 0.5 格
 - 河狸 beaver_*：站寬 0.85 格（含尾巴）；吃草那張是坐著啃樹枝；小河狸 beaver_kit_* 暫時用成年的縮小到 0.55 格
 - 馬鹿公鹿 elk_bull_*：站寬 1.85 格（含角；取代風格測試的單張 hd_elk_bull）
 - 馬鹿母鹿 elk_cow_*：站寬 1.6 格（取代風格測試的單張 hd_elk_cow）
@@ -39,6 +40,8 @@ ANIMALS = {
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
     "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
     "elk_bull": (1.85, ["stand", "alert", "run", "graze"]),
+    "marmot": (0.7, ["stand", "alert", "run", "graze"]),
+    "marmot_young": (0.5, ["stand", "alert", "run", "graze"], "marmot"),
     "beaver": (0.85, ["stand", "alert", "run", "graze"]),
     # 小河狸：暫時用成年河狸的圖縮小（第三個欄位＝用哪一種的原圖）
     "beaver_kit": (0.55, ["stand", "alert", "run", "graze"], "beaver"),

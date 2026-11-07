@@ -25,6 +25,8 @@
     "deer_buck": { "name": "hd_deer_buck" },
     "mule_deer_buck": { "name": "hd_mule_deer_buck", "unaware": "hd_mule_deer_buck_graze", "suspicious": "hd_mule_deer_buck_alert", "stand": "hd_mule_deer_buck_alert", "flee": "hd_mule_deer_buck_run" },
     "caribou_cow": { "name": "hd_caribou_cow", "unaware": "hd_caribou_cow_graze", "suspicious": "hd_caribou_cow_alert", "stand": "hd_caribou_cow_alert", "flee": "hd_caribou_cow_run" },
+    "marmot": { "name": "hd_marmot", "unaware": "hd_marmot_graze", "suspicious": "hd_marmot_alert", "stand": "hd_marmot_alert", "flee": "hd_marmot_run" },
+    "marmot_young": { "name": "hd_marmot_young", "unaware": "hd_marmot_young_graze", "suspicious": "hd_marmot_young_alert", "stand": "hd_marmot_young_alert", "flee": "hd_marmot_young_run" },
     "beaver": { "name": "hd_beaver", "unaware": "hd_beaver_graze", "suspicious": "hd_beaver_alert", "stand": "hd_beaver_alert", "flee": "hd_beaver_run" },
     "beaver_kit": { "name": "hd_beaver_kit", "unaware": "hd_beaver_kit_graze", "suspicious": "hd_beaver_kit_alert", "stand": "hd_beaver_kit_alert", "flee": "hd_beaver_kit_run" },
     "moose_calf": { "name": "hd_moose_calf", "unaware": "hd_moose_calf_graze", "suspicious": "hd_moose_calf_alert", "stand": "hd_moose_calf_alert", "flee": "hd_moose_calf_run" },
