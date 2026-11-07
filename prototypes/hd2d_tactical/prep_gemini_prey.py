@@ -12,6 +12,7 @@
 - 馬鹿公鹿 elk_bull_*：站寬 1.85 格（含角；取代風格測試的單張 hd_elk_bull）
 - 馬鹿母鹿 elk_cow_*：站寬 1.6 格（取代風格測試的單張 hd_elk_cow）
 - 馬鹿幼鹿 elk_calf_*：站寬 1.15 格（「站」那張是邁步的樣子，縮小後自然）
+- 駝鹿公鹿 moose_bull_*：站寬 2.1 格（含掌狀角；使用者朋友出的，png）；戰術地圖的成年駝鹿先用這張
 - 駝鹿幼鹿 moose_calf_*：站寬 1.2 格（紅褐色、腿細長、沒有角）
 - 北美馴鹿幼鹿 caribou_calf_*：站寬 0.95 格（紅褐色、沒有白點、沒有角）
 - 北美馴鹿（公鹿）caribou_*：站寬 1.55 格（含角）；警覺、跑從同一張裁出來，吃草翻轉＋調色（SPECIAL）
@@ -37,6 +38,7 @@ ANIMALS = {
     "caribou_cow": (1.35, ["stand", "alert", "run", "graze"]),
     "caribou_calf": (0.95, ["stand", "alert", "run", "graze"]),
     "moose_calf": (1.2, ["stand", "alert", "run", "graze"]),
+    "moose_bull": (2.1, ["stand"]),
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
     "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
     "elk_bull": (1.85, ["stand", "alert", "run", "graze"]),
@@ -130,6 +132,8 @@ def remove_grass(c, box, gmin=3, keep_min=60, gap=14, opening=4):
 def _load(animal, pose):
     sp = SPECIAL.get("%s_%s" % (animal, pose), {})
     path = os.path.join(SRC, sp.get("file", "%s_%s.jpg" % (animal, pose)))
+    if not os.path.exists(path) and os.path.exists(path[:-4] + ".png"):
+        path = path[:-4] + ".png"
     if "crop" in sp or sp.get("flip"):
         im = Image.open(path).convert("RGB")
         if "crop" in sp:
