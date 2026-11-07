@@ -7,6 +7,7 @@
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；警覺那張頭只抬高一點（之後可以重出）
+- 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
 - 美洲野牛 bison_*：站寬 2.0 格；fight＝站定反擊（尾巴翹直、前蹄刨地；刨地的動作線不連在身上，只留最大的一塊時去掉）；小牛暫時用成年縮小到 1.2 格
@@ -48,6 +49,7 @@ ANIMALS = {
     "elk_bull": (1.85, ["stand", "alert", "run", "graze"]),
     # 白尾鹿母鹿（取代 PixelLab 的卡通風格）：站 png 960/1024、吃草與跑 1408×768（身體畫得比較大）→ 各自照身體長度指定
     "deer_doe": (1.15, ["stand", "alert", "run", "graze"]),
+    "deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
     "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
     "bison": (2.0, ["stand", "alert", "run", "graze", "fight"]),
@@ -72,6 +74,10 @@ SPECIAL = {
     "hare_young_run": {"file": "hare_run.jpg", "cells": 0.55},
     "deer_doe_graze": {"cells": 1.2},
     "deer_doe_run": {"cells": 1.45},
+    # 白尾鹿雄鹿：四張都是 1408×768，但站那張畫得比其他三張小 → 其他三張照身體長度指定
+    "deer_buck_alert": {"cells": 1.5},
+    "deer_buck_graze": {"cells": 1.5},
+    "deer_buck_run": {"cells": 1.7},
     "caribou_graze": {"file": "caribou_graze_left.jpg", "flip": True, "cells": 1.95, "match": True},
 }
 # 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了

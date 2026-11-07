@@ -24,7 +24,7 @@ FRAMES = {
     "hd_carcass_elk": ("carcass_elk_4var.png", 0, 1.6),
     "hd_carcass_deer": ("carcass_elk_4var.png", 3, 1.2),
     # 白尾鹿（2026-11-06）：PixelLab 畫得腿長脖子高，照寬 1.3／1.4 格會和馬鹿一樣高，縮成 1.1／1.2 格（約馬鹿的 0.85 高）；顏色比其他動物鮮豔，飽和度 × 0.8。雄鹿取右上（毛色比較沉，和寫實的狼、馬鹿搭）；母鹿四格是四個姿勢：站、走、低頭吃草、警覺回頭
-    "hd_deer_buck": ("deer_buck_4var.png", 1, 1.2),
+    "_old_hd_deer_buck": ("deer_buck_4var.png", 1, 1.2),  # 2026-11-07 改用 Gemini 的寫實版
     # 白尾鹿母鹿 2026-11-07 改用 Gemini 的寫實版（prep_gemini_prey.py 輸出 hd_deer_doe*）；PixelLab 版改名 _old_ 保留
     "_old_hd_deer_doe": ("deer_doe_4poses.png", 0, 1.1),
     "_old_hd_deer_doe_walk": ("deer_doe_4poses.png", 1, "same_scale:_old_hd_deer_doe"),
