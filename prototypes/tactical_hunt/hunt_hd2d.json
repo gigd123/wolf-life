@@ -22,6 +22,7 @@
   "water": { "w": { "color": [0.3, 0.5, 0.62, 0.7], "lift": 0.35 }, "s": { "color": [0.36, 0.56, 0.62, 0.6], "lift": 0.38 }, "d": { "color": [0.16, 0.3, 0.46, 0.8], "lift": 0.75 } },
   "hd_art": { "_comment": "有 HD-2D 圖的獵物（prototypes/hd2d_tactical/assets/ 的圖名，_32／_48；winter：冬季換的圖）。沒寫的照 species 用遊戲的佔位圖；unaware／suspicious／stand／flee：依那隻鹿的狀態換的圖（stand＝站定不逃、準備反擊：駝鹿用頭壓低、鹿角朝前的那張；白尾鹿母鹿：沒發現你低頭吃草、警覺或站定抬頭回看、逃跑走路那張；PixelLab 2026-11-06）；mixed：同一群的成鹿混用的圖（馴鹿：每 3 隻有 2 隻用母鹿 caribou_cow，照單位的序號）；<物種>_buck：主遊戲的公鹿（白尾鹿 deer_buck、騾鹿 mule_deer_buck；沒有自己的戰術物種時用這張）。2026-11-06 沿用風格測試的高解析度原圖（prep_prey.py）",
     "deer": { "name": "hd_deer_doe", "unaware": "hd_deer_doe_graze", "suspicious": "hd_deer_doe_alert", "stand": "hd_deer_doe_alert", "flee": "hd_deer_doe_run" },
+    "fawn": { "name": "hd_deer_fawn", "unaware": "hd_deer_fawn_graze", "suspicious": "hd_deer_fawn_alert", "stand": "hd_deer_fawn_alert", "flee": "hd_deer_fawn_run" },
     "deer_buck": { "name": "hd_deer_buck", "unaware": "hd_deer_buck_graze", "suspicious": "hd_deer_buck_alert", "stand": "hd_deer_buck_alert", "flee": "hd_deer_buck_run" },
     "mule_deer_buck": { "name": "hd_mule_deer_buck", "unaware": "hd_mule_deer_buck_graze", "suspicious": "hd_mule_deer_buck_alert", "stand": "hd_mule_deer_buck_alert", "flee": "hd_mule_deer_buck_run" },
     "caribou_cow": { "name": "hd_caribou_cow", "unaware": "hd_caribou_cow_graze", "suspicious": "hd_caribou_cow_alert", "stand": "hd_caribou_cow_alert", "flee": "hd_caribou_cow_run" },

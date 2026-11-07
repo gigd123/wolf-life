@@ -7,6 +7,7 @@
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；警覺那張頭只抬高一點（之後可以重出）
+- 白尾鹿幼鹿 deer_fawn_*：站寬 0.8 格（四張同一個比例；戰術物種 fawn）
 - 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
@@ -50,6 +51,7 @@ ANIMALS = {
     # 白尾鹿母鹿（取代 PixelLab 的卡通風格）：站 png 960/1024、吃草與跑 1408×768（身體畫得比較大）→ 各自照身體長度指定
     "deer_doe": (1.15, ["stand", "alert", "run", "graze"]),
     "deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
+    "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
     "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
     "bison": (2.0, ["stand", "alert", "run", "graze", "fight"]),
