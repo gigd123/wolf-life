@@ -11,6 +11,7 @@
 - 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
+- 大角羊公羊 bighorn_ram_*：站寬 1.4 格（含角）；跑那張腳邊的沙土不連在身上，去背時拿掉；fight＝低頭用角對著你
 - 美洲野牛 bison_*：站寬 2.0 格；fight＝站定反擊（尾巴翹直、前蹄刨地；刨地的動作線不連在身上，只留最大的一塊時去掉）；小牛暫時用成年縮小到 1.2 格
 - 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔暫時用成年縮小
 - 旱獺 marmot_*：站寬 0.7 格（含尾巴）；警覺是坐起來張望；小旱獺 marmot_young_* 暫時用成年的縮小到 0.5 格
@@ -56,6 +57,7 @@ ANIMALS = {
     "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
     "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
+    "bighorn_ram": (1.4, ["stand", "alert", "run", "graze", "fight"]),
     "bison": (2.0, ["stand", "alert", "run", "graze", "fight"]),
     "bison_calf": (1.2, ["stand", "alert", "run", "graze"], "bison"),
     "hare": (0.6, ["stand", "alert", "run", "graze"]),
