@@ -80,6 +80,10 @@ def main():
     for name, box in zip(names3, b3):
         cuts[name] = cut_box(src3, box, tmp)
         cells[name] = cuts[name].width / px_per_cell
+    # 走路的另一步（ChatGPT 2026-11-07，png 1774×887）：照走路那張的高度對齊、顏色照站那張調
+    wb = pg.cut(os.path.join(pg.SRC, "black_bear_walk_b.png"), "green")
+    cuts["black_bear_walk_b"] = wb
+    cells["black_bear_walk_b"] = cells["black_bear_walk"] * (wb.width / wb.height) / (cuts["black_bear_walk"].width / cuts["black_bear_walk"].height)
     cuts["black_bear_charge"] = pg.cut(os.path.join(pg.SRC, "black_bear_charge.jpg"), "green")
     cells["black_bear_charge"] = 2.3
     cuts["black_bear_eat"] = pg.cut(os.path.join(pg.SRC, "black_bear_eat.jpg"), "green")
@@ -94,7 +98,7 @@ def main():
         os.remove(tmp)
     # 顏色：其他幾張的平均色調到和 set3 的站一樣
     target = pg.mean_rgb(cuts["black_bear_stand"])
-    for name in ("black_bear_charge", "black_bear_eat", "black_bear_rear"):
+    for name in ("black_bear_charge", "black_bear_eat", "black_bear_rear", "black_bear_walk_b"):
         gain = [t / max(1.0, b) for t, b in zip(target, pg.mean_rgb(cuts[name]))]
         pg.apply_gain(cuts[name], gain)
         print(name, "倍率", [round(g, 3) for g in gain])

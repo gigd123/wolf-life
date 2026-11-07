@@ -45,7 +45,7 @@ ANIMALS = {
     "caribou_cow": (1.35, ["stand", "alert", "run", "graze"]),
     "caribou_calf": (0.95, ["stand", "alert", "run", "graze"]),
     "moose_calf": (1.2, ["stand", "alert", "run", "graze"]),
-    "moose_cow": (1.95, ["stand", "alert", "run", "graze"]),
+    "moose_cow": (1.95, ["stand", "alert", "run", "graze", "fight"]),
     "moose_bull": (2.1, ["stand", "alert", "run", "graze", "fight"]),
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
     "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
