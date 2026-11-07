@@ -7,6 +7,7 @@
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；警覺那張頭只抬高一點（之後可以重出）
+- 馬鹿幼鹿 elk_calf_*：站寬 1.15 格（「站」那張是邁步的樣子，縮小後自然）
 - 駝鹿幼鹿 moose_calf_*：站寬 1.2 格（紅褐色、腿細長、沒有角）
 - 北美馴鹿幼鹿 caribou_calf_*：站寬 0.95 格（紅褐色、沒有白點、沒有角）
 - 北美馴鹿（公鹿）caribou_*：站寬 1.55 格（含角）；警覺、跑從同一張裁出來，吃草翻轉＋調色（SPECIAL）
@@ -32,6 +33,7 @@ ANIMALS = {
     "caribou_cow": (1.35, ["stand", "alert", "run", "graze"]),
     "caribou_calf": (0.95, ["stand", "alert", "run", "graze"]),
     "moose_calf": (1.2, ["stand", "alert", "run", "graze"]),
+    "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
