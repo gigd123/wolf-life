@@ -7,6 +7,7 @@
 - 騾鹿公鹿 mule_deer_buck_*：同母鹿（警覺那張是正面看著你）；吃草那張是重畫的乾淨版（第一版有草與浮著的頭，remove_grass 清得掉，留著備用）
 - 騾鹿幼鹿 mule_deer_fawn_*：站寬 0.9 格
 - 北美馴鹿母鹿 caribou_cow_*：站寬 1.35 格（角細短，比公鹿小）；警覺那張頭只抬高一點（之後可以重出）
+- 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔暫時用成年縮小
 - 旱獺 marmot_*：站寬 0.7 格（含尾巴）；警覺是坐起來張望；小旱獺 marmot_young_* 暫時用成年的縮小到 0.5 格
 - 河狸 beaver_*：站寬 0.85 格（含尾巴）；吃草那張是坐著啃樹枝；小河狸 beaver_kit_* 暫時用成年的縮小到 0.55 格
 - 馬鹿公鹿 elk_bull_*：站寬 1.85 格（含角；取代風格測試的單張 hd_elk_bull）
@@ -42,6 +43,8 @@ ANIMALS = {
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
     "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
     "elk_bull": (1.85, ["stand", "alert", "run", "graze"]),
+    "hare": (0.6, ["stand", "alert", "run", "graze"]),
+    "hare_young": (0.42, ["stand", "alert", "run", "graze"], "hare"),
     "marmot": (0.7, ["stand", "alert", "run", "graze"]),
     "marmot_young": (0.5, ["stand", "alert", "run", "graze"], "marmot"),
     "beaver": (0.85, ["stand", "alert", "run", "graze"]),
@@ -55,6 +58,9 @@ SPECIAL = {
     "caribou_alert": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 0, 590, 592), "cells": 1.45},
     "caribou_run": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 335, 1024, 1024), "cells": 1.9},
     # 低頭吃草：面向左、1408×768、毛色偏紅褐 → 翻轉、照站那張調色
+    # 野兔跑：1256×848（使用者附真實照片當參考才畫對），身體畫得比較大 → 照身體長度指定
+    "hare_run": {"cells": 0.78},
+    "hare_young_run": {"file": "hare_run.jpg", "cells": 0.55},
     "caribou_graze": {"file": "caribou_graze_left.jpg", "flip": True, "cells": 1.95, "match": True},
 }
 # 要清掉草的圖 → 範圍（左、上、右、下，比例）。吃草那張 Gemini 另外多畫了一顆浮著的鹿頭：沒連在身上，「只留最大的一塊」就去掉了
