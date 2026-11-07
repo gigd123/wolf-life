@@ -11,6 +11,7 @@
 - 白尾鹿雄鹿 deer_buck_*：站寬 1.4 格（取代 PixelLab 的 hd_deer_buck；同名覆蓋）
 - 白尾鹿母鹿 deer_doe_*：站寬 1.15 格（取代 PixelLab 的 hd_deer_doe*；輸出同名覆蓋）；警覺是尾巴翹起、抬一隻前腳；跑是尾巴翹成白旗
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體暫時用成年縮小到 0.9 格
+- 牧場的羊 sheep_*：站寬 1.3 格（美麗諾羊，和狼差不多高、身體比較寬）
 - 牧場母牛 cattle_cow_*：站寬 2.6 格（2026-11-07 放大：原本 1.75 格因為長角佔掉寬度，身體比狼還矮；現在約狼的 1.4 倍高）（德州長角牛，含角）；跑那張腳邊的沙土清掉；站定反擊第一版畫了一隻小牛趴在腳下（_cattle_cow_fight_with_calf.jpg，不用），重出的 fight＝低頭用長角對著你、刨地；小牛 cattle_calf_* 4 個姿勢（站是走路回頭看那張）
 - 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_* 暫時用母羊縮小到 0.75 格
 - 大角羊公羊 bighorn_ram_*：站寬 1.4 格（含角）；跑那張腳邊的沙土不連在身上，去背時拿掉；fight＝低頭用角對著你
@@ -59,6 +60,7 @@ ANIMALS = {
     "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
     "pronghorn_kid": (0.9, ["stand", "alert", "run", "graze"], "pronghorn"),
+    "sheep": (1.3, ["stand", "alert", "run", "graze"]),
     "cattle_cow": (2.6, ["stand", "alert", "run", "graze", "fight"]),
     "cattle_calf": (1.45, ["stand", "alert", "run", "graze"]),
     "bighorn_ewe": (1.15, ["stand", "alert", "run", "graze"]),
