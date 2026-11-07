@@ -29,7 +29,7 @@
     "marmot_young": { "name": "hd_marmot_young", "unaware": "hd_marmot_young_graze", "suspicious": "hd_marmot_young_alert", "stand": "hd_marmot_young_alert", "flee": "hd_marmot_young_run" },
     "beaver": { "name": "hd_beaver", "unaware": "hd_beaver_graze", "suspicious": "hd_beaver_alert", "stand": "hd_beaver_alert", "flee": "hd_beaver_run" },
     "beaver_kit": { "name": "hd_beaver_kit", "unaware": "hd_beaver_kit_graze", "suspicious": "hd_beaver_kit_alert", "stand": "hd_beaver_kit_alert", "flee": "hd_beaver_kit_run" },
-    "moose": { "name": "hd_moose_bull", "stand": "hd_moose_bull_fight" },
+    "moose": { "name": "hd_moose_bull", "unaware": "hd_moose_bull_graze", "suspicious": "hd_moose_bull_alert", "stand": "hd_moose_bull_fight", "flee": "hd_moose_bull_run" },
     "moose_calf": { "name": "hd_moose_calf", "unaware": "hd_moose_calf_graze", "suspicious": "hd_moose_calf_alert", "stand": "hd_moose_calf_alert", "flee": "hd_moose_calf_run" },
     "caribou_calf": { "name": "hd_caribou_calf", "unaware": "hd_caribou_calf_graze", "suspicious": "hd_caribou_calf_alert", "stand": "hd_caribou_calf_alert", "flee": "hd_caribou_calf_run" },
     "caribou": { "mixed": { "key": "caribou_cow", "every": 3, "keep": 0 }, "name": "hd_caribou", "unaware": "hd_caribou_graze", "suspicious": "hd_caribou_alert", "stand": "hd_caribou_alert", "flee": "hd_caribou_run" },
