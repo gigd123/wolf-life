@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0lb8hkc2q4lr"
-path="res://.godot/imported/hd_cattle_calf_run_32.png-ec2ade884a489e10645fbb45683275fd.ctex"
+uid="uid://dly0o0egiohdb"
+path="res://.godot/imported/hd_cattle_cow_fight_32.png-36ef1f9a63e8773270f1b2fceed894ce.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://prototypes/hd2d_tactical/assets/hd_cattle_calf_run_32.png"
-dest_files=["res://.godot/imported/hd_cattle_calf_run_32.png-ec2ade884a489e10645fbb45683275fd.ctex"]
+source_file="res://prototypes/hd2d_tactical/assets/hd_cattle_cow_fight_32.png"
+dest_files=["res://.godot/imported/hd_cattle_cow_fight_32.png-36ef1f9a63e8773270f1b2fceed894ce.ctex"]
 
 [params]
 

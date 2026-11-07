@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://broyd0v7pu8jr"
-path="res://.godot/imported/hd_cattle_calf_graze_32.png-a9c27fcbdb8aeaab503d5a66914a656d.ctex"
+uid="uid://pbb0cmwr71lk"
+path="res://.godot/imported/hd_cattle_cow_fight_48.png-ec59ee66626cdc42bc04187248ac45d2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://prototypes/hd2d_tactical/assets/hd_cattle_calf_graze_32.png"
-dest_files=["res://.godot/imported/hd_cattle_calf_graze_32.png-a9c27fcbdb8aeaab503d5a66914a656d.ctex"]
+source_file="res://prototypes/hd2d_tactical/assets/hd_cattle_cow_fight_48.png"
+dest_files=["res://.godot/imported/hd_cattle_cow_fight_48.png-ec59ee66626cdc42bc04187248ac45d2.ctex"]
 
 [params]
 
