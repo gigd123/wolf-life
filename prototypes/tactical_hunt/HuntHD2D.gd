@@ -35,9 +35,17 @@ func _species_key(i: int) -> String:
 	if h.is_fawn(i) and sp == "deer":
 		return "fawn"
 	# 同一群的成鹿混用兩種圖（馴鹿：公鹿、母鹿）：序號 % every == keep 的用原本的，其他用 mixed.key
+	# random：每一隻開場時擲一次（記在牠身上，只給畫面用；駝鹿多半單獨出現，照序號會永遠是同一種）
 	var mx: Dictionary = cfg.get("hd_art", {}).get(sp, {}).get("mixed", {})
-	if not mx.is_empty() and not h.is_fawn(i) and i % int(mx.get("every", 2)) != int(mx.get("keep", 0)):
-		return str(mx["key"])
+	if not mx.is_empty() and not h.is_fawn(i):
+		var every: int = int(mx.get("every", 2))
+		var v: int = i % every
+		if bool(mx.get("random", false)):
+			if not h.herd[i].has("_hd_variant"):
+				h.herd[i]["_hd_variant"] = randi() % every
+			v = int(h.herd[i]["_hd_variant"])
+		if v != int(mx.get("keep", 0)):
+			return str(mx["key"])
 	# 公鹿（主遊戲）：沒有自己的戰術物種的（白尾鹿、騾鹿）用 <物種>_buck 的圖
 	if str(h.game_mods.get("life_stage", "")) == "buck" and not h.is_fawn(i) and cfg.get("hd_art", {}).has(sp + "_buck"):
 		return sp + "_buck"

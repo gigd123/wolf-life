@@ -18,6 +18,7 @@
 - 馬鹿公鹿 elk_bull_*：站寬 1.85 格（含角；取代風格測試的單張 hd_elk_bull）
 - 馬鹿母鹿 elk_cow_*：站寬 1.6 格（取代風格測試的單張 hd_elk_cow）
 - 馬鹿幼鹿 elk_calf_*：站寬 1.15 格（「站」那張是邁步的樣子，縮小後自然）
+- 駝鹿母鹿 moose_cow_*：站寬 1.95 格（沒有角）；成年駝鹿每一隻開場時擲一次公或母（hd_art.moose.mixed.random）
 - 駝鹿公鹿 moose_bull_*：站寬 2.1 格（含掌狀角；使用者朋友出的，png）；戰術地圖的成年駝鹿先用這張；fight＝站定準備反擊（頭壓低、鹿角朝前、背毛豎起）
 - 駝鹿幼鹿 moose_calf_*：站寬 1.2 格（紅褐色、腿細長、沒有角）
 - 北美馴鹿幼鹿 caribou_calf_*：站寬 0.95 格（紅褐色、沒有白點、沒有角）
@@ -44,6 +45,7 @@ ANIMALS = {
     "caribou_cow": (1.35, ["stand", "alert", "run", "graze"]),
     "caribou_calf": (0.95, ["stand", "alert", "run", "graze"]),
     "moose_calf": (1.2, ["stand", "alert", "run", "graze"]),
+    "moose_cow": (1.95, ["stand", "alert", "run", "graze"]),
     "moose_bull": (2.1, ["stand", "alert", "run", "graze", "fight"]),
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
     "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
