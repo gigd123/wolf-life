@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwpgt7brux7gs"
-path="res://.godot/imported/hd_deer_doe_walk_48.png-aa2ac57af7ce1be2ac71b138bc52ff17.ctex"
+uid="uid://b5uney5l11k36"
+path="res://.godot/imported/hd_deer_doe_run_48.png-d359bd3382d682659574ee69d08d63cd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://prototypes/hd2d_tactical/assets/hd_deer_doe_walk_48.png"
-dest_files=["res://.godot/imported/hd_deer_doe_walk_48.png-aa2ac57af7ce1be2ac71b138bc52ff17.ctex"]
+source_file="res://prototypes/hd2d_tactical/assets/hd_deer_doe_run_48.png"
+dest_files=["res://.godot/imported/hd_deer_doe_run_48.png-d359bd3382d682659574ee69d08d63cd.ctex"]
 
 [params]
 
