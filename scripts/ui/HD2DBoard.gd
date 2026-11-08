@@ -270,6 +270,20 @@ func _build_terrain() -> void:
 				wm_i.position = cell_center(c) + Vector3(0, float(water[k].get("lift", 0.12)), 0)
 				var wm := StandardMaterial3D.new()
 				wm.albedo_color = _col(water[k]["color"])
+				# 水面材質（2026-11-08，ChatGPT）：water_tex 有寫就貼波紋（冬天 winter_water_tex 結冰），照世界座標拼接、一格 32 個材質像素；
+				# 顏色改成 tex_tint（乘在材質上，深水暗一點）＋原本的透明度
+				var wtex: String = str(cfg.get("winter_water_tex", "")) if bool(cfg.get("winter", false)) and cfg.has("winter_water_tex") else str(cfg.get("water_tex", ""))
+				if wtex != "":
+					wm.albedo_texture = load(HD_DIR + "assets/tex_%s.png" % wtex)
+					wm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+					wm.uv1_triplanar = true
+					wm.uv1_world_triplanar = true
+					wm.uv1_scale = Vector3.ONE * (32.0 / float(wm.albedo_texture.get_width()))
+					var tt: Array = water[k].get("tex_tint", [1.0, 1.0, 1.0])
+					if bool(cfg.get("winter", false)) and cfg.has("winter_water_tint"):
+						tt = cfg["winter_water_tint"]
+					var wa: float = float(cfg.get("winter_water_alpha", 0.95)) if bool(cfg.get("winter", false)) and cfg.has("winter_water_tex") else float(water[k]["color"][3])
+					wm.albedo_color = Color(float(tt[0]), float(tt[1]), float(tt[2]), wa)
 				wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 				wm.roughness = 0.2
 				wm_i.material_override = wm
