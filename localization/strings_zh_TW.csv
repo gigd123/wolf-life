@@ -1896,7 +1896,7 @@ tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
 tactical.herd_gone,整群全都跑掉了。
-tactical.ui.intro,你壓低身子，看著牠。點綠／黃／橘色的格子移動（潛行／小跑／衝刺），點紅框撲上去咬。
+tactical.ui.intro,你壓低身子，看著牠。點你的狼看能走到哪，再點綠／黃／橘色的格子移動（潛行／小跑／衝刺）；點紅框撲上去咬。
 tactical.ui.view.hd,HD-2D
 tactical.ui.view.2d,2D 地圖
 tactical.ui.youth_hint,以你現在的體型，要撂倒成年的大型獵物很難；幼鹿、雪兔和別人吃剩的殘骸比較實在。
@@ -2451,7 +2451,7 @@ tcombat.hd.eating,在吃
 tcombat.hd.carrying,叼著肉
 tcombat.replay,重來
 tcombat.back,返回
-tcombat.hint,點綠、黃、橘的格子選這回合要走到哪（再點一次取消），再按右下的一個動作；按下去才結算。粉紅色的格子是看得到的預告範圍，黃色虛線是牠盯著誰。
+tcombat.hint,點你的狼顯示能走的格子，再點綠、黃、橘的格子選這回合要走到哪（再點一次取消），再按右下的一個動作；按下去才結算。粉紅色的格子是看得到的預告範圍，黃色虛線是牠盯著誰。
 tcombat.round,第 {n} 回合（{mode}）
 tcombat.name.wolf,你
 tcombat.name.mate,伴侶

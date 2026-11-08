@@ -47,6 +47,7 @@ var stamina_pick: OptionButton
 var special_pick: OptionButton # 會不會前截鎖喉（特殊招式，2026-10-16）
 var ally_pick: OptionButton # 苔原狼同伴（群體狩獵實驗）
 var ally_last := {} # 同伴的編號 -> [上一個位置, 面向]
+var range_shown: bool = false # 點了自己的狼：顯示能走的格子（2026-11-08）
 var lock_armed: bool = false # 按了「前截鎖喉」，下一次點紫框就出手
 var hover := Vector2i(-1, -1)
 var game_seed: int = 0
@@ -288,10 +289,17 @@ func _on_click(c: Vector2i) -> void:
 				_build_buttons()
 				_refresh()
 			return
+		# 點自己的狼：顯示／收起能走的格子；顯示時點格子才移動（撲咬的紅框一直都能點）
+		if c == h.wolf_pos:
+			range_shown = not range_shown
+			_refresh()
+			return
 		var targets: Dictionary = h.pounce_targets()
 		if targets.has(c):
+			range_shown = false
 			h.pounce_at(c)
-		elif h.reachable().has(c):
+		elif range_shown and h.reachable().has(c):
+			range_shown = false
 			h.move_to(c)
 		else:
 			# 點到鹿：換目標（不算一回合）
@@ -574,7 +582,7 @@ func _draw_map() -> void:
 	# 躲在草裡、還沒找到（Phase 2i 第 6 步）：只畫大概在哪的範圍
 	if hid:
 		map.draw_rect(Rect2(Vector2(h.hidden_area.position) * CELL, Vector2(h.hidden_area.size) * CELL).grow(-1), Color("#e0c070"), false, 1.5)
-	if not h.done:
+	if not h.done and range_shown:
 		var reach: Dictionary = h.reachable()
 		for c in reach.keys():
 			map.draw_rect(_cell_rect(c), COLORS[reach[c]])

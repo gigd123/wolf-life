@@ -31,6 +31,7 @@ var wolf_pick: OptionButton
 var know_pick: OptionButton
 var mode_pick: OptionButton
 var planned := Vector2i(-1, -1)
+var range_shown := false # 點了自己的狼：顯示能走的格子（2026-11-08）
 var hover := Vector2i(-1, -1)
 var hit_cells: Array = []
 var seed := 1
@@ -216,10 +217,17 @@ func _on_hover(c: Vector2i) -> void:
 func _on_click(c: Vector2i) -> void:
 	if tc.done:
 		return
-	if c == tc.units[0]["pos"] or c == planned:
+	# 點自己的狼：顯示／收起能走的格子（已經選了要走到哪時，取消那一格）；顯示時點格子＝選這回合要走到哪
+	if c == tc.units[0]["pos"]:
+		if planned.x >= 0:
+			planned = Vector2i(-1, -1)
+		range_shown = not range_shown
+	elif c == planned:
 		planned = Vector2i(-1, -1)
-	elif tc.reachable(0).has(c):
+		range_shown = true
+	elif range_shown and tc.reachable(0).has(c):
 		planned = c
+		range_shown = false
 	_refresh()
 
 func _draw_map() -> void:
@@ -238,8 +246,8 @@ func _draw_map() -> void:
 		map.draw_line(Vector2(0, y * CELL), Vector2(tc.map.width * CELL, y * CELL), Color(0, 0, 0, 0.18))
 	for x in tc.map.width + 1:
 		map.draw_line(Vector2(x * CELL, 0), Vector2(x * CELL, tc.map.height * CELL), Color(0, 0, 0, 0.18))
-	# 能走的格子
-	if not tc.done:
+	# 能走的格子（點自己的狼才顯示）
+	if not tc.done and range_shown:
 		var reach: Dictionary = tc.reachable(0)
 		for c in reach.keys():
 			map.draw_rect(_cell_rect(c).grow(-1), COLORS[reach[c]])

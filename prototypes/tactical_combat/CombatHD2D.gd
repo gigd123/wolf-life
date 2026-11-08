@@ -157,7 +157,8 @@ func paint() -> void:
 		var f: Vector2i = u["facing"]
 		var art := _unit_art(i)
 		unit("u%d" % i, art, u["pos"], (f.x < 0) if f.x != 0 else null, _col(art.get("mod", uc.get("modulate", [1, 1, 1]))), " ".join(tags))
-	if not tc.done:
+	# 能走的格子：點自己的狼才顯示（2026-11-08）
+	if not tc.done and (view == null or bool(view.range_shown)):
 		var reach: Dictionary = tc.reachable(0)
 		for c in reach.keys():
 			quad(c, _col(col.get(str(reach[c]), col["trot"])), 0.86, 0.01)

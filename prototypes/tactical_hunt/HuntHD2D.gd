@@ -112,7 +112,8 @@ func paint() -> void:
 			for x in range(ar.position.x, ar.end.x):
 				if in_map(Vector2i(x, y)):
 					quad(Vector2i(x, y), _col(col["hidden"]), 0.96, 0.015)
-	if not h.done:
+	# 能走的格子：點自己的狼才顯示（2026-11-08）
+	if not h.done and (view == null or bool(view.range_shown)):
 		var reach: Dictionary = h.reachable()
 		for c in reach.keys():
 			quad(c, _col(col.get(str(reach[c]), col["trot"])), 0.86, 0.01)
