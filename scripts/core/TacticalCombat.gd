@@ -631,7 +631,8 @@ func _ai_intent(i: int) -> Dictionary:
 	if bool(u.get("just_bitten", false)):
 		turn_steps = int(_opp_cfg(i).get("turn_when_bitten", turn_steps))
 	# 放棄：血量低、耐心用完、殘骸吃光了
-	var give: float = float(cfg["give_up"].get(sp, 0.3)) * (1.0 - bold * 0.3)
+	# 利害倍率（stake，主遊戲的 stake_mult）：不值得拚的時候早一點放棄（Phase 2l：狼獾在旁邊等時 0.5）
+	var give: float = minf(0.9, float(cfg["give_up"].get(sp, 0.3)) * (1.0 - bold * 0.3) / maxf(0.25, float(u.get("stake", 1.0))))
 	if hp_ratio < give or float(u["stamina"]) <= 0.0:
 		return _intent(i, "flee", pos, facing, nothing, "hurt" if hp_ratio < give else "patience")
 	if not carcass.is_empty() and int(carcass["segments"]) <= 0 and t >= 0 and map.dist(pos, units[t]["pos"]) > 2.0:
@@ -1425,6 +1426,13 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			else:
 				_ev("pin_fail", {"who": i, "target": t3})
 				units[t3]["bitten_by"] = i
+		"share":
+			# 讓牠一起吃（Phase 2l：狼獾）：這一場到此為止，主遊戲照選單式的「分享」（少一段、牠離開）
+			for k in active_enemies():
+				if bool(_opp_cfg(k).get("shareable", false)):
+					units[k]["out"] = true
+					units[k]["out_reason"] = "shared"
+			_ev("share", {"who": i})
 		"submit":
 			# 示弱（只對狼）：趴低、退開，這一場到此為止
 			u["out"] = true
@@ -1498,7 +1506,7 @@ func _check_end() -> void:
 		if foes.size() > 1:
 			outcome = "routed" # 第 5 步：多隻對手都走了（示弱、逃走）
 		else:
-			outcome = "enemy_submit" if str(units[e]["out_reason"]) == "submit" else "enemy_left"
+			outcome = "enemy_submit" if str(units[e]["out_reason"]) == "submit" else ("share" if str(units[e]["out_reason"]) == "shared" else "enemy_left")
 	elif not active(0):
 		done = true
 		var why0: String = str(units[0]["out_reason"])
@@ -1681,6 +1689,12 @@ func action_options(i: int, from: Vector2i = Vector2i(-1, -1), sprinted := false
 		out.append({"id": a2})
 	if active(e) and bool(_opp_cfg(e).get("wolf", false)):
 		out.append({"id": "submit"})
+	# 讓牠一起吃（Phase 2l：狼獾）：殘骸還有肉、對手是 shareable 的
+	if not carcass.is_empty() and int(carcass["segments"]) > 0:
+		for k in active_enemies():
+			if bool(_opp_cfg(k).get("shareable", false)):
+				out.append({"id": "share"})
+				break
 	if carrying:
 		out.append({"id": "drop"})
 	if map.on_edge(from):
@@ -1715,10 +1729,17 @@ func ally_mode(i: int) -> String:
 	if active(e0) and bool(_opp_cfg(e0).get("wolf", false)) and str(u["carrying"]) == "":
 		return "duel"
 	# 對手是偷了就跑的搶食者（Phase 2l：郊狼）：守住殘骸、咬來偷的（牠們傷不了你多少；受了傷還是照下面撤）
+	# 狼獾（shareable，Phase 2l 第 2 步）也是守殘骸；受了傷就讓牠一起吃（share_hp）
 	var thief_fight := false
+	var shareable := false
 	for k in active_enemies():
-		if bool(_opp_cfg(k).get("thief", false)):
+		if bool(_opp_cfg(k).get("thief", false)) or bool(_opp_cfg(k).get("shareable", false)):
 			thief_fight = true
+		if bool(_opp_cfg(k).get("shareable", false)):
+			shareable = true
+	if shareable and str(u["command"]) == "auto" and i == 0 and not carcass.is_empty() and int(carcass["segments"]) > 0 \
+			and float(u["hp"]) < float(u["hp_max"]) * float(ac.get("share_hp", 0.55)):
+		return "share"
 	# 交給本能的你比同伴早撤（Phase 2k 第 6 步：一生模擬裡撐到過了重傷線才撤、被打死的太多）
 	var rh: float = float(ac.get("self_retreat_hp", ac["retreat_hp"])) if i == 0 else float(ac["retreat_hp"])
 	if float(u["hp"]) < float(u["hp_max"]) * rh or (i == 0 and _too_risky(i)):
@@ -1897,6 +1918,9 @@ func _ally_plan(i: int) -> Dictionary:
 			return _duel_plan(i, p)
 		"guard_food":
 			return _guard_food_plan(i, p, zone)
+		"share":
+			p["action"] = "share"
+			return p
 		"harass":
 			if not active(e):
 				p["action"] = "wait"

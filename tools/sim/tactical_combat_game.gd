@@ -1,6 +1,7 @@
 extends SceneTree
 # Phase 2k 戰術戰鬥接進主遊戲（SPEC「戰術戰鬥接進主遊戲」）的回歸測試（R-125）：
-#   1. 灰熊、美洲獅的戰鬥走戰術戰鬥；狐狸、狼獾還是選單式；關掉時（tactical_combat_off）一律選單式
+#   1. 灰熊、美洲獅的戰鬥走戰術戰鬥；狐狸還是選單式；關掉時（tactical_combat_off）一律選單式
+#   10. 郊狼一對、11. 狼獾（Phase 2l）
 #   2. 被打倒與死亡：還沒重傷被打到 0 → 停在 1、被打倒、不死；已經重傷再被打到 0 → 死亡
 #   3. 灰熊來搶你的殘骸：交給本能打完，結果寫回（撤出帶肉 → 吃下去、殘骸沒了；對手走了 → 殘骸留下）
 #   4. 從熊口搶（on_carcass）、遭遇（encounter）、伏擊（ambush）、美洲獅都打得完，時間有前進
@@ -390,6 +391,47 @@ func _run() -> void:
 	_check(ok10 == 40, "40 場都打得完（%d）" % ok10)
 	_check(sum_ok == 40, "肉的段數對得上、留下的寫回主遊戲（%d／40）" % sum_ok)
 	_check(stole10 > 0 and stole10 < 40 * 3, "有時會被偷走（40 場共 %d 段）" % stole10)
+
+	print("== 11. 狼獾（Phase 2l 第 2 步）")
+	gs.new_game("tundra_central")
+	gs.wolf.age_years = 3.0
+	gs.wolf.health_max = 110.0
+	gs.wolf.health = 110.0
+	gs.start_feeding("caribou", "adult", "open_tundra")
+	var seg11: int = int(gs.current_feeding["segments_left"])
+	var c11 = gs.start_wolverine_combat(true)
+	_check(gs.uses_tactical_combat(c11), "狼獾走戰術戰鬥")
+	var t11 = gs.start_tactical_combat(c11)
+	_check(int(t11.units[t11.enemy_index()]["hp_max"]) == int(gs.wolverine().health_max), "能力與血量照狼獾這隻 NPC")
+	t11.begin_round()
+	_check(t11.action_options(0).any(func(o): return str(o["id"]) == "share"), "有「讓牠一起吃」")
+	t11.plan(0, {"action": "share"})
+	t11.resolve()
+	gs.apply_tactical_combat(c11, t11)
+	gs.finish_combat(c11)
+	var after11: int = int(gs.current_feeding.get("segments_left", 0)) if not gs.current_feeding.is_empty() else 0
+	_check(t11.outcome == "share" and c11.outcome == "share" and after11 == seg11 - 1, "讓牠一起吃：結果 share、殘骸少一段（%d → %d）" % [seg11, after11])
+	# 回到殘骸時牠在吃：從「對手佔著殘骸」開始
+	gs.start_feeding("caribou", "adult", "open_tundra")
+	var c11b = gs.start_wolverine_combat(false)
+	gs.start_tactical_combat(c11b)
+	_check(str(c11b.get_meta("tc_layout_used", "")) == "on_carcass", "回到殘骸時：對手佔著殘骸開始")
+	# 不會想殺你：已經重傷時被牠咬到 0 也只是被打倒
+	gs.wolf.health = 10.0
+	var t11c = gs.start_tactical_combat(c11b)
+	var h11: Dictionary = t11c.hurt_hook.call(0, 50.0, t11c.enemy_index())
+	_check(not bool(h11.get("died", true)) and gs.wolf.alive, "狼獾不會讓你死（重傷時被咬 50：死 %s）" % str(h11.get("died")))
+	gs.wolf.health = 110.0
+	var ok11 := 0
+	for t in 20:
+		gs.start_feeding("caribou", "adult", "open_tundra")
+		var c11d = gs.start_wolverine_combat(t % 2 == 0)
+		var tc11 = gs.auto_tactical_combat(c11d)
+		if tc11.done and c11d.outcome in ["drove_off", "share", "grab", "retreated", "parted", "knocked"]:
+			ok11 += 1
+		gs.finish_combat(c11d)
+		gs.wolf.health = 110.0
+	_check(ok11 == 20, "交給本能 20 場都打得完（%d）" % ok11)
 
 	print("== 7. 自動玩家")
 	_fresh()

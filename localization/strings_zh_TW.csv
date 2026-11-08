@@ -2432,6 +2432,7 @@ tcombat.sc.wolf_duel,10 和黑狼對峙
 tcombat.sc.tundra_pair,11 被一對苔原狼圍住
 tcombat.sc.pack_clash,12 狼群對狼群（三對三）
 tcombat.sc.coyote_pair,郊狼一對來偷殘骸
+tcombat.sc.wolverine_carcass,狼獾來搶殘骸
 tcombat.wolf.novice,年輕的狼
 tcombat.wolf.average,普通的狼
 tcombat.wolf.veteran,老練的狼
@@ -2459,6 +2460,7 @@ tcombat.name.challenger,年輕的狼
 tcombat.name.tundra_wolf,苔原狼
 tcombat.name.pack_wolf,鄰群的狼
 tcombat.name.coyote,郊狼
+tcombat.name.wolverine,狼獾
 tcombat.name.member,同伴
 tcombat.info.enemy_out.submit,　（示弱了）
 tcombat.info.enemy_out.left,　（走了）
@@ -2532,6 +2534,7 @@ tcombat.act.drop,放下
 tcombat.act.threaten,示威
 tcombat.act.pin,壓制
 tcombat.act.submit,示弱
+tcombat.act.share,讓牠一起吃
 tcombat.auto,交給本能
 tcombat.cmd.title,伴侶：
 tcombat.cmd.auto,自動
@@ -2573,6 +2576,7 @@ tcombat.ev.fled.patience,{who}失去了耐心，走開了。
 tcombat.ev.fled.food_gone,肉吃完了，{who}走了。
 tcombat.ev.fled.stole,{who}叼著肉跑出去了。
 tcombat.ev.steal,{who}從殘骸上扯下一塊肉（剩 {left} 段）。
+tcombat.ev.share,{who}退開一步，讓狼獾湊上來吃。
 tcombat.ev.back_off,{who}往後退了一步。
 tcombat.ev.eat,{who}低頭撕下一塊肉（剩 {left} 段）。
 tcombat.ev.back_to_wall,{who}退到岩壁前，背靠著石頭。
@@ -2605,6 +2609,7 @@ tcombat.end.timeout,回合用完了。帶走 {n} 段肉。
 tcombat.end.died,你倒下了，再也沒有站起來。
 tcombat.end.enemy_submit,牠示弱了。
 tcombat.end.submit,你示弱退開了。
+tcombat.end.share,你讓開一點，讓狼獾也吃。牠吃了一段，拖著走了。
 tcombat.info.out.submit,　（示弱了）
 tcombat.end.knocked.game,你被打倒了，掙扎著退出戰場，傷得很重。帶走 {n} 段肉。
 tcombat.ev.died,{who}倒下了，再也沒有站起來。

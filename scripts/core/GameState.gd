@@ -5430,6 +5430,8 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		opts["opponent_stats"] = {"strength": c.npc.strength, "speed": c.npc.speed, "skill": c.npc.skill, "perception": c.npc.perception,
 			"health": c.npc.health, "health_max": c.npc.health_max}
 		opts["stake"] = float(g.get("wolf_stake", {}).get(c.context, 1.0))
+	# 這一場的利害倍率（Phase 2l：狼獾在旁邊等你吃完時 waiting_stake_mult 0.5，比較容易趕走）
+	opts["stake"] = float(opts.get("stake", 1.0)) * c.stake_mult
 	# 跟著你的成員（第 5 步：全部，含你最多 4 隻）：第一隻（伴侶優先）可以下指令，其他的自動行動
 	var mate_id := ""
 	var members: Dictionary = {} # 單位 id → NPC id
@@ -5489,7 +5491,8 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 func _tc_hurt(i: int, dmg: float, by: int, c: Combat, tc: TacticalCombat) -> Dictionary:
 	var parts: Dictionary = c.opp.get("parts", {})
 	if i == 0:
-		var lethal: bool = FightRules.in_danger(wolf)
+		# 不會想殺狼的對手（狼獾，Phase 2l）：牠的一下不會讓你死，只會打倒
+		var lethal: bool = FightRules.in_danger(wolf) and not bool(c.opp.get("never_lethal", false))
 		var before: float = wolf.health
 		FightRules.hurt_wolf(wolf, dmg, parts, c.animal_id + "." + c.context, lethal)
 		c.damage_taken += before - wolf.health
@@ -5531,6 +5534,9 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		"routed":
 			# 多隻對手都退走了（第 5 步）＝打贏
 			c.outcome = "drove_off"
+		"share":
+			# 讓狼獾一起吃（Phase 2l）：照選單式的「分享」（_carcass_after_combat 再少一段）
+			c.outcome = "share"
 		"enemy_left":
 			# 打傷趕走＝打贏；失去興趣、殘骸吃光、上樹（還沒受重傷）＝沒有勝負，對手自己走了
 			var hurt_off: bool = why == "hurt" or (why == "climbed" and float(eu["hp"]) < float(eu["hp_max"]) * 0.6)
@@ -5546,7 +5552,7 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 		var left: int = int(tc.carcass.get("segments", 0)) if not tc.carcass.is_empty() else 0
 		for d in tc.drops:
 			left += int(d.get("segments", 0))
-		if c.outcome in ["drove_off", "parted"]:
+		if c.outcome in ["drove_off", "parted", "share"]:
 			current_feeding["segments_left"] = left
 			if left <= 0:
 				current_feeding = {}
@@ -8149,6 +8155,9 @@ func start_wolverine_combat(waiting: bool = false) -> Combat:
 	c.set_npc(wolverine())
 	if waiting:
 		c.stake_mult *= float(_wolverine_cfg().get("waiting_stake_mult", 0.5))
+	else:
+		# 回到殘骸時牠已經在吃（Phase 2l：戰術戰鬥從「對手佔著殘骸」開始）
+		c.set_meta("tc_layout", "on_carcass")
 	return c
 
 # 狼獾的季節倍率（秋冬為主、夏季很少）
