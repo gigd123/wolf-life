@@ -225,7 +225,9 @@ func _build_terrain() -> void:
 				if _hash01(x, y, 13) >= float(tcfg.get("chance", 1.0)):
 					continue
 				var j := Vector3(((x * 37 + y * 11) % 7 - 3) * 0.04, 0, ((x * 13 + y * 29) % 7 - 3) * 0.03)
-				_add_tree(cell_center(c) + Vector3(0, 0, 0.1) + j, _tree_art(x, y, str(tcfg["art"])), float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
+				# no_mix：固定用這張（大石頭之類，不跟著 tree_mix 換成樹）
+				var tart: String = str(tcfg["art"]) if bool(tcfg.get("no_mix", false)) else _tree_art(x, y, str(tcfg["art"]))
+				_add_tree(cell_center(c) + Vector3(0, 0, 0.1) + j, tart, float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
 			if k in cfg.get("logs", []):
 				var lg := MeshInstance3D.new()
 				var cy := CylinderMesh.new()

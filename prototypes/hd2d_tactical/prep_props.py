@@ -22,6 +22,9 @@ PROPS = {
     # 灌木（約 1.4 寬高比）：tree_mix 裡和樹一起輪替；密林格子的樹縮成 0.45 → 約 0.8 格寬，外圍 1 倍 → 約 1.7 格寬
     "shrub": ("shrub.jpg", 60),
     "shrub_winter": ("shrub_winter.jpg", 60),
+    # 大石頭（約 1.45 寬高比）：放在岩坡（r）上，trees.r 的 scale 0.8 → 約 0.9 格寬
+    "boulder": ("boulder.jpg", 36),
+    "boulder_winter": ("boulder_winter.jpg", 36),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}

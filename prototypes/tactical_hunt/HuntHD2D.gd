@@ -28,6 +28,13 @@ func setup(th) -> void:
 	if not cfg.has("summer_tree_mix"):
 		cfg["summer_tree_mix"] = cfg.get("tree_mix", [])
 	cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"]) if winter else cfg["summer_tree_mix"]
+	# 固定圖的物件（大石頭）：冬天換 winter_art、其他季節換回 summer_art
+	for tk in (cfg["trees"] as Dictionary).keys():
+		var te: Dictionary = cfg["trees"][tk]
+		if te.has("winter_art"):
+			if not te.has("summer_art"):
+				te["summer_art"] = te["art"]
+			te["art"] = te["winter_art"] if winter else te["summer_art"]
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()

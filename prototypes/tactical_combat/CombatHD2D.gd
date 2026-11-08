@@ -66,7 +66,7 @@ func _apply_season_period() -> void:
 		cfg["ground_mix"] = {}
 		var tr2: Dictionary = cfg["trees"]
 		for k in tr2.keys():
-			tr2[k]["art"] = "pine_snow"
+			tr2[k]["art"] = tr2[k].get("winter_art", "pine_snow")
 		cfg["border"]["tree"] = "pine_snow"
 		(cfg["tint"] as Dictionary).merge(cfg.get("winter_tint", {}), true)
 		(cfg["colors"] as Dictionary).merge(cfg.get("winter_colors", {}), true)
