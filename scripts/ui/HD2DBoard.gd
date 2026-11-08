@@ -233,7 +233,8 @@ func _build_terrain() -> void:
 					continue
 				var near := false
 				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-					if in_map(c + d) and str(terrain_of.call(c + d)) == str(np["near"]):
+					var nears: Array = np["near"] if np["near"] is Array else [np["near"]]
+					if in_map(c + d) and str(terrain_of.call(c + d)) in nears:
 						near = true
 				if near:
 					var nart: String = str(np.get("winter_art", np["art"])) if bool(cfg.get("winter", false)) else str(np["art"])

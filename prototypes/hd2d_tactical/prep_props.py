@@ -33,6 +33,9 @@ PROPS = {
     # 小石堆（寬高比約 1.25）：開闊地（.）少量點綴，1 倍約半格寬
     "stones": ("stones.jpg", 20),
     "stones_winter": ("stones_winter.jpg", 20),
+    # 蘆葦（寬高比約 0.7）：水邊的平地（near_props），約一格高、0.7 格寬
+    "reeds": ("reeds.jpg", 46),
+    "reeds_winter": ("reeds_winter.jpg", 46),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}
