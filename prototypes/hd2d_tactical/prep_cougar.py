@@ -22,7 +22,8 @@ FRAMES = {
     "cougar_stand": ("cougar_sheet_checker.jpg", 0, "checker", 1.8),
     "cougar_walk": ("cougar_sheet_checker.jpg", 1, "checker", 1.8),
     "cougar_walk_b": ("cougar_sheet_checker.jpg", 2, "checker", 1.8),
-    "cougar_crouch": ("cougar_sheet_checker.jpg", 3, "checker", 1.8),
+    # 伏低：2026-11-08 換成重畫的綠底版（原本棋盤格那張尾巴和後腳之間留了白色）
+    "cougar_crouch": ("cougar_crouch_v2.jpg", -1, "green", 2.0),
     "cougar_eat": ("cougar_sheet_green.jpg", 3, "green", 1.8),
     "cougar_pounce": ("cougar_pounce.jpg", -1, "green", 2.1),
 }
