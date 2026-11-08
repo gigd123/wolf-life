@@ -25,6 +25,9 @@ PROPS = {
     # 大石頭（約 1.45 寬高比）：放在岩坡（r）上，trees.r 的 scale 0.8 → 約 0.9 格寬
     "boulder": ("boulder.jpg", 36),
     "boulder_winter": ("boulder_winter.jpg", 36),
+    # 倒木（含樹枝約 2.3 寬高比）：取代程式畫的圓柱（logs），trees.l 1 倍 → 約 1.2 格寬
+    "log": ("log.jpg", 25),
+    "log_winter": ("log_winter.jpg", 25),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}
@@ -41,19 +44,26 @@ def tone(im, sat, bri):
     return im
 
 
-def is_bg(r, g, b):
-    # 背景約 (3, 250, 3)；和深色外框之間的混色（紅、藍都很低、綠偏高）也算背景
-    return r < 70 and b < 70 and g > 120 and g > r * 2.2 and g > b * 2.2
+def is_bg(r, g, b, bg=(3, 250, 3)):
+    # 背景是純綠（白樺那張約 (3, 250, 3)），倒木那張是比較淡的綠（約 (97, 188, 67)）→ 和左上角的顏色很接近就算背景；
+    # 和深色外框之間的混色（綠明顯比紅、藍多）也算。青苔是灰綠色（約 (100, 117, 85)），綠只比紅多一點，不受影響
+    if sum((a - c) ** 2 for a, c in zip((r, g, b), bg)) < 50 ** 2:
+        return True
+    if r < 70 and b < 70 and g > 120 and g > r * 2.2 and g > b * 2.2:
+        return True
+    # 淡綠背景（紅 > 60）的外框混色比較亮，另外判斷；純綠背景不用（白樺深色的葉子綠是紅的 2 倍，會被挖掉）
+    return bg[0] > 60 and g > 80 and g > r * 1.6 and g > b * 1.6
 
 
 def key(path, min_blob=40):
     im = Image.open(path).convert("RGBA")
     w, h = im.size
     p = im.load()
+    bg = p[3, 3][:3]
     for y in range(h):
         for x in range(w):
             r, g, b, a = p[x, y]
-            if is_bg(r, g, b):
+            if is_bg(r, g, b, bg):
                 p[x, y] = (0, 0, 0, 0)
     # 小碎點（去背殘留）去掉；葉叢和樹幹之間可能不相連，所以不是只留最大的一塊
     seen = bytearray(w * h)
