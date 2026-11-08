@@ -96,7 +96,7 @@ def key(path, min_blob=40):
 
 # 地面材質（2026-11-08，ChatGPT 從正上方看的草地）：原圖 1024 是 512 的 2×2 重複 → 取左上 512 就能無縫拼接，
 # 縮成 128（一格 32 個材質像素 → 4 格重複一次，草叢約 5 像素），顏色照舊材質（_old_tex_grass.png）的平均色調暗，限制顏色數
-TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16)}
+TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16), "snow": ("snow_top.jpg", 512, 128, 16)}
 
 
 def make_texture(name, f, crop, size, colors):
