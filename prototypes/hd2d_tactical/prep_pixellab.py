@@ -60,7 +60,27 @@ def desaturate(im, k):
     return im
 
 
+# 駝鹿、野牛的殘骸（2026-11-08）：Gemini 一直畫成站著的，先拿馬鹿殘骸（左上那隻）照駝鹿、野牛站姿的色盤調色、放大（肉保留原色）
+RECOLOR = {
+    "hd_carcass_moose": ("carcass_elk_4var.png", 0, "moose_cow_stand.jpg", 2.0),
+    "hd_carcass_bison": ("carcass_elk_4var.png", 0, "bison_stand.jpg", 2.1),
+}
+# 色盤只取來源圖的這一段（左、右，比例）：野牛的後半身是淺褐色，整張取會太淡 → 只取前半身的深褐色長毛
+PALETTE_CROP = {"hd_carcass_bison": (0.45, 1.0)}
+
+
 def main():
+    gem = os.path.join(pg.ROOT, "arts", "gemini_prey_2026-11-06")
+    for name, (f, q, palette_src, cells) in RECOLOR.items():
+        ref = pg.cut(os.path.join(gem, palette_src), "green")
+        pc = PALETTE_CROP.get(name)
+        if pc:
+            ref = ref.crop((int(ref.width * pc[0]), 0, int(ref.width * pc[1]), ref.height))
+        c = pw.match_palette(cell(os.path.join(SRC, f), q), ref)
+        for d in pg.DENSITIES:
+            out = pw.outline(pg.shrink(c, round(cells * d)))
+            out.save(os.path.join(pg.OUT, "%s_%d.png" % (name, d)))
+            print(name, d, out.size)
     for name, (f, q, cells) in FRAMES.items():
         c = cell(os.path.join(SRC, f), q)
         if name.startswith("hd_deer_"):
