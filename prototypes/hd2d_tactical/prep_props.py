@@ -40,6 +40,9 @@ PROPS = {
     "tallgrass": ("tallgrass.jpg", 28),
     "tallgrass_winter": ("tallgrass_winter.jpg", 28),
     # 牧場的木柵欄（寬高比約 1.9）：牧場地圖的外圍（edge_props）一格一段
+    # 草原密林格子的高草（潛伏用）：同一張圖放大（高 44、約 1.6 格寬），放在格子前緣，蓋住站在同一格的狼的下半身
+    "tallgrass_cover": ("tallgrass.jpg", 44),
+    "tallgrass_cover_winter": ("tallgrass_winter.jpg", 44),
     "fence": ("fence.jpg", 26),
     # 洞穴入口（寬高比約 1.9）：地形 b（狩獵的躲藏處）約 1.3 格寬
     "cave": ("cave.jpg", 34),

@@ -259,7 +259,8 @@ func _build_terrain() -> void:
 				var j := Vector3(((x * 37 + y * 11) % 7 - 3) * 0.04, 0, ((x * 13 + y * 29) % 7 - 3) * 0.03)
 				# no_mix：固定用這張（大石頭之類，不跟著 tree_mix 換成樹）
 				var tart: String = str(tcfg["art"]) if bool(tcfg.get("no_mix", false)) else _tree_art(x, y, str(tcfg["art"]))
-				_add_tree(cell_center(c) + Vector3(0, 0, 0.1) + j, tart, float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
+				# front：往格子前緣放（草原的高草放在 0.32，蓋住站在同一格的狼）
+				_add_tree(cell_center(c) + Vector3(0, 0, float(tcfg.get("front", 0.1))) + j, tart, float(tcfg["scale"]) * lerpf(0.9, 1.1, _hash01(x, y, 3)))
 			if k in cfg.get("logs", []):
 				var lg := MeshInstance3D.new()
 				var cy := CylinderMesh.new()
@@ -431,9 +432,13 @@ func refresh() -> void:
 
 # 擋在角色前面（鏡頭這一側、往下 1～3 格、左右 1 格內）的樹變半透明，看得到後面的動物
 func _fade_trees(cells: Array) -> void:
+	var keep: Array = cfg.get("no_fade", [])
 	for t in tree_sprites:
 		var s: Sprite3D = t["sprite"]
 		var tc: Vector2i = t["cell"]
+		# no_fade：不淡化的物件（草原的高草：就是要蓋住站在裡面的狼，製造潛伏感）
+		if str(t["art"]) in keep:
+			continue
 		var front := false
 		for c in cells:
 			if absi(tc.x - c.x) <= 1 and tc.y - c.y >= 0 and tc.y - c.y <= 3:

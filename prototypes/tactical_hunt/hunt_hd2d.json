@@ -11,14 +11,15 @@
   "near_props": [ { "_comment": "岩坡旁的平地：從坡上滾下來的大石頭（只是畫面、不擋路）", "near": "r", "on": ".", "art": "boulder", "winter_art": "boulder_winter", "chance": 0.22, "scale": 0.8 }, { "_comment": "水邊的平地：蘆葦", "near": ["w", "s", "d"], "on": ".", "art": "reeds", "winter_art": "reeds_winter", "chance": 0.35, "scale": 1.0 } ],
   "winter_ground_mix": { "_comment": "冬天：開闊地、密林的偏黃／偏綠斑塊不畫（疊在雪上會變成綠色色塊）", ".": {}, "f": {}, "r": { "patch": "snow", "ratio": 0.8, "scale": 2.0 } },
   "winter_tint": { "_comment": "冬天的顏色倍率（和戰鬥一樣）：密林原本調深調綠，疊在雪上會變綠", "f": [0.86, 0.9, 0.96], "l": [0.9, 0.86, 0.82] },
-  "lip_tops": { "_comment": "上面是草地、雪地的格子，側面最上緣垂下一條草皮、雪（材質像素，邊緣參差 +0～3）", "grass": 3, "snow": 4 },
+  "lip_tops": { "_comment": "上面是草地、雪地的格子，側面最上緣垂下一條草皮、雪（材質像素，邊緣參差 +0～3）", "grass": 3, "grass_autumn": 3, "snow": 4 },
   "map_sets": {
     "_comment": "每張地圖自己的樹與地面（主遊戲的 current_map；HD2DBoard.apply_map_set：字典合併、其他整個換掉）。森林用上面的預設",
-    "grassland": { "_comment": "草原：乾草地、高草叢，不長松樹、白樺", "top": { ".": "grass_autumn", "f": "grass_autumn", "t": "grass_autumn", "T": "grass_autumn" }, "tint": { "f": [0.86, 0.84, 0.76] }, "ground_mix": { ".": { "patch": "tint:1.06,1.0,0.86", "ratio": 0.3, "scale": 4.0 }, "f": { "patch": "tint:0.8,0.78,0.7", "ratio": 0.4, "scale": 3.0 } }, "tree_mix": ["tallgrass", "tallgrass", "tallgrass", "tallgrass", "shrub", "dead_tree"], "winter_tree_mix": ["tallgrass_winter", "tallgrass_winter", "tallgrass_winter", "shrub_winter"] },
+    "grassland": { "_comment": "草原：乾草地、高草叢，不長松樹、白樺", "top": { ".": "grass_autumn", "f": "grass_autumn", "t": "grass_autumn", "T": "grass_autumn" }, "tint": { "f": [0.86, 0.84, 0.76] }, "ground_mix": { ".": { "patch": "tint:1.06,1.0,0.86", "ratio": 0.3, "scale": 4.0 }, "f": { "patch": "tint:0.8,0.78,0.7", "ratio": 0.4, "scale": 3.0 }, "r": { "patch": "grass_autumn", "ratio": 0.8, "scale": 2.0 }, "B": { "patch": "grass_autumn", "ratio": 0.8, "scale": 2.0 } }, "trees": { "f": { "art": "tallgrass_cover", "winter_art": "tallgrass_cover_winter", "no_mix": true, "scale": 1.0, "chance": 1.0, "front": 0.32 } }, "tree_mix": ["tallgrass", "tallgrass", "tallgrass", "tallgrass", "shrub", "dead_tree"], "winter_tree_mix": ["tallgrass_winter", "tallgrass_winter", "tallgrass_winter", "shrub_winter"] },
     "tundra": { "_comment": "苔原：灌木、高草叢，沒有大樹", "tree_mix": ["shrub", "shrub", "shrub", "tallgrass", "tallgrass", "dead_tree"], "winter_tree_mix": ["shrub_winter", "shrub_winter", "shrub_winter", "tallgrass_winter"] },
     "mountain": { "_comment": "山地：松樹為主，沒有白樺", "tree_mix": ["pine_dark", "pine_dark", "pine_dark", "pine_snow", "shrub", "dead_tree"] },
     "ranch": { "_comment": "牧場：外圍一排木柵欄", "tree_mix": ["pine_dark", "birch", "shrub", "shrub"], "edge_props": { "art": "fence", "scale": 0.95 } }
   },
+  "no_fade": ["tallgrass_cover", "tallgrass_cover_winter"],
   "fixed_scale": { "_comment": "灌木一叢約 0.9 格寬、倒木一格長（素材一格 48 像素時灌木寬 83、倒木寬 60），不跟著大樹、小樹的格子縮放；大片灌木叢用好幾格的灌木組成", "shrub": 0.52, "shrub_winter": 0.52, "log": 0.8, "log_winter": 0.8, "tallgrass": 0.95, "tallgrass_winter": 0.95 },
   "winter_tree_mix": ["pine_snow", "pine_snow", "pine_snow", "pine_snow", "pine_snow", "shrub_winter", "shrub_winter", "dead_tree"],
   "start_zoom": 2.0,
