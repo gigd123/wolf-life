@@ -29,6 +29,14 @@ func setup(th) -> void:
 		cfg["summer_tree_mix"] = cfg.get("tree_mix", [])
 	cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"]) if winter else cfg["summer_tree_mix"]
 	cfg["winter"] = winter
+	# 顏色倍率：冬天用 winter_tint 蓋過（密林原本調深調綠，疊在雪上會變成綠色色塊）
+	if not cfg.has("summer_tint"):
+		cfg["summer_tint"] = (cfg["tint"] as Dictionary).duplicate(true)
+	var tnt: Dictionary = (cfg["summer_tint"] as Dictionary).duplicate(true)
+	if winter:
+		tnt.merge(cfg.get("winter_tint", {}), true)
+		tnt.erase("_comment")
+	cfg["tint"] = tnt
 	# 地面斑塊：冬天用 winter_ground_mix 蓋過同一種地形（岩坡上面的草地斑塊換成雪）
 	if not cfg.has("summer_ground_mix"):
 		cfg["summer_ground_mix"] = (cfg.get("ground_mix", {}) as Dictionary).duplicate(true)
