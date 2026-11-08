@@ -19,6 +19,9 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 # 名稱 → (檔名, 一格 48 像素時的高度)。松樹高 140（約 2.9 格）
 PROPS = {
     "birch": ("birch.png", 150),
+    # 灌木（約 1.4 寬高比）：tree_mix 裡和樹一起輪替；密林格子的樹縮成 0.45 → 約 0.8 格寬，外圍 1 倍 → 約 1.7 格寬
+    "shrub": ("shrub.jpg", 60),
+    "shrub_winter": ("shrub_winter.jpg", 60),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}

@@ -27,7 +27,7 @@ func setup(th) -> void:
 	# 冬季的樹都積雪；外圍的地面跟著換
 	if not cfg.has("summer_tree_mix"):
 		cfg["summer_tree_mix"] = cfg.get("tree_mix", [])
-	cfg["tree_mix"] = ["pine_snow"] if winter else cfg["summer_tree_mix"]
+	cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"]) if winter else cfg["summer_tree_mix"]
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()

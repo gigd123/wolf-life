@@ -62,7 +62,7 @@ func _apply_season_period() -> void:
 	cfg = _base_cfg.duplicate(true)
 	if tc.season == "winter":
 		(cfg["top"] as Dictionary).merge(cfg.get("winter_top", {}), true)
-		cfg["tree_mix"] = ["pine_snow"]
+		cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"])
 		cfg["ground_mix"] = {}
 		var tr2: Dictionary = cfg["trees"]
 		for k in tr2.keys():
