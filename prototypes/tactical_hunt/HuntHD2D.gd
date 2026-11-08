@@ -17,6 +17,7 @@ var _base_cfg: Dictionary = {}
 
 func setup(th) -> void:
 	h = th
+	_last_wolf_pos = Vector2i(-999, -999)
 	# 每一場從設定檔的原樣開始（地圖、季節的覆蓋不會留到下一場）
 	if _base_cfg.is_empty():
 		_base_cfg = cfg.duplicate(true)
@@ -92,6 +93,9 @@ func _art_for(key: String, state: String = "") -> Dictionary:
 		a = HD2DBoard.animal_texture(str(e[0]), str(e[1]), float(e[2]))
 	return a
 
+var _last_wolf_pos := Vector2i(-999, -999)
+var _wolf_face := Vector2i(1, 0)
+
 func _flip(f: Vector2i):
 	return (f.x < 0) if f.x != 0 else null
 
@@ -124,9 +128,10 @@ func paint() -> void:
 			line(cell_center(h.herd[i]["pos"]) + Vector3(0, 0.15, 0), cell_center(h.herd[m]["pos"]) + Vector3(0, 0.15, 0), _col(col["bond"]))
 		if i == h.target:
 			continue
-		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", ""))), h.herd[i]["pos"], _flip(h.herd[i]["facing"]))
-		if bool(h.herd[i].get("weakest", false)):
-			quad(h.herd[i]["pos"], _col(col["weakest"]), 0.22, 0.06)
+		var wk: bool = bool(h.herd[i].get("weakest", false))
+		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", ""))), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, tr("tactical.hd.weakest") if wk else "", _col(col["weakest"]))
+		if wk:
+			frame(h.herd[i]["pos"], _col(col["weakest"]), 0.05, 0.05)
 	if not hid:
 		if not h.done and not h.held:
 			var dc := cell_center(h.deer_pos) + Vector3(0, 0.1, 0)
@@ -134,13 +139,20 @@ func paint() -> void:
 				var v := Vector2(d).normalized() * float(h._flee_budget())
 				line(dc, dc + Vector3(v.x, 0, v.y), _col(col["intent"]))
 		var tint: Color = _col(col["held"]) if h.held else Color.WHITE
-		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", ""))), h.deer_pos, _flip(h.deer_facing), tint)
-		if h.herd.size() > 1:
+		# 觀察後看出的最弱的那一隻（2026-11-08：原本只在腳下畫一小塊，被圖蓋住看不到）→ 頭上寫「最弱」、橘色框
+		var wkt: bool = bool(h.herd[h.target].get("weakest", false))
+		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", ""))), h.deer_pos, _flip(h.deer_facing), tint, tr("tactical.hd.weakest") if wkt else "", _col(col["weakest"]))
+		if wkt:
+			frame(h.deer_pos, _col(col["weakest"]), 0.05, 0.06)
+		elif h.herd.size() > 1:
 			frame(h.deer_pos, _col(col["picked"]), 0.04, 0.05)
-		if bool(h.herd[h.target].get("weakest", false)):
-			quad(h.deer_pos, _col(col["weakest"]), 0.22, 0.06)
 	# 狼與同伴
-	var wf: Vector2i = view.wolf_facing if view != null else Vector2i(1, 0)
+	# 狼的面向（2026-11-08：原本只有 2D 畫面在算，HD-2D 一直面向右）：上一步移動的方向；沒動過時朝向獵物
+	if h.wolf_pos != _last_wolf_pos:
+		var mv: Vector2i = h.wolf_pos - _last_wolf_pos
+		_wolf_face = mv if _last_wolf_pos.x > -99 else h.deer_pos - h.wolf_pos
+		_last_wolf_pos = h.wolf_pos
+	var wf: Vector2i = _wolf_face
 	unit("wolf", hd_wolf_texture(_wolf_pose()), h.wolf_pos, _flip(wf))
 	for k in range(1, h.wolves.size()):
 		var w: Dictionary = h.wolves[k]
