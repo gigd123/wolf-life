@@ -117,6 +117,10 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	# 第 5 步：多隻對手（苔原狼一對、鄰群 2～3 隻）：每隻各自的能力與血量
 	for x in sc.get("extra_enemies", []):
 		_add_enemy(x, x.get("stats", {}), float(opts.get("stake", 1.0)))
+	# Phase 2l：偷了就跑的搶食者（郊狼）：同種有兩隻以上時，第一隻引開你（decoy）、其他的去偷（thief）
+	var thieves: Array = enemies().filter(func(k): return bool(_opp_cfg(k).get("thief", false)))
+	for n in thieves.size():
+		units[thieves[n]]["role"] = "decoy" if thieves.size() >= 2 and n == 0 else "thief"
 	knowledge.clear()
 	var species_seen := {}
 	for k0 in units.size():
@@ -619,6 +623,9 @@ func _ai_intent(i: int) -> Dictionary:
 	# 狼對狼（Phase 2k 第 4 步）：另一套 AI（示威、咬、示弱）
 	if bool(_opp_cfg(i).get("wolf", false)):
 		return _ai_wolf(i)
+	# 偷了就跑的搶食者（Phase 2l 第 1 步：郊狼）
+	if bool(_opp_cfg(i).get("thief", false)):
+		return _ai_thief(i)
 	var t := _update_attention(i)
 	# 被咬（或肉被叼走）的那一回合可以猛然轉身
 	if bool(u.get("just_bitten", false)):
@@ -733,6 +740,130 @@ func _ai_intent(i: int) -> Dictionary:
 		u["attention"] = int(why.split(":")[1])
 		why = "attack"
 	return _intent(i, str(best[1]), best[2], best[3], best[4], why)
+
+# =====================================================================
+# Phase 2l：偷了就跑的搶食者（郊狼）
+# =====================================================================
+
+func _thief_cfg() -> Dictionary:
+	return _ai_cfg().get("thief", {})
+
+# 離你方最近的一隻的距離（沒有就 INF）
+func _player_dist(c: Vector2i) -> float:
+	var md := INF
+	for k in units.size():
+		if active(k) and player_side(k):
+			md = minf(md, map.dist(units[k]["pos"], c))
+	return md
+
+# 能走到的格子（含原地）裡，score 最高的
+func _best_cell(i: int, score: Callable) -> Vector2i:
+	var pos: Vector2i = units[i]["pos"]
+	var best: Vector2i = pos
+	var bs: float = float(score.call(pos))
+	for c in reachable(i).keys():
+		var v: float = float(score.call(c))
+		if v > bs + 0.001:
+			bs = v
+			best = c
+	return best
+
+# 叼著肉往邊緣跑：離你方遠、離自己近的邊緣格子
+func _thief_edge(i: int) -> Vector2i:
+	var pos: Vector2i = units[i]["pos"]
+	var best: Vector2i = pos
+	var bs := -INF
+	for y in map.height:
+		for x in map.width:
+			var c := Vector2i(x, y)
+			if not map.on_edge(c) or _impassable(i).contains(map.terrain(c)):
+				continue
+			var sc: float = minf(_player_dist(c), 8.0) * 0.8 - map.dist(pos, c)
+			if sc > bs:
+				bs = sc
+				best = c
+	return best
+
+# 去偷的那一格：殘骸旁邊、離你方最遠的（繞到另一邊）
+func _thief_spot(i: int) -> Vector2i:
+	var cp: Vector2i = carcass["pos"]
+	var best := Vector2i(-1, -1)
+	var bs := -INF
+	for d in TacticalGrid.DIRS:
+		var c: Vector2i = cp + d
+		if not map.in_bounds(c) or _impassable(i).contains(map.terrain(c)) or unit_at(c, i) >= 0:
+			continue
+		var sc: float = _player_dist(c)
+		if sc > bs:
+			bs = sc
+			best = c
+	return best
+
+# 郊狼的 AI：
+#   叼著肉 → 往邊緣跑，到了就帶著肉離開（flee，why "stole"：被偷走）
+#   剛被咬、咬牠的就在旁邊 → 反咬
+#   引開你的那隻（decoy，搭檔還沒偷到時）→ 在你附近 decoy_dist 格繞、站定盯著你（threaten）
+#   去偷的那隻（thief）→ 繞到殘骸離你最遠的一邊；你不在旁邊就扯一塊（你在旁邊時 steal_when_watched 的機率硬偷）
+#   受傷到放棄線、耐心用完、殘骸沒了、偷夠了 → 走
+func _ai_thief(i: int) -> Dictionary:
+	var u: Dictionary = units[i]
+	var tc := _thief_cfg()
+	var pos: Vector2i = u["pos"]
+	var facing: Vector2i = u["facing"]
+	var nothing := Vector2i(-1, -1)
+	var sp: String = str(u["species"])
+	var hp_ratio: float = float(u["hp"]) / maxf(1.0, float(u["hp_max"]))
+	var t := _update_attention(i)
+	u["stamina"] = maxf(0.0, float(u["stamina"]) - float(tc.get("patience", 3.0)))
+	# 叼著肉：往邊緣跑（受了傷也一樣，帶著肉走）
+	if str(u["carrying"]) != "":
+		if map.on_edge(pos):
+			return _intent(i, "flee", pos, facing, nothing, "stole")
+		var edge := _thief_edge(i)
+		var to := _best_cell(i, func(c): return -map.dist(c, edge) + minf(_player_dist(c), 3.0) * 0.3)
+		return _intent(i, "move", to, TacticalGrid.dir_toward(pos, to) if to != pos else facing, nothing, "carry_off")
+	var give: float = float(cfg["give_up"].get(sp, 0.75)) * (1.0 - float(u.get("bold", 0.0)) * 0.3)
+	if hp_ratio < give or float(u["stamina"]) <= 0.0:
+		return _intent(i, "flee", pos, facing, nothing, "hurt" if hp_ratio < give else "patience")
+	var has_food: bool = not carcass.is_empty() and int(carcass["segments"]) > 0
+	if not has_food or int(u.get("stole", 0)) >= int(tc.get("max_steal", 1)):
+		return _intent(i, "flee", pos, facing, nothing, "food_gone")
+	# 被咬：回頭咬
+	if bool(u.get("just_bitten", false)) and t >= 0 and map.adjacent(pos, units[t]["pos"]):
+		var want := TacticalGrid.dir_toward(pos, units[t]["pos"])
+		return _intent(i, "bite", pos, want, nothing, "bite_back")
+	# 搭檔叼著肉跑了、或已經走了：引開的那隻改去偷
+	var partner_busy := false
+	for k in active_enemies():
+		if k != i and str(units[k].get("role", "")) == "thief" and str(units[k]["carrying"]) == "":
+			partner_busy = true
+	if str(u.get("role", "thief")) == "decoy" and partner_busy and t >= 0:
+		var tp: Vector2i = units[t]["pos"]
+		var dd: float = float(tc.get("decoy_dist", 2.0))
+		var to2 := _best_cell(i, func(c): return -absf(map.dist(c, tp) - dd) - map.dist(c, pos) * 0.15)
+		if to2 != pos:
+			return _intent(i, "move", to2, TacticalGrid.dir_toward(to2, tp), nothing, "decoy")
+		return _intent(i, "threaten", pos, TacticalGrid.dir_toward(pos, tp), nothing, "decoy")
+	# 去偷
+	if at_carcass(i):
+		var watched: bool = _player_dist(pos) <= 1.5
+		if not watched or rng.randf() < float(tc.get("steal_when_watched", 0.25)):
+			return _intent(i, "steal", pos, TacticalGrid.dir_toward(pos, carcass["pos"]), nothing, "steal")
+	var spot := _thief_spot(i)
+	if spot.x >= 0:
+		var to3 := _best_cell(i, func(c): return -map.dist(c, spot) + minf(_player_dist(c), 2.0) * 0.4)
+		if to3 != pos:
+			return _intent(i, "move", to3, TacticalGrid.dir_toward(to3, carcass["pos"]), nothing, "to_food")
+	return _intent(i, "turn", pos, facing, nothing, "idle")
+
+# 搶食者帶出地圖的肉（被偷走的段數）
+func meat_stolen() -> int:
+	var n := 0
+	for k in enemies():
+		var u: Dictionary = units[k]
+		if bool(u["out"]):
+			n += int(u["carry_segments"])
+	return n
 
 # 實力（狼對狼的判斷用）：力量 × 剩下的血量比例
 func _power(i: int) -> float:
@@ -1119,6 +1250,7 @@ func _hurt(i: int, dmg: float, by: int) -> void:
 	if player_side(i) and str(u["carrying"]) != "" and rng.randf() < float(cfg["wolf"].get("drop_on_hit", 0.5)):
 		drop_carried(i)
 		_ev("dropped", {"who": i})
+
 	if player_side(i) and float(u["hp"]) <= 0.0:
 		drop_carried(i)
 		u["out"] = true
@@ -1142,6 +1274,15 @@ func _do_enemy_action(i: int) -> Array:
 			if map.in_bounds(away) and unit_at(away, i) < 0 and not _impassable(i).contains(map.terrain(away)) and not blocks_for(i).has(away):
 				u["pos"] = away
 			_ev("back_off", {"who": i})
+			return hit_units
+		"steal":
+			# 搶食者扯下一塊（小殘骸整個叼走；Phase 2l）
+			if at_carcass(i) and str(u["carrying"]) == "":
+				var kinds := take_kinds(i)
+				var n0 := take_from_carcass(i, "whole" if kinds.has("whole") else "piece")
+				if n0 > 0:
+					u["stole"] = int(u.get("stole", 0)) + 1
+					_ev("steal", {"who": i, "segments": n0, "left": int(carcass["segments"])})
 			return hit_units
 		"eat":
 			if at_carcass(i):
@@ -1335,6 +1476,10 @@ func _do_wolf_action(i: int, sprinted: bool) -> void:
 			units[t]["eating"] = false
 			units[t]["bitten_by"] = i
 			_ev("bite", {"who": i, "target": t, "dmg": dmg, "how": a})
+			# 搶食者叼著偷來的肉被咬中：多半把肉甩掉（Phase 2l）
+			if str(units[t]["carrying"]) != "" and rng.randf() < float(_thief_cfg().get("drop_on_hit", 0.8)):
+				drop_carried(t)
+				_ev("dropped", {"who": t})
 			if a == "harass":
 				# 咬一下就退一格
 				var away: Vector2i = u["pos"] + (u["pos"] - units[t]["pos"]).sign()
@@ -1569,12 +1714,19 @@ func ally_mode(i: int) -> String:
 	var e0 := _ally_foe(i)
 	if active(e0) and bool(_opp_cfg(e0).get("wolf", false)) and str(u["carrying"]) == "":
 		return "duel"
+	# 對手是偷了就跑的搶食者（Phase 2l：郊狼）：守住殘骸、咬來偷的（牠們傷不了你多少；受了傷還是照下面撤）
+	var thief_fight := false
+	for k in active_enemies():
+		if bool(_opp_cfg(k).get("thief", false)):
+			thief_fight = true
 	# 交給本能的你比同伴早撤（Phase 2k 第 6 步：一生模擬裡撐到過了重傷線才撤、被打死的太多）
 	var rh: float = float(ac.get("self_retreat_hp", ac["retreat_hp"])) if i == 0 else float(ac["retreat_hp"])
 	if float(u["hp"]) < float(u["hp_max"]) * rh or (i == 0 and _too_risky(i)):
 		return "escape"
 	if str(u["carrying"]) != "":
 		return "carry"
+	if thief_fight and str(u["command"]) in ["auto", "harass"]:
+		return "guard_food"
 	# 拖太久還沒機會：自己判斷算了、離開（只在「交給牠判斷」時）
 	if str(u["command"]) == "auto" and rounds >= int(ac.get("leave_rounds", 999)):
 		return "escape"
@@ -1743,6 +1895,8 @@ func _ally_plan(i: int) -> Dictionary:
 			p["kind"] = "piece"
 		"duel":
 			return _duel_plan(i, p)
+		"guard_food":
+			return _guard_food_plan(i, p, zone)
 		"harass":
 			if not active(e):
 				p["action"] = "wait"
@@ -1770,6 +1924,39 @@ func _ally_plan(i: int) -> Dictionary:
 			var adj: bool = map.adjacent(p["move"], ep)
 			p["action"] = "harass" if adj and not zone.has(p["move"]) else ("dodge" if zone.has(p["move"]) else "wait")
 			p["target"] = e
+	return p
+
+# 守殘骸（Phase 2l：對郊狼）：先咬叼著肉的、再來是在殘骸旁或正往殘骸去的；引開你的那隻離殘骸遠就不追，回到殘骸旁守著
+func _guard_food_plan(i: int, p: Dictionary, zone: Dictionary) -> Dictionary:
+	var u: Dictionary = units[i]
+	var has_food: bool = not carcass.is_empty() and int(carcass["segments"]) > 0
+	var best := -1
+	var bs := -INF
+	for k in active_enemies():
+		var kp: Vector2i = units[k]["pos"]
+		var near_food: bool = has_food and map.dist(kp, carcass["pos"]) <= 2.5
+		var carrying: bool = str(units[k]["carrying"]) != ""
+		if not carrying and not near_food and map.dist(u["pos"], kp) > 1.5:
+			continue
+		var sc: float = -map.dist(u["pos"], kp) + (6.0 if carrying else 0.0) + (3.0 if near_food else 0.0)
+		if sc > bs:
+			bs = sc
+			best = k
+	if best < 0:
+		# 沒有誰在偷：回到殘骸旁
+		if has_food and not map.adjacent(u["pos"], carcass["pos"]):
+			p["move"] = _ally_move(i, carcass["pos"], zone, true)
+		p["action"] = "wait"
+		return p
+	var tp: Vector2i = units[best]["pos"]
+	if not map.adjacent(u["pos"], tp):
+		p["move"] = _ally_move(i, tp, zone, true)
+	var at: Vector2i = p.get("move", u["pos"])
+	if map.adjacent(at, tp):
+		p["action"] = "bite"
+		p["target"] = best
+	else:
+		p["action"] = "wait"
 	return p
 
 # 狼對狼的自動打法（交給本能、伴侶）：打不過就示弱；相鄰時壓制機會夠高就壓，否則繞到側面咬；

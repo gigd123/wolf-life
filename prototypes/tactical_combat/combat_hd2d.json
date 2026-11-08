@@ -56,6 +56,7 @@
     "pack_wolf": { "art": "hd2d_wolf", "modulate": [0.6, 0.56, 0.52] },
     "member_1": { "art": "hd2d_wolf", "modulate": [0.92, 0.86, 0.8] },
     "member_2": { "art": "hd2d_wolf", "modulate": [0.86, 0.9, 0.86] },
+    "coyote": { "_comment": "Phase 2l：還沒有 HD-2D 的圖，先用遊戲的佔位圖（data/art.json）", "width_cells": 1.1 },
     "cougar": { "width_cells": 1.8, "hd2d_poses": { "stand": "cougar_stand", "walk": "cougar_walk", "walk_b": "cougar_walk_b", "eat": "cougar_eat", "crouch": "cougar_crouch", "swipe": "cougar_pounce" } }
   },
   "carcass": { "hd": { "_comment": "HD-2D 的殘骸（PixelLab 2026-11-06，prep_pixellab.py）：assets/ 的圖名", "elk": "hd_carcass_elk", "moose": "hd_carcass_moose", "bison": "hd_carcass_bison", "_default": "hd_carcass_deer" }, "elk": "res://assets/art/sprites/animals/carcass_elk.png", "mule_deer": "res://assets/art/sprites/animals/carcass_deer.png", "_default": "res://assets/art/sprites/animals/carcass_deer.png", "px_per_cell": 40.0 },

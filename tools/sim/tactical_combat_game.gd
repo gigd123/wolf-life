@@ -358,6 +358,39 @@ func _run() -> void:
 	_check(not gs.uses_tactical_pack_fight(), "對照組：選單式")
 	gs.tactical_combat_off = false
 
+	print("== 10. 郊狼一對來偷殘骸（Phase 2l 第 1 步，40 場）")
+	_fresh()
+	gs.start_feeding("elk", "adult", "open")
+	var cc10 = gs.start_combat("coyote", "adult", "carcass")
+	_check(gs.uses_tactical_combat(cc10), "郊狼走戰術戰鬥")
+	var tt10 = gs.start_tactical_combat(cc10)
+	_check(tt10.enemies().size() == 2, "郊狼一對進場（%d 隻）" % tt10.enemies().size())
+	var roles10: Array = tt10.enemies().map(func(k): return str(tt10.units[k].get("role", "")))
+	_check(roles10.has("decoy") and roles10.has("thief"), "一隻引開、一隻去偷（%s）" % str(roles10))
+	_check(_no_overlap(tt10), "起始位置不重疊")
+	gs.current_feeding = {}
+	var ok10 := 0
+	var sum_ok := 0
+	var stole10 := 0
+	for t10 in 40:
+		_fresh()
+		gs.start_feeding("elk", "adult", "open")
+		var seg10: int = int(gs.current_feeding["segments_left"])
+		var c10 = gs.start_combat("coyote", "adult", "carcass")
+		var tc10 = gs.auto_tactical_combat(c10)
+		if tc10.done:
+			ok10 += 1
+		stole10 += tc10.meat_stolen()
+		var left10: int = int(c10.get_meta("tc_left", 0))
+		var kept10: int = int(gs.current_feeding.get("segments_left", 0)) if not gs.current_feeding.is_empty() else 0
+		# 開場的段數 = 被偷走 + 留下（殘骸＋地上）+ 你帶走；牠們都走了時留下的寫回主遊戲
+		if seg10 == tc10.meat_stolen() + left10 + tc10.meat_taken() and (c10.outcome != "drove_off" or kept10 == left10):
+			sum_ok += 1
+		gs.finish_combat(c10)
+	_check(ok10 == 40, "40 場都打得完（%d）" % ok10)
+	_check(sum_ok == 40, "肉的段數對得上、留下的寫回主遊戲（%d／40）" % sum_ok)
+	_check(stole10 > 0 and stole10 < 40 * 3, "有時會被偷走（40 場共 %d 段）" % stole10)
+
 	print("== 7. 自動玩家")
 	_fresh()
 	var ap = load("res://scripts/core/AutoPlayer.gd").new("all", "average")

@@ -5357,6 +5357,9 @@ func _tc_spots(center: Vector2i, avoid: Vector2i) -> Array:
 # 這一場還有哪些對手一起進場（第 5 步）：[{npc（NpcWolf 或 null）, stats}]。苔原狼一對時另一隻；鄰群：伴侶與滿 1 歲的子女（帶頭的之外最多 2 隻）
 func _tc_extra_foes(c: Combat) -> Array:
 	var out: Array = []
+	# 同種一起進場的（Phase 2l：郊狼一對）：能力照設定檔的預設值
+	for k in maxi(0, int(_tc_game_cfg().get("groups", {}).get(c.animal_id, 1)) - 1):
+		out.append({"npc": null, "stats": {}, "group": true})
 	if c.animal_id == "tundra_wolf":
 		for n in tundra_pair():
 			if n != c.npc:
@@ -5460,7 +5463,13 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 	for k in mini(extra_npcs.size(), foe_spots.size()):
 		var x: Dictionary = extra_npcs[k]
 		var uid2 := "%s_%d" % [foe_species, k + 2]
-		extras.append({"id": foe_species, "uid": uid2, "pos": [foe_spots[k].x, foe_spots[k].y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"]})
+		var xp: Vector2i = foe_spots[k]
+		# 郊狼的另一隻（Phase 2l）：從上或下邊緣進場，好繞到殘骸另一邊
+		if bool(x.get("group", false)):
+			xp = Vector2i(rng.randi_range(9, 14), 0 if rng.randf() < 0.5 else 9)
+			while sc["map"][xp.y][xp.x] in ["T", "t", "B", "c", "l", "r"] or xp == opos:
+				xp.x = (xp.x + 1) % 16
+		extras.append({"id": foe_species, "uid": uid2, "pos": [xp.x, xp.y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"]})
 		if x["npc"] != null:
 			foe_ids[uid2] = (x["npc"] as NpcWolf).id
 	sc["extra_enemies"] = extras

@@ -44,7 +44,10 @@
       "actions": ["bite", "threaten", "pin", "submit", "turn", "move", "back_off", "flee"], "impassable": "cTt" },
     "cougar": { "hp": 110, "move": 4.0, "charge_move": 6.0, "turn_steps": -1, "strength": 70, "speed": 75,
       "actions": ["swipe", "pounce", "bite", "turn", "move", "back_off", "eat", "guard", "back_to_wall", "climb", "flee"],
-      "impassable": "cTt" }
+      "impassable": "cTt" },
+    "coyote": { "_comment": "Phase 2l 第 1 步：郊狼（thief：偷了就跑的 AI _ai_thief，數值在 ai.thief）。成對進場：一隻在你附近繞、假裝靠近（decoy），另一隻繞到殘骸另一邊叼一段肉往邊緣跑（thief）；叼著肉被咬中會把肉甩掉；受傷到放棄線就逃。不主動打你，被咬才反咬。",
+      "thief": true, "hp": 35, "move": 4.0, "charge_move": 4.0, "turn_steps": -1, "strength": 30, "speed": 70, "skill": 55, "perception": 60,
+      "actions": ["bite", "steal", "threaten", "turn", "move", "flee"], "impassable": "cTt" }
   },
   "_actions_comment": "對手的動作庫（共用；每種動物能用哪些在 opponents.*.actions）。zone：front3 正面三格、front1 正前方一格、line 正前方一直線 length 格（停在第一個撞到的單位前並打中牠）、target2 選一格連同後面一格（撲擊）、around 正面五格（守食物）。hit 範圍裡的單位被打中的機率（閃避時 × wolf.dodge_mult）；dmg 傷害範圍；init 先後的加減；feint_to／feint_chance：表態成這個動作、實際做的可能是別的（假衝表態成衝撞）；change_chance：結算時臨時改成 back_off 的機率。assume。",
   "actions": {
@@ -52,18 +55,19 @@
     "charge": { "zone": "line", "length": 4, "hit": 0.9, "dmg": { "grizzly_bear": [22, 36], "black_bear": [13, 22] }, "init": -5 },
     "bluff_charge": { "zone": "line", "length": 2, "hit": 0.0, "dmg": {}, "init": -5, "looks_like": "charge" },
     "pounce": { "zone": "target2", "range": 3, "hit": 0.8, "dmg": { "cougar": [15, 25] }, "init": 8 },
-    "bite": { "zone": "front1", "hit": 0.8, "dmg": { "grizzly_bear": [14, 24], "black_bear": [8, 14], "cougar": [10, 18], "stranger_wolf": [8, 14], "challenger": [8, 14], "tundra_wolf": [8, 14], "pack_wolf": [8, 14] }, "hit_by": { "stranger_wolf": 0.6, "challenger": 0.6, "tundra_wolf": 0.6, "pack_wolf": 0.6 }, "init": 5 },
+    "bite": { "zone": "front1", "hit": 0.8, "dmg": { "grizzly_bear": [14, 24], "black_bear": [8, 14], "cougar": [10, 18], "stranger_wolf": [8, 14], "challenger": [8, 14], "tundra_wolf": [8, 14], "pack_wolf": [8, 14], "coyote": [3, 7] }, "hit_by": { "stranger_wolf": 0.6, "challenger": 0.6, "tundra_wolf": 0.6, "pack_wolf": 0.6, "coyote": 0.7 }, "init": 5 },
     "guard": { "zone": "around", "hit": 0.6, "dmg": { "grizzly_bear": [14, 24], "black_bear": [8, 14], "cougar": [10, 16] }, "init": 0 },
     "threaten": { "zone": "none", "hit": 0.0, "init": 0, "_comment": "狼對狼：豎毛低吼，不前進、不傷人" },
     "pin": { "zone": "front1", "hit": 0.0, "init": 8, "_comment": "第 5 步：對手的狼從側面、背後撲上去壓住（成功時被壓住的那隻示弱）" },
     "submit": { "zone": "none", "hit": 0.0, "init": 30, "_comment": "狼對狼：夾尾巴伏低、退開" },
     "eat": { "zone": "", "init": -20 },
+    "steal": { "zone": "", "init": 4, "_comment": "Phase 2l：搶食者從殘骸扯下一塊（小殘骸整個叼走）" },
     "move": { "zone": "", "init": 0 },
     "turn": { "zone": "", "init": 0 },
     "back_off": { "zone": "", "init": 0 },
     "flee": { "zone": "", "init": 0 }
   },
-  "change_chance": { "grizzly_bear": 0.05, "black_bear": 0.08, "cougar": 0.12, "stranger_wolf": 0.1, "challenger": 0.1, "tundra_wolf": 0.1, "pack_wolf": 0.1 },
+  "change_chance": { "grizzly_bear": 0.05, "black_bear": 0.08, "cougar": 0.12, "stranger_wolf": 0.1, "challenger": 0.1, "tundra_wolf": 0.1, "pack_wolf": 0.1, "coyote": 0.05 },
   "_wolf_comment": "狼的主要動作（規格第四節）。base：基本機率；skill_div：(技巧 − 50) ÷ skill_div；side：前／側／後的加減；after_sprint：這回合衝刺過再出手的減成；dmg：傷害（× 力量 ÷ 60）；breath：花的喘（負的是花）。take：叼肉的機率依對手的狀態（在吃、面向別處、面向你或正盯著你）；moved：這一回合才走過來。drop_on_hit：叼著肉被打中時把肉甩掉的機率。assume。",
   "wolf": {
     "bite": { "base": 0.55, "skill_div": 150.0, "side": { "rear": 0.2, "side": 0.1, "front": -0.15 }, "after_sprint": -0.1, "dmg": [8, 14], "breath": -4.0, "init": 10 },
@@ -81,12 +85,13 @@
     "wait": { "breath": 5.0, "init": 0 }
   },
   "initiative": { "jitter": 15.0, "interrupt": 0.5 },
-  "enemy_stamina": { "grizzly_bear": 220.0, "black_bear": 100.0, "cougar": 70.0, "stranger_wolf": 90.0, "challenger": 80.0, "tundra_wolf": 85.0, "pack_wolf": 80.0 },
-  "give_up": { "_comment": "血量低於這個比例就逃（個性大膽的再低一點：× (1 − bold × 0.3)）。耐心（stamina）用完也走。", "grizzly_bear": 0.3, "black_bear": 0.62, "cougar": 0.45, "stranger_wolf": 0.4, "challenger": 0.4, "tundra_wolf": 0.4, "pack_wolf": 0.4 },
+  "enemy_stamina": { "grizzly_bear": 220.0, "black_bear": 100.0, "cougar": 70.0, "stranger_wolf": 90.0, "challenger": 80.0, "tundra_wolf": 85.0, "pack_wolf": 80.0, "coyote": 40.0 },
+  "give_up": { "_comment": "血量低於這個比例就逃（個性大膽的再低一點：× (1 − bold × 0.3)）。耐心（stamina）用完也走。", "grizzly_bear": 0.3, "black_bear": 0.62, "cougar": 0.45, "stranger_wolf": 0.4, "challenger": 0.4, "tundra_wolf": 0.4, "pack_wolf": 0.4, "coyote": 0.75 },
   "_ai_comment": "第 3 步：對手的 AI。每回合替能用的動作打分（scores 是基本分），加上情境的加減與一點亂數（noise），選最高的。bold 個性的範圍（-1 膽小 ～ 1 大膽）：大膽的攻擊分數高、比較晚放棄。attention：被咬就把注意力轉到咬牠的那隻；守食物時看最靠近殘骸的；否則看最近的。patience：每回合被兩隻以上圍住 surrounded_drain、沒有殘骸也沒被逼近時 idle_drain（遭遇戰牠會失去興趣）。climb_hurt：美洲獅血量低於這個比例、或被兩隻以上圍住時想上樹（樹在 climb_search 格內）。wall_search：背靠岩壁找幾格內的峭壁。bitten_bonus：剛被咬時回頭攻擊、轉身的加分。charge_food_less：守著食物時真衝撞的減分（多半是假衝）。chase_bonus：有狼叼走牠的肉時，追那隻（靠近、衝撞、攻擊）的加分。notice：在吃的時候，3.5 格內的狼被發現的機率＝依牠在哪一側 × 上一回合怎麼靠近的（沒動 0.6、潛行 1、小跑 1.8、衝刺 2.5）；沒被發現就繼續吃（叼肉用「在吃」的機率，但這一回合才走過來的不算）。alert：被咬、肉被叼、叼失敗、發現狼靠近之後警戒 rounds 回合（有狼在 linger_dist 格內徘徊就一直維持）：狼要在 eat_safe_dist + extra_dist 格外牠才會低頭吃，而且不會「沒發現」。sneak_dist：伴侶靠近在吃的對手時，這個距離內改用潛行。eat_per_segment：吃幾次才少一段（一場戰鬥只有幾分鐘，牠吃不完一頭馬鹿）。turn_when_bitten：被咬的那一回合可以猛然轉身（-1 不限）。track_pounce：撲擊時目標離原本的落點幾格內都追得到（衝撞則朝目標修正最多 turn_steps 個 45°）。assume。",
   "ai": {
     "noise": 1.5,
-    "bold": { "grizzly_bear": [-0.3, 0.7], "black_bear": [-0.6, 0.4], "cougar": [-0.7, 0.3], "stranger_wolf": [-0.4, 0.5], "challenger": [-0.2, 0.6], "tundra_wolf": [-0.4, 0.5], "pack_wolf": [-0.4, 0.5] },
+    "thief": { "_comment": "Phase 2l：偷了就跑的搶食者（郊狼）。decoy_dist 引開你的那隻和你保持的距離；patience 每回合耐心減多少；steal_when_watched 你就在旁邊時還是硬偷的機率；drop_on_hit 叼著肉被咬中時把肉甩掉的機率；max_steal 每隻最多偷幾次。", "decoy_dist": 2.0, "patience": 3.0, "steal_when_watched": 0.25, "drop_on_hit": 0.8, "max_steal": 1 },
+    "bold": { "grizzly_bear": [-0.3, 0.7], "black_bear": [-0.6, 0.4], "cougar": [-0.7, 0.3], "stranger_wolf": [-0.4, 0.5], "challenger": [-0.2, 0.6], "tundra_wolf": [-0.4, 0.5], "pack_wolf": [-0.4, 0.5], "coyote": [-0.2, 0.3] },
     "wolf": { "_comment": "狼對狼的 AI 分數（_ai_wolf）與自動打法（_duel_plan）。pr＝實力比（力量 × 血量）。threaten_fade：示威的意願每回合降多少；flee_pr 實力比低於這個時打不過直接逃（否則示弱）。auto_*：交給本能時壓制的門檻、比對手強多少才先示威、血量低於多少且打不過時示弱。",
       "attack": 6.0, "attack_pr": 3.0, "threaten": 4.0, "threaten_fade": 0.25, "approach": 5.0, "back_off": 2.5, "flee_pr": 0.6,
       "auto_pin": 0.45, "auto_threaten_pr": 1.1, "auto_submit_hp": 0.3,
@@ -122,7 +127,8 @@
   "ally": { "_self": "self_retreat_hp：交給本能的你血量低於這個就撤（同伴照 retreat_hp）；Phase 2k 第 6 步一生模擬校準", "self_retreat_hp": 0.55, "danger_ratio": 0.25, "risk_hits": 1.0, "_risk": "交給本能的你：剩下的血量扣掉對手 risk_hits 下最重的傷害就會到重傷線（danger_ratio，同 balance.combat）以下時也撤、示弱", "retreat_hp": 0.4, "back_dist": 3.5, "zone_penalty": 6.0, "misread": 0.2, "leave_rounds": 14 },
   "game": {
     "_comment": "主遊戲的戰術戰鬥（Phase 2k，SPEC「戰術戰鬥接進主遊戲」）。animals：改成戰術戰鬥的對手（其他照選單式）。terrain：依區域的地形產生 16×10 的戰場（每格放這種地形字元的機率；cliff_wall 在最上面一列放峭壁、water_band 在第 water_row 列放淺水）；keep_clear：起始位置與殘骸周圍幾格不放障礙。layouts：依情境的起始位置（wolf、mate、opponent、carcass；opponent 的 pos 為 edge 時從右邊的邊緣隨機一列進場）。carcass_size：殘骸大小依動物體型（small 整隻叼走）。turns_per_rounds：每幾回合算遊戲裡的 1 回合（finish_combat 已經加的不重複算）。heavy_ratio：重傷線（沿用 balance.combat.danger_ratio，這裡只給畫面標示用）。",
-    "animals": ["grizzly_bear", "cougar", "black_bear", "stranger_wolf", "challenger", "tundra_wolf"],
+    "animals": ["grizzly_bear", "cougar", "black_bear", "stranger_wolf", "challenger", "tundra_wolf", "coyote"],
+    "groups": { "_comment": "Phase 2l：一起進場的同種對手共幾隻（郊狼一對；第二隻從上下邊緣進場、繞到殘骸另一邊）", "coyote": 2 },
     "terrain": {
       "dense_forest": { "T": 0.07, "t": 0.08, "f": 0.16, "l": 0.03 },
       "forest_edge": { "T": 0.04, "t": 0.05, "f": 0.07, "l": 0.01 },
@@ -264,6 +270,7 @@
     "wolf_duel": { "base": "grizzly_open", "opponent_id": "stranger_wolf" },
     "tundra_pair": { "_comment": "第 5 步：獨狼對一對苔原狼", "base": "grizzly_open", "opponent_id": "tundra_wolf",
       "extra_enemies": [{ "id": "tundra_wolf", "uid": "tundra_wolf_2", "pos": [10, 3], "facing": [-1, 0] }] },
+    "coyote_pair": { "_comment": "Phase 2l 第 1 步：郊狼一對來偷你的殘骸（一隻從右邊、一隻從上面進場）", "base": "grizzly_arrives", "opponent_id": "coyote", "extra_enemies": [{"id": "coyote", "uid": "coyote_2", "pos": [11, 0], "facing": [0, 1]}] },
     "pack_clash": { "_comment": "第 5 步：你、伴侶與一隻成員對鄰群三隻", "base": "grizzly_open", "opponent_id": "pack_wolf", "with_mate": true, "mate": [3, 3],
       "allies": [{ "id": "member_1", "pos": [3, 7] }],
       "extra_enemies": [{ "id": "pack_wolf", "uid": "pack_wolf_2", "pos": [10, 3], "facing": [-1, 0] }, { "id": "pack_wolf", "uid": "pack_wolf_3", "pos": [10, 7], "facing": [-1, 0] }] },
