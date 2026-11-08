@@ -13,7 +13,7 @@
 - 叉角羚 pronghorn_*：站寬 1.45 格（比騾鹿略矮）；警覺是臀部白毛炸開；幼體 pronghorn_kid_* 4 個姿勢（0.85 格；跑那張身體畫得比較長 → 照身體長度指定）
 - 牧場的羊 sheep_*：站寬 1.3 格（美麗諾羊，和狼差不多高、身體比較寬）
 - 牧場母牛 cattle_cow_*：站寬 2.6 格（2026-11-07 放大：原本 1.75 格因為長角佔掉寬度，身體比狼還矮；現在約狼的 1.4 倍高）（德州長角牛，含角）；跑那張腳邊的沙土清掉；站定反擊第一版畫了一隻小牛趴在腳下（_cattle_cow_fight_with_calf.jpg，不用），重出的 fight＝低頭用長角對著你、刨地；小牛 cattle_calf_* 4 個姿勢（站是走路回頭看那張）
-- 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_* 暫時用母羊縮小到 0.75 格
+- 大角羊母羊 bighorn_ewe_*：站寬 1.15 格（短角）；小羊 bighorn_lamb_*（0.75 格）：站、警覺、跑是專屬的圖，吃草暫時用母羊那張縮小
 - 大角羊公羊 bighorn_ram_*：站寬 1.4 格（含角）；跑那張腳邊的沙土不連在身上，去背時拿掉；fight＝低頭用角對著你
 - 美洲野牛 bison_*：站寬 2.65 格（2026-11-07 放大到約狼的 1.6 倍高，和駝鹿同一個壓縮程度）；fight＝站定反擊（尾巴翹直、前蹄刨地；刨地的動作線不連在身上，只留最大的一塊時去掉）；小牛 bison_calf_* 4 個姿勢（1.35 格，橘紅色、沒有肩峰、沒有角；Gemini 每張都畫滿畫布，警覺那張畫得比較小 → 照身體長度指定）
 - 草原的野兔 hare_*：站寬 0.6 格；警覺是原本出成「跑」的那張（耳朵往後壓、正要竄出）；跑那張附真實照片當參考才畫出整個騰空；小野兔 hare_young_* 4 個姿勢（0.42 格；警覺和站幾乎一樣，耳朵稍微高一點）
@@ -64,7 +64,7 @@ ANIMALS = {
     "cattle_cow": (2.6, ["stand", "alert", "run", "graze", "fight"]),
     "cattle_calf": (1.45, ["stand", "alert", "run", "graze"]),
     "bighorn_ewe": (1.15, ["stand", "alert", "run", "graze"]),
-    "bighorn_lamb": (0.75, ["stand", "alert", "run", "graze"], "bighorn_ewe"),
+    "bighorn_lamb": (0.75, ["stand", "alert", "run", "graze"]),
     "bighorn_ram": (1.4, ["stand", "alert", "run", "graze", "fight"]),
     "bison": (2.65, ["stand", "alert", "run", "graze", "fight"]),
     "bison_calf": (1.35, ["stand", "alert", "run", "graze"]),
@@ -84,6 +84,8 @@ SPECIAL = {
     # 低頭吃草：面向左、1408×768、毛色偏紅褐 → 翻轉、照站那張調色
     # 野兔跑：1256×848（使用者附真實照片當參考才畫對），身體畫得比較大 → 照身體長度指定
     "hare_run": {"cells": 0.78},
+    # 大角羊小羊：吃草還沒有圖，先用母羊吃草那張縮小
+    "bighorn_lamb_graze": {"file": "bighorn_ewe_graze.jpg", "cells": 0.8},
     "pronghorn_kid_run": {"cells": 1.1},
     "bison_calf_alert": {"cells": 1.2},
     # 小旱獺：四張畫布大小不同（警覺 1109×944、其他 1408×768），身體畫得差不多大 → 警覺照身高對齊
