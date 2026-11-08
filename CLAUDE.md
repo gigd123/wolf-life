@@ -17,7 +17,7 @@
 | `docs/design-pillars.md` | 設計支柱：核心樂趣、玩家應面對的決策、不想變成的樣子、新系統的檢驗問題、決策分工 | 提案、寫規格、驗證玩法前 |
 | `docs/project-overview.md` | 給其他人或 AI 看的總覽：目前的遊戲內容與後續規劃 | 第一次接觸專案、或要對外說明時 |
 | `docs/pre-2.0-plan.md` | Phase 2 之前的工作清單：順序、待寫的提案、要補的圖、待決定的建議 | 規劃接下來要做什麼時 |
-| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 2g（旱獺、小撲、悄悄叼走猞猁的雪兔）、Phase 2h（鮭魚洄流季）、Phase 2i（苔原狼一起狩獵進戰術地圖、所有狩獵改成戰術場景）、Phase 2j（一天的節奏）、Phase 2k（戰術戰鬥接進主遊戲）、Phase 3a（黑狼的一生）、Phase 4a（牧場） | 每次開發前 |
+| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 2g（旱獺、小撲、悄悄叼走猞猁的雪兔）、Phase 2h（鮭魚洄流季）、Phase 2i（苔原狼一起狩獵進戰術地圖、所有狩獵改成戰術場景）、Phase 2j（一天的節奏）、Phase 2k（戰術戰鬥接進主遊戲）、Phase 2l（小型搶食者的戰術戰鬥）、Phase 3a（黑狼的一生）、Phase 4a（牧場） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
@@ -52,6 +52,7 @@
 17. **Phase 2j 一天的節奏**（晨昏出獵、白天休息）：依 `SPEC.md` 的實作順序做（共 2 步）。提案在 `docs/proposals/rest-and-daytime.md`。
 18. **Phase 3 成年期與社會**：依 `SPEC.md` 的實作順序做（共 9 步，從狼群通用化、狼的資料與生命事件紀錄開始；第 2、3 步合成可以獨立試玩的伴侶循環）。提案在 `docs/spec-update-proposal-14.md`，修訂後的草稿 `docs/spec-phase3-draft.md`，生態資料在 `docs/ecology-reference.md`「Phase 3：配對、領域、育幼與狼群」。
 19. **Phase 2k 戰術戰鬥接進主遊戲**：依 `SPEC.md` 的實作順序做（共 6 步，從灰熊、美洲獅接進主遊戲開始）。提案在 `docs/proposals/tactical-combat-integration.md`，原型規格在 `docs/proposals/tactical-combat-prototype.md`。HD-2D 畫面共用 `scripts/ui/HD2DBoard.gd`；出圖清單 `docs/art-request-hd2d-2026-11-06.md`。
+20. **Phase 2l 小型搶食者的戰術戰鬥**（郊狼、狼獾、猞猁；紅狐維持選單式）：依 `SPEC.md` 的實作順序做（共 4 步，從共用的搶食者行為與郊狼一對開始）。
 
 ## 工作規則
 
