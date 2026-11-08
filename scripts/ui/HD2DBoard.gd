@@ -169,6 +169,10 @@ func _terrain_mat(k: String, top_override: String = "") -> ShaderMaterial:
 	m.set_shader_parameter("show_grid", true)
 	var tint: Array = tint_override if not tint_override.is_empty() else (cfg["tint"].get(k, [1.0, 1.0, 1.0]) if top_override == "" else [1.0, 1.0, 1.0])
 	m.set_shader_parameter("tint", Vector3(float(tint[0]), float(tint[1]), float(tint[2])))
+	# lip_tops：上面是這些材質時側面畫草皮邊緣（材質 → 往下垂幾個材質像素）
+	var lips: Dictionary = cfg.get("lip_tops", {})
+	if lips.has(top_name):
+		m.set_shader_parameter("lip_texels", float(lips[top_name]))
 	mats[key] = m
 	return m
 
