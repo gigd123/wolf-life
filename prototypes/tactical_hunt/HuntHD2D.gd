@@ -28,6 +28,14 @@ func setup(th) -> void:
 	if not cfg.has("summer_tree_mix"):
 		cfg["summer_tree_mix"] = cfg.get("tree_mix", [])
 	cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"]) if winter else cfg["summer_tree_mix"]
+	cfg["winter"] = winter
+	# 地面斑塊：冬天用 winter_ground_mix 蓋過同一種地形（岩坡上面的草地斑塊換成雪）
+	if not cfg.has("summer_ground_mix"):
+		cfg["summer_ground_mix"] = (cfg.get("ground_mix", {}) as Dictionary).duplicate(true)
+	var gmx: Dictionary = (cfg["summer_ground_mix"] as Dictionary).duplicate(true)
+	if winter:
+		gmx.merge(cfg.get("winter_ground_mix", {}), true)
+	cfg["ground_mix"] = gmx
 	# 固定圖的物件（大石頭）：冬天換 winter_art、其他季節換回 summer_art
 	for tk in (cfg["trees"] as Dictionary).keys():
 		var te: Dictionary = cfg["trees"][tk]

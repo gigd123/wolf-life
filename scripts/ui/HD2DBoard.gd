@@ -133,6 +133,10 @@ func level_of(c: Vector2i) -> int:
 	return int(cfg["heights"].get(str(terrain_of.call(c)), 0))
 
 func top_y(c: Vector2i) -> float:
+	# height_var：同一種地形有些格子畫得矮一點（岩坡有高有低，看起來不像一排積木）；只是畫面
+	var hv: Dictionary = cfg.get("height_var", {}).get(str(terrain_of.call(c)), {})
+	if not hv.is_empty() and _hash01(c.x, c.y, 17) < float(hv.get("chance", 0.0)):
+		return float(hv["level"]) * float(cfg["level_height"])
 	return float(level_of(c)) * float(cfg["level_height"])
 
 func cell_center(c: Vector2i) -> Vector3:
@@ -219,6 +223,18 @@ func _build_terrain() -> void:
 			mi.position = Vector3(x + 0.5, (top + bottom) * 0.5, y + 0.5)
 			mi.material_override = _terrain_mat(k, _patch_for(k, x, y))
 			world.add_child(mi)
+			# near_props：某種地形旁邊的格子放物件（岩坡旁的平地有幾顆滾下來的大石頭）；只是畫面、不擋路
+			for np in cfg.get("near_props", []):
+				if k != str(np["on"]) or _hash01(x, y, 19) >= float(np.get("chance", 0.2)):
+					continue
+				var near := false
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					if in_map(c + d) and str(terrain_of.call(c + d)) == str(np["near"]):
+						near = true
+				if near:
+					var nart: String = str(np.get("winter_art", np["art"])) if bool(cfg.get("winter", false)) else str(np["art"])
+					var jn := Vector3((_hash01(x, y, 21) - 0.5) * 0.3, 0, (_hash01(x, y, 23) - 0.5) * 0.2)
+					_add_tree(cell_center(c) + jn, nart, float(np.get("scale", 1.0)) * lerpf(0.85, 1.15, _hash01(x, y, 25)))
 			if cfg["trees"].has(k):
 				# 同一種地形的樹稍微錯開，看起來不像排隊
 				var tcfg: Dictionary = cfg["trees"][k]
