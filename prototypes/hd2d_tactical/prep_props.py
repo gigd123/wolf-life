@@ -94,7 +94,31 @@ def key(path, min_blob=40):
     return im.crop(im.getbbox())
 
 
+# 地面材質（2026-11-08，ChatGPT 從正上方看的草地）：原圖 1024 是 512 的 2×2 重複 → 取左上 512 就能無縫拼接，
+# 縮成 128（一格 32 個材質像素 → 4 格重複一次，草叢約 5 像素），顏色照舊材質（_old_tex_grass.png）的平均色調暗，限制顏色數
+TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16)}
+
+
+def make_texture(name, f, crop, size, colors):
+    im = Image.open(os.path.join(SRC, f)).convert("RGB").crop((0, 0, crop, crop)).resize((size, size), Image.BOX)
+    old = os.path.join(OUT, "_old_tex_%s.png" % name)
+    if os.path.exists(old):
+        target = Image.open(old).convert("RGB").resize((1, 1), Image.BOX).getpixel((0, 0))
+        base = im.resize((1, 1), Image.BOX).getpixel((0, 0))
+        gain = [t / max(1, b) for t, b in zip(target, base)]
+        im = Image.eval(im, lambda v: v)  # copy
+        px = im.load()
+        for y in range(size):
+            for x in range(size):
+                px[x, y] = tuple(min(255, int(c * g)) for c, g in zip(px[x, y], gain))
+    im = im.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+    im.save(os.path.join(OUT, "tex_%s.png" % name))
+    print("tex_" + name, im.size)
+
+
 def main():
+    for name, args in TEXTURES.items():
+        make_texture(name, *args)
     for name, (f, h48) in PROPS.items():
         c = key(os.path.join(SRC, f))
         if name in TONE:
