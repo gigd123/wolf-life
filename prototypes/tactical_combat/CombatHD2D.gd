@@ -24,7 +24,14 @@ func _unit_art(i: int) -> Dictionary:
 	var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
-		return hd_wolf_texture(str(cfg["wolf_poses"].get(_wolf_pose(i), cfg["wolf_poses"]["stand"])))
+		var wp := _wolf_pose(i)
+		# 有專屬圖的狼（黑狼，2026-11-08）：poses 有這個姿勢就用專屬圖、不調色；沒有的姿勢用灰狼的圖調色（modulate）
+		var own: Dictionary = uc.get("poses", {})
+		if own.has(wp):
+			var t := hd_wolf_texture(str(own[wp]))
+			t["mod"] = uc.get("poses_modulate", [1, 1, 1])
+			return t
+		return hd_wolf_texture(str(cfg["wolf_poses"].get(wp, cfg["wolf_poses"]["stand"])))
 	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、撲擊 crouch、衝撞 charge、守食物 rear、上一回合有移動 walk／walk_b 輪流、沒動 stand
 	var poses: Dictionary = uc.get("hd2d_poses", {})
 	if not poses.is_empty():
@@ -139,7 +146,8 @@ func paint() -> void:
 		if str(u["carrying"]) != "":
 			tags.append(tr("tcombat.hd.carrying"))
 		var f: Vector2i = u["facing"]
-		unit("u%d" % i, _unit_art(i), u["pos"], (f.x < 0) if f.x != 0 else null, _col(uc.get("modulate", [1, 1, 1])), " ".join(tags))
+		var art := _unit_art(i)
+		unit("u%d" % i, art, u["pos"], (f.x < 0) if f.x != 0 else null, _col(art.get("mod", uc.get("modulate", [1, 1, 1]))), " ".join(tags))
 	if not tc.done:
 		var reach: Dictionary = tc.reachable(0)
 		for c in reach.keys():
