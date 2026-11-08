@@ -56,6 +56,7 @@
     "pack_wolf": { "art": "hd2d_wolf", "modulate": [0.6, 0.56, 0.52] },
     "member_1": { "art": "hd2d_wolf", "modulate": [0.92, 0.86, 0.8] },
     "member_2": { "art": "hd2d_wolf", "modulate": [0.86, 0.9, 0.86] },
+    "wolverine": { "_comment": "Phase 2l：狼獾（ChatGPT 2026-11-08，prep_black_wolf.py）。張嘴伸爪那張同時當咬（swipe）與守食物、示威（rear）", "width_cells": 1.05, "hd2d_poses": { "stand": "wolverine_stand", "walk": "wolverine_walk", "eat": "wolverine_eat", "swipe": "wolverine_lunge", "rear": "wolverine_lunge" } },
     "coyote": { "_comment": "Phase 2l：郊狼（ChatGPT 2026-11-08，prep_black_wolf.py）。咬 swipe 用咬的圖、叼著肉 carry、逃走或帶著肉跑出去 run", "width_cells": 1.1, "hd2d_poses": { "stand": "coyote_stand", "walk": "coyote_walk", "swipe": "coyote_bite", "carry": "coyote_carry", "run": "coyote_run" } },
     "cougar": { "width_cells": 1.8, "hd2d_poses": { "stand": "cougar_stand", "walk": "cougar_walk", "walk_b": "cougar_walk_b", "eat": "cougar_eat", "crouch": "cougar_crouch", "swipe": "cougar_pounce" } }
   },

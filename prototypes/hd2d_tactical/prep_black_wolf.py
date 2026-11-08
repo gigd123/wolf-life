@@ -25,6 +25,8 @@ SETS = {
     "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge"], 1.0, 1.0),
     # 郊狼（Phase 2l，ChatGPT 2026-11-08，1408×768）：約灰狼的八成長（走路約 1.08 格；體重約四成但身長約八成）
     "coyote": (["stand", "walk", "bite", "carry", "run"], 0.8, 1.0),
+    # 狼獾（Phase 2l，ChatGPT 2026-11-08）：站、走、撲咬（張嘴伸爪，也當示威）、吃；含尾巴約灰狼的七成五長，矮壯
+    "wolverine": (["stand", "walk", "lunge", "eat"], 0.75, 1.0),
 }
 
 
