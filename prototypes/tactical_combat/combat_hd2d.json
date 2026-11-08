@@ -20,6 +20,7 @@
   },
   "no_fade": ["tallgrass_cover", "tallgrass_cover_winter"],
   "autumn_swap": { "_comment": "秋天時把樹換成這張（HD2DBoard._add_tree）", "birch": "birch_autumn", "shrub": "shrub_autumn", "shrub_b": "shrub_autumn" },
+  "pan": { "_comment": "捲動（2026-11-08）：左鍵拖曳超過 drag_px 像素算捲動；滑鼠在邊緣 edge_px 內、方向鍵捲動，speed 每秒幾格（÷ 放大倍數）", "drag_px": 8, "edge_px": 24, "speed": 10 },
   "fixed_scale": { "_comment": "灌木一叢約 0.9 格寬、倒木一格長（素材一格 48 像素時灌木寬 83、倒木寬 60），不跟著大樹、小樹的格子縮放；大片灌木叢用好幾格的灌木組成", "shrub": 0.52, "shrub_winter": 0.52, "shrub_b": 0.4, "shrub_autumn": 0.4, "log": 0.8, "log_winter": 0.8, "tallgrass": 0.95, "tallgrass_winter": 0.95 },
   "winter_tree_mix": ["pine_snow", "pine_snow", "pine_snow", "pine_snow", "pine_snow", "shrub_winter", "shrub_winter", "dead_tree"],
   "start_zoom": 1.0,

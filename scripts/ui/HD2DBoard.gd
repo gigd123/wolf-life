@@ -6,6 +6,7 @@ extends Control
 # 子類別覆寫 paint()：每次畫面更新時呼叫 unit()、quad()、line()、label() 畫這一刻的狀態。
 # 點格子、滑鼠移動用訊號交回原本的畫面處理；邏輯完全不在這裡。
 # 滾輪縮放（cfg.zoom：max 最多放大幾倍、step 每格倍率）、右鍵或中鍵拖曳捲動。
+# 2026-11-08：左鍵拖曳也能捲動（移動超過 drag_px 才算拖曳，放開時不算點擊）；滑鼠移到畫面邊緣（edge_px 內）自動捲動、方向鍵捲動（cfg.pan）。
 # cfg（JSON）：level_height、camera_pitch、margin、swap_px、heights／top／side／tint／trees（依地形字元）、ambient、light、tilt_shift、background。
 
 signal cell_hovered(c: Vector2i)
@@ -34,6 +35,9 @@ var zoom := 1.0
 var focus := Vector2.ZERO # 鏡頭看的地面位置（x, z）
 var _fit_size := 1.0
 var _dragging := false
+var _left_down := false
+var _left_drag := false
+var _left_from := Vector2.ZERO
 
 func _init_board(cfg_path: String) -> void:
 	cfg = JSON.parse_string(FileAccess.get_file_as_string(cfg_path))
@@ -660,6 +664,39 @@ func _pick_cell(p: Vector2) -> Vector2i:
 		t += 0.02
 	return Vector2i(-1, -1)
 
+# 邊緣捲動與方向鍵（拉近時才有用；整張地圖都在畫面裡時鏡頭會被限制住）
+func _process(delta: float) -> void:
+	if cam == null or map_w == 0 or not is_visible_in_tree():
+		return
+	var pc: Dictionary = cfg.get("pan", {})
+	var d := Vector2.ZERO
+	if Input.is_key_pressed(KEY_LEFT):
+		d.x -= 1.0
+	if Input.is_key_pressed(KEY_RIGHT):
+		d.x += 1.0
+	if Input.is_key_pressed(KEY_UP):
+		d.y -= 1.0
+	if Input.is_key_pressed(KEY_DOWN):
+		d.y += 1.0
+	var mp := get_local_mouse_position()
+	var edge: float = float(pc.get("edge_px", 24.0))
+	if edge > 0.0 and Rect2(Vector2.ZERO, size).has_point(mp) and DisplayServer.window_is_focused() and not (_dragging or _left_drag):
+		if mp.x < edge:
+			d.x -= 1.0
+		elif mp.x > size.x - edge:
+			d.x += 1.0
+		if mp.y < edge:
+			d.y -= 1.0
+		elif mp.y > size.y - edge:
+			d.y += 1.0
+	if d == Vector2.ZERO or zoom <= 1.001:
+		return
+	var before := focus
+	focus += d.normalized() * float(pc.get("speed", 10.0)) * delta / zoom
+	_apply_camera()
+	if focus != before:
+		queue_redraw()
+
 func _on_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 		var zc: Dictionary = cfg.get("zoom", {"max": 3.0, "step": 1.15})
@@ -676,7 +713,25 @@ func _on_input(ev: InputEvent) -> void:
 		_dragging = ev.pressed
 		accept_event()
 		return
-	if ev is InputEventMouseMotion and _dragging:
+	# 左鍵：按下先記著；移動超過 drag_px 就變成拖曳捲動，放開時沒拖曳才算點擊
+	if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
+		if ev.pressed:
+			_left_down = true
+			_left_drag = false
+			_left_from = ev.position
+		else:
+			var was_drag := _left_drag
+			_left_down = false
+			_left_drag = false
+			if not was_drag:
+				var c2 := _pick_cell(ev.position)
+				if c2.x >= 0:
+					cell_clicked.emit(c2)
+		accept_event()
+		return
+	if ev is InputEventMouseMotion and _left_down and not _left_drag and ev.position.distance_to(_left_from) > float(cfg.get("pan", {}).get("drag_px", 8.0)):
+		_left_drag = true
+	if ev is InputEventMouseMotion and (_dragging or _left_drag):
 		var a := _ground_at(ev.position - ev.relative)
 		var b := _ground_at(ev.position)
 		focus += a - b
@@ -687,7 +742,4 @@ func _on_input(ev: InputEvent) -> void:
 		if c != _last_hover:
 			_last_hover = c
 			cell_hovered.emit(c)
-	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-		var c2 := _pick_cell(ev.position)
-		if c2.x >= 0:
-			cell_clicked.emit(c2)
+
