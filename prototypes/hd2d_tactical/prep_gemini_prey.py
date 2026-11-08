@@ -86,6 +86,9 @@ ANIMALS = {
     # 公馬鹿、白尾鹿雄鹿的殘骸（2026-11-08 ChatGPT 畫在同一張，SPECIAL 分別裁）：含鹿角比母的寬
     "carcass_elk_bull": (2.3, ["stand"]),
     "carcass_deer_buck": (1.6, ["stand"]),
+    # 公駝鹿的殘骸（2026-11-08）：駝鹿在資料裡沒有雄性階段，先備好圖（carcass.hd 的 moose.buck），要遊戲記下性別才會用到
+    "carcass_moose_bull": (2.6, ["stand"]),
+    # carcass_deer_buck_v2.jpg：白尾鹿雄鹿的另一版（旁邊多畫了一副掉落的鹿角），沒有用
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
