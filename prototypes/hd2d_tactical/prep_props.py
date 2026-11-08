@@ -30,6 +30,9 @@ PROPS = {
     "log_winter": ("log_winter.jpg", 25),
     # 枯樹（樹枝張開，寬高比約 0.7）：比松樹矮一點；冬天也用同一張
     "dead_tree": ("dead_tree.jpg", 120),
+    # 小石堆（寬高比約 1.25）：開闊地（.）少量點綴，1 倍約半格寬
+    "stones": ("stones.jpg", 20),
+    "stones_winter": ("stones_winter.jpg", 20),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}
