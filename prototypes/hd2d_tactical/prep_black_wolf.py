@@ -5,7 +5,7 @@
 黑毛縮小後容易變成一團黑影 → 整體提亮 BRIGHT 倍；外框和灰狼一樣補一圈 1 像素深色（prep_wolf.outline）。
 其他姿勢（撲咬、帶傷、撤退、倒地…）沒有專屬圖，戰鬥畫面用灰狼的圖調暗（combat_hd2d.json units.stranger_wolf）。
 
-苔原狼（2026-11-08，ChatGPT，tundrawolf_*.jpg）：站、走、示威、示弱（夾尾巴、頭低於肩膀）；準備撲還沒有（ChatGPT 給了和示威一樣的圖）。
+苔原狼（2026-11-08，ChatGPT，tundrawolf_*.jpg）：站、走、示威、示弱（夾尾巴、頭低於肩膀）、準備撲（重出的）、撲咬 lunge（重出準備撲時多給的一張：站著張大嘴咆哮，當咬下去那一回合用）。
 白毛不提亮；大小和灰狼一樣（× 1.0）。units.tundra_wolf。
 
 用法：python3.12 -I prototypes/hd2d_tactical/prep_black_wolf.py
@@ -20,7 +20,7 @@ import prep_wolf as pw  # noqa: E402
 # 前綴 → (姿勢, 比灰狼走路大幾倍, 提亮倍率)
 SETS = {
     "blackwolf": (["stand", "walk", "threaten", "ready", "submit"], 1.05, 1.3),
-    "tundrawolf": (["stand", "walk", "threaten", "submit"], 1.0, 1.0),
+    "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge"], 1.0, 1.0),
 }
 
 
