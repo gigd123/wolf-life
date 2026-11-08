@@ -21,8 +21,7 @@ SRC = os.path.join(pg.ROOT, "arts", "pixellab_2026-11-06")
 # 名稱 → (來源, 第幾格〔0 左上、1 右上、2 左下、3 右下〕, 寬幾格)
 FRAMES = {
     "hdwolf_walk_b": ("wolf_walk_4var.png", 0, "match_height:hdwolf_walk"),
-    "hd_carcass_elk": ("carcass_elk_4var.png", 0, 1.6),
-    "hd_carcass_deer": ("carcass_elk_4var.png", 3, 1.2),
+    # 馬鹿、鹿的殘骸 2026-11-08 改用 ChatGPT 畫的（prep_gemini_prey.py），這裡不再輸出
     # 白尾鹿（2026-11-06）：PixelLab 畫得腿長脖子高，照寬 1.3／1.4 格會和馬鹿一樣高，縮成 1.1／1.2 格（約馬鹿的 0.85 高）；顏色比其他動物鮮豔，飽和度 × 0.8。雄鹿取右上（毛色比較沉，和寫實的狼、馬鹿搭）；母鹿四格是四個姿勢：站、走、低頭吃草、警覺回頭
     "_old_hd_deer_buck": ("deer_buck_4var.png", 1, 1.2),  # 2026-11-07 改用 Gemini 的寫實版
     # 白尾鹿母鹿 2026-11-07 改用 Gemini 的寫實版（prep_gemini_prey.py 輸出 hd_deer_doe*）；PixelLab 版改名 _old_ 保留
@@ -62,7 +61,7 @@ def desaturate(im, k):
 
 # 野牛的殘骸（2026-11-08；駝鹿的改用 ChatGPT 畫的，見 prep_gemini_prey.py）：Gemini 一直畫成站著的，先拿馬鹿殘骸（左上那隻）照駝鹿、野牛站姿的色盤調色、放大（肉保留原色）
 RECOLOR = {
-    "hd_carcass_bison": ("carcass_elk_4var.png", 0, "bison_stand.jpg", 2.1),
+    # 野牛殘骸 2026-11-08 改用 ChatGPT 畫的（prep_gemini_prey.py）
 }
 # 色盤只取來源圖的這一段（左、右，比例）：野牛的後半身是淺褐色，整張取會太淡 → 只取前半身的深褐色長毛
 PALETTE_CROP = {"hd_carcass_bison": (0.45, 1.0)}

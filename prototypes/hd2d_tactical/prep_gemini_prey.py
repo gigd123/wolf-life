@@ -79,6 +79,10 @@ ANIMALS = {
     # 北美馴鹿、大角羊的殘骸（2026-11-08 ChatGPT，躺著、肋骨露出）。馴鹿頭在左 → 翻轉（SPECIAL）
     "carcass_caribou": (1.9, ["stand"]),
     "carcass_bighorn": (1.6, ["stand"]),
+    # 馬鹿（母）、白尾鹿（母）、野牛的殘骸（2026-11-08 ChatGPT；取代 PixelLab 與調色的暫用版）
+    "carcass_elk": (2.0, ["stand"]),
+    "carcass_deer": (1.5, ["stand"]),
+    "carcass_bison": (2.6, ["stand"]),
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）

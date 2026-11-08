@@ -5434,7 +5434,7 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		var aid: String = str(current_feeding.get("animal_id", ""))
 		var size: String = str(GameData.animals.get(aid, {}).get("size", "medium"))
 		var cs: String = str(g["carcass_size"].get(size, "large"))
-		carcass_data = {"pos": cp, "animal": aid, "segments": int(current_feeding["segments_left"]), "size": cs,
+		carcass_data = {"pos": cp, "animal": aid, "stage": str(current_feeding.get("life_stage", "adult")), "segments": int(current_feeding["segments_left"]), "size": cs,
 			"small_whole": cs == "small", "whole_size": "small", "leg": [2, 3]}
 	var sc := {"map": _tc_map(c.terrain, keep, rng), "wolf": [wpos.x, wpos.y], "mate": lay["mate"],
 		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),

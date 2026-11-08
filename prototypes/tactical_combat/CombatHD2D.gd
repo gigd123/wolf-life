@@ -180,8 +180,17 @@ func paint() -> void:
 		var cc: Dictionary = cfg["carcass"]
 		var hdc: Dictionary = cc.get("hd", {})
 		if not hdc.is_empty():
-			var art: Dictionary = hd_wolf_texture(str(hdc.get(str(tc.carcass.get("animal", "")), hdc["_default"])))
-			sprite_at(art["tex"], float(art["ps"]), tc.carcass["pos"])
+			# 依物種與階段（幼體、雄、雌）找殘骸的圖；幼體沒有專屬圖就把成年的縮小（2026-11-08）
+			var an: String = str(tc.carcass.get("animal", ""))
+			var stg: String = str(tc.carcass.get("stage", "adult"))
+			var key: String = an + "." + stg
+			var mult := 1.0
+			if not hdc.has(key):
+				key = an if hdc.has(an) else "_default"
+				if stg == "juvenile":
+					mult = float(hdc.get("juvenile_scale", 0.65))
+			var art: Dictionary = hd_wolf_texture(str(hdc[key]))
+			sprite_at(art["tex"], float(art["ps"]) * mult, tc.carcass["pos"])
 		else:
 			var tex: Texture2D = load(str(cc.get(str(tc.carcass.get("animal", "")), cc["_default"])))
 			sprite_at(tex, 1.0 / float(cc["px_per_cell"]), tc.carcass["pos"])
