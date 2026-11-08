@@ -493,6 +493,21 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	s2.texture = art["tex"]
 	s2.pixel_size = float(art["ps"])
 	s2.modulate = modulate
+	# 角色不接受別的樹、物件投下的影子（2026-11-08：樹影打在灰熊前半身，看起來像一塊黑色）；光線、時段的顏色照常
+	var um: StandardMaterial3D = ent.get("mat", null)
+	if um == null:
+		um = StandardMaterial3D.new()
+		um.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		um.alpha_scissor_threshold = 0.5
+		um.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		um.vertex_color_use_as_albedo = true
+		um.disable_receive_shadows = true
+		um.cull_mode = BaseMaterial3D.CULL_DISABLED
+		um.roughness = 1.0
+		ent["mat"] = um
+		s2.material_override = um
+	var tx: Texture2D = art["tex"]
+	um.albedo_texture = (tx as AtlasTexture).atlas if tx is AtlasTexture else tx
 	s2.offset = Vector2(0, s2.texture.get_height() * 0.5 - 1)
 	if flip != null:
 		s2.flip_h = bool(flip)
