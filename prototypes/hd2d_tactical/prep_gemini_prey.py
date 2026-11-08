@@ -76,10 +76,14 @@ ANIMALS = {
     "beaver_kit": (0.55, ["stand", "alert", "run", "graze"]),
     # 駝鹿殘骸（2026-11-08 ChatGPT，躺著、肋骨露出）→ hd_carcass_moose（取代馬鹿殘骸調色的備案）
     "carcass_moose": (2.4, ["stand"]),  # 四腳伸直，身體只佔寬度約七成 → 比站姿寬一些
+    # 北美馴鹿、大角羊的殘骸（2026-11-08 ChatGPT，躺著、肋骨露出）。馴鹿頭在左 → 翻轉（SPECIAL）
+    "carcass_caribou": (1.9, ["stand"]),
+    "carcass_bighorn": (1.6, ["stand"]),
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
 SPECIAL = {
+    "carcass_caribou_stand": {"flip": True},
     # 馴鹿：Gemini 把「正面看著你」和「跑」和一副浮著的鹿角畫在同一張（左上那隻腳下還有一條黑線）→ 分別裁出來
     "caribou_alert": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 0, 590, 592), "cells": 1.45},
     "caribou_run": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 335, 1024, 1024), "cells": 1.9},

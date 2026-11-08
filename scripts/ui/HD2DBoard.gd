@@ -306,12 +306,18 @@ func _build_terrain() -> void:
 	if not ep.is_empty():
 		for x in map_w:
 			_add_tree(Vector3(x + 0.5, 0, -0.3), str(ep["art"]), float(ep.get("scale", 1.0)))
+		# 外圍的其他物件（牧場的小木屋）
+		for ex in ep.get("extra", []):
+			_add_tree(Vector3(float(ex.get("x", 1.0)), 0, float(ex.get("z", -1.5))), str(ex["art"]), float(ex.get("scale", 1.0)))
 	_build_border(bottom)
 	overlay = Node3D.new()
 	world.add_child(overlay)
 
 func _add_tree(pos: Vector3, art: String, scale: float) -> void:
 	# fixed_scale：這張圖固定的縮放（灌木、倒木一格一個，不跟著大樹、小樹的格子放大縮小），稍微隨機 ±10%
+	# 秋天換圖（autumn_swap：白樺換成金黃葉子的）
+	if str(cfg.get("season", "")) == "autumn":
+		art = str(cfg.get("autumn_swap", {}).get(art, art))
 	var fs: Dictionary = cfg.get("fixed_scale", {})
 	if fs.has(art):
 		scale = float(fs[art]) * lerpf(0.9, 1.1, _hash01(int(pos.x * 10.0), int(pos.z * 10.0), 5))

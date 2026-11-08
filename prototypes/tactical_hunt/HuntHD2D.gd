@@ -25,6 +25,7 @@ func setup(th) -> void:
 	# 每張地圖自己的樹、地面（map_sets，2026-11-08）：先蓋，再套冬天
 	apply_map_set(str(h.game_mods.get("world_map", "")))
 	cfg["winter"] = winter
+	cfg["season"] = str(h.game_mods.get("season", ""))
 	if winter:
 		# 地面換成雪、樹換積雪的那組、顏色倍率與斑塊用冬天的（密林原本調深調綠，疊在雪上會變成綠色色塊）
 		(cfg["top"] as Dictionary).merge(cfg.get("winter_top", {}), true)

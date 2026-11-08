@@ -32,6 +32,11 @@ PROPS = {
     "dead_tree": ("dead_tree.jpg", 120),
     # 夏天的雲杉（取代參考圖裁出來、枝葉邊緣有白點的深色松樹）：高度和松樹一樣
     "spruce": ("spruce.jpg", 140),
+    # 秋天的白樺（秋天時 tree_mix 的 birch 換成這張，autumn_swap）
+    "birch_autumn": ("birch_autumn.jpg", 115),  # 樹冠比夏天的寬，高度調低一點免得太大
+    # 牧場：小木屋（約 3 格寬，地圖上緣外面）、乾草堆（約 1.1 格寬，開闊地點綴）
+    "cabin": ("cabin.jpg", 80),
+    "haystack": ("haystack.jpg", 28),
     # 小石堆（寬高比約 1.25）：開闊地（.）少量點綴，1 倍約半格寬
     "stones": ("stones.jpg", 20),
     "stones_winter": ("stones_winter.jpg", 20),
@@ -50,7 +55,7 @@ PROPS = {
     "cave": ("cave.jpg", 34),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
-TONE = {"birch": (0.8, 0.9)}
+TONE = {"birch": (0.8, 0.9), "birch_autumn": (0.85, 0.9)}
 
 
 def tone(im, sat, bri):
