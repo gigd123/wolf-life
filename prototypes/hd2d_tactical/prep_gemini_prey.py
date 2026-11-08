@@ -83,11 +83,16 @@ ANIMALS = {
     "carcass_elk": (2.0, ["stand"]),
     "carcass_deer": (1.5, ["stand"]),
     "carcass_bison": (2.6, ["stand"]),
+    # 公馬鹿、白尾鹿雄鹿的殘骸（2026-11-08 ChatGPT 畫在同一張，SPECIAL 分別裁）：含鹿角比母的寬
+    "carcass_elk_bull": (2.3, ["stand"]),
+    "carcass_deer_buck": (1.6, ["stand"]),
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
 SPECIAL = {
     "carcass_caribou_stand": {"flip": True},
+    "carcass_elk_bull_stand": {"file": "carcass_bulls_sheet.jpg", "crop": (0, 0, 1264, 500)},
+    "carcass_deer_buck_stand": {"file": "carcass_bulls_sheet.jpg", "crop": (400, 395, 1264, 843)},
     # 馴鹿：Gemini 把「正面看著你」和「跑」和一副浮著的鹿角畫在同一張（左上那隻腳下還有一條黑線）→ 分別裁出來
     "caribou_alert": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 0, 590, 592), "cells": 1.45},
     "caribou_run": {"file": "caribou_sheet_alert_run.jpg", "crop": (0, 335, 1024, 1024), "cells": 1.9},
