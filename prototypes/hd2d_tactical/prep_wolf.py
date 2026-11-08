@@ -68,6 +68,10 @@ def main():
     # 第一輪照亮度的排名對應到第二輪走路那張的顏色（色盤對應；比整張乘倍率更接近第二輪的淺灰），肉保留原色
     for n, c in r1.items():
         cuts[n] = match_palette(c, cuts["walk"])
+    # 示弱 2026-11-08 換成重畫的（wolf_r3_submit.jpg：低頭、拱背、夾尾巴；原本那張站得太直），照第二輪走路的色盤調色
+    r3 = os.path.join(pg.SRC, "wolf_r3_submit.jpg")
+    if os.path.exists(r3):
+        cuts["submit"] = match_palette(pg.cut(r3, "green"), cuts["walk"])
     ref = cuts["walk"].width
     for n, c in cuts.items():
         c.save(os.path.join(pg.SRC, "hdwolf_%s_src.png" % n))
