@@ -30,6 +30,8 @@ PROPS = {
     "log_winter": ("log_winter.jpg", 25),
     # 枯樹（樹枝張開，寬高比約 0.7）：比松樹矮一點；冬天也用同一張
     "dead_tree": ("dead_tree.jpg", 120),
+    # 夏天的雲杉（取代參考圖裁出來、枝葉邊緣有白點的深色松樹）：高度和松樹一樣
+    "spruce": ("spruce.jpg", 140),
     # 小石堆（寬高比約 1.25）：開闊地（.）少量點綴，1 倍約半格寬
     "stones": ("stones.jpg", 20),
     "stones_winter": ("stones_winter.jpg", 20),
@@ -111,11 +113,35 @@ def key(path, min_blob=40):
 # 縮成 128（一格 32 個材質像素 → 4 格重複一次，草叢約 5 像素），顏色照舊材質（_old_tex_grass.png）的平均色調暗，限制顏色數
 TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16), "snow": ("snow_top.jpg", 512, 128, 16), "dirt": ("dirt_top.jpg", 512, 128, 16), "rock": ("rock_top.jpg", 512, 128, 16), "water": ("water_top.jpg", 512, 128, 12), "ice": ("ice_top.jpg", 512, 128, 12),
             # 秋天的乾草（草原、秋天）：沒有舊材質，亮度照新的草地材質 × 1.1（乾草比綠草亮一點）、飽和度 × 0.7（原色太橘）
-            "grass_autumn": ("grass_autumn_top.jpg", 512, 128, 16, "tex_grass.png", 1.1, 0.7)}
+            "grass_autumn": ("grass_autumn_top.jpg", 512, 128, 16, "tex_grass.png", 1.1, 0.7),
+            # 苔原（苔蘚、地衣、矮灌木）、森林密林的地面（針葉、苔蘚），ChatGPT 2026-11-08：704 一個循環 → 176（4 格重複一次）；亮度照草地
+            "tundra": ("tundra_top.jpg", 704, 176, 16, "tex_grass.png", 1.05, 0.85),
+            "forest_floor": ("forest_floor_top.jpg", 704, 176, 16, "tex_grass.png", 0.85, 0.9)}
+
+
+# 只有左右重複的材質（1408×768，左右 704 一個循環、上下沒有）：取 704×704，上下接縫用下面多出來的 64 行淡入（seam_blend）
+SEAM = {"tundra": 64, "forest_floor": 64}
+CONTRAST = {"tundra": 0.65}
+
+
+def seam_blend(src, w, h, band):
+    out = src.crop((0, 0, w, h)).copy()
+    a = src.load()
+    o = out.load()
+    for y in range(band):
+        t = y / band
+        for x in range(w):
+            p, q = a[x, h + y], a[x, y]
+            o[x, y] = tuple(int(p[k] * (1 - t) + q[k] * t) for k in range(3))
+    return out
 
 
 def make_texture(name, f, crop, size, colors, lum_ref="", lum_mult=1.0, sat=1.0):
-    im = Image.open(os.path.join(SRC, f)).convert("RGB").crop((0, 0, crop, crop)).resize((size, size), Image.BOX)
+    src = Image.open(os.path.join(SRC, f)).convert("RGB")
+    if name in SEAM:
+        im = seam_blend(src, crop, crop, SEAM[name]).resize((size, size), Image.BOX)
+    else:
+        im = src.crop((0, 0, crop, crop)).resize((size, size), Image.BOX)
     old = os.path.join(OUT, "_old_tex_%s.png" % name)
     if lum_ref:
         # 只調亮度（保留原本的顏色）：平均亮度 = 參考材質的 × lum_mult
@@ -134,6 +160,14 @@ def make_texture(name, f, crop, size, colors, lum_ref="", lum_mult=1.0, sat=1.0)
         for y in range(size):
             for x in range(size):
                 px[x, y] = tuple(min(255, int(c * g)) for c, g in zip(px[x, y], gain))
+    # 對比降低（苔原的白色地衣太搶眼）：往平均色拉近
+    if name in CONTRAST:
+        k = CONTRAST[name]
+        mean = im.resize((1, 1), Image.BOX).getpixel((0, 0))
+        px = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                px[x, y] = tuple(int(mean[c] + (px[x, y][c] - mean[c]) * k) for c in range(3))
     im = im.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
     im.save(os.path.join(OUT, "tex_%s.png" % name))
     print("tex_" + name, im.size)
