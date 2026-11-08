@@ -8,6 +8,8 @@
 苔原狼（2026-11-08，ChatGPT，tundrawolf_*.jpg）：站、走、示威、示弱（夾尾巴、頭低於肩膀）、準備撲（重出的）、撲咬 lunge（重出準備撲時多給的一張：站著張大嘴咆哮，當咬下去那一回合用）。
 白毛不提亮；大小和灰狼一樣（× 1.0）。units.tundra_wolf。
 
+郊狼（2026-11-08，ChatGPT，coyote_*.jpg）：站、走、咬、叼肉、逃跑；約灰狼的八成長。units.coyote 的 hd2d_poses。
+
 用法：python3.12 -I prototypes/hd2d_tactical/prep_black_wolf.py
 """
 import os
@@ -21,6 +23,8 @@ import prep_wolf as pw  # noqa: E402
 SETS = {
     "blackwolf": (["stand", "walk", "threaten", "ready", "submit"], 1.05, 1.3),
     "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge"], 1.0, 1.0),
+    # 郊狼（Phase 2l，ChatGPT 2026-11-08，1408×768）：約灰狼的八成長（走路約 1.08 格；體重約四成但身長約八成）
+    "coyote": (["stand", "walk", "bite", "carry", "run"], 0.8, 1.0),
 }
 
 

@@ -40,7 +40,13 @@ func _unit_art(i: int) -> Dictionary:
 		var pose := "stand" if poses.has("stand") and not moved else "walk"
 		if pose == "walk" and poses.has("walk_b") and tc.rounds % 2 == 1:
 			pose = "walk_b"
-		if bool(u.get("eating", false)) and poses.has("eat"):
+		# 逃走、帶著肉跑出去（退出的那一回合還留在畫面上）：逃跑；叼著肉：叼肉（Phase 2l：郊狼）
+		var leaving: bool = bool(u.get("out", false)) or (tc.intents.has(i) and str(tc.intents[i].get("action", "")) == "flee")
+		if leaving and poses.has("run"):
+			pose = "carry" if str(u.get("carrying", "")) != "" and poses.has("carry") and not bool(u.get("out", false)) else "run"
+		elif str(u.get("carrying", "")) != "" and poses.has("carry"):
+			pose = "carry"
+		elif bool(u.get("eating", false)) and poses.has("eat"):
 			pose = "eat"
 		elif tc.intents.has(i) and str(tc.intents[i].get("looks", "")) in ["swipe", "bite"] and poses.has("swipe"):
 			pose = "swipe"
