@@ -74,6 +74,8 @@ ANIMALS = {
     "marmot_young": (0.5, ["stand", "alert", "run", "graze"]),
     "beaver": (0.85, ["stand", "alert", "run", "graze"]),
     "beaver_kit": (0.55, ["stand", "alert", "run", "graze"]),
+    # 駝鹿殘骸（2026-11-08 ChatGPT，躺著、肋骨露出）→ hd_carcass_moose（取代馬鹿殘骸調色的備案）
+    "carcass_moose": (2.4, ["stand"]),  # 四腳伸直，身體只佔寬度約七成 → 比站姿寬一些
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
 # cells 直接指定寬幾格（同一張裡畫的大小不同、或畫布不是 1024 時，照身體長度目測）、match 顏色照站那張的色盤（prep_wolf.match_palette）
