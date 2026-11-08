@@ -27,6 +27,8 @@ SETS = {
     "coyote": (["stand", "walk", "bite", "carry", "run"], 0.8, 1.0),
     # 狼獾（Phase 2l，ChatGPT 2026-11-08）：站、走、撲咬（張嘴伸爪，也當示威）、吃；含尾巴約灰狼的七成五長，矮壯
     "wolverine": (["stand", "walk", "lunge", "eat"], 0.75, 1.0),
+    # 猞猁（Phase 2l，ChatGPT 2026-11-08）：站、走、揮爪、叼著雪兔跑、示威（豎毛張嘴）；約灰狼的八成長（和郊狼差不多大、腿長）
+    "lynx": (["stand", "walk", "swipe", "carry", "threaten"], 0.8, 1.0),
 }
 
 

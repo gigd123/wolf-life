@@ -384,7 +384,9 @@ func _explore_once() -> void:
 	if d.get("kind", "") == "lynx":
 		# 謹慎型悄悄叼走（Phase 2g 第 3 步），其他正面搶
 		if d.get("has_kill", false) and style == "cautious":
-			GameState.lynx_sneak()
+			# 失敗時接著戰術戰鬥（Phase 2l 第 3 步）
+			if bool(GameState.lynx_sneak().get("tactical", false)):
+				play_combat(GameState.start_lynx_combat(true))
 		elif d.get("has_kill", false):
 			play_combat(GameState.start_lynx_combat())
 		else:

@@ -433,6 +433,53 @@ func _run() -> void:
 		gs.wolf.health = 110.0
 	_check(ok11 == 20, "交給本能 20 場都打得完（%d）" % ok11)
 
+	print("== 12. 猞猁叼著雪兔（Phase 2l 第 3 步）")
+	gs.new_game("forest_north")
+	gs.wolf.age_years = 3.0
+	gs.current_discovery = {"kind": "lynx", "location": "dense_forest", "has_kill": true, "known": true}
+	var c12 = gs.start_lynx_combat()
+	_check(gs.uses_tactical_combat(c12), "猞猁走戰術戰鬥")
+	var t12 = gs.start_tactical_combat(c12)
+	var e12: int = t12.enemy_index()
+	_check(str(t12.units[e12]["carrying"]) != "", "牠開場叼著雪兔")
+	var far := true
+	for y in 10:
+		for x in 16:
+			if t12.map.terrain(Vector2i(x, y)) in ["T", "t", "f", "r"] and t12.map.dist(Vector2i(x, y), t12.units[e12]["pos"]) <= 4.5:
+				far = false
+	_check(far, "牠周圍幾格沒有掩蔽")
+	# 牠帶著雪兔不見了 → 沒搶到；咬到牠、雪兔掉了、牠走了 → 搶到（雪兔歸你）
+	t12.units[e12]["out"] = true
+	t12.units[e12]["out_reason"] = "escaped"
+	t12._check_end()
+	gs.apply_tactical_combat(c12, t12)
+	_check(c12.outcome == "parted" and not c12.won(), "帶著雪兔逃掉：沒搶到（%s）" % c12.outcome)
+	gs.current_discovery = {"kind": "lynx", "location": "dense_forest", "has_kill": true, "known": true}
+	var c12b = gs.start_lynx_combat()
+	var t12b = gs.start_tactical_combat(c12b)
+	var e12b: int = t12b.enemy_index()
+	t12b.drop_carried(e12b)
+	t12b.units[e12b]["out"] = true
+	t12b.units[e12b]["out_reason"] = "gave_up"
+	t12b._check_end()
+	gs.apply_tactical_combat(c12b, t12b)
+	var h12: float = gs.wolf.hunger
+	var r12: Dictionary = gs.finish_combat(c12b)
+	_check(c12b.won() and bool(r12.get("lynx_hare", false)), "雪兔掉了、牠走了：搶到雪兔（%s）" % c12b.outcome)
+	# 悄悄叼走失敗 → 戰術戰鬥
+	var sneak_tc := 0
+	for t in 30:
+		gs.current_discovery = {"kind": "lynx", "location": "dense_forest", "has_kill": true, "known": true}
+		var res12: Dictionary = gs.lynx_sneak()
+		if not bool(res12["success"]):
+			if bool(res12.get("tactical", false)) and int(res12["damage"]) == 0:
+				sneak_tc += 1
+				var c12c = gs.start_lynx_combat(true)
+				_check(bool(c12c.get_meta("lynx_kill", false)), "悄悄叼走失敗：接著是叼著雪兔的猞猁") if sneak_tc == 1 else null
+				gs.auto_tactical_combat(c12c)
+				gs.finish_combat(c12c)
+	_check(sneak_tc > 0, "悄悄叼走失敗時接戰術戰鬥（30 次裡 %d 次）" % sneak_tc)
+
 	print("== 7. 自動玩家")
 	_fresh()
 	var ap = load("res://scripts/core/AutoPlayer.gd").new("all", "average")

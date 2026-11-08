@@ -57,7 +57,54 @@ func _run() -> void:
 			print("%s 歲、%s：開場 %.1f 段，被偷走 %.2f 段（有偷到的 %d%%），留下 %.2f 段；你受傷 %.1f；%.1f 回合；結果 %s" % [
 				age, animal, res["start"] / n, res["stolen"] / n, int(100.0 * res["stole_any"] / n), res["left"] / n, res["dmg"] / n, res["rounds"] / n, str(res["outcomes"])])
 	_wolverine(runs)
+	_lynx(runs)
 	quit()
+
+# 第 3 步：猞猁叼著雪兔（森林北部）。硬搶（交給本能）、悄悄叼走失敗後的戰術戰鬥；對照選單式硬搶
+func _lynx(runs: int) -> void:
+	for age in [1.0, 3.0]:
+		for off in [false, true]:
+			var r := {"n": 0, "got": 0, "dmg": 0.0, "rounds": 0, "out": {}}
+			gs.tactical_combat_off = off
+			for s in runs:
+				gs.new_game("forest_north")
+				_wolf_stats(age)
+				gs.current_discovery = {"kind": "lynx", "location": ["dense_forest", "forest_edge", "fallen_logs"][s % 3], "has_kill": true, "known": true}
+				var c = gs.start_lynx_combat()
+				var h0: float = gs.wolf.health
+				var hunger0: float = gs.wolf.hunger
+				if off:
+					var ap = load("res://scripts/core/AutoPlayer.gd").new("all", "assault")
+					ap.play_combat(c)
+				else:
+					var tc
+					if s == 0 and age == 3.0 and OS.get_environment("TRACE") != "":
+						tc = _traced(c)
+					else:
+						tc = gs.auto_tactical_combat(c)
+					r["rounds"] += tc.rounds
+					gs.finish_combat(c)
+				r["n"] += 1
+				r["dmg"] += h0 - gs.wolf.health
+				if c.won():
+					r["got"] += 1
+				r["out"][c.outcome] = int(r["out"].get(c.outcome, 0)) + 1
+			gs.tactical_combat_off = false
+			var n: float = float(r["n"])
+			print("猞猁 %s 歲 %s：搶到雪兔 %d%%，你受傷 %.1f，%.1f 回合；結果 %s" % [age, "選單式（強攻）" if off else "戰術（本能）", int(100.0 * r["got"] / n), r["dmg"] / n, r["rounds"] / n, str(r["out"])])
+	# 悄悄叼走失敗 → 戰術戰鬥
+	var tact := 0
+	for s2 in 40:
+		gs.new_game("forest_north")
+		_wolf_stats(1.0)
+		gs.current_discovery = {"kind": "lynx", "location": "dense_forest", "has_kill": true, "known": true}
+		var res: Dictionary = gs.lynx_sneak()
+		if bool(res.get("tactical", false)):
+			tact += 1
+			var c2 = gs.start_lynx_combat(true)
+			gs.auto_tactical_combat(c2)
+			gs.finish_combat(c2)
+	print("悄悄叼走失敗接戰術戰鬥：40 次裡 %d 次" % tact)
 
 # 第 2 步：狼獾來搶殘骸（苔原；你在吃、牠在旁邊等著 waiting）。交給本能打完，和「讓牠一起吃」比較
 func _wolverine(runs: int) -> void:

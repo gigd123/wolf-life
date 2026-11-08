@@ -1360,13 +1360,25 @@ func _maybe_lynx() -> bool:
 	identify("lynx", false)
 	return true
 
-func start_lynx_combat() -> Combat:
+# 悄悄叼走失敗、接著進戰術戰鬥的那一隻（Phase 2l 第 3 步）
+var _lynx_pending: Dictionary = {}
+
+func uses_tactical_lynx() -> bool:
+	return not tactical_combat_off and (_tc_game_cfg().get("animals", []) as Array).has("lynx")
+
+# after_sneak：悄悄叼走失敗、牠發現你之後（Phase 2l 第 3 步）
+func start_lynx_combat(after_sneak: bool = false) -> Combat:
 	var d: Dictionary = current_discovery
-	if bool(d.get("has_kill", false)):
+	if after_sneak and not _lynx_pending.is_empty():
+		d = _lynx_pending
+	_lynx_pending = {}
+	if bool(d.get("has_kill", false)) and not after_sneak:
 		_lynx_choice("fight")
 	clear_discovery()
 	var c := start_combat("lynx", "adult", "meet", {"location": str(d.get("location", ""))})
 	c.set_meta("lynx_kill", bool(d.get("has_kill", false)))
+	if bool(d.get("has_kill", false)):
+		c.set_meta("tc_layout", "lynx")
 	return c
 
 # --- 田鼠與地松鼠的小撲（Phase 2g 第 2 步，balance.small_pounce）---
@@ -1484,7 +1496,14 @@ func lynx_sneak() -> Dictionary:
 	clear_discovery()
 	_lynx_choice("sneak")
 	GameTime.advance_turns(int(sc.get("turns", 1)))
-	var out := {"success": ok, "gain": 0.0, "escape": "", "damage": 0}
+	var out := {"success": ok, "gain": 0.0, "escape": "", "damage": 0, "tactical": false}
+	if not ok and uses_tactical_lynx():
+		# Phase 2l 第 3 步：失敗時牠發現你、叼著雪兔往掩蔽跑 → 戰術戰鬥（start_lynx_combat(true)）
+		_lynx_pending = d
+		out["tactical"] = true
+		wolf.clamp_stats()
+		state_changed.emit()
+		return out
 	if ok:
 		var gain: float = float(_lynx_cfg().get("hare_value", 12))
 		_note_food("lynx_sneak", gain)
@@ -5420,6 +5439,19 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 	var sc := {"map": _tc_map(c.terrain, keep, rng), "wolf": [wpos.x, wpos.y], "mate": lay["mate"],
 		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),
 			"eating": bool(op.get("eating", false)), "ambush": bool(op.get("ambush", false))}}
+	# 猞猁叼著剛抓到的雪兔（Phase 2l 第 3 步）：牠往掩蔽跑、面向遠離你的方向
+	if bool(c.get_meta("lynx_kill", false)):
+		# 牠周圍幾格沒有掩蔽（不然開場一步就鑽進去了）
+		var cc: int = int(lay.get("clear_cover", 0))
+		for y in 10:
+			var row: String = sc["map"][y]
+			for x in 16:
+				if maxi(absi(x - opos.x), absi(y - opos.y)) <= cc and row[x] in ["T", "t", "f", "r"]:
+					row = row.substr(0, x) + "." + row.substr(x + 1)
+			sc["map"][y] = row
+		sc["opponent"]["carrying"] = "small"
+		sc["opponent"]["carry_segments"] = 1
+		sc["opponent"]["facing"] = [1, 0]
 	var opts := {"scenario_data": sc, "wolf_stats": _tc_wolf_stats(), "seed": rng.randi(), "mode": "sync",
 		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id),
 		"season": GameTime.current_season(), "period": GameTime.current_period(), "world_map": current_map()}
@@ -5546,6 +5578,10 @@ func apply_tactical_combat(c: Combat, tc: TacticalCombat) -> void:
 				c.outcome = "grab"
 			else:
 				c.outcome = "retreated"
+	# 猞猁的雪兔（Phase 2l 第 3 步）：牠帶著雪兔不見了＝沒搶到（parted）；雪兔掉在地上或被你叼走、牠走了＝趕走（drove_off，finish_combat 給雪兔）
+	if bool(c.get_meta("lynx_kill", false)) and not (c.outcome in ["died", "submit"]):
+		var lynx_gone: bool = not tc.active(e)
+		c.outcome = "drove_off" if tc.meat_stolen() == 0 and (lynx_gone or meat > 0) else ("parted" if lynx_gone else c.outcome)
 	# 殘骸：對手走了 → 剩下的（含掉在地上的）還是你的；你帶走的段數吃下去；你撤出、被打倒 → 殘骸留給對手
 	c.set_meta("tc_meat", meat)
 	if c.context == "carcass" and not current_feeding.is_empty():

@@ -15,7 +15,7 @@ const COLORS := {
 	"wolf": Color("#d6d6d6"), "mate": Color("#a8b8c8"), "grizzly_bear": Color("#7a5232"), "black_bear": Color("#2a2420"), "stranger_wolf": Color("#3a3838"), "challenger": Color("#c8b490"), "tundra_wolf": Color("#e8e4dc"), "pack_wolf": Color("#5a524a"), "member_1": Color("#b8a898"), "cougar": Color("#c8a06a"),
 	"carcass": Color("#6e2f22"), "planned": Color("#ffffff"), "hit": Color("#ff3030"),
 }
-const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass", "wolf_duel", "tundra_pair", "pack_clash", "coyote_pair", "wolverine_carcass"]
+const SCENARIOS := ["grizzly_arrives", "grizzly_on_carcass", "grizzly_open", "cougar_cache", "cougar_ambush", "grizzly_arrives_mate", "grizzly_on_carcass_mate", "black_bear_arrives", "black_bear_on_carcass", "wolf_duel", "tundra_pair", "pack_clash", "coyote_pair", "wolverine_carcass", "lynx_hare"]
 const WOLVES := ["novice", "average", "veteran"]
 const KNOW := ["novice", "experienced", "veteran"]
 const MODES := ["sync", "alternate"]

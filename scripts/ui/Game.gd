@@ -4067,6 +4067,13 @@ func _show_lynx(d: Dictionary) -> void:
 		# 悄悄叼走（Phase 2g 第 3 步）：不打架，失敗了牠帶著雪兔離開
 		_add_encounter_button(tr("lynx.sneak") + "　" + tr("chance_label.success") + " " + _chance_text(GameState.lynx_sneak_chance(), "lynx"), func():
 			var res: Dictionary = GameState.lynx_sneak()
+			# Phase 2l 第 3 步：失敗時牠叼著雪兔往掩蔽跑 → 戰術戰鬥
+			if bool(res.get("tactical", false)):
+				var ft: String = tr("lynx.sneak.fail.tactical")
+				_log(ft)
+				combat_intro = ft
+				_begin_combat(GameState.start_lynx_combat(true), "move")
+				return
 			var out: String = tr("lynx.sneak.got").replace("{n}", str(int(res["gain"]))) if res["success"] else tr("lynx.sneak.fail." + str(res["escape"]))
 			if int(res["damage"]) > 0:
 				out += tr("lynx.sneak.swipe").replace("{n}", str(int(res["damage"])))

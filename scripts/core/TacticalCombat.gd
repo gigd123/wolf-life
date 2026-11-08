@@ -155,6 +155,10 @@ func _add_enemy(o: Dictionary, os: Dictionary, stake: float) -> void:
 	eu["bold"] = rng.randf_range(float(br[0]), float(br[1]))
 	if o.has("name"):
 		eu["name"] = str(o["name"])
+	# 開場就叼著東西（Phase 2l：猞猁叼著剛抓到的雪兔）
+	if o.has("carrying"):
+		eu["carrying"] = str(o["carrying"])
+		eu["carry_segments"] = int(o.get("carry_segments", 1))
 	# 主遊戲：對手的能力與血量（具名的狼照牠自己的；Phase 2k 第 4 步）、這一場的賭注（在牠的地盤、有殘骸時比較拚）
 	for k in ["strength", "speed", "skill", "perception"]:
 		if os.has(k):
@@ -785,6 +789,33 @@ func _thief_edge(i: int) -> Vector2i:
 				best = c
 	return best
 
+# 猞猁要跑去的掩蔽：密林、岩坡站上去；樹（不能走）站到旁邊。離自己近、離你方遠的；都沒有就往邊緣
+func _cover_goal(i: int, cover: String) -> Vector2i:
+	var pos: Vector2i = units[i]["pos"]
+	var best := Vector2i(-1, -1)
+	var bs := -INF
+	for y in map.height:
+		for x in map.width:
+			var c := Vector2i(x, y)
+			var ch: String = map.terrain(c)
+			if not cover.contains(ch):
+				continue
+			var goal: Vector2i = c
+			if ch in ["T", "t"]:
+				goal = Vector2i(-1, -1)
+				for d in TacticalGrid.DIRS:
+					var q: Vector2i = c + d
+					if map.in_bounds(q) and not _impassable(i).contains(map.terrain(q)) and unit_at(q, i) < 0:
+						goal = q
+						break
+				if goal.x < 0:
+					continue
+			var sc: float = -map.dist(pos, goal) + minf(_player_dist(goal), 4.0) * 0.5
+			if sc > bs:
+				bs = sc
+				best = goal
+	return best if best.x >= 0 else _thief_edge(i)
+
 # 去偷的那一格：殘骸旁邊、離你方最遠的（繞到另一邊）
 func _thief_spot(i: int) -> Vector2i:
 	var cp: Vector2i = carcass["pos"]
@@ -816,8 +847,17 @@ func _ai_thief(i: int) -> Dictionary:
 	var hp_ratio: float = float(u["hp"]) / maxf(1.0, float(u["hp_max"]))
 	var t := _update_attention(i)
 	u["stamina"] = maxf(0.0, float(u["stamina"]) - float(tc.get("patience", 3.0)))
-	# 叼著肉：往邊緣跑（受了傷也一樣，帶著肉走）
+	# 叼著肉：往邊緣跑（受了傷也一樣，帶著肉走）。猞猁（cover）往最近的掩蔽跑，到了就不見了；你貼在旁邊時可能回頭揮爪
 	if str(u["carrying"]) != "":
+		var cover: String = str(_opp_cfg(i).get("cover", ""))
+		if cover != "":
+			if cover.contains(map.terrain(pos)) or (_adjacent_to_terrain(pos, "Tt") and cover.contains("T")) or map.on_edge(pos):
+				return _intent(i, "flee", pos, facing, nothing, "escaped")
+			if t >= 0 and map.adjacent(pos, units[t]["pos"]) and (bool(u.get("just_bitten", false)) or rng.randf() < float(_opp_cfg(i).get("corner_swipe", 0.4))):
+				return _intent(i, "swipe", pos, TacticalGrid.dir_toward(pos, units[t]["pos"]), nothing, "cornered")
+			var goal := _cover_goal(i, cover)
+			var toc := _best_cell(i, func(c): return -map.dist(c, goal) + minf(_player_dist(c), 3.0) * 0.3)
+			return _intent(i, "move", toc, TacticalGrid.dir_toward(pos, toc) if toc != pos else facing, nothing, "to_cover")
 		if map.on_edge(pos):
 			return _intent(i, "flee", pos, facing, nothing, "stole")
 		var edge := _thief_edge(i)
@@ -827,6 +867,9 @@ func _ai_thief(i: int) -> Dictionary:
 	if hp_ratio < give or float(u["stamina"]) <= 0.0:
 		return _intent(i, "flee", pos, facing, nothing, "hurt" if hp_ratio < give else "patience")
 	var has_food: bool = not carcass.is_empty() and int(carcass["segments"]) > 0
+	# 猞猁丟下了雪兔：跳上樹走了（雪兔留在地上，歸你）
+	if str(_opp_cfg(i).get("cover", "")) != "" and not has_food:
+		return _intent(i, "flee", pos, facing, nothing, "gave_up")
 	if not has_food or int(u.get("stole", 0)) >= int(tc.get("max_steal", 1)):
 		return _intent(i, "flee", pos, facing, nothing, "food_gone")
 	# 被咬：回頭咬
