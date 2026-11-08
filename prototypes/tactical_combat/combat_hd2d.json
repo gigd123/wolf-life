@@ -42,7 +42,7 @@
   "water_tex": "water", "winter_water_tex": "ice", "winter_water_alpha": 0.95, "winter_water_tint": [0.62, 0.76, 0.92],
   "tint": { "f": [0.62, 0.72, 0.6], "l": [0.9, 0.8, 0.7] },
   "trees": { "T": { "art": "pine_dark", "scale": 1.15 }, "t": { "art": "pine_dark", "scale": 0.85 }, "f": { "art": "pine_dark", "scale": 0.45, "chance": 0.45 }, "l": { "art": "log", "winter_art": "log_winter", "no_mix": true, "scale": 1.0 }, ".": { "art": "stones", "winter_art": "stones_winter", "no_mix": true, "scale": 1.0, "chance": 0.03 } },
-  "wolf_poses": { "_comment": "狼（你、伴侶、同伴、對手的狼都一樣，各自調顏色）的姿勢 → prototypes/hd2d_tactical/assets/hdwolf_*（Gemini 2026-11-06，prep_wolf.py）。叼著肉 carry、上一回合咬或壓制 lunge、示威 threaten、對手預告要咬或壓制 ready、過了重傷線 hurt、潛行 stalk、移動 walk／stand 輪流、沒動 stand；退出的那一回合留在原地：示弱 submit、被打倒或倒下 down、撤退或逃走 retreat",
+  "wolf_poses": { "_comment": "狼（你、伴侶、同伴、對手的狼都一樣，各自調顏色）的姿勢 → prototypes/hd2d_tactical/assets/hdwolf_*（Gemini 2026-11-06，prep_wolf.py）。叼著肉 carry、上一回合咬或壓制 lunge、示威 threaten、對手預告要咬或壓制 ready、過了重傷線 hurt、潛行 stalk、移動 walk／stand 輪流、沒動 stand；退出的那一回合留在原地：示弱 submit、被打倒或倒下 down、撤退或逃走 retreat", "hold": "hdwolf_hold",
     "stand": "hdwolf_stand", "walk": "hdwolf_walk", "walk_b": "hdwolf_walk_b", "stalk": "hdwolf_stalk", "threaten": "hdwolf_threaten", "ready": "hdwolf_ready",
     "lunge": "hdwolf_lunge", "carry": "hdwolf_carry", "hurt": "hdwolf_hurt", "submit": "hdwolf_submit", "retreat": "hdwolf_retreat", "down": "hdwolf_down" },
   "units": {

@@ -41,6 +41,20 @@ func setup(th) -> void:
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()
 
+# 狼的姿勢（2026-11-08）：咬住獵物（或獵到了）咬住不放、潛行、小跑或衝刺時走路兩格輪流、沒動站著
+func _wolf_pose() -> String:
+	var wp: Dictionary = cfg.get("wolf_poses", {})
+	var pose := "stand"
+	if h.held or (h.done and str(h.result) == "caught"):
+		pose = "hold"
+	else:
+		match str(h.last_mode):
+			"creep":
+				pose = "stalk"
+			"trot", "sprint":
+				pose = "walk_b" if h.rounds % 2 == 1 else "walk"
+	return str(wp.get(pose, wp.get("stand", "hdwolf_stand")))
+
 func _species_key(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i) and sp == "deer":
@@ -126,7 +140,7 @@ func paint() -> void:
 			quad(h.deer_pos, _col(col["weakest"]), 0.22, 0.06)
 	# 狼與同伴
 	var wf: Vector2i = view.wolf_facing if view != null else Vector2i(1, 0)
-	unit("wolf", hd_wolf_texture("hdwolf_stand"), h.wolf_pos, _flip(wf))
+	unit("wolf", hd_wolf_texture(_wolf_pose()), h.wolf_pos, _flip(wf))
 	for k in range(1, h.wolves.size()):
 		var w: Dictionary = h.wolves[k]
 		var pos: Vector2i = w["pos"]

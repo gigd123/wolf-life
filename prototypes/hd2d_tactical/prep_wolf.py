@@ -73,9 +73,15 @@ def main():
     if os.path.exists(r3):
         cuts["submit"] = match_palette(pg.cut(r3, "green"), cuts["walk"])
     ref = cuts["walk"].width
+    # 咬住不放 2026-11-08（wolf_r4_hold.png，ChatGPT：壓低身子、前腳往前撐、重心在後，咬住往後拉；1536×1024 畫布不同 → 直接指定寬幾格）
+    fixed_cells = {}
+    r4 = os.path.join(pg.SRC, "wolf_r4_hold.png")
+    if os.path.exists(r4):
+        cuts["hold"] = match_palette(pg.cut(r4, "green"), cuts["walk"])
+        fixed_cells["hold"] = 1.55
     for n, c in cuts.items():
         c.save(os.path.join(pg.SRC, "hdwolf_%s_src.png" % n))
-        cells = WALK_CELLS * c.width / ref
+        cells = fixed_cells.get(n, WALK_CELLS * c.width / ref)
         for d in pg.DENSITIES:
             out = outline(pg.shrink(c, round(cells * d)))
             out.save(os.path.join(pg.OUT, "hdwolf_%s_%d.png" % (n, d)))
