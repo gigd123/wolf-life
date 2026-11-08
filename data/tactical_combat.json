@@ -96,7 +96,7 @@
   "_ai_comment": "第 3 步：對手的 AI。每回合替能用的動作打分（scores 是基本分），加上情境的加減與一點亂數（noise），選最高的。bold 個性的範圍（-1 膽小 ～ 1 大膽）：大膽的攻擊分數高、比較晚放棄。attention：被咬就把注意力轉到咬牠的那隻；守食物時看最靠近殘骸的；否則看最近的。patience：每回合被兩隻以上圍住 surrounded_drain、沒有殘骸也沒被逼近時 idle_drain（遭遇戰牠會失去興趣）。climb_hurt：美洲獅血量低於這個比例、或被兩隻以上圍住時想上樹（樹在 climb_search 格內）。wall_search：背靠岩壁找幾格內的峭壁。bitten_bonus：剛被咬時回頭攻擊、轉身的加分。charge_food_less：守著食物時真衝撞的減分（多半是假衝）。chase_bonus：有狼叼走牠的肉時，追那隻（靠近、衝撞、攻擊）的加分。notice：在吃的時候，3.5 格內的狼被發現的機率＝依牠在哪一側 × 上一回合怎麼靠近的（沒動 0.6、潛行 1、小跑 1.8、衝刺 2.5）；沒被發現就繼續吃（叼肉用「在吃」的機率，但這一回合才走過來的不算）。alert：被咬、肉被叼、叼失敗、發現狼靠近之後警戒 rounds 回合（有狼在 linger_dist 格內徘徊就一直維持）：狼要在 eat_safe_dist + extra_dist 格外牠才會低頭吃，而且不會「沒發現」。sneak_dist：伴侶靠近在吃的對手時，這個距離內改用潛行。eat_per_segment：吃幾次才少一段（一場戰鬥只有幾分鐘，牠吃不完一頭馬鹿）。turn_when_bitten：被咬的那一回合可以猛然轉身（-1 不限）。track_pounce：撲擊時目標離原本的落點幾格內都追得到（衝撞則朝目標修正最多 turn_steps 個 45°）。assume。",
   "ai": {
     "noise": 1.5,
-    "thief": { "_comment": "Phase 2l：偷了就跑的搶食者（郊狼）。decoy_dist 引開你的那隻和你保持的距離；patience 每回合耐心減多少；steal_when_watched 你就在旁邊時還是硬偷的機率；drop_on_hit 叼著肉被咬中時把肉甩掉的機率；max_steal 每隻最多偷幾次。", "decoy_dist": 2.0, "patience": 3.0, "steal_when_watched": 0.25, "drop_on_hit": 0.8, "max_steal": 1 },
+    "thief": { "_comment": "Phase 2l：偷了就跑的搶食者（郊狼）。decoy_dist 引開你的那隻和你保持的距離；patience 每回合耐心減多少；steal_when_watched 你就在旁邊時還是硬偷的機率；drop_on_hit 叼著肉被咬中時把肉甩掉的機率；max_steal 每隻最多偷幾次。", "decoy_dist": 2.0, "patience": 3.0, "steal_when_watched": 0.12, "drop_on_hit": 0.8, "max_steal": 1, "follow_up": 0.5, "_follow_up": "引開的那隻在搭檔偷到或走了以後，接著去偷的機率（不然就走）" },
     "bold": { "grizzly_bear": [-0.3, 0.7], "black_bear": [-0.6, 0.4], "cougar": [-0.7, 0.3], "stranger_wolf": [-0.4, 0.5], "challenger": [-0.2, 0.6], "tundra_wolf": [-0.4, 0.5], "pack_wolf": [-0.4, 0.5], "coyote": [-0.2, 0.3], "wolverine": [0.3, 0.8], "lynx": [-0.3, 0.3] },
     "wolf": { "_comment": "狼對狼的 AI 分數（_ai_wolf）與自動打法（_duel_plan）。pr＝實力比（力量 × 血量）。threaten_fade：示威的意願每回合降多少；flee_pr 實力比低於這個時打不過直接逃（否則示弱）。auto_*：交給本能時壓制的門檻、比對手強多少才先示威、血量低於多少且打不過時示弱。",
       "attack": 6.0, "attack_pr": 3.0, "threaten": 4.0, "threaten_fade": 0.25, "approach": 5.0, "back_off": 2.5, "flee_pr": 0.6,
@@ -156,7 +156,7 @@
     },
     "water_row": 8,
     "keep_clear": 1,
-    "layouts": { "lynx": { "_comment": "Phase 2l 第 3 步：猞猁叼著雪兔，你衝過去時牠才抬頭（離你 3 格）；牠周圍 clear_cover 格內不放掩蔽（樹、密林、岩坡）", "wolf": [5, 5], "mate": [5, 6], "opponent": { "pos": [8, 5], "facing": [1, 0] }, "clear_cover": 5 },
+    "layouts": { "lynx": { "_comment": "Phase 2l 第 3 步：猞猁叼著雪兔，你衝過去時牠才抬頭（離你 3 格）；牠周圍 clear_cover 格內不放掩蔽（樹、密林、岩坡）", "wolf": [5, 5], "mate": [5, 6], "opponent": { "pos": [8, 5], "facing": [1, 0] }, "clear_cover": 6 },
       "arrives": { "wolf": [6, 5], "mate": [6, 6], "carcass": [7, 5], "opponent": { "pos": "edge", "facing": [-1, 0] }, "wolf_eating": true },
       "on_carcass": { "wolf": [2, 5], "mate": [2, 6], "carcass": [9, 5], "opponent": { "pos": [10, 5], "facing": [1, 0], "eating": true } },
       "encounter": { "wolf": [4, 5], "mate": [4, 6], "opponent": { "pos": [10, 5], "facing": [-1, 0] } },

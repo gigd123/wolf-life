@@ -850,6 +850,11 @@ func _ai_thief(i: int) -> Dictionary:
 	# 叼著肉：往邊緣跑（受了傷也一樣，帶著肉走）。猞猁（cover）往最近的掩蔽跑，到了就不見了；你貼在旁邊時可能回頭揮爪
 	if str(u["carrying"]) != "":
 		var cover: String = str(_opp_cfg(i).get("cover", ""))
+		# 猞猁受傷到放棄線：丟下雪兔、跳上樹走了（SPEC Phase 2l）
+		if cover != "" and hp_ratio < float(cfg["give_up"].get(sp, 0.8)):
+			drop_carried(i)
+			_ev("dropped", {"who": i})
+			return _intent(i, "flee", pos, facing, nothing, "gave_up")
 		if cover != "":
 			if cover.contains(map.terrain(pos)) or (_adjacent_to_terrain(pos, "Tt") and cover.contains("T")) or map.on_edge(pos):
 				return _intent(i, "flee", pos, facing, nothing, "escaped")
@@ -881,6 +886,12 @@ func _ai_thief(i: int) -> Dictionary:
 	for k in active_enemies():
 		if k != i and str(units[k].get("role", "")) == "thief" and str(units[k]["carrying"]) == "":
 			partner_busy = true
+	# 引開的那隻：搭檔偷到或走了以後，只有 follow_up 的機率接著去偷，不然就走（每一隻擲一次）
+	if str(u.get("role", "thief")) == "decoy" and not partner_busy:
+		if not u.has("follow_up"):
+			u["follow_up"] = rng.randf() < float(tc.get("follow_up", 0.5))
+		if not bool(u["follow_up"]):
+			return _intent(i, "flee", pos, facing, nothing, "patience")
 	if str(u.get("role", "thief")) == "decoy" and partner_busy and t >= 0:
 		var tp: Vector2i = units[t]["pos"]
 		var dd: float = float(tc.get("decoy_dist", 2.0))
