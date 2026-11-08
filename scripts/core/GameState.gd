@@ -4514,6 +4514,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	ctx["species"] = str(g.get("species_stage", {}).get(hunt.animal_id, {}).get(hunt.life_stage, g.get("species", {}).get(hunt.animal_id, "deer")))
 	ctx["season"] = GameTime.current_season()
 	ctx["life_stage"] = hunt.life_stage # 畫面用（白尾鹿雄鹿的圖）
+	ctx["world_map"] = current_map() # 畫面用（每張地圖的樹、地面，2026-11-08）
 	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿
 	var stage_size: Dictionary = g.get("herd_size_stage", {}).get(hunt.animal_id, {})
 	var size: Array = stage_size.get(hunt.life_stage, g.get("herd_size", {}).get(hunt.animal_id, []))
@@ -5418,7 +5419,7 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 			"eating": bool(op.get("eating", false)), "ambush": bool(op.get("ambush", false))}}
 	var opts := {"scenario_data": sc, "wolf_stats": _tc_wolf_stats(), "seed": rng.randi(), "mode": "sync",
 		"night": GameTime.current_period() in ["night", "predawn"], "knowledge_counts": _tc_knowledge_counts(c.animal_id),
-		"season": GameTime.current_season(), "period": GameTime.current_period()}
+		"season": GameTime.current_season(), "period": GameTime.current_period(), "world_map": current_map()}
 	if with_carcass:
 		opts["carcass_data"] = carcass_data
 	# 狼對狼（第 4 步）：具名的狼照牠自己的能力與血量；牠的賭注：趕你出牠的地盤時最拚、搶殘骸次之

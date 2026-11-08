@@ -60,6 +60,7 @@ func _apply_season_period() -> void:
 	if _base_cfg.is_empty():
 		_base_cfg = cfg.duplicate(true)
 	cfg = _base_cfg.duplicate(true)
+	apply_map_set(tc.world_map)
 	cfg["winter"] = tc.season == "winter"
 	if tc.season == "winter":
 		(cfg["top"] as Dictionary).merge(cfg.get("winter_top", {}), true)

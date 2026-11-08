@@ -13,44 +13,30 @@ var h
 func _init() -> void:
 	_init_board(CFG_PATH)
 
+var _base_cfg: Dictionary = {}
+
 func setup(th) -> void:
 	h = th
-	# 冬季地面換成雪（winter_top：地形字元 → 材質）
-	var top: Dictionary = cfg.get("summer_top", {}).duplicate()
-	if top.is_empty():
-		cfg["summer_top"] = (cfg["top"] as Dictionary).duplicate()
-		top = cfg["summer_top"].duplicate()
+	# 每一場從設定檔的原樣開始（地圖、季節的覆蓋不會留到下一場）
+	if _base_cfg.is_empty():
+		_base_cfg = cfg.duplicate(true)
+	cfg = _base_cfg.duplicate(true)
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
-	if winter:
-		top.merge(cfg.get("winter_top", {}), true)
-	cfg["top"] = top
-	# 冬季的樹都積雪；外圍的地面跟著換
-	if not cfg.has("summer_tree_mix"):
-		cfg["summer_tree_mix"] = cfg.get("tree_mix", [])
-	cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"]) if winter else cfg["summer_tree_mix"]
+	# 每張地圖自己的樹、地面（map_sets，2026-11-08）：先蓋，再套冬天
+	apply_map_set(str(h.game_mods.get("world_map", "")))
 	cfg["winter"] = winter
-	# 顏色倍率：冬天用 winter_tint 蓋過（密林原本調深調綠，疊在雪上會變成綠色色塊）
-	if not cfg.has("summer_tint"):
-		cfg["summer_tint"] = (cfg["tint"] as Dictionary).duplicate(true)
-	var tnt: Dictionary = (cfg["summer_tint"] as Dictionary).duplicate(true)
 	if winter:
-		tnt.merge(cfg.get("winter_tint", {}), true)
-		tnt.erase("_comment")
-	cfg["tint"] = tnt
-	# 地面斑塊：冬天用 winter_ground_mix 蓋過同一種地形（岩坡上面的草地斑塊換成雪）
-	if not cfg.has("summer_ground_mix"):
-		cfg["summer_ground_mix"] = (cfg.get("ground_mix", {}) as Dictionary).duplicate(true)
-	var gmx: Dictionary = (cfg["summer_ground_mix"] as Dictionary).duplicate(true)
-	if winter:
-		gmx.merge(cfg.get("winter_ground_mix", {}), true)
-	cfg["ground_mix"] = gmx
-	# 固定圖的物件（大石頭）：冬天換 winter_art、其他季節換回 summer_art
-	for tk in (cfg["trees"] as Dictionary).keys():
-		var te: Dictionary = cfg["trees"][tk]
-		if te.has("winter_art"):
-			if not te.has("summer_art"):
-				te["summer_art"] = te["art"]
-			te["art"] = te["winter_art"] if winter else te["summer_art"]
+		# 地面換成雪、樹換積雪的那組、顏色倍率與斑塊用冬天的（密林原本調深調綠，疊在雪上會變成綠色色塊）
+		(cfg["top"] as Dictionary).merge(cfg.get("winter_top", {}), true)
+		cfg["tree_mix"] = cfg.get("winter_tree_mix", ["pine_snow"])
+		(cfg["tint"] as Dictionary).merge(cfg.get("winter_tint", {}), true)
+		(cfg["tint"] as Dictionary).erase("_comment")
+		(cfg["ground_mix"] as Dictionary).merge(cfg.get("winter_ground_mix", {}), true)
+		# 固定圖的物件（大石頭、倒木）：冬天換 winter_art
+		for tk in (cfg["trees"] as Dictionary).keys():
+			var te: Dictionary = cfg["trees"][tk]
+			if te.has("winter_art"):
+				te["art"] = te["winter_art"]
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()

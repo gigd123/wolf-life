@@ -36,6 +36,13 @@ PROPS = {
     # 蘆葦（寬高比約 0.7）：水邊的平地（near_props），約一格高、0.7 格寬
     "reeds": ("reeds.jpg", 46),
     "reeds_winter": ("reeds_winter.jpg", 46),
+    # 草原的高草叢（寬高比約 1.9）：草原、苔原的樹種輪替裡用（fixed_scale 約一格寬）
+    "tallgrass": ("tallgrass.jpg", 28),
+    "tallgrass_winter": ("tallgrass_winter.jpg", 28),
+    # 牧場的木柵欄（寬高比約 1.9）：牧場地圖的外圍（edge_props）一格一段
+    "fence": ("fence.jpg", 26),
+    # 洞穴入口（寬高比約 1.9）：地形 b（狩獵的躲藏處）約 1.3 格寬
+    "cave": ("cave.jpg", 34),
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9)}
@@ -99,13 +106,23 @@ def key(path, min_blob=40):
 
 # 地面材質（2026-11-08，ChatGPT 從正上方看的草地）：原圖 1024 是 512 的 2×2 重複 → 取左上 512 就能無縫拼接，
 # 縮成 128（一格 32 個材質像素 → 4 格重複一次，草叢約 5 像素），顏色照舊材質（_old_tex_grass.png）的平均色調暗，限制顏色數
-TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16), "snow": ("snow_top.jpg", 512, 128, 16), "dirt": ("dirt_top.jpg", 512, 128, 16), "rock": ("rock_top.jpg", 512, 128, 16), "water": ("water_top.jpg", 512, 128, 12), "ice": ("ice_top.jpg", 512, 128, 12)}
+TEXTURES = {"grass": ("grass_top.jpg", 512, 128, 16), "snow": ("snow_top.jpg", 512, 128, 16), "dirt": ("dirt_top.jpg", 512, 128, 16), "rock": ("rock_top.jpg", 512, 128, 16), "water": ("water_top.jpg", 512, 128, 12), "ice": ("ice_top.jpg", 512, 128, 12),
+            # 秋天的乾草（草原、秋天）：沒有舊材質，亮度照新的草地材質 × 1.1（乾草比綠草亮一點）、飽和度 × 0.7（原色太橘）
+            "grass_autumn": ("grass_autumn_top.jpg", 512, 128, 16, "tex_grass.png", 1.1, 0.7)}
 
 
-def make_texture(name, f, crop, size, colors):
+def make_texture(name, f, crop, size, colors, lum_ref="", lum_mult=1.0, sat=1.0):
     im = Image.open(os.path.join(SRC, f)).convert("RGB").crop((0, 0, crop, crop)).resize((size, size), Image.BOX)
     old = os.path.join(OUT, "_old_tex_%s.png" % name)
-    if os.path.exists(old):
+    if lum_ref:
+        # 只調亮度（保留原本的顏色）：平均亮度 = 參考材質的 × lum_mult
+        lum = lambda c: 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+        ref = lum(Image.open(os.path.join(OUT, lum_ref)).convert("RGB").resize((1, 1), Image.BOX).getpixel((0, 0))) * lum_mult
+        k = ref / max(1.0, lum(im.resize((1, 1), Image.BOX).getpixel((0, 0))))
+        im = Image.eval(im, lambda v: min(255, int(v * k)))
+        if sat != 1.0:
+            im = tone(im.convert("RGBA"), sat, 1.0).convert("RGB")
+    elif os.path.exists(old):
         target = Image.open(old).convert("RGB").resize((1, 1), Image.BOX).getpixel((0, 0))
         base = im.resize((1, 1), Image.BOX).getpixel((0, 0))
         gain = [t / max(1, b) for t, b in zip(target, base)]

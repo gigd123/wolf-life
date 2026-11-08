@@ -254,6 +254,8 @@ func setup_from_game(ctx: Dictionary) -> void:
 		game_mods["season"] = str(ctx["season"])
 	if ctx.has("life_stage"):
 		game_mods["life_stage"] = str(ctx["life_stage"]) # 只給畫面用
+	if ctx.has("world_map"):
+		game_mods["world_map"] = str(ctx["world_map"]) # 只給畫面用（每張地圖的樹、地面）
 	# 躲在草裡的幼鹿：目標在一塊 area×area 的草叢裡某一格，趴著不動
 	if bool(ctx.get("hidden", false)):
 		_setup_hidden(float(ctx.get("hidden_detection", 30.0)))

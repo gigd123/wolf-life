@@ -204,6 +204,17 @@ func _patch_for(k: String, x: int, y: int) -> String:
 		return ""
 	return str(gm["patch"]) if _noise(x, y, float(gm.get("scale", 4.0)), 7) < float(gm.get("ratio", 0.25)) else ""
 
+# 每張地圖自己的設定（cfg.map_sets：主遊戲的地圖 → 要蓋過的設定）：字典的一層一層合併（top、trees、fixed_scale…），其他（tree_mix、near_props…）整個換掉
+func apply_map_set(map_id: String) -> void:
+	var ms: Dictionary = cfg.get("map_sets", {}).get(map_id, {})
+	for k in ms.keys():
+		if str(k).begins_with("_"):
+			continue
+		if cfg.get(k) is Dictionary and ms[k] is Dictionary:
+			(cfg[k] as Dictionary).merge((ms[k] as Dictionary).duplicate(true), true)
+		else:
+			cfg[k] = ms[k].duplicate(true) if (ms[k] is Dictionary or ms[k] is Array) else ms[k]
+
 func _tree_art(x: int, y: int, base: String) -> String:
 	var mix: Array = cfg.get("tree_mix", [])
 	if mix.is_empty():
@@ -289,6 +300,11 @@ func _build_terrain() -> void:
 				wm_i.material_override = wm
 				wm_i.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				world.add_child(wm_i)
+	# edge_props：地圖外圍一整排物件（牧場的木柵欄沿著上緣），只是畫面
+	var ep: Dictionary = cfg.get("edge_props", {})
+	if not ep.is_empty():
+		for x in map_w:
+			_add_tree(Vector3(x + 0.5, 0, -0.3), str(ep["art"]), float(ep.get("scale", 1.0)))
 	_build_border(bottom)
 	overlay = Node3D.new()
 	world.add_child(overlay)
