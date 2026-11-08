@@ -7,6 +7,7 @@
   "ground_mix": { ".": { "patch": "tint:0.92,0.88,0.66", "ratio": 0.35, "scale": 4.0 }, "f": { "patch": "tint:0.55,0.62,0.5", "ratio": 0.4, "scale": 3.0 } },
   "border": { "width": 3, "ground": "f", "tree_chance": 0.8, "tree": "pine_dark", "scale": [0.85, 1.15] },
   "tree_mix": ["pine_dark", "pine_dark", "pine_dark", "birch", "birch", "pine_snow", "shrub", "shrub", "dead_tree"],
+  "fixed_scale": { "_comment": "灌木一叢約 0.9 格寬、倒木一格長（素材一格 48 像素時灌木寬 83、倒木寬 60），不跟著大樹、小樹的格子縮放；大片灌木叢用好幾格的灌木組成", "shrub": 0.52, "shrub_winter": 0.52, "log": 0.8, "log_winter": 0.8 },
   "winter_tree_mix": ["pine_snow", "pine_snow", "pine_snow", "pine_snow", "pine_snow", "shrub_winter", "shrub_winter", "dead_tree"],
   "start_zoom": 1.0,
   "camera_pitch": -45.0,

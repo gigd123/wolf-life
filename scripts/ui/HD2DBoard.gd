@@ -259,6 +259,10 @@ func _build_terrain() -> void:
 	world.add_child(overlay)
 
 func _add_tree(pos: Vector3, art: String, scale: float) -> void:
+	# fixed_scale：這張圖固定的縮放（灌木、倒木一格一個，不跟著大樹、小樹的格子放大縮小），稍微隨機 ±10%
+	var fs: Dictionary = cfg.get("fixed_scale", {})
+	if fs.has(art):
+		scale = float(fs[art]) * lerpf(0.9, 1.1, _hash01(int(pos.x * 10.0), int(pos.z * 10.0), 5))
 	var s := _make_sprite(false)
 	tree_sprites.append({"sprite": s, "art": art, "scale": scale, "cell": Vector2i(int(floor(pos.x)), int(floor(pos.z)))})
 	s.position = pos
