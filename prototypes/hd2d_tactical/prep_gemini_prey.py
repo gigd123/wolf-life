@@ -93,6 +93,14 @@ ANIMALS = {
     # 騾鹿母鹿、雄鹿的殘骸（2026-11-09 ChatGPT；原本借白尾鹿的）
     "carcass_mule_deer": (1.55, ["stand"]),
     "carcass_mule_deer_buck": (1.65, ["stand"]),
+    # 幼體的殘骸（2026-11-09 ChatGPT）：寬度約是成年的六成多（照活著的幼體與成體的比例）
+    "carcass_deer_fawn": (1.0, ["stand"]),
+    "carcass_mule_deer_fawn": (1.05, ["stand"]),
+    "carcass_elk_calf": (1.3, ["stand"]),
+    "carcass_moose_calf": (1.45, ["stand"]),
+    "carcass_caribou_calf": (1.1, ["stand"]),
+    "carcass_bison_calf": (1.55, ["stand"]),
+    "carcass_bighorn_lamb": (0.95, ["stand"]),
     # carcass_deer_buck_v2.jpg：白尾鹿雄鹿的另一版（旁邊多畫了一副掉落的鹿角），沒有用
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
