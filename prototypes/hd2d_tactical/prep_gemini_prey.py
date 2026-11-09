@@ -90,6 +90,9 @@ ANIMALS = {
     "carcass_moose_bull": (2.6, ["stand"]),
     # 北美馴鹿母鹿的殘骸（2026-11-08）：鹿群多半是母鹿 → 當馴鹿的預設殘骸；原本那張（公鹿，大鹿角）改當 caribou.buck，等遊戲記下性別
     "carcass_caribou_cow": (1.7, ["stand"]),
+    # 騾鹿母鹿、雄鹿的殘骸（2026-11-09 ChatGPT；原本借白尾鹿的）
+    "carcass_mule_deer": (1.55, ["stand"]),
+    "carcass_mule_deer_buck": (1.65, ["stand"]),
     # carcass_deer_buck_v2.jpg：白尾鹿雄鹿的另一版（旁邊多畫了一副掉落的鹿角），沒有用
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
