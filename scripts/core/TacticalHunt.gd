@@ -256,6 +256,12 @@ func setup_from_game(ctx: Dictionary) -> void:
 		game_mods["life_stage"] = str(ctx["life_stage"]) # 只給畫面用
 	if ctx.has("world_map"):
 		game_mods["world_map"] = str(ctx["world_map"]) # 只給畫面用（每張地圖的樹、地面）
+	# 公母只在畫面上分的物種（game.male_share：駝鹿、北美馴鹿，2026-11-08）：每隻成獸擲一次，畫面換公的圖、獵到時殘骸用公的圖；規則不變
+	var ms: Dictionary = t.get("game", {}).get("male_share", {})
+	for d in herd:
+		var dsp: String = str(d.get("species", ""))
+		if ms.has(dsp) and str(d.get("kind", "adult")) != "fawn":
+			d["male"] = rng.randf() < float(ms[dsp])
 	# 躲在草裡的幼鹿：目標在一塊 area×area 的草叢裡某一格，趴著不動
 	if bool(ctx.get("hidden", false)):
 		_setup_hidden(float(ctx.get("hidden_detection", 30.0)))

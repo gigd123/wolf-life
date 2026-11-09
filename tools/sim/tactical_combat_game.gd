@@ -480,6 +480,34 @@ func _run() -> void:
 				gs.finish_combat(c12c)
 	_check(sneak_tc > 0, "悄悄叼走失敗時接戰術戰鬥（30 次裡 %d 次）" % sneak_tc)
 
+	print("== 13. 駝鹿、北美馴鹿的公母（只換圖，2026-11-08）")
+	var males := 0
+	var adults := 0
+	var male_carcass_ok := false
+	for t13 in 30:
+		_fresh()
+		var hu = gs.start_hunt("caribou" if t13 % 2 == 0 else "moose", "adult", -1, false, "open_tundra" if t13 % 2 == 0 else "forest_edge")
+		var th13 = gs.start_tactical(hu)
+		for d in th13.herd:
+			if str(d.get("kind", "adult")) != "fawn":
+				adults += 1
+				if bool(d.get("male", false)):
+					males += 1
+		# 假裝獵到目標，看殘骸的階段
+		th13.result = "caught"
+		th13.done = true
+		th13.caught_kind = "adult"
+		th13.herd[th13.target]["male"] = true
+		gs.finish_tactical_hunt(hu, th13)
+		if not gs.current_feeding.is_empty() and bool(gs.current_feeding.get("male", false)):
+			var c13 = gs.start_combat("grizzly_bear", "adult", "carcass")
+			var tt13 = gs.start_tactical_combat(c13)
+			if str(tt13.carcass.get("stage", "")) == "buck":
+				male_carcass_ok = true
+		gs.current_feeding = {}
+	_check(males > 0 and males < adults, "成獸有公有母（%d／%d 隻是公的）" % [males, adults])
+	_check(male_carcass_ok, "獵到公的：殘骸的階段是 buck（用公的圖）")
+
 	print("== 7. 自動玩家")
 	_fresh()
 	var ap = load("res://scripts/core/AutoPlayer.gd").new("all", "average")

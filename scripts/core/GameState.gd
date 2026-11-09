@@ -3308,6 +3308,8 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	if hunt.result == HuntSystem.Result.SUCCESS:
 		if HuntSystem.feeding_segments(hunt.animal_id, hunt.life_stage) > 1:
 			start_feeding(hunt.animal_id, hunt.life_stage, hunt.terrain)
+			if bool(hunt.get_meta("male", false)):
+				current_feeding["male"] = true
 			# 幼鹿季：灰熊也在找幼鹿，剛獵到的幼體容易把牠引來（1.8 第 7 步）
 			var fawn: Dictionary = _bear_cfg().get("fawn", {})
 			if hunt.life_stage == "juvenile" and fawn.get("animals", []).has(hunt.animal_id) and _fawn_bear_season() \
@@ -4634,6 +4636,8 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 		elif hunt.life_stage == "juvenile" and not lone_young:
 			hunt.life_stage = "adult"
 		hunt.condition = str(th.herd[th.target]["condition"])
+		# 公母只是畫面上分的物種（駝鹿、北美馴鹿，2026-11-08）：記下獵到的是公的，殘骸用公的圖（肉量、規則不變）
+		hunt.set_meta("male", bool(th.herd[th.target].get("male", false)) and hunt.life_stage == "adult")
 	match th.result:
 		"caught":
 			hunt.result = HuntSystem.Result.SUCCESS
@@ -4881,7 +4885,7 @@ func leave_feeding() -> void:
 		carcasses.append({"region_id": current_region, "terrain": current_feeding["terrain"],
 			"animal_id": current_feeding["animal_id"], "life_stage": current_feeding["life_stage"],
 			"segments_left": current_feeding["segments_left"], "segment_value": current_feeding["segment_value"],
-			"day": int(life_log.get("days_lived", 1))})
+			"day": int(life_log.get("days_lived", 1)), "male": bool(current_feeding.get("male", false))})
 	current_feeding = {}
 	state_changed.emit()
 
@@ -4950,7 +4954,7 @@ func action_return_to_carcass() -> Dictionary:
 	var own: bool = bool(c.get("own", true))
 	carcasses.remove_at(idx)
 	current_feeding = {"animal_id": c["animal_id"], "life_stage": c["life_stage"], "segments_left": c["segments_left"],
-		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"], "src": "kill" if own else "carcass"}
+		"segment_value": c["segment_value"], "turns_stayed": 0, "terrain": c["terrain"], "src": "kill" if own else "carcass", "male": bool(c.get("male", false))}
 	var event: String = ""
 	if RNGService.chance(float(cfg.get("return_bear_chance", 0.1)) * threat_mult() * float(_bear_phase_cfg().get("scavenge_mult", 1.0)) * _grizzly_here()):
 		event = "bear"
@@ -5434,7 +5438,11 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 		var aid: String = str(current_feeding.get("animal_id", ""))
 		var size: String = str(GameData.animals.get(aid, {}).get("size", "medium"))
 		var cs: String = str(g["carcass_size"].get(size, "large"))
-		carcass_data = {"pos": cp, "animal": aid, "stage": str(current_feeding.get("life_stage", "adult")), "segments": int(current_feeding["segments_left"]), "size": cs,
+		# 殘骸的階段：公母只在畫面上分的物種，獵到的是公的就當 buck（只換圖）
+		var cstage: String = str(current_feeding.get("life_stage", "adult"))
+		if cstage == "adult" and bool(current_feeding.get("male", false)):
+			cstage = "buck"
+		carcass_data = {"pos": cp, "animal": aid, "stage": cstage, "segments": int(current_feeding["segments_left"]), "size": cs,
 			"small_whole": cs == "small", "whole_size": "small", "leg": [2, 3]}
 	var sc := {"map": _tc_map(c.terrain, keep, rng), "wolf": [wpos.x, wpos.y], "mate": lay["mate"],
 		"opponent": {"id": c.animal_id, "pos": [opos.x, opos.y], "facing": op.get("facing", [-1, 0]),

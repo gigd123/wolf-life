@@ -64,6 +64,9 @@ func _species_key(i: int) -> String:
 	# 同一群的成鹿混用兩種圖（馴鹿：公鹿、母鹿）：序號 % every == keep 的用原本的，其他用 mixed.key
 	# random：每一隻開場時擲一次（記在牠身上，只給畫面用；駝鹿多半單獨出現，照序號會永遠是同一種）
 	var mx: Dictionary = cfg.get("hd_art", {}).get(sp, {}).get("mixed", {})
+	# 遊戲記下了公母（game.male_share）：公的用原本的圖、母的用 mixed.key
+	if not mx.is_empty() and not h.is_fawn(i) and h.herd[i].has("male"):
+		return sp if bool(h.herd[i]["male"]) else str(mx["key"])
 	if not mx.is_empty() and not h.is_fawn(i):
 		var every: int = int(mx.get("every", 2))
 		var v: int = i % every
