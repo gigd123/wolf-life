@@ -72,6 +72,11 @@ def main():
     r3 = os.path.join(pg.SRC, "wolf_r3_submit.jpg")
     if os.path.exists(r3):
         cuts["submit"] = match_palette(pg.cut(r3, "green"), cuts["walk"])
+    # 站、撲咬、叼肉 2026-11-11 換成重畫的（wolf_r5_*.jpg，ChatGPT 照第二輪走路畫：同樣淺灰、粗框；取代第一輪調色），照第二輪走路的色盤調色
+    for n in ["stand", "lunge", "carry"]:
+        r5 = os.path.join(pg.SRC, "wolf_r5_%s.jpg" % n)
+        if os.path.exists(r5):
+            cuts[n] = match_palette(pg.cut(r5, "green"), cuts["walk"])
     ref = cuts["walk"].width
     # 咬住不放 2026-11-08（wolf_r4_hold.png，ChatGPT：壓低身子、前腳往前撐、重心在後，咬住往後拉；1536×1024 畫布不同 → 直接指定寬幾格）
     fixed_cells = {}
