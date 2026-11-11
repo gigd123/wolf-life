@@ -101,6 +101,12 @@ ANIMALS = {
     "carcass_caribou_calf": (1.1, ["stand"]),
     "carcass_bison_calf": (1.55, ["stand"]),
     "carcass_bighorn_lamb": (0.95, ["stand"]),
+    # 叉角羚、牧場的羊、母牛、小牛、大角羊母羊的殘骸（2026-11-11 ChatGPT）
+    "carcass_pronghorn": (1.5, ["stand"]),
+    "carcass_sheep": (1.35, ["stand"]),
+    "carcass_cattle": (2.6, ["stand"]),
+    "carcass_cattle_calf": (1.6, ["stand"]),
+    "carcass_bighorn_ewe": (1.45, ["stand"]),
     # carcass_deer_buck_v2.jpg：白尾鹿雄鹿的另一版（旁邊多畫了一副掉落的鹿角），沒有用
 }
 # 特別處理的姿勢（動物_姿勢 → 設定）：file 來源檔、crop 先裁（像素，左上右下）、flip 水平翻轉（面向左的）、
