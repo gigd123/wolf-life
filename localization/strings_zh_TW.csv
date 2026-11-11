@@ -1107,6 +1107,8 @@ summary.wolverine_outcome.abandon,放棄了獵物
 summary.wolverine_outcome.retreated,撤退
 summary.fell_through_ice,春天在河谷踩破河冰落水 {n} 次
 summary.bear_first_win,{age} 歲那年，你獨自趕走了一頭成年灰熊。
+debug.art.menu_hd,選單畫面改用新圖（HD-2D）
+debug.art.menu_old,選單畫面改回舊圖
 debug.tundra.blizzard,暴風雪
 debug.tundra.wolverine,狼獾搶食
 debug.tundra.ravens,渡鴉

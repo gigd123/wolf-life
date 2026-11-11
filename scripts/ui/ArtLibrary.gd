@@ -21,6 +21,60 @@ static func texture(path: String) -> Texture2D:
 	_cache[path] = tex
 	return tex
 
+# --- 選單畫面的新圖（art.json 的 hd_menu，2026-11-11） ---
+const SETTINGS_PATH := "user://settings.cfg"
+static var _hd_on := -1 # -1 還沒讀設定
+
+static func _hd() -> Dictionary:
+	return _cfg().get("hd_menu", {})
+
+static func hd_menu_on() -> bool:
+	if _hd_on < 0:
+		var cfg := ConfigFile.new()
+		var v: String = str(_hd().get("default", "hd"))
+		if cfg.load(SETTINGS_PATH) == OK:
+			v = str(cfg.get_value("art", "menu", v))
+		_hd_on = 1 if v == "hd" else 0
+	return _hd_on == 1 and not _hd().is_empty()
+
+static func set_hd_menu(on: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	cfg.set_value("art", "menu", "hd" if on else "old")
+	cfg.save(SETTINGS_PATH)
+	_hd_on = 1 if on else 0
+
+static func _hd_tex(name: String) -> Texture2D:
+	if name == "":
+		return null
+	return texture(str(_hd().get("dir", "")) + name + "_32.png")
+
+const HD_SUFFIX := {"idle": [""], "move": ["_run"], "walk": [""], "attack": ["_fight", "_alert"], "threaten": ["_alert"], "hurt": ["_alert"], "eat": ["_graze"]}
+
+# 這隻動物、這個階段、這個動作的新圖；沒有回傳 null（照舊圖）
+static func hd_animal(animal_id: String, life_stage: String, action: String) -> Texture2D:
+	if not hd_menu_on():
+		return null
+	var table: Dictionary = _hd().get("animals", {}).get(animal_id, {})
+	var seasonal: String = life_stage + "@" + GameTime.current_season()
+	var entry = table.get(seasonal, table.get(life_stage, null))
+	if entry == null:
+		return null
+	if action == "":
+		action = "idle"
+	if entry is Dictionary:
+		return _hd_tex(str(entry.get(action, entry.get("_", "") if not (action in ["herd", "distant", "pair", "circling"]) else "")))
+	for suf in HD_SUFFIX.get(action, []):
+		var t := _hd_tex(str(entry) + str(suf))
+		if t != null:
+			return t
+	return null
+
+static func hd_wolf(pose: String) -> Texture2D:
+	if not hd_menu_on():
+		return null
+	return _hd_tex(str(_hd().get("wolf", {}).get(pose, "")))
+
 static func frame_size() -> Vector2i:
 	var fs: Array = _cfg().get("frame_size", [48, 32])
 	return Vector2i(int(fs[0]), int(fs[1]))
@@ -28,6 +82,10 @@ static func frame_size() -> Vector2i:
 # 動物：sheet 依動作播動畫，single 顯示單張。stage 找不到時用 adult。
 # animate = false：回合之間的靜止畫面，略過只播一次的多格動畫（loop false），用單張姿勢或 spritesheet。
 static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle", animate: bool = true) -> bool:
+	var hd := hd_animal(animal_id, life_stage, action)
+	if hd != null:
+		icon.show_static(hd)
+		return true
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var entry: Dictionary = table.get(life_stage, table.get("adult", {}))
 	# 季節外觀（例如雪兔冬季變白）：有 life_stage@season 就用那一版
@@ -78,6 +136,9 @@ static func _setup_strip(icon: AnimatedIcon, strip: Dictionary) -> bool:
 
 # 相對灰狼的顯示倍率（art.json 動物的 display_scale；沒寫的幼獸用成體 × 0.7，其他階段例如雄鹿用成體）。狩獵與戰鬥畫面照比例顯示用。
 static func display_scale(animal_id: String, life_stage: String) -> float:
+	# 新圖彼此的比例已經對了（一格 32 像素）
+	if hd_animal(animal_id, life_stage, "idle") != null:
+		return 1.0
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var ds: Dictionary = table.get("display_scale", {})
 	if ds.has(life_stage):
@@ -87,6 +148,9 @@ static func display_scale(animal_id: String, life_stage: String) -> float:
 
 # 動物待機時一格的大小（spritesheet 的格子，或單張圖的大小）；決定狩獵畫面要留多大的位置。
 static func idle_frame_size(animal_id: String, life_stage: String) -> Vector2:
+	var hd := hd_animal(animal_id, life_stage, "idle")
+	if hd != null:
+		return hd.get_size()
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var entry: Dictionary = table.get(life_stage, table.get("adult", {}))
 	if entry.has("sheet"):
@@ -100,6 +164,10 @@ static func event_image(key: String) -> Texture2D:
 
 # 主角灰狼：idle／walk／howl／down 是 spritesheet 的列。stage：""（次成年）、"adult"、"elder"。
 static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0, stage: String = "") -> bool:
+	var hw := hd_wolf(action)
+	if hw != null:
+		icon.show_static(hw)
+		return true
 	var wolf: Dictionary = _cfg().get("wolf", {})
 	var tex := texture(str(_wolf_stage(stage).get("sheet", "")))
 	if tex == null:
@@ -112,6 +180,9 @@ static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float =
 # 灰狼的單張姿勢：stalk／pounce／eat／sleep。
 # 灰狼姿勢的多格動畫（1.9 第 4 步）：art.json 的 wolf.stages.<階段>.strips 或 wolf.strips 有這個姿勢就用，沒有回傳 false
 static func setup_wolf_strip(icon: AnimatedIcon, pose: String, stage: String = "") -> bool:
+	# 新圖是單張：有新圖的姿勢不播舊的多格動畫（交給 wolf_pose）
+	if hd_wolf(pose) != null:
+		return false
 	var strips: Dictionary = _wolf_stage(stage).get("strips", {})
 	if not strips.has(pose):
 		strips = _cfg().get("wolf", {}).get("strips", {})
@@ -120,6 +191,9 @@ static func setup_wolf_strip(icon: AnimatedIcon, pose: String, stage: String = "
 	return _setup_strip(icon, strips[pose])
 
 static func wolf_pose(pose: String, stage: String = "") -> Texture2D:
+	var hw := hd_wolf(pose)
+	if hw != null:
+		return hw
 	var tex := texture(str(_wolf_stage(stage).get("poses", {}).get(pose, "")))
 	if tex != null:
 		return tex

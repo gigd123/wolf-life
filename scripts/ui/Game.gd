@@ -973,6 +973,14 @@ func _build_debug_overlay() -> void:
 	# 苔原的事件（1.6 第 6d 步）
 	var tundra_row := _debug_row()
 	right.add_child(tundra_row)
+	# 選單畫面的圖：新圖（HD-2D）／舊圖（2026-11-11）
+	var art_row := _debug_row()
+	right.add_child(art_row)
+	_debug_button(art_row, tr("debug.art.menu_hd") if not ArtLibrary.hd_menu_on() else tr("debug.art.menu_old"), func():
+		ArtLibrary.set_hd_menu(not ArtLibrary.hd_menu_on())
+		debug_overlay.visible = false
+		_refresh()
+	)
 	_debug_button(tundra_row, tr("debug.tundra.blizzard"), func():
 		debug_overlay.visible = false
 		GameState.debug_start_blizzard()
