@@ -21,7 +21,7 @@ import prep_wolf as pw  # noqa: E402
 
 # 前綴 → (姿勢, 比灰狼走路大幾倍, 提亮倍率)
 SETS = {
-    "blackwolf": (["stand", "walk", "threaten", "ready", "submit"], 1.05, 1.3),
+    "blackwolf": (["stand", "walk", "threaten", "ready", "submit", "lunge"], 1.05, 1.3),  # 2026-11-11 補撲咬；另兩張沒用（_blackwolf_unused_crouch：像趴著戒備不像倒地、_blackwolf_unused_twisted：身體扭曲）
     "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge"], 1.0, 1.0),
     # 郊狼（Phase 2l，ChatGPT 2026-11-08，1408×768）：約灰狼的八成長（走路約 1.08 格；體重約四成但身長約八成）
     "coyote": (["stand", "walk", "bite", "carry", "run"], 0.8, 1.0),
