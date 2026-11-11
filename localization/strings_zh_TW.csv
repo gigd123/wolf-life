@@ -209,6 +209,7 @@ debug.event.driven_off,被驅趕
 debug.event.prey_nearby,獵物靠近
 debug.event.bear_passing,灰熊路過
 debug.event.bear_scavenge,灰熊搶食
+debug.event.coyote_scavenge,郊狼偷食
 debug.playtest_stats,試玩紀錄
 stats.title,試玩紀錄（這隻狼）
 stats.metrics,遊玩 {minutes} 分鐘；每天決策 {decisions} 次、事件 {events} 件；最長連續 {quiet} 天沒事；選成功率最高的 {best}%；卡片 1 秒內就按繼續 {quick}%

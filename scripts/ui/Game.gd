@@ -1076,6 +1076,12 @@ func _build_debug_overlay() -> void:
 		GameState.start_feeding("white_tailed_deer", "adult", "stream")
 		_show_scavenger("bear", false)
 	)
+	# 郊狼一對來偷殘骸（Phase 2l，2026-11-11 補的除錯按鈕）
+	_debug_button(event_row3, tr("debug.event.coyote_scavenge"), func():
+		debug_overlay.visible = false
+		GameState.start_feeding("white_tailed_deer", "adult", "open")
+		_show_scavenger("coyote", false)
+	)
 
 # 右欄的一列按鈕：放不下時自動換行，不會把右欄撐寬到視窗外。
 func _debug_row() -> HFlowContainer:
