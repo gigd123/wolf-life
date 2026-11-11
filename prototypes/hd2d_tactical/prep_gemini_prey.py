@@ -122,7 +122,11 @@ SPECIAL = {
     # 野兔跑：1256×848（使用者附真實照片當參考才畫對），身體畫得比較大 → 照身體長度指定
     "hare_run": {"cells": 0.78},
     # 大角羊小羊：吃草還沒有圖，先用母羊吃草那張縮小
-    "bighorn_lamb_graze": {"file": "bighorn_ewe_graze.jpg", "cells": 0.8},
+    # 2026-11-11 重出（原本和站很像，舊的留在 _*_v1.jpg）：小野兔、小河狸坐起來警覺，北美馴鹿母鹿回頭看、抬起一隻腳；小大角羊吃草（原本借母羊的）照站那張調色
+    "hare_young_alert": {"cells": 0.32},
+    "beaver_kit_alert": {"cells": 0.48},
+    "caribou_cow_alert": {"cells": 1.5, "match": True},
+    "bighorn_lamb_graze": {"cells": 0.78, "match": True},
     "pronghorn_kid_run": {"cells": 1.1},
     "bison_calf_alert": {"cells": 1.2},
     # 小旱獺：四張畫布大小不同（警覺 1109×944、其他 1408×768），身體畫得差不多大 → 警覺照身高對齊
