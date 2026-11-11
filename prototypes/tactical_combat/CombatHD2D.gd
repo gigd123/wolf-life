@@ -156,6 +156,8 @@ func paint() -> void:
 			tags.append(tr("tcombat.hd.carrying"))
 		var f: Vector2i = u["facing"]
 		var art := _unit_art(i)
+		if i == 0 and tc.wolf_scale != 1.0:
+			art["ps"] = float(art["ps"]) * tc.wolf_scale
 		unit("u%d" % i, art, u["pos"], (f.x < 0) if f.x != 0 else null, _col(art.get("mod", uc.get("modulate", [1, 1, 1]))), " ".join(tags))
 	# 能走的格子：點自己的狼才顯示（2026-11-08）
 	if not tc.done and (view == null or bool(view.range_shown)):

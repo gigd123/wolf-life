@@ -46,6 +46,7 @@ var knowledge := {}
 var night := false
 var season := "" # 主遊戲的季節、時段（只給畫面用：冬天的雪地、時段光線；Phase 2k 第 6 步）
 var period := ""
+var wolf_scale := 1.0 # 你的狼畫多大（只給畫面用，2026-11-11）
 var world_map := "" # 主遊戲的地圖（只給畫面用：每張地圖的樹、地面，2026-11-08）
 var observed := {} # 這一回合選了觀察的單位 → 下一回合資訊高一級
 # 主遊戲（Phase 2k）：你方被打中時交給主遊戲算傷（重傷線、會不會死）。(i, dmg, by) -> {hp, knocked, died}；沒設定時照原型（打到 0 被打倒、不會死）
@@ -100,6 +101,7 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 	season = str(opts.get("season", ""))
 	period = str(opts.get("period", ""))
 	world_map = str(opts.get("world_map", ""))
+	wolf_scale = float(opts.get("wolf_scale", 1.0))
 	var wp: Dictionary = (cfg["wolf_profiles"][str(opts.get("wolf_profile", "average"))] as Dictionary).duplicate()
 	if opts.has("wolf_stats"):
 		wp = (opts["wolf_stats"] as Dictionary).duplicate()

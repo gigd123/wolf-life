@@ -70,6 +70,38 @@ static func hd_animal(animal_id: String, life_stage: String, action: String) -> 
 			return t
 	return null
 
+# 兩張新圖拼成兩格的長條（移動時輪流；大小不同時補成一樣大、底部置中對齊）
+static func _pair_strip(a: Texture2D, b: Texture2D) -> Texture2D:
+	var key := "pair|" + a.resource_path + "|" + b.resource_path
+	if _cache.has(key):
+		return _cache[key]
+	var ia: Image = a.get_image()
+	var ib: Image = b.get_image()
+	if ia == null or ib == null:
+		return null
+	ia.convert(Image.FORMAT_RGBA8)
+	ib.convert(Image.FORMAT_RGBA8)
+	var w: int = maxi(ia.get_width(), ib.get_width())
+	var h: int = maxi(ia.get_height(), ib.get_height())
+	var out := Image.create(w * 2, h, false, Image.FORMAT_RGBA8)
+	out.blit_rect(ia, Rect2i(Vector2i.ZERO, ia.get_size()), Vector2i((w - ia.get_width()) / 2, h - ia.get_height()))
+	out.blit_rect(ib, Rect2i(Vector2i.ZERO, ib.get_size()), Vector2i(w + (w - ib.get_width()) / 2, h - ib.get_height()))
+	var tex := ImageTexture.create_from_image(out)
+	_cache[key] = tex
+	return tex
+
+# 有第二張走路圖（hd_menu.walk_b）就播兩格，回傳 true；沒有回傳 false
+static func _hd_walk(icon: AnimatedIcon, first: Texture2D, who: String) -> bool:
+	var wb: Dictionary = _hd().get("walk_b", {})
+	var second := _hd_tex(str(wb.get(who, "")))
+	if first == null or second == null:
+		return false
+	var strip := _pair_strip(first, second)
+	if strip == null:
+		return false
+	icon.setup(strip, Vector2i(strip.get_width() / 2, strip.get_height()), 0, 2, float(wb.get("fps", 3.0)))
+	return true
+
 static func hd_wolf(pose: String) -> Texture2D:
 	if not hd_menu_on():
 		return null
@@ -84,7 +116,8 @@ static func frame_size() -> Vector2i:
 static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle", animate: bool = true) -> bool:
 	var hd := hd_animal(animal_id, life_stage, action)
 	if hd != null:
-		icon.show_static(hd)
+		if not (animate and action in ["move", "walk"] and life_stage == "adult" and _hd_walk(icon, hd, animal_id)):
+			icon.show_static(hd)
 		return true
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})
 	var entry: Dictionary = table.get(life_stage, table.get("adult", {}))
@@ -166,7 +199,8 @@ static func event_image(key: String) -> Texture2D:
 static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0, stage: String = "") -> bool:
 	var hw := hd_wolf(action)
 	if hw != null:
-		icon.show_static(hw)
+		if not (action == "walk" and _hd_walk(icon, hw, "wolf")):
+			icon.show_static(hw)
 		return true
 	var wolf: Dictionary = _cfg().get("wolf", {})
 	var tex := texture(str(_wolf_stage(stage).get("sheet", "")))

@@ -57,6 +57,24 @@ func _wolf_pose() -> String:
 				pose = "walk_b" if h.rounds % 2 == 1 else "walk"
 	return str(wp.get(pose, wp.get("stand", "hdwolf_stand")))
 
+# 同伴的姿勢：咬住獵物 hold（苔原狼沒有咬住的圖 → 撲咬）、潛行、小跑或衝刺走路兩張輪流（苔原狼只有一張走路）、沒動站著
+func _ally_pose(k: int, own: bool) -> String:
+	var w: Dictionary = h.wolves[k]
+	var pose := "stand"
+	if not h.done and h._ally_holding() == k:
+		pose = "hold"
+	else:
+		match str(w.get("mode", "still")):
+			"creep":
+				pose = "stalk"
+			"trot", "sprint":
+				pose = "walk_b" if (h.rounds + k) % 2 == 1 else "walk"
+	if own:
+		var wp: Dictionary = cfg.get("wolf_poses", {})
+		return str(wp.get(pose, wp.get("stand", "hdwolf_stand")))
+	var tp: Dictionary = cfg.get("tundra_poses", {})
+	return str(tp.get(pose, tp.get("stand", "tundrawolf_stand")))
+
 func _species_key(i: int) -> String:
 	var sp: String = str(h.herd[i].get("species", "deer"))
 	if h.is_fawn(i) and sp == "deer":
@@ -157,14 +175,18 @@ func paint() -> void:
 		_wolf_face = mv if _last_wolf_pos.x > -99 else h.deer_pos - h.wolf_pos
 		_last_wolf_pos = h.wolf_pos
 	var wf: Vector2i = _wolf_face
-	unit("wolf", hd_wolf_texture(_wolf_pose()), h.wolf_pos, _flip(wf))
+	var wart := hd_wolf_texture(_wolf_pose())
+	wart["ps"] = float(wart["ps"]) * float(h.game_mods.get("wolf_scale", 1.0))
+	unit("wolf", wart, h.wolf_pos, _flip(wf))
 	for k in range(1, h.wolves.size()):
 		var w: Dictionary = h.wolves[k]
 		var pos: Vector2i = w["pos"]
 		var role: String = str(w["role"])
 		var rc: Color = _col(col.get(role, col["chase"]))
 		var last: Array = view.ally_last.get(k, [pos, h.deer_pos - pos]) if view != null else [pos, h.deer_pos - pos]
-		unit("ally%d" % k, hd_wolf_texture("hdwolf_stand"), pos, _flip(last[1]), Color(0.82, 0.88, 0.98))
+		# 同伴也跟著動作換姿勢（2026-11-11）：你的狼群用灰狼的圖（調一點藍），苔原狼用苔原狼的圖
+		var own: bool = bool(w.get("own", false))
+		unit("ally%d" % k, hd_wolf_texture(_ally_pose(k, own)), pos, _flip(last[1]), Color(0.82, 0.88, 0.98) if own else Color.WHITE)
 		quad(pos, rc, 0.24, 0.05)
 		if not h.done:
 			var aim0: Vector2i = w.get("aim", pos)

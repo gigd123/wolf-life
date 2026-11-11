@@ -978,6 +978,10 @@ func _build_debug_overlay() -> void:
 	right.add_child(art_row)
 	_debug_button(art_row, tr("debug.art.menu_hd") if not ArtLibrary.hd_menu_on() else tr("debug.art.menu_old"), func():
 		ArtLibrary.set_hd_menu(not ArtLibrary.hd_menu_on())
+		# 按鈕的字跟著換（2026-11-11）
+		for b in art_row.get_children():
+			if b is Button:
+				b.text = tr("debug.art.menu_hd") if not ArtLibrary.hd_menu_on() else tr("debug.art.menu_old")
 		debug_overlay.visible = false
 		_refresh()
 	)
@@ -1464,7 +1468,8 @@ func _shrink_hunt_layout_later() -> void:
 func _set_hunt_sprite_height(h: float) -> void:
 	hunt_unit_h = h
 	var z: float = h / 32.0
-	hunt_wolf_sprite.zoom = z
+	# 小狼畫小一點（只用在新圖；舊圖本來就有次成年的版本）
+	hunt_wolf_sprite.zoom = z * (GameState.wolf_display_scale() if ArtLibrary.hd_menu_on() else 1.0)
 	hunt_wolf_sprite.custom_minimum_size = Vector2(h * 1.8, h)
 	# 對手的框照牠的體型放大（最多 2.4 倍高），兩隻底部對齊
 	var oz: float = z * hunt_opp_scale

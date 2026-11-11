@@ -23,6 +23,7 @@
   "wolf_poses": { "_comment": "狼的姿勢（2026-11-08，HuntHD2D._wolf_pose）：咬住獵物時 hold（咬住不放）、潛行 stalk、小跑或衝刺 walk／walk_b 輪流、沒動 stand", "stand": "hdwolf_stand", "stalk": "hdwolf_stalk", "walk": "hdwolf_walk", "walk_b": "hdwolf_walk_b", "hold": "hdwolf_hold" },
   "autumn_swap": { "_comment": "秋天時把樹換成這張（HD2DBoard._add_tree）", "birch": "birch_autumn", "shrub": "shrub_autumn", "shrub_b": "shrub_autumn" },
   "pan": { "_comment": "捲動（2026-11-08）：左鍵拖曳超過 drag_px 像素算捲動；滑鼠在邊緣 edge_px 內、方向鍵捲動，speed 每秒幾格（÷ 放大倍數）", "drag_px": 8, "edge_px": 24, "speed": 10 },
+  "tundra_poses": { "_comment": "跟著你狩獵的苔原狼（2026-11-11）：沒有潛行、咬住的圖 → 用準備撲、撲咬", "stand": "tundrawolf_stand", "stalk": "tundrawolf_ready", "walk": "tundrawolf_walk", "walk_b": "tundrawolf_walk", "hold": "tundrawolf_lunge" },
   "fixed_scale": { "_comment": "灌木一叢約 0.9 格寬、倒木一格長（素材一格 48 像素時灌木寬 83、倒木寬 60），不跟著大樹、小樹的格子縮放；大片灌木叢用好幾格的灌木組成", "shrub": 0.52, "shrub_winter": 0.52, "shrub_b": 0.4, "shrub_autumn": 0.4, "log": 0.8, "log_winter": 0.8, "tallgrass": 0.95, "tallgrass_winter": 0.95 },
   "winter_tree_mix": ["pine_snow", "pine_snow", "pine_snow", "pine_snow", "pine_snow", "shrub_winter", "shrub_winter", "dead_tree"],
   "start_zoom": 2.0,

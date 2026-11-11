@@ -2,6 +2,8 @@
   "hd_menu": {
     "_comment": "選單畫面（主畫面的遭遇、探索、選單式狩獵與戰鬥）改用 HD-2D 的新圖（2026-11-11）。設定 user://settings.cfg [art] menu（hd／old，預設 default）；除錯選單可以切換。圖在 dir 下的 <名稱>_32.png（一格 32 像素，和舊圖的灰狼差不多大，動物彼此的比例已經對了 → display_scale 當 1）。動物的值是字串時當前綴：idle、walk（遇到時走動）用前綴本身、move（逃跑、追擊）用 _run、attack 先找 _fight 再 _alert、threaten／hurt 用 _alert、eat 用 _graze；是字典時照動作找（_ 是預設）。沒有對應的動作（herd 整群、distant 遠處、pair、circling……）、沒有列的動物（紅狐、渡鴉、鮭魚）照舊圖。灰狼的 eat、sleep、howl 還沒有新圖，照舊圖。",
     "default": "hd",
+    "wolf_scale_by_age": { "_comment": "你的狼依年齡畫小一點（戰術狩獵、戰鬥、選單式狩獵與戰鬥；只是畫面）：未滿 [0] 歲 × [1]", "steps": [[1.0, 0.8], [2.0, 0.9]] },
+    "walk_b": { "_comment": "選單畫面移動時兩張輪流（新圖 → 兩格的動畫）：灰狼 walk、動物 move／walk 的第二張", "wolf": "hdwolf_walk_b", "grizzly_bear": "grizzly_walk_b", "black_bear": "black_bear_walk_b", "cougar": "cougar_walk_b", "fps": 3.0 },
     "dir": "res://prototypes/hd2d_tactical/assets/",
     "wolf": { "idle": "hdwolf_stand", "walk": "hdwolf_walk", "stalk": "hdwolf_stalk", "pounce": "hdwolf_lunge", "bite": "hdwolf_lunge", "threaten": "hdwolf_threaten", "dodge": "hdwolf_ready", "hurt": "hdwolf_hurt", "submit": "hdwolf_submit", "down": "hdwolf_down", "circle": "hdwolf_walk" },
     "animals": {
