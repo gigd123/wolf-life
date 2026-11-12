@@ -1859,9 +1859,13 @@ tactical.struggle_bite,掙扎中牠扭頭咬了你一口（血量 −{n}）。
 tactical.broke_free,{animal}掙脫了，帶著傷逃跑！
 tactical.scatter,你衝進鹿群，鹿群分成幾群，往不同方向逃開！
 tactical.look,{animal}抬起頭，朝你這邊張望。
+tactical.look.another,另一隻{animal}也抬起頭來。
+tactical.look.others,另外{n}隻{animal}也抬起頭來。
 tactical.flee.scent,風把你的氣味送了過去，牠猛地跳開！
 tactical.flee.noise,牠聽到動靜，拔腿就跑！
 tactical.flee.close,牠發現你了，拔腿就跑！
+tactical.flee.another,另一隻{animal}也拔腿跑了。
+tactical.flee.others,另外{n}隻{animal}也拔腿跑了。
 tactical.hidden.intro,母鹿不在附近，{animal}就趴在這一塊草叢裡，一動也不動。牠身上幾乎沒有氣味，要靠眼睛找。
 tactical.hidden.found_look,你盯著草叢看了一會兒——看見了，{animal}就趴在那裡，耳朵貼著背。
 tactical.hidden.look_miss,你盯著草叢看，草葉一動也不動，看不出牠在哪。
@@ -1889,6 +1893,8 @@ tactical.factor.terrain_w,牠在水裡，你使不上力
 tactical.factor.terrain_s,牠在淺水裡，你踩不穩
 tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
+tactical.lost.another,另一隻{animal}也鑽進密林了。
+tactical.lost.others,另外{n}隻{animal}也鑽進密林了。
 tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
 tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。
@@ -1898,6 +1904,8 @@ tactical.burrow,{animal}一溜煙鑽進岩縫下的洞，洞裡傳出一聲尖�
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
 tactical.ran_far,{animal}跑遠了。
+tactical.ran_far.another,另一隻{animal}也跑遠了。
+tactical.ran_far.others,另外{n}隻{animal}也跑遠了。
 tactical.herd_gone,整群全都跑掉了。
 tactical.ui.intro,你壓低身子，看著牠。點你的狼看能走到哪，再點綠／黃／橘色的格子移動（潛行／小跑／衝刺）；點紅框撲上去咬。
 tactical.ui.view.hd,HD-2D

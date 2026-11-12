@@ -91,6 +91,7 @@ var reason: String = ""
 var detect_cause: String = ""
 var kicks: int = 0
 var events: Array = [] # 發生的事（原型直接用中文）
+var told: Dictionary = {} # 鹿群裡同樣稱呼的幾隻：同一件事只寫一次完整的句子，之後寫「另一隻…也」（2026-11-12 影片回饋：紀錄重複）
 # 鹿群版
 var caught_kind: String = "" # 獵到的是 adult 還是 fawn
 var meat: int = 0
@@ -194,6 +195,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	detect_cause = ""
 	kicks = 0
 	events = []
+	told = {}
 	stats = {"stuck": 0, "toward_wolf": 0}
 	drive_ally = -1
 	drive_until = -1
@@ -1896,7 +1898,7 @@ func _raise_alert(mode: String) -> void:
 		_start_flee(cause)
 	elif alert >= float(t["deer"]["suspicious_at"]) and deer_state == "unaware":
 		deer_state = "suspicious"
-		events.append(_tx("tactical.look").replace("{animal}", label()))
+		_say_herd("look", _tx("tactical.look").replace("{animal}", label()))
 
 func _start_flee(cause: String) -> void:
 	if wolves.size() > 1 and di == target and deer_state != "flee":
@@ -1914,6 +1916,8 @@ func _start_flee(cause: String) -> void:
 	var text: String = _tx("tactical.flee." + (cause if cause in ["scent", "noise", "close", "missed"] else "other"))
 	if herd.size() > 1:
 		text = label() + text.substr(1) # 這幾句都以「牠」開頭
+		_say_herd("flee", text)
+		return
 	events.append(text)
 
 # 一隻驚逃，整群跟著驚：其他每隻 + contagion 警覺（鹿群版）
@@ -1939,7 +1943,8 @@ func _herd_alarm() -> void:
 			elif deer_state == "unaware":
 				deer_state = "suspicious"
 	di = keep
-	if joined > 0:
+	if joined > 0 and not told.has("herd_runs"):
+		told["herd_runs"] = true
 		events.append(_tx("tactical.herd_runs"))
 
 func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
@@ -2673,9 +2678,38 @@ func _deer_gone(kind: String, text: String, own_text: bool = false) -> void:
 		return
 	herd[di]["gone"] = true
 	herd[di]["held"] = false
-	events.append(_tx("tactical.ran_far").replace("{animal}", label()) if kind == "escaped" and not own_text else text)
+	var line: String = _tx("tactical.ran_far").replace("{animal}", label()) if kind == "escaped" and not own_text else text
+	if kind in ["escaped", "lost"] and not own_text:
+		_say_herd("ran_far" if kind == "escaped" else "lost", line)
+	else:
+		events.append(line)
 	if active_deer().is_empty():
 		_finish(kind, _tx("tactical.herd_gone"))
+
+# 鹿群裡同樣稱呼的幾隻做同一件事（抬頭、逃跑、離場）：第一隻寫完整的句子，之後寫「另一隻…也」；
+# 同一個動作裡又有一隻時合成一句「另外兩隻…也」（2026-11-12 影片回饋：紀錄重複）
+const COUNT_WORDS := ["", "一", "兩", "三", "四", "五", "六", "七", "八", "九"]
+
+func _say_herd(kind: String, first_text: String) -> void:
+	var key: String = kind + ":" + label()
+	if not told.has(key):
+		told[key] = true
+		events.append(first_text)
+		return
+	var idx: int = int(told.get("idx:" + key, -1))
+	var n: int = int(told.get("n:" + key, 0))
+	if idx >= 0 and idx < events.size() and str(events[idx]) == str(told.get("text:" + key, "")):
+		n += 1
+		var t2: String = _tx("tactical.%s.others" % kind).replace("{n}", COUNT_WORDS[mini(n, COUNT_WORDS.size() - 1)]).replace("{animal}", label())
+		events[idx] = t2
+		told["n:" + key] = n
+		told["text:" + key] = t2
+		return
+	var t1: String = _tx("tactical.%s.another" % kind).replace("{animal}", label())
+	events.append(t1)
+	told["idx:" + key] = events.size() - 1
+	told["n:" + key] = 1
+	told["text:" + key] = t1
 
 func _finish(p_result: String, text: String) -> void:
 	done = true
