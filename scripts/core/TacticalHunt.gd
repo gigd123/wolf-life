@@ -132,6 +132,7 @@ var practice: Array = []
 # 這一場有沒有咬住過、有沒有交給本能（game_mods.instinct_penalty）
 var pounce_log: Array = []
 var was_held: bool = false
+var takedown_fails := 0 # 咬住後壓倒失敗的次數（Phase 2m 第 3 步：體型的經驗）
 var pounced: bool = false
 # 這一場畫面上出現過的最高撲咬命中率（試玩紀錄：放棄時是「看清楚才撤」還是「還沒機會就撤」，2026-10-22 ChatGPT 建議）
 var best_seen: float = 0.0
@@ -148,6 +149,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	practice = []
 	pounce_log = []
 	was_held = false
+	takedown_fails = 0
 	pounced = false
 	best_seen = 0.0
 	scenario_id = p_scenario
@@ -1299,6 +1301,8 @@ func hold_action(id: String) -> void:
 			_finish("timeout", _tx("tactical.timeout"))
 		return
 	var ok: bool = rng.randf() < float(o["chance"])
+	if not ok and id == "takedown":
+		takedown_fails += 1
 	_practice("strength" if id == "takedown" else "skill", ok)
 	if ok:
 		rounds += 1

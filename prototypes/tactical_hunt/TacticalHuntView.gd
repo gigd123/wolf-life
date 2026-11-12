@@ -184,8 +184,8 @@ func start_from_game(th, done_cb: Callable) -> void:
 	last_wolf_pos = Vector2i(-99, -99)
 	lock_armed = false
 	lines = [tr("tactical.ui.intro")]
-	if bool(h.game_mods.get("youth_hint", false)):
-		lines.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.youth_hint"))
+	if str(h.game_mods.get("size_note", "")) != "":
+		lines.append("[color=#e0c070]%s[/color]" % str(h.game_mods["size_note"]))
 	# 苔原狼一起狩獵（Phase 2i）：一行說明牠們會做什麼（跟上來的也先說）
 	if h.own_ally_count() > 1 or (h.own_ally_count() == 1 and not h.has_mate_ally()):
 		# 你的狼群好幾隻一起出獵（Phase 3 第 7 步）

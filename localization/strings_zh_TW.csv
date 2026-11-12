@@ -1932,7 +1932,15 @@ tactical.herd_gone,整群全都跑掉了。
 tactical.ui.intro,你壓低身子，看著牠。點你的狼看能走到哪，再點綠／黃／橘色的格子移動（潛行／小跑／衝刺）；點紅框撲上去咬。
 tactical.ui.view.hd,HD-2D
 tactical.ui.view.2d,2D 地圖
-tactical.ui.youth_hint,以你現在的體型，要撂倒成年的大型獵物很難；幼鹿、雪兔和別人吃剩的殘骸比較實在。
+size.lesson.takedown,那隻{animal}比你壯太多了，你一次又一次想把牠壓倒，牠動都不動。
+size.lesson.shaken,那隻{animal}比你壯太多了，你咬住了也撼動不了牠，一甩就被甩開。
+size.lesson.hurt,那隻{animal}比你壯太多了，牠一腳就把你踢開，你幾乎撼動不了牠。
+size.recall.young,你記得上次撲那隻{animal}，連拖都拖不動牠；以你現在的體型，還是很難撂倒牠。
+size.recall.yearling,你記得小時候拖不動{animal}。你現在壯了一些，但還沒長成。
+size.recall.grown,你記得小時候連拖都拖不動{animal}；現在的你，撂得倒這樣的獵物了。
+knowledge.size_lesson,幼年時（{m} 個月大）撲過{animal}，拖不動牠。
+knowledge.size_lesson.now.young,現在還很難撂倒成年的{animal}。
+knowledge.size_lesson.now.adult,現在撂得倒了。
 tactical.ui.ally_intro,苔原狼和你一起獵：藍點驅趕的會繞到另一側，把獵物往你這邊趕；橘點追擊的會跟著獵物跑。牠們咬住時你撲上去更容易，你咬住時牠們會圍過來。滑鼠停在牠們身上看牠在做什麼。
 tactical.ui.result.caught,獵到了
 tactical.ui.result.escaped,牠逃掉了，留下一條新鮮的足跡

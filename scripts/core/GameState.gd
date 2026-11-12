@@ -2930,6 +2930,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"pack_land": return "pack_land|%s" % entry["region"]
 		"opponent": return "opponent|%s|%s" % [entry["animal"], entry["life_stage"]]
 		"combat_move": return "combat_move|%s|%s" % [entry["animal"], entry["move"]]
+		"size_lesson": return "size_lesson|%s" % entry["animal"]
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -4666,9 +4667,11 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 				th.target = i
 				th.di = i
 				break
-	# 未滿 1 歲盯上成年的大、中型獵物：開場多一句提示（2026-10-22 使用者選 A 加提示）
-	if not youth_food_mults().is_empty() and not th.is_fawn(th.target) and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) != "small":
-		th.game_mods["youth_hint"] = true
+	# 盯上成年的大、中型獵物：開場照體型的經驗寫一句（Phase 2m 第 3 步，取代 2026-10-22 每次都有的體型提示；沒有經驗就不說）
+	if not th.is_fawn(th.target) and _size_lesson_animal(hunt.animal_id):
+		var note: String = size_note(hunt.animal_id)
+		if note != "":
+			th.game_mods["size_note"] = note
 	# 苔原狼一起狩獵（Phase 2i）：最多 2 隻上場；加入時獵物已經在逃、牠們在追，跟上來的幾回合後從你身後出現
 	if hunt.tundra_help > 0:
 		var ag: Dictionary = th.t.get("allies", {}).get("game", {})
@@ -4723,6 +4726,7 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 		hunt.condition = str(th.herd[th.target]["condition"])
 		# 公母只是畫面上分的物種（駝鹿、北美馴鹿，2026-11-08）：記下獵到的是公的，殘骸用公的圖（肉量、規則不變）
 		hunt.set_meta("male", bool(th.herd[th.target].get("male", false)) and hunt.life_stage == "adult")
+	_maybe_size_lesson(th, hunt)
 	# 同一隻獵物（Phase 2m 第 2 步）：沒獵到時記下你盯上的那一隻的傷、逃了幾回合、有沒有察覺你
 	if th.result != "caught":
 		var tg: Dictionary = th.herd[th.target]
@@ -4756,6 +4760,56 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 	_stat_inc("tactical_stamina", stage_key, roundi(max(0.0, st0 - wolf.stamina)))
 	_stat_inc("tactical_species_cost", hunt.animal_id + ".stamina", roundi(max(0.0, st0 - wolf.stamina)))
 	_stat_inc("tactical_species_cost", hunt.animal_id + ".turns", turns)
+
+# --- 狼對自己體型的認識（Phase 2m 第 3 步）---
+
+func _size_cfg() -> Dictionary:
+	return GameData.knowledge.get("size_lesson", {})
+
+# 這種獵物算「大中型」：體型的經驗只記這些
+func _size_lesson_animal(animal_id: String) -> bool:
+	return (_size_cfg().get("sizes", ["medium", "large"]) as Array).has(str(GameData.animals.get(animal_id, {}).get("size", "small")))
+
+# 未滿 1 歲、對成年的大中型獵物有明確意義的失敗（壓倒失敗 2 次以上、咬住後被甩開、被牠反擊傷到 ≥ 10）：記一次，同一種獵物只記一次
+func _maybe_size_lesson(th: TacticalHunt, hunt: HuntSystem) -> void:
+	if wolf.age_years >= float(GameData.balance.get("life_stage_ages", {}).get("yearling", 1.0)) or th.result == "caught" or th.is_fawn(th.target):
+		return
+	if not _size_lesson_animal(hunt.animal_id):
+		return
+	var c: Dictionary = _size_cfg()
+	var how := ""
+	if th.takedown_fails >= int(c.get("takedown_fails", 2)):
+		how = "takedown"
+	elif int(th.stats.get("broke_free", 0)) > 0:
+		how = "shaken"
+	elif float(th.damage_by.get("prey", 0.0)) >= float(c.get("hurt", 10.0)):
+		how = "hurt"
+	if how == "":
+		return
+	var entry := {"type": "size_lesson", "animal": hunt.animal_id}
+	if knowledge.has(knowledge_key(entry)):
+		return
+	entry["months"] = maxi(1, roundi(wolf.age_years * 12.0))
+	entry["day"] = int(life_log.get("days_lived", 1))
+	entry["how"] = how
+	log_message.emit(tr("size.lesson." + how).replace("{animal}", tr("animal." + hunt.animal_id)))
+	learn(entry)
+
+# 狩獵開場的那一句（取代 2026-10-22 的體型提示）：沒有這筆經驗不說；有的話照現在的年齡（未滿 1 歲／1～2 歲／成年，成年那句只說一次）
+func size_note(animal_id: String) -> String:
+	var key: String = knowledge_key({"type": "size_lesson", "animal": animal_id})
+	if not knowledge.has(key):
+		return ""
+	var ages: Dictionary = GameData.balance.get("life_stage_ages", {})
+	var name: String = tr("animal." + animal_id)
+	if wolf.age_years < float(ages.get("yearling", 1.0)):
+		return tr("size.recall.young").replace("{animal}", name)
+	if wolf.life_stage() == 0:
+		return tr("size.recall.yearling").replace("{animal}", name)
+	if bool(knowledge[key].get("grown_told", false)):
+		return ""
+	knowledge[key]["grown_told"] = true
+	return tr("size.recall.grown").replace("{animal}", name)
 
 # 年齡減成：同選單式狩獵（hunt.age，Phase 2b）
 func _tactical_age_penalty() -> float:

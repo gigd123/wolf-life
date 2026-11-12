@@ -343,13 +343,12 @@ func _process(_d) -> bool:
 			hid_ok = pth._cheb(pth.herd[calf]["pos"], pth.herd[mom]["pos"]) <= 1 and pth.dist(pth.herd[calf]["pos"], pth.wolf_pos) >= pth.dist(pth.herd[mom]["pos"], pth.wolf_pos)
 			break
 	_check(hid_ok, "小野牛躲到站定的母牛身後")
-	# 未滿 1 歲（2026-10-22 使用者選 A 加提示）：小獵物、殘骸的倍率；盯上成年的大、中型獵物時有提示，幼鹿、成年狼沒有
+	# 未滿 1 歲（2026-10-22 使用者選 A）：小獵物、殘骸的倍率；開場的提示 2026-11-12 起改成體型的經驗（Phase 2m 第 3 步：沒吃過虧不提示，見 size_lesson_rules）
 	gs.new_game("forest_east")
 	_check(not gs.youth_food_mults().is_empty(), "未滿 1 歲有小獵物、殘骸的倍率")
-	_check(bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("youth_hint", false)), "小狼盯上成年白尾鹿：有提示")
-	_check(not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "juvenile")).game_mods.get("youth_hint", false)), "小狼盯上幼鹿：沒有提示")
+	_check(str(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("size_note", "")) == "", "小狼還沒吃過虧：不提示")
 	gs.wolf.age_years = 2.5
-	_check(gs.youth_food_mults().is_empty() and not bool(gs.start_tactical(gs.start_hunt("white_tailed_deer", "adult")).game_mods.get("youth_hint", false)), "成年後沒有倍率、沒有提示")
+	_check(gs.youth_food_mults().is_empty(), "成年後沒有倍率")
 	# 河狸（2026-10-22）：走戰術地圖、一律水塘地圖、離深水近（1～3 格）或遠（5～8 格）、小河狸單獨出場、進深水就潛走、淺水比陸上快
 	gs.new_game("forest_east")
 	gs.wolf.age_years = 2.5

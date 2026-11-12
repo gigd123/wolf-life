@@ -8,5 +8,7 @@
   "prey_confirmed_track_bonus": 0.1,
   "weakness_bonus_per_level": 0.04,
   "weakness_options": ["drive_forest", "drive_stream", "drive_logs", "flank", "follow"],
-  "overhunt_threshold": 0.6
+  "overhunt_threshold": 0.6,
+  "_size_lesson_comment": "體型的經驗（Phase 2m 第 3 步，2026-11-12 使用者選 C 並調整）：未滿 1 歲、成年的 sizes 獵物、沒獵到，而且壓倒失敗 takedown_fails 次以上、咬住後被甩開、或被牠反擊傷到 hurt 以上 → 記一次（同一種獵物只記一次、不會消失）。",
+  "size_lesson": { "sizes": ["medium", "large"], "takedown_fails": 2, "hurt": 10 }
 }

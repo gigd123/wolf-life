@@ -2993,7 +2993,7 @@ func _explore_hint() -> String:
 func _show_knowledge() -> void:
 	region_info_text.bbcode_enabled = false
 	var lines: Array[String] = [tr("ui.knowledge.title")]
-	var order := ["prey", "danger", "opponent", "combat_move", "weakness", "overhunt"]
+	var order := ["size_lesson", "prey", "danger", "opponent", "combat_move", "weakness", "overhunt"]
 	var entries: Array = GameState.knowledge.values()
 	entries.sort_custom(func(a, b):
 		if a["type"] != b["type"]:

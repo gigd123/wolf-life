@@ -36,7 +36,7 @@ static func injury_source(source: String) -> String:
 static func knowledge_text(entry: Dictionary) -> String:
 	var level: String = t("knowledge.level.%d" % GameState.knowledge_level(entry))
 	# 狼嚎的知識本身就分三句寫出把握程度，不再加【似乎】（免得「【似乎】似乎有其他狼」）
-	if entry["type"] in ["territory", "pack_land"]:
+	if entry["type"] in ["territory", "pack_land", "size_lesson"]:
 		level = ""
 	var text: String = t("knowledge." + str(entry["type"]))
 	if entry["type"] == "territory":
@@ -54,4 +54,10 @@ static func knowledge_text(entry: Dictionary) -> String:
 	# 戰鬥裡學到的對手動作（Phase 2k 第 2 步）：「灰熊要揮掌前……」
 	if entry["type"] == "combat_move":
 		text = t("knowledge.combat_move." + str(entry.get("move", ""))).replace("{animal}", source_name(str(entry.get("animal", ""))))
+	# 體型的經驗（Phase 2m 第 3 步）：過去的經驗（不變）＋目前的認知（照現在的年齡算，不存）
+	if entry["type"] == "size_lesson":
+		var nm: String = source_name(str(entry.get("animal", "")))
+		var past: String = t("knowledge.size_lesson").replace("{animal}", nm).replace("{m}", str(int(entry.get("months", 8))))
+		var now_key: String = "knowledge.size_lesson.now.adult" if GameState.wolf != null and GameState.wolf.life_stage() >= 1 else "knowledge.size_lesson.now.young"
+		text = past + t(now_key).replace("{animal}", nm)
 	return level + text
