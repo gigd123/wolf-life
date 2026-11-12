@@ -84,6 +84,13 @@ def main():
     if os.path.exists(r4):
         cuts["hold"] = match_palette(pg.cut(r4, "green"), cuts["walk"])
         fixed_cells["hold"] = 1.55
+    # 吃（低頭）、睡（蜷成一團）、嚎叫（坐著仰頭）2026-11-12（wolf_r6_*.jpg，ChatGPT 照站的那張畫），選單畫面用；蜷起來比走路短 → 直接指定
+    for n in ["eat", "sleep", "howl"]:
+        r6 = os.path.join(pg.SRC, "wolf_r6_%s.jpg" % n)
+        if os.path.exists(r6):
+            cuts[n] = match_palette(pg.cut(r6, "green"), cuts["walk"])
+    if "sleep" in cuts:
+        fixed_cells["sleep"] = 1.05
     for n, c in cuts.items():
         c.save(os.path.join(pg.SRC, "hdwolf_%s_src.png" % n))
         cells = fixed_cells.get(n, WALK_CELLS * c.width / ref)
