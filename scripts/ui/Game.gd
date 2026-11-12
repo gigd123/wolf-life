@@ -515,6 +515,11 @@ func _build_encounter_overlay() -> void:
 	box.add_child(encounter_detail)
 	encounter_strip = _make_session_strip()
 	box.add_child(encounter_strip)
+	# 描述很長（照常過日子、探索到有發現為止串起好幾段）時整個框超出 640×360（2026-11-12 ui_check OFFSCREEN）：內容變了就量一次
+	box.minimum_size_changed.connect(func():
+		if Engine.get_process_frames() - enc_fit_frame > 1 and not enc_fit_pending:
+			enc_fit_pending = true
+			_fit_encounter_layout.call_deferred())
 
 func _build_hunt_overlay() -> void:
 	hunt_overlay = Panel.new()
@@ -1466,6 +1471,29 @@ func _fit_hunt_layout(_option_count: int) -> void:
 	_shrink_hunt_layout_later()
 
 # 文字換行要排過一次才知道多高：下一個畫格再檢查一次（ui_check 的 OFFSCREEN：戰鬥紀錄、選項超出畫面底部）
+# 遭遇畫面放進 640×360：先用一般大小，超過畫面才依序縮小（紀錄 3 → 2 → 1 行、拿掉角色圖、收起紀錄）。
+# 紀錄內容不會丟，遭遇結束後照常寫進主畫面。
+var enc_fit_pending := false
+var enc_fit_frame := -10
+
+func _fit_encounter_layout() -> void:
+	enc_fit_pending = false
+	enc_fit_frame = Engine.get_process_frames()
+	var box: Control = encounter_message.get_parent()
+	var sprite_box: Control = encounter_sprite.get_parent()
+	var limit: float = get_viewport_rect().size.y - 6.0
+	var full: float = _strip_height(encounter_strip, STRIP_LINES)
+	var tiers: Array = [[full, true, true], [_strip_height(encounter_strip, 2), true, true], [_strip_height(encounter_strip, 1), true, true],
+		[_strip_height(encounter_strip, 1), false, true], [_strip_height(encounter_strip, 1), false, false]]
+	var strip_on: bool = encounter_strip.visible or encounter_strip.get_meta("fit_hidden", false)
+	for t in tiers:
+		encounter_strip.custom_minimum_size.y = t[0]
+		sprite_box.visible = t[1]
+		encounter_strip.set_meta("fit_hidden", strip_on and not t[2])
+		encounter_strip.visible = strip_on and t[2]
+		if box.get_combined_minimum_size().y <= limit:
+			break
+
 func _shrink_hunt_layout_later() -> void:
 	await get_tree().process_frame
 	if hunt_overlay.visible:
@@ -1574,6 +1602,7 @@ func _end_session() -> void:
 	session_entries = []
 	session_results = []
 	encounter_strip.visible = false
+	encounter_strip.set_meta("fit_hidden", false)
 	hunt_strip.visible = false
 	for s in summary:
 		_main_append(s)
@@ -1604,7 +1633,8 @@ func _render_strips() -> void:
 	var text: String = "\n".join(parts)
 	for strip in [encounter_strip, hunt_strip]:
 		strip.text = text
-		strip.visible = session_active and not parts.is_empty() and not (strip == hunt_strip and hunt_strip_hidden)
+		strip.visible = session_active and not parts.is_empty() and not (strip == hunt_strip and hunt_strip_hidden) \
+			and not (strip == encounter_strip and bool(encounter_strip.get_meta("fit_hidden", false)))
 		strip.scroll_to_line.call_deferred(max(0, strip.get_line_count() - 1))
 	# 紀錄第一次出現（原本隱藏）時，狩獵、戰鬥畫面要重新量一次放不放得下（ui_check：紀錄跑到畫面底部外面）
 	if hunt_overlay != null and hunt_overlay.visible:
@@ -4549,6 +4579,10 @@ func _open_tactical_combat(c: Combat) -> void:
 		if c.phase != Combat.Phase.DONE:
 			_render_combat()
 			return
+		# 事件直接帶進來的戰鬥（不是從遭遇的選項）沒有這場遭遇的紀錄：開一段，打完照選單式一樣先交代結果再回主畫面
+		# （2026-11-12 encounter_matrix 的 NO_RESULT：苔原狼的殘骸、母熊、猞猁等）
+		if not session_active and GameState.wolf != null and GameState.wolf.alive:
+			_begin_session_entry("")
 		_finish_combat_ui()
 		if session_active and not session_check_pending:
 			session_check_pending = true

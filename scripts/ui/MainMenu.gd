@@ -51,37 +51,54 @@ func _ready() -> void:
 	box.add_child(quit_btn)
 
 	var visual_test_spacer := Control.new()
-	visual_test_spacer.custom_minimum_size = Vector2(0, 20)
+	visual_test_spacer.custom_minimum_size = Vector2(0, 12)
 	box.add_child(visual_test_spacer)
+
+	# 測試與原型的入口：小按鈕排成兩欄（2026-11-12，五個一排排下去會超出 640×360 的畫面，ui_check OFFSCREEN）
+	var tests := GridContainer.new()
+	tests.columns = 2
+	tests.add_theme_constant_override("h_separation", 6)
+	tests.add_theme_constant_override("v_separation", 4)
+	box.add_child(tests)
 
 	# 美術測試（插畫風與像素風的比較場景，prototypes/art_test/；和遊戲進度無關）
 	var art_test_btn := Button.new()
 	art_test_btn.text = tr("menu.art_test")
 	art_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/art_test/ArtTest.tscn"))
-	box.add_child(art_test_btn)
+	art_test_btn.theme_type_variation = &"SmallButton"
+	art_test_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(art_test_btn)
 
 	# 戰術狩獵原型（prototypes/tactical_hunt/；和遊戲進度無關，docs/proposals/tactical-hunt-prototype.md）
 	var tactical_btn := Button.new()
 	tactical_btn.text = tr("menu.tactical_hunt")
 	tactical_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_hunt/TacticalHunt.tscn"))
-	box.add_child(tactical_btn)
+	tactical_btn.theme_type_variation = &"SmallButton"
+	tactical_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(tactical_btn)
 
 	# 戰術戰鬥原型（prototypes/tactical_combat/，docs/proposals/tactical-combat-prototype.md；和遊戲進度無關）
 	var tcombat_btn := Button.new()
 	tcombat_btn.text = tr("menu.tactical_combat")
 	tcombat_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_combat/TacticalCombat.tscn"))
-	box.add_child(tcombat_btn)
+	tcombat_btn.theme_type_variation = &"SmallButton"
+	tcombat_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(tcombat_btn)
 
 	# HD-2D 戰術場景測試（prototypes/hd2d_tactical/，2026-11-04；和遊戲進度無關）
 	var hd2d_btn := Button.new()
 	hd2d_btn.text = tr("menu.hd2d_test")
 	hd2d_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/hd2d_tactical/HD2DTactical.tscn"))
-	box.add_child(hd2d_btn)
+	hd2d_btn.theme_type_variation = &"SmallButton"
+	hd2d_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(hd2d_btn)
 
 	var visual_test_btn := Button.new()
-	visual_test_btn.text = "3D Visual Test (prototype)"
+	visual_test_btn.text = tr("menu.visual_test")
 	visual_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/visual_test/VisualTest.tscn"))
-	box.add_child(visual_test_btn)
+	visual_test_btn.theme_type_variation = &"SmallButton"
+	visual_test_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(visual_test_btn)
 
 func _on_new_game() -> void:
 	get_tree().change_scene_to_file("res://scenes/DenSelect.tscn")

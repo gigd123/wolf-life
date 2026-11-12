@@ -2396,6 +2396,7 @@ grizzly_cache.return,你正吃著，林子裡傳來沉重的腳步聲。灰熊�
 grizzly_cache.return.first,你正吃著，林子裡傳來沉重的腳步聲。一頭巨大的熊回來找牠藏的獵物，直接朝你衝了過來。
 debug.event.grizzly_cache,灰熊藏的獵物
 menu.hd2d_test,HD-2D 測試
+menu.visual_test,3D 畫面測試（原型）
 hd2d.title,HD-2D 戰術場景測試
 hd2d.zoom_mode.step,縮放：分段
 hd2d.zoom_mode.smooth,縮放：無段
