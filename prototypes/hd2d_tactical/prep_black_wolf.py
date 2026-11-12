@@ -34,10 +34,12 @@ SETS = {
     "redfox": (["stand", "walk", "run", "pounce"], 0.65, 1.0),
     # 小灰熊（2026-11-12，ChatGPT，站 1385×768、走 1024×1024 → CANVAS_NORM）：選單畫面母熊帶幼熊時；約成年灰熊的四成五長（約 0.95 格）
     "grizzlycub": (["stand", "walk"], 0.7, 1.0),
+    # 小狐狸（2026-11-12，ChatGPT，站 1408×768、走 1024×1024）：目前遊戲裡不會出現（紅狐不是獵物），先接上備用；約成年紅狐的六成長
+    "redfoxkit": (["stand", "walk"], 0.4, 1.0),
 }
 PALETTE_MATCH = {"grizzlycub": {"walk": "stand"}}
 # 每張畫布不一樣大的：照佔畫布的比例換算；值是姿勢比走路長多少（跑、撲身體拉長）
-CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}, "blackwolf": {}, "tundrawolf": {}, "grizzlycub": {}}
+CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}, "blackwolf": {}, "tundrawolf": {}, "grizzlycub": {}, "redfoxkit": {}}
 
 
 def main():

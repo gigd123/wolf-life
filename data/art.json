@@ -25,7 +25,7 @@
       "black_bear": { "adult": { "_": "black_bear_stand", "move": "black_bear_walk", "walk": "black_bear_walk", "attack": "black_bear_swipe", "threaten": "black_bear_rear", "eat": "black_bear_eat" } },
       "cougar": { "adult": { "_": "cougar_stand", "move": "cougar_walk", "walk": "cougar_walk", "attack": "cougar_pounce", "threaten": "cougar_crouch", "eat": "cougar_eat" } },
       "lynx": { "adult": { "_": "lynx_stand", "move": "lynx_walk", "walk": "lynx_walk", "attack": "lynx_swipe", "threaten": "lynx_threaten" } },
-      "red_fox": { "adult": { "_": "redfox_stand", "walk": "redfox_walk", "move": "redfox_run", "attack": "redfox_pounce" } },
+      "red_fox": { "adult": { "_": "redfox_stand", "walk": "redfox_walk", "move": "redfox_run", "attack": "redfox_pounce" }, "juvenile": { "_": "redfoxkit_stand", "walk": "redfoxkit_walk", "move": "redfoxkit_walk" } },
       "coyote": { "adult": { "_": "coyote_stand", "move": "coyote_walk", "walk": "coyote_walk", "attack": "coyote_bite", "threaten": "coyote_bite" } },
       "wolverine": { "adult": { "_": "wolverine_stand", "move": "wolverine_walk", "walk": "wolverine_walk", "attack": "wolverine_lunge", "threaten": "wolverine_lunge", "eat": "wolverine_eat" } },
       "tundra_wolf": { "adult": { "_": "tundrawolf_stand", "move": "tundrawolf_walk", "walk": "tundrawolf_walk", "attack": "tundrawolf_lunge", "threaten": "tundrawolf_threaten", "hurt": "tundrawolf_hurt", "submit": "tundrawolf_submit", "down": "tundrawolf_down" } },
