@@ -22,8 +22,8 @@ from PIL import Image  # noqa: E402
 
 # 前綴 → (姿勢, 比灰狼走路大幾倍, 提亮倍率)
 SETS = {
-    "blackwolf": (["stand", "walk", "threaten", "ready", "submit", "lunge"], 1.05, 1.3),  # 2026-11-11 補撲咬；另兩張沒用（_blackwolf_unused_crouch：像趴著戒備不像倒地、_blackwolf_unused_twisted：身體扭曲）
-    "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge"], 1.0, 1.0),
+    "blackwolf": (["stand", "walk", "threaten", "ready", "submit", "lunge", "retreat", "carry", "down"], 1.05, 1.3),  # 2026-11-12 補撤退、叼肉、倒地（倒地 1376×768 → CANVAS_NORM）  # 2026-11-11 補撲咬；另兩張沒用（_blackwolf_unused_crouch：像趴著戒備不像倒地、_blackwolf_unused_twisted：身體扭曲）
+    "tundrawolf": (["stand", "walk", "threaten", "submit", "ready", "lunge", "retreat", "hurt"], 1.0, 1.0),  # 2026-11-12 補撤退、帶傷（身上有傷口、低頭）
     # 郊狼（Phase 2l，ChatGPT 2026-11-08，1408×768）：約灰狼的八成長（走路約 1.08 格；體重約四成但身長約八成）
     "coyote": (["stand", "walk", "bite", "carry", "run"], 0.8, 1.0),
     # 狼獾（Phase 2l，ChatGPT 2026-11-08）：站、走、撲咬（張嘴伸爪，也當示威）、吃；含尾巴約灰狼的七成五長，矮壯
@@ -34,7 +34,7 @@ SETS = {
     "redfox": (["stand", "walk", "run", "pounce"], 0.65, 1.0),
 }
 # 每張畫布不一樣大的：照佔畫布的比例換算；值是姿勢比走路長多少（跑、撲身體拉長）
-CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}}
+CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}, "blackwolf": {}}
 
 
 def main():

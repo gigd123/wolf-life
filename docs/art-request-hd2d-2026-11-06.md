@@ -9,8 +9,8 @@
 
 **還可以出的（都是可選，照效果排）**——共通：綠色背景、側面面向右、一張一隻、粗黑框，附同一隻動物已有的圖當參考：
 1. ~~選單畫面還是舊圖的~~：2026-11-12 都換了（紅狐 站、走、跑、撲；灰狼 吃、睡、嚎叫）。小狐狸、渡鴉、鮭魚還是舊圖（可選）。
-2. **黑狼**：撤退（面向左走開、夾尾巴）、倒地（"collapsed and lying FLAT on its side, all four legs stretched out sideways, head resting flat on the ground, eyes closed, completely limp. Not crouching, not alert."）、叼肉。
-3. **苔原狼**：撤退、倒地、叼肉（文案同黑狼，換成 creamy white fur with a light gray saddle）。
+2. **黑狼**：撤退、倒地、叼肉 2026-11-12 已補齊。
+3. **苔原狼**：撤退、帶傷 2026-11-12 已補；還缺倒地、叼肉（文案同黑狼，換成 creamy white fur with a light gray saddle；倒地可以加 "like a sleeping dog lying on its side, legs pointing sideways, NOT lying on its belly"）。
 4. **北美馴鹿母鹿警覺**重出有小角的一張（現在這張沒畫角，和站那張不一致）。
 5. **洞穴入口**冬天版（頂上積雪）。
 6. 獵物逃跑的第二張（跑的另一步）：選單與戰術畫面跑起來可以兩張輪流。
