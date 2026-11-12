@@ -18,6 +18,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import prep_grizzly as pg  # noqa: E402
 import prep_wolf as pw  # noqa: E402
+from PIL import Image  # noqa: E402
 
 # 前綴 → (姿勢, 比灰狼走路大幾倍, 提亮倍率)
 SETS = {
@@ -29,7 +30,11 @@ SETS = {
     "wolverine": (["stand", "walk", "lunge", "eat"], 0.75, 1.0),
     # 猞猁（Phase 2l，ChatGPT 2026-11-08）：站、走、揮爪、叼著雪兔跑、示威（豎毛張嘴）；約灰狼的八成長（和郊狼差不多大、腿長）
     "lynx": (["stand", "walk", "swipe", "carry", "threaten"], 0.8, 1.0),
+    # 紅狐（2026-11-12，ChatGPT，站 1408×768、跑與撲 1024×1024）：站、走、跑（逃）、撲（老鼠跳）；選單畫面用。含尾巴約灰狼的六成五長
+    "redfox": (["stand", "walk", "run", "pounce"], 0.65, 1.0),
 }
+# 每張畫布不一樣大的：照佔畫布的比例換算；值是姿勢比走路長多少（跑、撲身體拉長）
+CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}}
 
 
 def main():
@@ -41,6 +46,11 @@ def main():
         ref = cuts["walk"].width
         for n, c in cuts.items():
             cells = pw.WALK_CELLS * scale * c.width / ref
+            if prefix in CANVAS_NORM:
+                # 畫布大小不一樣（同一隻都畫滿畫布寬度）：照佔畫布的比例換算，再乘上姿勢的伸展
+                cw = Image.open(os.path.join(pg.SRC, "%s_%s.jpg" % (prefix, n))).width
+                rw = Image.open(os.path.join(pg.SRC, "%s_walk.jpg" % prefix)).width
+                cells = pw.WALK_CELLS * scale * (c.width / cw) / (ref / rw) * CANVAS_NORM[prefix].get(n, 1.0)
             for d in pg.DENSITIES:
                 out = pw.outline(pg.shrink(c, round(cells * d)))
                 out.save(os.path.join(pg.OUT, "%s_%s_%d.png" % (prefix, n, d)))
