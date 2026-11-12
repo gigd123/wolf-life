@@ -3603,6 +3603,10 @@ func _metric_tactical(th: TacticalHunt) -> void:
 		row["best"] = float(row["best"]) + float(p[1])
 	var cause: String = th.end_cause()
 	row["end"][cause] = int(row["end"].get(cause, 0)) + 1
+	# 循著足跡追（Phase 2m）：在密林裡不見之後選了什麼、追上沒有
+	if th.track_result != "":
+		var tr_row: Dictionary = row.get_or_add("track", {})
+		tr_row[th.track_result] = int(tr_row.get(th.track_result, 0)) + 1
 	# 放棄的三種（2026-10-22）：看出體況才撤（known）、有過撲的機會但不到兩成五（low）、從頭到尾沒有撲的機會（none）；其他算 other
 	if th.result == "gave_up":
 		var gk: String = "known" if th.condition_known else ("none" if th.best_seen <= 0.0 else ("low" if th.best_seen < 0.25 else "other"))

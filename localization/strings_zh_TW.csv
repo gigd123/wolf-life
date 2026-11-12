@@ -1895,6 +1895,19 @@ tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.lost.another,另一隻{animal}也鑽進密林了。
 tactical.lost.others,另外{n}隻{animal}也鑽進密林了。
+tactical.track.found,你低頭循著足跡鑽進林子，在另一頭又看到了{animal}！
+tactical.track.lost.forest,你循著足跡鑽進林子，可是氣味在密林深處散開了，足跡斷了。
+tactical.track.lost.logs,你循著足跡追進林子，足跡在一片倒木間斷了。
+tactical.track.lost.stream,你循著足跡追到溪邊，足跡進了水裡，再也找不到。
+tactical.track.lost.rock,你循著足跡追進林子，足跡在岩石間斷了。
+tactical.track.f.perception,你的鼻子
+tactical.track.f.snow,雪地上的足跡很清楚
+tactical.track.f.blood,牠在流血
+tactical.track.f.tired,牠跑了很久
+tactical.track.f.breath,你快喘不過氣
+tactical.ui.track_follow,循著足跡追 {p}%
+tactical.ui.track_give_up,放棄
+tactical.ui.track_prompt,牠鑽進密林不見了。要循著足跡追進去嗎？
 tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
 tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。

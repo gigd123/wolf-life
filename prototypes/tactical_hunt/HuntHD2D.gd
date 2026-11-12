@@ -124,7 +124,7 @@ func paint() -> void:
 	if h == null:
 		return
 	var col: Dictionary = cfg["colors"]
-	var hid: bool = h.hidden_unfound()
+	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		frame(h.deer_goal(), _col(col["goal"]), 0.02, 0.05)
 	if hid:

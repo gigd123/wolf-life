@@ -91,6 +91,10 @@ var reason: String = ""
 var detect_cause: String = ""
 var kicks: int = 0
 var events: Array = [] # 發生的事（原型直接用中文）
+var track_pending := false # Phase 2m：目標在密林裡不見了，等你選「循著足跡追」或「放棄」
+var tracked := false # 這一場已經追過一次（第二次失去視線就是真的逃掉）
+var track_turns := 0 # 循著足跡追多花的遊戲回合
+var track_result := "" # ""／found／lost／gave_up（試玩紀錄與主遊戲用）
 var told: Dictionary = {} # 鹿群裡同樣稱呼的幾隻：同一件事只寫一次完整的句子，之後寫「另一隻…也」（2026-11-12 影片回饋：紀錄重複）
 # 鹿群版
 var caught_kind: String = "" # 獵到的是 adult 還是 fawn
@@ -196,6 +200,10 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 	kicks = 0
 	events = []
 	told = {}
+	track_pending = false
+	tracked = false
+	track_turns = 0
+	track_result = ""
 	stats = {"stuck": 0, "toward_wolf": 0}
 	drive_ally = -1
 	drive_until = -1
@@ -1324,6 +1332,11 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 # --- 回合結束：警覺值、鹿行動 ---
 
 func _end_wolf_turn(mode: String) -> void:
+	# 等你選要不要循著足跡追時做了別的動作（模擬的打法）：當成放棄
+	if track_pending:
+		give_up_track()
+		if done:
+			return
 	rounds += 1
 	last_mode = mode
 	_check_hidden()
@@ -2656,9 +2669,131 @@ func _check_lost() -> void:
 	if terrain(deer_pos) == "f" and not has_sight():
 		lost_turns += 1
 		if lost_turns >= int(t["deer"]["lost_sight_turns"]):
+			# Phase 2m：你盯上的那一隻第一次在密林裡不見 → 先停下來，讓你選要不要循著足跡追
+			if di == target and not tracked and bool(_track_cfg().get("enabled", false)):
+				track_pending = true
+				events.append(_tx("tactical.lost").replace("{animal}", label()))
+				return
 			_deer_gone("lost", _tx("tactical.lost").replace("{animal}", label()))
 	else:
 		lost_turns = 0
+
+# --- 循著足跡追（Phase 2m 第 1 步）---
+
+func _track_cfg() -> Dictionary:
+	return t.get("track", {})
+
+# 追上的機率與因素（[文字, 加減]）
+func track_chance() -> Dictionary:
+	var c: Dictionary = _track_cfg()
+	var factors: Array = []
+	var p: float = float(c.get("base", 0.35))
+	var per: float = (float(wolf["perception"]) - 50.0) * float(c.get("perception_per", 0.006))
+	if absf(per) >= 0.005:
+		factors.append([_tx("tactical.track.f.perception"), per])
+	p += per
+	var dh: int = di
+	di = target
+	if str(game_mods.get("season", "")) == "winter" or game_mods.has("snow_slow"):
+		p += float(c.get("snow", 0.2))
+		factors.append([_tx("tactical.track.f.snow"), float(c.get("snow", 0.2))])
+	if wounds > 0:
+		var wb: float = minf(wounds * float(c.get("wound", 0.15)), float(c.get("wound_max", 0.3)))
+		p += wb
+		factors.append([_tx("tactical.track.f.blood"), wb])
+	if flee_round >= int(c.get("long_flee_rounds", 5)):
+		p += float(c.get("long_flee", 0.1))
+		factors.append([_tx("tactical.track.f.tired"), float(c.get("long_flee", 0.1))])
+	di = dh
+	if breath < breath_max * float(c.get("low_breath_frac", 0.2)):
+		p += float(c.get("low_breath", -0.2))
+		factors.append([_tx("tactical.track.f.breath"), float(c.get("low_breath", -0.2))])
+	return {"chance": clampf(p, float(c.get("min", 0.1)), float(c.get("max", 0.8))), "factors": factors, "breath": track_breath()}
+
+func track_breath() -> float:
+	return -float(t["move"]["breath_sprint"]) * float(_track_cfg().get("breath_mult", 2.0))
+
+func follow_track() -> void:
+	if not track_pending:
+		return
+	track_pending = false
+	tracked = true
+	di = target
+	var ch: float = float(track_chance()["chance"])
+	var cost: float = track_breath()
+	breath_used += minf(cost, breath)
+	breath = maxf(0.0, breath - cost)
+	track_turns += int(_track_cfg().get("game_turns", 1))
+	rounds += 1
+	if rng.randf() < ch:
+		var cell := _track_appear_cell()
+		if cell.x >= 0:
+			track_result = "found"
+			deer_pos = cell
+			deer_facing = _dir_toward(wolf_pos, cell)
+			lost_turns = 0
+			events.append(_tx("tactical.track.found").replace("{animal}", label()))
+			return
+	track_result = "lost"
+	_deer_gone("lost", _tx("tactical.track.lost." + _track_break_place()), true)
+
+func give_up_track() -> void:
+	if not track_pending:
+		return
+	track_pending = false
+	tracked = true
+	track_result = "gave_up"
+	di = target
+	# 「鑽進密林，不見了」已經寫過，這裡不再寫一次
+	if herd.size() <= 1:
+		done = true
+		result = "lost"
+		reason = _tx("tactical.lost").replace("{animal}", label())
+		return
+	herd[di]["gone"] = true
+	herd[di]["held"] = false
+	if active_deer().is_empty():
+		_finish("lost", _tx("tactical.herd_gone"))
+
+# 追上時牠在哪：密林外、離你 3～4 格、看得到；沒有這種格子就放寬距離
+func _track_appear_cell() -> Vector2i:
+	var dd: Array = _track_cfg().get("appear_dist", [3, 4])
+	var others: Dictionary = deer_cells(target)
+	for widen in [0, 1, 2]:
+		var cands: Array = []
+		for y in height:
+			for x in width:
+				var c := Vector2i(x, y)
+				var d: float = float(_cheb(c, wolf_pos))
+				if d < float(dd[0]) - widen or d > float(dd[1]) + widen:
+					continue
+				if terrain(c) != "." or _wolf_at(c) or others.has(c):
+					continue
+				var keep: Vector2i = deer_pos
+				deer_pos = c
+				var seen: bool = has_sight()
+				deer_pos = keep
+				if seen:
+					cands.append(c)
+		if not cands.is_empty():
+			return cands[rng.randi_range(0, cands.size() - 1)]
+	return Vector2i(-1, -1)
+
+# 足跡在哪裡斷掉：照牠附近的地形
+func _track_break_place() -> String:
+	var found := {}
+	for y in range(deer_pos.y - 2, deer_pos.y + 3):
+		for x in range(deer_pos.x - 2, deer_pos.x + 3):
+			var c := Vector2i(x, y)
+			if in_bounds(c):
+				found[terrain(c)] = true
+	if found.has("s") or found.has("w"):
+		return "stream"
+	if found.has("l"):
+		return "logs"
+	if found.has("r") or found.has("c") or found.has("b"):
+		return "rock"
+	return "forest"
 
 func _escape_reason() -> String:
 	match detect_cause:
@@ -2735,7 +2870,7 @@ func end_cause() -> String:
 # --- 結算（接進主遊戲時用）---
 
 func game_turns() -> int:
-	return clampi(int(ceil(rounds / 5.0)), 1, 3)
+	return clampi(int(ceil(rounds / 5.0)), 1, 3) + track_turns
 
 func stamina_cost() -> float:
 	return min(18.0, 2.0 + breath_used * 0.08)

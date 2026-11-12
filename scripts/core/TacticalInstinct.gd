@@ -68,6 +68,14 @@ static func play(h, pol: String = "") -> void:
 		step(h, pol)
 
 static func step(h, pol: String) -> void:
+	# 目標在密林裡不見了（Phase 2m）：追上的機率夠、喘也夠才追
+	if h.track_pending:
+		var tc: Dictionary = h._track_cfg()
+		if float(h.track_chance()["chance"]) >= float(tc.get("instinct_min_chance", 0.4)) and h.breath >= h.breath_max * float(tc.get("instinct_min_breath", 0.3)):
+			h.follow_track()
+		else:
+			h.give_up_track()
+		return
 	# 咬住了：壓倒和咬喉挑機率高的；都做不到就鬆口
 	if h.held:
 		var opts: Dictionary = h.hold_options()

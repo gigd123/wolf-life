@@ -81,6 +81,10 @@
     "rush_bolt": 0.3,
     "unaware": 0.15
   },
+  "_track_comment": "循著足跡追（Phase 2m 第 1 步，2026-11-12 使用者選 B）：你盯上的那一隻第一次在密林裡不見（lost_sight_turns）時停下來選「循著足跡追」或「放棄」，一場一次。機率 base＋感知（每比 50 高 1 點 perception_per）＋冬天或深雪 snow＋每道傷 wound（最多 wound_max）＋逃了 long_flee_rounds 回合以上 long_flee＋喘不到 low_breath_frac 時 low_breath，夾在 min～max；花喘 = 衝刺 × breath_mult、遊戲回合 + game_turns；追上時牠出現在密林外、離你 appear_dist 格、看得到。SPEC 的初始值是 2 倍、3～4 格，tactical_track_sim 看到追上後幾乎獵不到（喘不夠、距離太遠），改成 1 倍、2～3 格（整體獵到率 +1～4 個百分點）。本能：機率 ≥ instinct_min_chance 而且喘 ≥ instinct_min_breath 才追。",
+  "track": { "enabled": true, "base": 0.35, "perception_per": 0.006, "snow": 0.2, "wound": 0.15, "wound_max": 0.3, "long_flee_rounds": 5, "long_flee": 0.1,
+    "low_breath_frac": 0.2, "low_breath": -0.2, "min": 0.1, "max": 0.8, "breath_mult": 1.0, "game_turns": 1, "appear_dist": [2, 3],
+    "instinct_min_chance": 0.4, "instinct_min_breath": 0.3 },
   "deer": { "chase_help": 0.4,
     "speed": 60,
     "flee_profile": {

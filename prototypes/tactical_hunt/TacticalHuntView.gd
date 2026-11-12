@@ -278,7 +278,7 @@ func _on_hover(c: Vector2i) -> void:
 
 func _on_click(c: Vector2i) -> void:
 	if true:
-		if h.done:
+		if h.done or h.track_pending:
 			return
 		if lock_armed:
 			lock_armed = false
@@ -344,6 +344,21 @@ func _build_buttons() -> void:
 				queue_free()
 				cb.call(h))
 			buttons.add_child(cont)
+		return
+	# 目標在密林裡不見了（Phase 2m）：只有「循著足跡追」和「放棄」
+	if h.track_pending:
+		var tch: Dictionary = h.track_chance()
+		var fb := Button.new()
+		fb.theme_type_variation = &"SmallButton"
+		fb.text = tr("tactical.ui.track_follow").replace("{p}", str(roundi(float(tch["chance"]) * 100.0))) + tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(tch["breath"]), 0.1)))
+		fb.tooltip_text = "、".join((tch["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
+		fb.pressed.connect(func(): h.follow_track(); _after_action())
+		buttons.add_child(fb)
+		var gb := Button.new()
+		gb.theme_type_variation = &"SmallButton"
+		gb.text = tr("tactical.ui.track_give_up")
+		gb.pressed.connect(func(): h.give_up_track(); _after_action())
+		buttons.add_child(gb)
 		return
 	if h.held:
 		var names := {"takedown": tr("tactical.ui.takedown"), "throat": tr("tactical.ui.throat"), "hang": tr("tactical.ui.hang"), "hamstring": tr("tactical.ui.hamstring"), "release": tr("tactical.ui.release")}
@@ -435,6 +450,10 @@ func _refresh() -> void:
 	log_box.visible = not long
 	detail_box.text = ht if long else ""
 	hover_box.text = "" if long else (ht if ht != "" else _ally_text())
+	if h.track_pending:
+		log_box.visible = true
+		detail_panel.visible = false
+		hover_box.text = tr("tactical.ui.track_prompt")
 
 # --- 右側資訊 ---
 
@@ -576,7 +595,7 @@ func _draw_map() -> void:
 		for x in h.width:
 			_draw_tile(Vector2i(x, y))
 	# 鹿的目的地（沒察覺時）
-	var hid: bool = h.hidden_unfound()
+	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		map.draw_rect(_cell_rect(h.deer_goal()).grow(-3), COLORS["goal"], false, 1.0)
 	# 躲在草裡、還沒找到（Phase 2i 第 6 步）：只畫大概在哪的範圍
