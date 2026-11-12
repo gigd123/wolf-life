@@ -401,6 +401,21 @@ func _build_actions() -> void:
 	auto.focus_mode = Control.FOCUS_NONE
 	auto.pressed.connect(_auto_play)
 	actions_box.add_child(auto)
+	_fit_actions_later()
+
+# 動作多（每個兩行說明、還有分肉、指揮同伴）時按鈕排到第四列會超出畫面底部（2026-11-12 ui_check OFFSCREEN）：
+# 排好後量高度，放不下就把動作區往上移、右上的說明縮短
+func _fit_actions_later() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	var h: float = actions_box.get_combined_minimum_size().y
+	var top: float = minf(222.0, 358.0 - h)
+	actions_box.position.y = top
+	actions_box.size.y = 358.0 - top
+	cmd_box.position.y = top - 22.0
+	info.size.y = maxf(60.0, top - 22.0 - 30.0)
 
 func _build_commands() -> void:
 	for c in cmd_box.get_children():

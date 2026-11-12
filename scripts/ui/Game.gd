@@ -1568,7 +1568,8 @@ func _check_session_end() -> void:
 	session_check_pending = false
 	if not session_active or session_result_mode:
 		return
-	if encounter_overlay.visible or hunt_overlay.visible or current_hunt != null or current_combat != null:
+	# 戰術戰鬥畫面還開著（鄰群的衝突沒有 current_combat）也是還沒結束（2026-11-12 encounter_matrix 的 STUCK：撲上去打黑狼一家）
+	if encounter_overlay.visible or hunt_overlay.visible or current_hunt != null or current_combat != null or tactical_combat_view != null:
 		_render_strips()
 		return
 	if GameState.wolf == null or not GameState.wolf.alive or session_entries.is_empty() or session_entries.back()["lines"].is_empty():
@@ -4535,7 +4536,11 @@ func _show_pack_meet(event: Dictionary) -> void:
 		var alone: bool = GameState.team_size() <= 1
 		if tactical_fight:
 			encounter_overlay.visible = false
-			_open_pack_tactical(func(r: Dictionary): fight_done.call(r, alone))
+			_open_pack_tactical(func(r: Dictionary):
+				fight_done.call(r, alone)
+				if session_active and not session_check_pending:
+					session_check_pending = true
+					_check_session_end.call_deferred())
 			return
 		fight_done.call(GameState.pack_fight(), alone)
 	)
