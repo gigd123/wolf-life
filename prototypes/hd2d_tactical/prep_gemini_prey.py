@@ -125,7 +125,7 @@ SPECIAL = {
     # 2026-11-11 重出（原本和站很像，舊的留在 _*_v1.jpg）：小野兔、小河狸坐起來警覺，北美馴鹿母鹿回頭看、抬起一隻腳；小大角羊吃草（原本借母羊的）照站那張調色
     "hare_young_alert": {"cells": 0.32},
     "beaver_kit_alert": {"cells": 0.48},
-    "caribou_cow_alert": {"cells": 1.5, "match": True},
+    "caribou_cow_alert": {"cells": 1.4, "match": True},  # 2026-11-12 重出（有小角、抬頭、抬一隻腳；舊的存成 _caribou_cow_alert_v2_noantler）
     "bighorn_lamb_graze": {"cells": 0.78, "match": True},
     "pronghorn_kid_run": {"cells": 1.1},
     "bison_calf_alert": {"cells": 1.2},
