@@ -36,7 +36,7 @@
   "side": { ".": "dirt", "f": "dirt", "l": "dirt", "r": "rock", "w": "dirt", "s": "dirt", "d": "dirt", "c": "rock", "b": "dirt" },
   "winter_top": { ".": "snow", "f": "snow", "l": "snow", "b": "snow" },
   "tint": { "f": [0.95, 0.95, 0.95], "l": [0.9, 0.8, 0.7], "b": [0.35, 0.3, 0.26] },
-  "trees": { "f": { "art": "spruce", "scale": 0.45, "chance": 0.45 }, "l": { "art": "log", "winter_art": "log_winter", "no_mix": true, "scale": 1.0 }, "b": { "art": "cave", "no_mix": true, "scale": 1.0 }, ".": { "art": "stones", "winter_art": "stones_winter", "no_mix": true, "scale": 1.0, "chance": 0.03 } },
+  "trees": { "f": { "art": "spruce", "scale": 0.45, "chance": 0.45 }, "l": { "art": "log", "winter_art": "log_winter", "no_mix": true, "scale": 1.0 }, "b": { "art": "cave", "winter_art": "cave_winter", "no_mix": true, "scale": 1.0 }, ".": { "art": "stones", "winter_art": "stones_winter", "no_mix": true, "scale": 1.0, "chance": 0.03 } },
   "logs": [],
   "water": { "w": { "color": [0.3, 0.5, 0.62, 0.78], "lift": 0.35, "tex_tint": [1.0, 1.0, 1.0] }, "s": { "color": [0.36, 0.56, 0.62, 0.68], "lift": 0.38, "tex_tint": [1.08, 1.08, 1.05] }, "d": { "color": [0.16, 0.3, 0.46, 0.88], "lift": 0.75, "tex_tint": [0.55, 0.62, 0.78] } },
   "water_tex": "water", "winter_water_tex": "ice", "winter_water_alpha": 0.95, "winter_water_tint": [0.62, 0.76, 0.92],

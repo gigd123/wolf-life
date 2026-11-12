@@ -3,6 +3,7 @@
 最後更新：2026-11-12
 
 ## 目前階段
+（2026-11-12）苔原狼補倒地（帶傷那張；沒傷的存成 `_tundrawolf_down_unused_nowound`）、叼肉，`combat_hd2d.json`、`art.json` 接上；洞穴入口冬天版 `cave_winter`（`prep_props.py`、`hunt_hd2d.json` 的地形 b `winter_art`）。出圖清單重新盤點（`docs/art-request-hd2d-2026-11-06.md` 最上面「2026-11-12 盤點」）。
 （2026-11-12）狩獵紀錄重複（使用者轉來的影片回饋）：鹿群裡同樣稱呼的幾隻各寫一次「母鹿發現你了，拔腿就跑」「整群跟著跑了起來」「母鹿鑽進密林，不見了」，看起來像同一件事一直重報。`TacticalHunt._say_herd`：抬頭、逃跑、跑遠、鑽進密林，第一隻寫完整的句子，之後寫「另一隻{animal}也…」，同一個動作裡再有一隻合成「另外{n}隻{animal}也…」；「整群跟著跑了起來」一場只寫一次。60 場馬鹿群（本能）檢查：剩下的重複都是不同回合真的又發生（撲空、咬住）。
 （2026-11-12）黑狼補撤退、叼肉、倒地，苔原狼補撤退、帶傷（ChatGPT）：`prep_black_wolf.py`（黑狼倒地 1376×768 → `CANVAS_NORM`）；`combat_hd2d.json` `units.*.poses` 加上這些姿勢、`art.json` `hd_menu`（黑狼帶傷用撤退、倒地；苔原狼帶傷）。苔原狼的倒地、叼肉還是灰狼調色。
 （2026-11-12）灰狼的吃、睡、嚎叫新圖（ChatGPT，`wolf_r6_*.jpg`）：`prep_wolf.py` 照第二輪走路的色盤調色，睡（蜷成一團）指定 1.05 格寬；`art.json` `hd_menu.wolf` 加 eat、sleep、howl。選單畫面的灰狼全部是新圖了。

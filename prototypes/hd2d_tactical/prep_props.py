@@ -56,6 +56,7 @@ PROPS = {
     "fence": ("fence.jpg", 26),
     # 洞穴入口（寬高比約 1.9）：地形 b（狩獵的躲藏處）約 1.3 格寬
     "cave": ("cave.jpg", 34),
+    "cave_winter": ("cave_winter.jpg", 34),  # 2026-11-12 冬天版（頂上積雪、冰柱）
 }
 # 顏色調整（飽和度倍率, 亮度倍率）：ChatGPT 的葉子是鮮黃綠色，在深色松樹旁邊太跳 → 稍微降飽和、調暗
 TONE = {"birch": (0.8, 0.9), "birch_autumn": (0.85, 0.9)}
