@@ -418,6 +418,10 @@ factor.chase_bonus,已佔好位置
 factor.hungry,飢餓虛弱
 factor.overfed,吃太撐
 factor.injured,重傷未癒
+factor.track_snow,雪地上的足跡很清楚
+factor.track_blood,牠在流血
+factor.track_same_day,足跡還很新
+factor.track_old,足跡已經過了好幾天
 factor.wounded,身上有傷：體力消耗增加
 reason.wind_turned,風向轉了，{animal}聞到了你。
 reason.wind_tailwind,你在上風處，{animal}聞到了你。
@@ -1457,6 +1461,7 @@ hunt.turn_charge,牠跑著跑著突然回過頭，朝你衝過來！你閃得不
 factor.prey_terrain.good,這裡的地形對牠不利
 factor.prey_terrain.bad,這裡的地形對牠有利
 explore.trait.wounded,被你咬傷的
+explore.trait.fled,上次從你面前逃掉的
 animal.elk,馬鹿
 prey_name.elk.adult,母馬鹿
 prey_name.elk.buck,公馬鹿
@@ -1895,6 +1900,10 @@ tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}鑽進密林，不見了。
 tactical.lost.another,另一隻{animal}也鑽進密林了。
 tactical.lost.others,另外{n}隻{animal}也鑽進密林了。
+tactical.known,你認出牠了——就是上次從你面前逃掉的那一隻。
+tactical.known.wounded,你認出牠了——就是上次從你面前逃掉的那一隻，身上還帶著你留下的傷。
+tactical.known.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻。
+tactical.known.wounded.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻，身上還帶著你留下的傷。
 tactical.track.found,你低頭循著足跡鑽進林子，在另一頭又看到了{animal}！
 tactical.track.lost.forest,你循著足跡鑽進林子，可是氣味在密林深處散開了，足跡斷了。
 tactical.track.lost.logs,你循著足跡追進林子，足跡在一片倒木間斷了。

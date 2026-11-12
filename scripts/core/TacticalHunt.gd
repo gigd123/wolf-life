@@ -258,6 +258,10 @@ func setup_from_game(ctx: Dictionary) -> void:
 	# 主遊戲受傷的個體（Phase 2i 第 5 步）：同選單式，跑得比較慢（每回合的逃跑格數 × game.injured_speed_mult）
 	if bool(ctx.get("injured", false)):
 		herd[0]["injured"] = true
+	# 同一隻獵物（Phase 2m 第 2 步）：上次從你面前逃掉的那一隻（第一隻）；還累著時開始逃跑就接著上次的回合數
+	if bool(ctx.get("known_individual", false)):
+		herd[0]["known"] = true
+		herd[0]["tired_start"] = int(ctx.get("tired_rounds", 0))
 	if float(ctx.get("age_penalty", 0.0)) > 0.0:
 		game_mods["age_penalty"] = float(ctx["age_penalty"])
 	if ctx.has("season"):
@@ -712,6 +716,11 @@ func observe() -> void:
 	observed += 1
 	events.append(_tx("tactical.observe").replace("{condition}", _tx("tactical.condition." + condition)))
 	_mark_weakest()
+	# 認出上次逃掉的那一隻（Phase 2m 第 2 步）
+	if bool(herd[0].get("known", false)) and not bool(herd[0]["gone"]) and not told.has("known"):
+		told["known"] = true
+		var kk: String = "tactical.known" + (".wounded" if int(herd[0]["wounds"]) > 0 else "") + (".herd" if herd.size() > 1 else "")
+		events.append(_tx(kk).replace("{animal}", label(0)))
 	_end_wolf_turn("still")
 
 # 鹿群（成鹿 2 隻以上）：觀察時看出群裡最弱的那一隻（Phase 2d 第 2 步；同主遊戲「觀察鹿群，找出跑得慢的」）。
@@ -1921,7 +1930,7 @@ func _start_flee(cause: String) -> void:
 	if _roll_stand(cause):
 		return
 	deer_state = "flee"
-	flee_round = 0
+	flee_round = int(herd[di].get("tired_start", 0))
 	if detect_cause == "":
 		detect_cause = cause
 	if cause == "herd":

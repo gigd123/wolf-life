@@ -2412,7 +2412,8 @@ func _nearby_marks() -> Array:
 func _notables_here() -> Array:
 	var today: int = int(life_log.get("days_lived", 1))
 	notables = notables.filter(func(n): return int(n.get("until", 0)) >= today)
-	return notables.filter(func(n): return str(n.get("region", "")) == current_region)
+	# 同一隻獵物（Phase 2m）：給現在的傷與疲勞
+	return notables.filter(func(n): return str(n.get("region", "")) == current_region).map(func(n): return notable_state(int(n.get("id", 0))))
 
 func _add_notable(d: Dictionary) -> void:
 	var id: int = int(life_log.get("next_notable_id", 1))
@@ -2421,6 +2422,68 @@ func _add_notable(d: Dictionary) -> void:
 		"trait": str(d.get("trait", "lame")), "until": int(life_log.get("days_lived", 1)) + int(GameData.discovery.get("notable", {}).get("days", 5))}
 	notables.append(entry)
 	current_discovery["notable_id"] = id
+
+# --- 同一隻獵物（Phase 2m 第 2 步）---
+
+func _notable_cfg() -> Dictionary:
+	return GameData.discovery.get("notable", {})
+
+# 你盯上的那一隻逃掉了：記下傷、疲勞、逃走的時段。回傳 id（沒記就 0）
+# 記的條件：牠察覺了你、跑掉了（逃掉、跟丟、被甩開、沒追上），或身上有你留下的傷；只是你沒出手就走開、牠根本沒發現你的不記
+func _remember_fled(hunt: HuntSystem) -> int:
+	var info: Dictionary = hunt.get_meta("fled_individual", {})
+	var wounds: int = int(info.get("wounds", hunt.fight_state.get("wounds", 0)))
+	var noticed: bool = hunt.fled or bool(info.get("noticed", false))
+	if not noticed and wounds <= 0:
+		return 0
+	# 選單式的狩獵照舊只記咬傷的大型成獸（1.8 第 4 步）；戰術地圖的每一種都記
+	if info.is_empty() and not (wounds > 0 and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) == "large" and hunt.life_stage != "juvenile"):
+		return 0
+	# 同一隻又逃了：換掉舊的那筆
+	if hunting_notable != 0:
+		notables = notables.filter(func(n): return int(n.get("id", 0)) != hunting_notable)
+		hunting_notable = 0
+	var id: int = int(life_log.get("next_notable_id", 1))
+	life_log["next_notable_id"] = id + 1
+	notables.append({"id": id, "region": current_region, "animal": hunt.animal_id, "stage": hunt.life_stage,
+		"trait": "wounded" if wounds > 0 else "fled", "wounds": wounds, "tired": int(info.get("tired", 0)),
+		"day": int(life_log.get("days_lived", 1)), "at": _abs_period(), "herd": hunt.in_herd,
+		"until": int(life_log.get("days_lived", 1)) + int(_notable_cfg().get("fled_days", 4))})
+	return id
+
+# 這一頭現在的狀態：傷每 heal_days 天好一處；疲勞只在 tired_periods 個時段內還在
+func notable_state(id: int) -> Dictionary:
+	for n in notables:
+		if int(n.get("id", 0)) != id:
+			continue
+		var out: Dictionary = n.duplicate()
+		if not n.has("at"):
+			return out # 跛腳、年老（提案之十 D）：沒有傷與疲勞的紀錄
+		var days: int = int(life_log.get("days_lived", 1)) - int(n.get("day", 0))
+		out["days"] = days
+		out["wounds"] = maxi(0, int(n.get("wounds", 0)) - days / maxi(1, int(_notable_cfg().get("heal_days", 2))))
+		out["tired"] = int(n.get("tired", 0)) if _abs_period() - int(n.get("at", 0)) < int(_notable_cfg().get("tired_periods", 2)) else 0
+		return out
+	return {}
+
+# 循著同一隻的足跡：雪地、血跡、經過多久（追蹤的機率另外加減）
+func _notable_track_factors(d: Dictionary) -> Array:
+	var id: int = int(d.get("notable_id", 0))
+	var n: Dictionary = notable_state(id) if id != 0 else {}
+	if n.is_empty() or not n.has("at"):
+		return []
+	var c: Dictionary = _notable_cfg().get("track", {})
+	var out: Array = []
+	if GameTime.current_season() == "winter":
+		out.append({"key": "factor.track_snow", "good": true, "weight": float(c.get("snow", 0.2))})
+	if int(n.get("wounds", 0)) > 0:
+		out.append({"key": "factor.track_blood", "good": true, "weight": minf(int(n["wounds"]) * float(c.get("wound", 0.15)), float(c.get("wound_max", 0.3)))})
+	var days: int = int(n.get("days", 0))
+	if days <= 0:
+		out.append({"key": "factor.track_same_day", "good": true, "weight": float(c.get("same_day", 0.1))})
+	elif days >= 2:
+		out.append({"key": "factor.track_old", "good": false, "weight": float(c.get("per_day_after", 0.15)) * (days - 1)})
+	return out
 
 # 黑狼一家吃剩的殘骸（Phase 3a 第 4 步）：在牠們的領域或相鄰區探索時發現，有 2～3 段；每吃一段都可能被牠們發現。
 func _pack_remains_cfg() -> Dictionary:
@@ -2568,7 +2631,16 @@ func is_notable_discovery(d: Dictionary) -> bool:
 	return true
 
 func track_chance() -> Dictionary:
-	return ExploreSystem.track_chance(current_discovery, team_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty())
+	return _with_notable_track(current_discovery, ExploreSystem.track_chance(current_discovery, team_perception(), _track_knowledge_bonus(current_discovery), _track_weather_penalty()))
+
+func _with_notable_track(d: Dictionary, info: Dictionary) -> Dictionary:
+	var extra: Array = _notable_track_factors(d)
+	if extra.is_empty():
+		return info
+	var p: float = float(info["chance"])
+	for f in extra:
+		p += float(f["weight"]) * (1.0 if bool(f["good"]) else -1.0)
+	return {"chance": HuntSystem.clamp_chance(p), "factors": (info["factors"] as Array) + extra}
 
 # 暴雨中氣味被沖散、容易跟丟。
 func _track_weather_penalty() -> float:
@@ -2588,7 +2660,7 @@ func action_track() -> Dictionary:
 	current_discovery = {}
 	if not ExploreSystem.can_track(d):
 		return {"success": false}
-	var info := ExploreSystem.track_chance(d, team_perception(), _track_knowledge_bonus(d), _track_weather_penalty())
+	var info := _with_notable_track(d, ExploreSystem.track_chance(d, team_perception(), _track_knowledge_bonus(d), _track_weather_penalty()))
 	GameTime.advance_turns(int(GameData.discovery.get("track", {}).get("turns", 1)))
 	if not wolf.alive:
 		return {"success": false}
@@ -3348,19 +3420,18 @@ func finish_hunt(hunt: HuntSystem) -> void:
 	else:
 		if hunt.in_herd and hunt.stage_reached_stalk():
 			_spook(current_region, hunt.animal_id)
-		# 分次狩獵（1.8 第 4 步）：咬傷但沒制伏的大型獵物帶傷留在這一帶幾天，之後再遇到時更好抓
-		if int(hunt.fight_state.get("wounds", 0)) > 0 and wolf.alive \
-				and str(GameData.animals.get(hunt.animal_id, {}).get("size", "small")) == "large" and hunt.life_stage != "juvenile":
-			var id: int = int(life_log.get("next_notable_id", 1))
-			life_log["next_notable_id"] = id + 1
-			notables.append({"id": id, "region": current_region, "animal": hunt.animal_id, "stage": hunt.life_stage, "trait": "wounded",
-				"until": int(life_log.get("days_lived", 1)) + int(GameData.discovery.get("notable", {}).get("wounded_days", 4))})
+		# 同一隻獵物的足跡（Phase 2m 第 2 步，併入 1.8 第 4 步的「咬傷大型獵物帶傷留在這一帶」）：你盯上的那一隻逃掉了 → 記成這一區會延續的個體
+		var fled_id: int = _remember_fled(hunt) if wolf.alive else 0
 		if hunt.fled and wolf.alive:
 			var prey_dir: int = RNGService.randi_range(0, 3)
 			current_discovery = {"kind": "clue", "source_kind": "prey", "source": hunt.animal_id,
 				"clue": "track", "location": _random_terrain(current_region), "fresh": true, "fresh_known": true,
 				"wind": HuntSystem.relative_wind(wind_dir, prey_dir), "prey_dir": prey_dir,
 				"life_stage": hunt.life_stage, "injured": hunt.injured, "fled": true}
+			if fled_id != 0:
+				var fn0: Dictionary = notable_state(fled_id)
+				current_discovery["notable_id"] = fled_id
+				current_discovery["injured"] = int(fn0.get("wounds", 0)) > 0
 		wolf.clamp_stats()
 		_check_death()
 		state_changed.emit()
@@ -4568,10 +4639,19 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	# 獵物靠近（Phase 2i 第 5 步）：走近的幼鹿身邊沒有母鹿、不成群
 	if hunt.nearby:
 		ctx["herd"] = {"calf_alone": true} if hunt.life_stage == "juvenile" and bool(g0.get("nearby_calf_alone", true)) else {}
+	# 同一隻獵物（Phase 2m 第 2 步）：帶著上次的傷（每 2 天好一處）；同一天、隔不到 2 個時段還累著；成群的時候認得出就是牠
+	var nst: Dictionary = notable_state(hunting_notable) if hunting_notable != 0 else {}
+	if nst.has("at"):
+		ctx["known_individual"] = true
+		ctx["tired_rounds"] = int(nst.get("tired", 0))
 	if hunt.injured:
 		var iw: Dictionary = g.get("injured_wounds_by", {})
 		ctx["wounds"] = int(iw.get(hunt.animal_id + "." + hunt.life_stage, iw.get(hunt.animal_id, g.get("injured_wounds", 1))))
 		ctx["injured"] = true
+	# 同一隻：傷照牠身上實際的處數（不套「受傷的個體」的跑得慢，那是跛腳、年老的）
+	if nst.has("at"):
+		ctx.erase("injured")
+		ctx["wounds"] = int(nst.get("wounds", 0))
 	var th := TacticalHunt.new()
 	th.setup_from_game(ctx)
 	if not tactical_overrides.is_empty():
@@ -4643,6 +4723,11 @@ func finish_tactical_hunt(hunt: HuntSystem, th: TacticalHunt) -> void:
 		hunt.condition = str(th.herd[th.target]["condition"])
 		# 公母只是畫面上分的物種（駝鹿、北美馴鹿，2026-11-08）：記下獵到的是公的，殘骸用公的圖（肉量、規則不變）
 		hunt.set_meta("male", bool(th.herd[th.target].get("male", false)) and hunt.life_stage == "adult")
+	# 同一隻獵物（Phase 2m 第 2 步）：沒獵到時記下你盯上的那一隻的傷、逃了幾回合、有沒有察覺你
+	if th.result != "caught":
+		var tg: Dictionary = th.herd[th.target]
+		hunt.set_meta("fled_individual", {"wounds": int(tg.get("wounds", 0)), "tired": int(tg.get("flee_round", 0)),
+			"noticed": str(tg.get("state", "")) in ["flee", "stand"] or th.detect_cause != "" or th.track_result != ""})
 	match th.result:
 		"caught":
 			hunt.result = HuntSystem.Result.SUCCESS

@@ -9,6 +9,9 @@
 
 | 文字的鍵 | 在說什麼 | 依據是哪個狀態 | 不該出現的情況 |
 | --- | --- | --- | --- |
+| `tactical.known`、`tactical.known.wounded`、`tactical.known.herd`、`tactical.known.wounded.herd` | 「上次從你面前逃掉的那一隻」「身上還帶著你留下的傷」 | 戰術地圖的第一隻是會延續的個體裡逃掉的那一頭（`GameState.hunting_notable` 有 `at`、ctx `known_individual`）；`.wounded` 只在牠現在的傷（每 2 天好一處）> 0 | 第一次遇到的獵物、傷已經好了還說帶著傷 |
+| `explore.trait.fled` | 「上次從你面前逃掉的」 | 探索再遇到（`again`）的會延續個體 trait = fled（逃掉時沒受傷） | 不是同一頭 |
+| `factor.track_old` | 「足跡已經過了好幾天」 | 循著會延續個體的足跡、逃掉後第 2 天以上（`notable_state.days` ≥ 2） | 當天、隔天 |
 | `tactical.track.found` | 「又看到了」牠 | 只在 `TacticalHunt.follow_track` 追上時出現：目標之前看得到、在密林裡失去視線滿 2 回合（`track_pending`） | 沒失去過視線就出現 |
 | `salmon.clue.decline.spawned`、`salmon.clue.decline.bones` | 魚群已經稀了、往上游的已經不多 | 這一區的洄流強度是衰退（`GameState.salmon_stage` = decline：秋季第 4～6 天） | 初期、高峰期出現 |
 | `year.hint.spring.hare_low` | 雪兔比去年少很多 | 雪兔倍率 ≤ 0.3 且比去年低（`hare_mult_last_year`） | 從谷底回升的那年說「少了很多」 |

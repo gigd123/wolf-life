@@ -234,8 +234,16 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	for n in ctx.get("notables", []):
 		if str(n.get("animal", "")) == source and RNGService.chance(float(n_cfg.get("again_chance", 0.35))):
 			result["life_stage"] = str(n.get("stage", "adult"))
-			result["injured"] = true
-			result["herd"] = false
+			# 逃掉的那一隻（Phase 2m）：傷好了就不算受傷；成群的種類照樣在群裡（觀察時認得出牠）
+			if n.has("at"):
+				result["injured"] = int(n.get("wounds", 0)) > 0
+				if bool(n.get("herd", false)):
+					result["herd"] = true
+				else:
+					result["herd"] = false
+			else:
+				result["injured"] = true
+				result["herd"] = false
 			result["notable_id"] = int(n.get("id", 0))
 			result["trait"] = str(n.get("trait", "lame"))
 			result["again"] = true

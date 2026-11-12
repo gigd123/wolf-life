@@ -2265,8 +2265,8 @@ func _discovery_text(d: Dictionary) -> String:
 	if d.get("source_kind", "") == "gather":
 		return tr("explore.gather").replace("{location}", location).replace("{item}", tr("item." + str(d["source"])))
 	var animal: String = _prey_name(str(d["source"]), d.get("life_stage", "adult"))
-	if d.get("injured", false):
-		# 會延續的個體：寫出牠的特徵（跛腳、年老），再遇到時「又是那頭…」（提案之十 D）
+	if d.get("injured", false) or (d.get("again", false) and str(d.get("trait", "")) == "fled"):
+		# 會延續的個體：寫出牠的特徵（跛腳、年老、被你咬傷的、上次逃掉的），再遇到時「又是那頭…」（提案之十 D；Phase 2m）
 		animal = tr("explore.trait." + str(d.get("trait", "injured"))) + animal
 		if d.get("again", false):
 			return tr("explore.again").replace("{location}", location).replace("{animal}", animal)
