@@ -3,6 +3,7 @@
 最後更新：2026-11-12
 
 ## 目前階段
+（2026-11-12）小灰熊（站、走，ChatGPT）接進選單畫面（`art.json` `hd_menu.animals.grizzly_bear.juvenile`）；`prep_black_wolf.py` 加 `grizzlycub`（約 0.95 格，成年灰熊的四成五長；畫布不同 → `CANVAS_NORM`；走路那張偏黃 → `PALETTE_MATCH` 照站的那張調色）。北美馴鹿母鹿警覺換成有小角的新圖（`caribou_cow_alert` 1.4 格）。
 （2026-11-12）苔原狼補倒地（帶傷那張；沒傷的存成 `_tundrawolf_down_unused_nowound`）、叼肉，`combat_hd2d.json`、`art.json` 接上；洞穴入口冬天版 `cave_winter`（`prep_props.py`、`hunt_hd2d.json` 的地形 b `winter_art`）。出圖清單重新盤點（`docs/art-request-hd2d-2026-11-06.md` 最上面「2026-11-12 盤點」）。
 （2026-11-12）狩獵紀錄重複（使用者轉來的影片回饋）：鹿群裡同樣稱呼的幾隻各寫一次「母鹿發現你了，拔腿就跑」「整群跟著跑了起來」「母鹿鑽進密林，不見了」，看起來像同一件事一直重報。`TacticalHunt._say_herd`：抬頭、逃跑、跑遠、鑽進密林，第一隻寫完整的句子，之後寫「另一隻{animal}也…」，同一個動作裡再有一隻合成「另外{n}隻{animal}也…」；「整群跟著跑了起來」一場只寫一次。60 場馬鹿群（本能）檢查：剩下的重複都是不同回合真的又發生（撲空、咬住）。
 （2026-11-12）黑狼補撤退、叼肉、倒地，苔原狼補撤退、帶傷（ChatGPT）：`prep_black_wolf.py`（黑狼倒地 1376×768 → `CANVAS_NORM`）；`combat_hd2d.json` `units.*.poses` 加上這些姿勢、`art.json` `hd_menu`（黑狼帶傷用撤退、倒地；苔原狼帶傷）。苔原狼的倒地、叼肉還是灰狼調色。

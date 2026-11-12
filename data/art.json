@@ -21,7 +21,7 @@
       "beaver": { "adult": "hd_beaver", "juvenile": "hd_beaver_kit" },
       "cattle": { "adult": "hd_cattle_cow", "buck": "hd_cattle_cow", "juvenile": "hd_cattle_calf" },
       "sheep": { "adult": "hd_sheep" },
-      "grizzly_bear": { "adult": { "_": "grizzly_stand", "move": "grizzly_walk", "walk": "grizzly_walk", "attack": "grizzly_swipe", "threaten": "grizzly_swipe", "eat": "grizzly_eat" } },
+      "grizzly_bear": { "adult": { "_": "grizzly_stand", "move": "grizzly_walk", "walk": "grizzly_walk", "attack": "grizzly_swipe", "threaten": "grizzly_swipe", "eat": "grizzly_eat" }, "juvenile": { "_": "grizzlycub_stand", "move": "grizzlycub_walk", "walk": "grizzlycub_walk" } },
       "black_bear": { "adult": { "_": "black_bear_stand", "move": "black_bear_walk", "walk": "black_bear_walk", "attack": "black_bear_swipe", "threaten": "black_bear_rear", "eat": "black_bear_eat" } },
       "cougar": { "adult": { "_": "cougar_stand", "move": "cougar_walk", "walk": "cougar_walk", "attack": "cougar_pounce", "threaten": "cougar_crouch", "eat": "cougar_eat" } },
       "lynx": { "adult": { "_": "lynx_stand", "move": "lynx_walk", "walk": "lynx_walk", "attack": "lynx_swipe", "threaten": "lynx_threaten" } },

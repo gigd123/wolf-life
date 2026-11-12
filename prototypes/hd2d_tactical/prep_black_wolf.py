@@ -32,9 +32,12 @@ SETS = {
     "lynx": (["stand", "walk", "swipe", "carry", "threaten"], 0.8, 1.0),
     # 紅狐（2026-11-12，ChatGPT，站 1408×768、跑與撲 1024×1024）：站、走、跑（逃）、撲（老鼠跳）；選單畫面用。含尾巴約灰狼的六成五長
     "redfox": (["stand", "walk", "run", "pounce"], 0.65, 1.0),
+    # 小灰熊（2026-11-12，ChatGPT，站 1385×768、走 1024×1024 → CANVAS_NORM）：選單畫面母熊帶幼熊時；約成年灰熊的四成五長（約 0.95 格）
+    "grizzlycub": (["stand", "walk"], 0.7, 1.0),
 }
+PALETTE_MATCH = {"grizzlycub": {"walk": "stand"}}
 # 每張畫布不一樣大的：照佔畫布的比例換算；值是姿勢比走路長多少（跑、撲身體拉長）
-CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}, "blackwolf": {}, "tundrawolf": {}}
+CANVAS_NORM = {"redfox": {"run": 1.1, "pounce": 1.0}, "blackwolf": {}, "tundrawolf": {}, "grizzlycub": {}}
 
 
 def main():
@@ -43,6 +46,9 @@ def main():
         if bright != 1.0:
             for c in cuts.values():
                 pg.apply_gain(c, [bright] * 3)
+        # 同一組裡顏色差比較多的：照另一張的色盤調（小灰熊走路那張偏黃 → 照站的那張）
+        for n, ref_n in PALETTE_MATCH.get(prefix, {}).items():
+            cuts[n] = pw.match_palette(cuts[n], cuts[ref_n])
         ref = cuts["walk"].width
         for n, c in cuts.items():
             cells = pw.WALK_CELLS * scale * c.width / ref
