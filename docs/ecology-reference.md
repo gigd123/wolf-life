@@ -813,7 +813,17 @@ Table 3.1 的原始數字（Individual 包含母鹿與小鹿）：
 | 繁殖者被人或車殺死時，狼群比較容易解散；自然死亡時比較不會 | 研究（Cassidy 等 2023） | 伴侶死去時狼群可能動搖（Phase 4 人類的獵殺更嚴重） |
 | 黃石的狼只有約五分之一活到 5 歲；一個狼群有 4 隻 5 歲以上的狼「極為罕見」 | 記述（黃石年報，經 The Aggie 引用） | 活到老年本身就很難得；老狼在狼群裡很少 |
 
+## 森林大火（2026-11-13 Claude Code 查，Phase 2n）
+
+- 1988 年黃石大火：死掉的哺乳類不到 1%，多半死於吸入濃煙而不是火焰；大型動物約 300 隻（麋鹿 246、野牛 9、騾鹿 4、駝鹿 2）。灰熊、黑熊、美洲獅、狼通常直接離開火的路徑；郊狼、騾鹿也多半逃得掉；囓齒類死亡率最高（洞穴擋得住火、擋不住窒息）。（NPS、UW）
+- 火後：前三年可吃的植物比火前多約五成（麋鹿受益）；燒出來的是燒過、半燒、沒燒的鑲嵌地景。（NPS）
+- 火的速度：林下的地表火約每秒 1 公分到 1 公尺；乾草地可達每秒 3 公尺（約時速 11 公里）；樹冠火更快，要強風與密林；風、燃料、濕度、坡地都有影響。（INRAE、FARSITE、加拿大自然資源部）
+- 飛火：高強度針葉林樹冠火常見把火星帶到前方 1～2 公里外另外起火，極端時更遠。（firescience.gov）
+- 遊戲的對應：狼跑得比一般的火快；危險在被煙遮住、被側翼或飛火截斷、跑到沒力。還沒查到：狼是否會躲進水裡或剛燒過的地方（Phase 2n 標成假設）。
+
 ## 資料來源
+
+- 森林大火：[NPS 黃石 Ecological Consequences of Fire](https://www.nps.gov/yell/learn/nature/ecological-consequences-of-fire.htm)、[UW Wildfire Concepts: Wildlife](https://fs-web.sefs.uw.edu/classes.esrm.459/yellowstone/wildfire/wildlife.htm)、[INRAE Fire Behaviour](https://hal.inrae.fr/hal-04205269v1/file/FireBehaviour_JLDUPUY.pdf)、[firescience.gov 飛火](https://www.firescience.gov/ords/prd/jf_jfsp/file/getfile/PRODUCTS/32774)、[FARSITE Crown Fire](https://owfflammaphelp62.firenet.gov/LegacyFARSITE/Tech_Crown_Fire.htm)
 
 - 中文維基百科「狼」條目。條目寫幼狼「通常在夏季出生」，但北美灰狼一般在春季（約 4～5 月）出生，遊戲採春季。
 - 美洲獅部分來自 2022 年的科普文章；野豬與熊的部分來自網路整理。案例可作為設計方向，但不宜當成精確的生物學結論或平衡數值。
