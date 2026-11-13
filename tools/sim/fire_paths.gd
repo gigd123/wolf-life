@@ -13,7 +13,7 @@ var f := 0
 var fails := 0
 var gs
 var logs: Array = []
-var seen := {"arrive_burning": 0, "arrive_ash": 0, "arrive_regrowth": 0, "arrive_none": 0, "fire_over": 0, "burning_runs": 0, "reloads": 0}
+var seen := {"arrive_burning": 0, "arrive_ash": 0, "arrive_regrowth": 0, "arrive_later": 0, "arrive_none": 0, "fire_over": 0, "burning_runs": 0, "reloads": 0}
 
 func _process(_d) -> bool:
 	f += 1
@@ -62,7 +62,7 @@ func _run(gt, forest: Array, origin: String, walk: bool, seed: int) -> void:
 			var adj: Array = gs.adjacent_regions().filter(func(r): return forest.has(r))
 			if not adj.is_empty():
 				var to: String = adj[step / 2 % adj.size()]
-				var before_state: String = gs.burn_state(to)
+				var before_state: String = _arrive_state(to)
 				logs.clear()
 				gs.pending_events.clear()
 				gs.action_move(to)
@@ -109,7 +109,7 @@ func _run(gt, forest: Array, origin: String, walk: bool, seed: int) -> void:
 			var adj2: Array = gs.adjacent_regions().filter(func(r): return forest.has(r))
 			if not adj2.is_empty():
 				var to2: String = adj2[day % adj2.size()]
-				var st2: String = gs.burn_state(to2)
+				var st2: String = _arrive_state(to2)
 				logs.clear()
 				gs.action_move(to2)
 				gs.pending_events.clear()
@@ -124,6 +124,10 @@ func _run(gt, forest: Array, origin: String, walk: bool, seed: int) -> void:
 				_check(int(order[s]) >= int(order[last[r]]), "%s：%s 火況倒退 %s → %s" % [ctx, r, last[r], s])
 			last[r] = s
 
+# 走進去之前的火況：舊的三段（燒、焦黑、新生），灌木期以後（Phase 2n 第 6 步）算 later
+func _arrive_state(r: String) -> String:
+	return "later" if gs.burn_stage(r) in ["shrub", "young", "succession"] else gs.burn_state(r)
+
 func _check_arrival(to: String, state: String, ctx: String) -> void:
 	var fire_lines: Array = logs.filter(func(m): return m.contains("焦") or m.contains("新芽") or m.contains("嫩草"))
 	var here_event: bool = gs.pending_events.any(func(e): return e.get("type", "") == "fire_here")
@@ -135,6 +139,8 @@ func _check_arrival(to: String, state: String, ctx: String) -> void:
 			_check(fire_lines.is_empty(), ctx + "：走進平常的 %s 卻寫了火後的描述：%s" % [to, fire_lines])
 		"ash":
 			_check(not fire_lines.is_empty(), ctx + "：走進焦黑的 %s 沒有描述" % to)
+		"later":
+			_check(not logs.any(func(m): return m.contains("還是一片焦黑")), ctx + "：走進灌木期以後的 %s 卻寫還是焦黑" % to)
 		"regrowth":
 			# 新生各描述一次（同一場火）：之後再來不重複，所以這裡只檢查不會寫成焦黑
 			_check(not logs.any(func(m): return m.contains("還是一片焦黑")), ctx + "：走進新生的 %s 卻寫還是焦黑" % to)

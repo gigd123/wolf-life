@@ -202,6 +202,10 @@ func _after() -> void:
 				_log(tr("fire.ui.den_in"))
 			"den_out":
 				_log(tr("fire.ui.den_out"))
+			"animal":
+				# 其他動物逃跑的方向（第 6 步）：提示，不保證是對的
+				var n: int = int(e.get("n", 1))
+				_log("[color=#b8c8a0]" + tr("fire.animal.%s%s" % [str(e["animal"]), ".one" if n == 1 else ""]).format({"n": n, "side": tr("fire.side." + str(e["side"]))}) + "[/color]")
 			"den_smoke":
 				_log("[color=#ff9a6a]" + tr("fire.ui.den_smoke") + "[/color]")
 	fe.events = []
@@ -285,6 +289,10 @@ func _draw_map() -> void:
 	if not fe.done:
 		for p in fe.reachable():
 			map.draw_rect(Rect2(Vector2(p) * CELL, Vector2(CELL, CELL)).grow(-1), Color(1, 1, 1, 0.25), false, 1.0)
+	# 其他動物（第 6 步）：看得到的才畫
+	var acol := {"deer": Color("#c8a070"), "hare": Color("#e8e0d0"), "raven": Color("#101014"), "bear": Color("#3a2618")}
+	for a in fe.fauna.visible_animals(fe):
+		map.draw_circle((Vector2(a["pos"]) + Vector2(0.5, 0.5)) * CELL, CELL * (0.22 if str(a["kind"]) in ["hare", "raven"] else 0.34), acol.get(str(a["kind"]), Color.WHITE))
 	if fe.den_cell.x >= 0 and fe.known.has(fe.den_cell):
 		map.draw_rect(Rect2(Vector2(fe.den_cell) * CELL, Vector2(CELL, CELL)).grow(-1), Color("#e0c070"), false, 1.5)
 	map.draw_circle((Vector2(fe.wolf_pos) + Vector2(0.5, 0.5)) * CELL, CELL * (0.25 if fe.in_den else 0.45), Color.WHITE)

@@ -69,7 +69,10 @@
 | `first_big_kill.*` | 第一次獨自獵倒大型獵物 | `life_log` 第一次的紀錄 | — |
 | `stranger.won_territory、stranger.killed_card` | 從此是你的（範圍） | 黑狼原本的地盤（QA-59、67） | 寫成你現在的區域 |
 | `adult_body.*` | 成年身體描述 | 最高的能力與主要傾向（`notices.adult_transition.rules`） | — |
-| `fire.arrive.regrowth、fire.arrive.regrown` | 鹿的足跡又多了 | `burn_state` = regrowth；白尾鹿出現 ×1.5（`events.json` regrowth_prey_mult） | — |
+| `fire.arrive.regrowth、fire.arrive.regrown` | 鹿的足跡又多了 | `burn_stage` = herb（剛冒芽／長滿嫩草：`burn_display`）；白尾鹿出現 ×1.5（`events.json` after.stage_prey_mult.herb） | — |
+| `fire.arrive.shrub、map.tip.shrub` | 「當年燒過」、雪兔的足跡到處都是 | 這一區在你這一生燒過（`region_burn`，新遊戲清空），`burn_stage` = shrub；雪兔 ×1.4（stage_prey_mult.shrub） | — |
+| `fire.arrive.young、map.tip.young` | 「當年燒過」、白楊比你還高、倒下的老樹還沒有 | `burn_stage` = young（燒完後約 5～10 年，照 region_speed 換算） | — |
+| `fire.arrive.succession、map.tip.succession` | 看不出燒過、白楊比以前多、不是原本的森林 | `burn_stage` = succession（約 10 年以上）；這一區燒過（SPEC：恢復的不是原本的成熟森林） | — |
 | `fire.arrive.ash.again` | 還是一片焦黑 | 第二次以後來到焦黑的區域 | — |
 | `explore.again` | 又是那頭動物 | 同一個發現（`current_discovery.again`） | — |
 | `death.card.injury` | 傷一直沒有好 | 非戰鬥、沒有挨餓到 0 的死亡（目前只有血量極低時被螫） | —（戰死、灰熊搶食致死都另有卡片） |

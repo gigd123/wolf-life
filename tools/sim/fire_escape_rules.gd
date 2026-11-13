@@ -263,5 +263,52 @@ func _process(_d) -> bool:
 		if str(fg.summary()["side"]) == "e":
 			down_runs += 1
 	_ok(down_runs <= 2, "強風的草原：本能多半不往下風逃（6 次裡 %d 次往下風）" % down_runs)
+	# 第 6 步：其他動物——不影響火與狼（自己的亂數）、察覺到火才逃、往某一邊離開、看到時寫一句
+	var same := true
+	var fled := 0
+	var left := 0
+	var told := 0
+	var raven_up := true
+	for sd in 8:
+		var ctx := {"hunt_map": ["edge_1", "dense_1", "logs_1", "river_1"][sd % 4], "seed": sd * 17 + 2, "wind": [Vector2(1, 0), Vector2(0, 1)][sd % 2], "strength": sd % 3,
+			"wolf": {"perception": 55, "health": 100, "health_max": 100}}
+		var with_a = FE.new()
+		with_a.setup(ctx)
+		var ctx2 := ctx.duplicate()
+		ctx2["animals"] = false
+		var no_a = FE.new()
+		no_a.setup(ctx2)
+		_ok(no_a.fauna.animals.is_empty(), "animals=false 時沒有動物")
+		var first := true
+		while not with_a.done:
+			FI.step(with_a, "smart")
+			FI.step(no_a, "smart")
+			if first:
+				first = false
+				for a in with_a.fauna.animals:
+					if str(a["kind"]) == "raven" and not bool(a["fleeing"]):
+						raven_up = false
+			for e in with_a.events:
+				if str(e.get("kind", "")) == "animal":
+					told += 1
+					_ok(str(e["side"]) in ["n", "e", "s", "w"] and int(e["n"]) >= 1, "動物的紀錄有方向與隻數（%s）" % str(e))
+			with_a.events = []
+			no_a.events = []
+		if with_a.fire.size() != no_a.fire.size() or absf(with_a.total_damage() - no_a.total_damage()) > 0.001 or with_a.wolf_pos != no_a.wolf_pos or with_a.result != no_a.result:
+			same = false
+		for a in with_a.fauna.animals:
+			if bool(a["fleeing"]):
+				fled += 1
+			if bool(a["gone"]) and bool(a["fleeing"]):
+				left += 1
+	_ok(same, "有沒有動物，火的延燒、狼受的傷、結果都一樣")
+	_ok(raven_up, "渡鴉第一回合就飛起來")
+	_ok(fled > 0 and left > 0, "動物察覺到火會逃、逃到邊上離開（逃 %d、離開或被火吞 %d）" % [fled, left])
+	_ok(told > 0, "看到逃跑的動物會寫一句（%d 句）" % told)
+	# 沒察覺前不逃：火離得很遠、沒有煙的鹿
+	var fq = _fe(_rows(40, 32, "."), 0, Vector2(1, 0), {"wolf_pos": Vector2i(30, 16)})
+	fq.fauna.animals = [{"id": 0, "kind": "deer", "group": 0, "pos": Vector2i(36, 4), "target": "", "fleeing": false, "gone": false, "seen": false}]
+	fq.fauna.step(fq)
+	_ok(not bool(fq.fauna.animals[0]["fleeing"]), "火很遠、沒有煙時鹿不逃")
 	print("火場原型的規則：%s" % ("全部通過" if fails == 0 else "失敗 %d 個" % fails))
 	return true

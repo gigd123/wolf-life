@@ -2226,6 +2226,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 		"period": GameTime.current_period(),
 		"depletion": prey_mults(current_region),
 		"burn": burn_state(current_region),
+		"burn_stage": burn_stage(current_region),
 		"wind_dir": wind_dir,
 		"known_features": known_features(current_region),
 		"prey_knowledge": prey_knowledge_mults(current_region, GameTime.current_period()),
@@ -4615,6 +4616,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	ctx["season"] = GameTime.current_season()
 	ctx["life_stage"] = hunt.life_stage # 畫面用（白尾鹿雄鹿的圖）
 	ctx["world_map"] = current_map() # 畫面用（每張地圖的樹、地面，2026-11-08）
+	ctx["burn_stage"] = burn_stage(current_region) # 畫面用（燒過的區域的樹與地面，Phase 2n 第 6 步）
 	ctx["wolf_scale"] = wolf_display_scale() # 畫面用（小狼畫小一點）
 	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿
 	var stage_size: Dictionary = g.get("herd_size_stage", {}).get(hunt.animal_id, {})
@@ -6079,12 +6081,10 @@ func _fire_time_this_season(cfg: Dictionary) -> int:
 # 走進燒過的區域：焦黑、草木新生各描述一次（同一場火、同一個狀態只說一次；巢穴所在的區域另有一句）。
 # 正在燒的區域由 fire_here 事件處理。
 func _describe_burned_arrival(region_id: String) -> void:
-	var state: String = burn_state(region_id)
-	if not state in ["ash", "regrowth"]:
+	# 每個階段各描述一次（草木新生分剛冒新芽、長滿嫩草灌木兩段；第 6 步加灌木與幼苗、年輕的森林、持續演替）
+	var state: String = burn_display(region_id)
+	if not state in ["ash", "regrowth", "regrown", "shrub", "young", "succession"]:
 		return
-	# 草木新生分兩段：剛冒新芽（sprout_days 天內），之後已經長滿嫩草灌木（文字不同，各描述一次）
-	if state == "regrowth" and regrowth_late(region_id):
-		state = "regrown"
 	var seen: Dictionary = life_log.get("burn_seen", {})
 	var mark: String = "%s@%d" % [state, int(region_burn.get(region_id, 0))]
 	if str(seen.get(region_id, "")) == mark:
@@ -6097,26 +6097,57 @@ func _describe_burned_arrival(region_id: String) -> void:
 	var key: String = "fire.arrive." + state + (".den" if state == "ash" and region_id == den_region else "")
 	log_message.emit(tr(key).replace("{region}", tr("region." + region_id)))
 
+# 舊的三段火況（燒、焦黑、草木新生），給原本的規則與畫面用：草本與灌木恢復（herb）算 regrowth，之後的階段算 ""（平常）。
 func burn_state(region_id: String) -> String:
+	var st: String = burn_stage(region_id)
+	if st in ["burning", "ash"]:
+		return st
+	return "regrowth" if st == "herb" else ""
+
+# 火後的五個階段（Phase 2n 第 6 步，SPEC「火後的生態」）：burning 正在燒、ash 剛燒完（約一季）、herb 草本與灌木恢復（1～2 年）、
+# shrub 灌木與幼苗（2～5 年）、young 年輕的森林（5～10 年）、succession 持續演替（10 年以上，從此是「另一種森林」）、"" 沒燒過。
+# 焦黑期固定 ash_days 天；之後的天數照這一區的恢復速度（region_speed：水多的快、乾的岩石多的慢）換算。同一區再燒一次重新計時。
+func burn_stage(region_id: String) -> String:
 	if fire.get("regions", {}).has(region_id):
 		return "burning"
 	if not region_burn.has(region_id):
 		return ""
 	var after: Dictionary = _fire_cfg().get("after", {})
-	var days: int = int(life_log.get("days_lived", 1)) - int(region_burn[region_id])
-	if days < int(after.get("ash_days", 12)):
+	var days: float = burn_effective_days(region_id)
+	if days < float(after.get("ash_days", 10)):
 		return "ash"
-	if days < int(after.get("ash_days", 12)) + int(after.get("regrowth_days", 40)):
-		return "regrowth"
-	return ""
+	for stg in after.get("stages", []):
+		if days < float(stg["until_days"]):
+			return str(stg["id"])
+	return "succession"
 
-# 草木新生的後段：焦黑期之後再過 sprout_days 天，新芽已經長成嫩草與灌木（鹿仍然比較多，地圖不再標示）。
+# 燒完之後過了幾天（焦黑期之後乘上這一區的恢復速度）
+func burn_effective_days(region_id: String) -> float:
+	if not region_burn.has(region_id):
+		return 0.0
+	var after: Dictionary = _fire_cfg().get("after", {})
+	var raw: float = float(int(life_log.get("days_lived", 1)) - int(region_burn[region_id]))
+	var ash: float = float(after.get("ash_days", 10))
+	if raw <= ash:
+		return raw
+	return ash + (raw - ash) * burn_speed(region_id)
+
+func burn_speed(region_id: String) -> float:
+	return float(_fire_cfg().get("after", {}).get("region_speed", {}).get(region_id, 1.0))
+
+# 草木新生的後段：焦黑期之後再過 sprout_days 天，新芽已經長成嫩草與灌木（鹿仍然比較多，地圖不再標示「芽」）。
 func regrowth_late(region_id: String) -> bool:
-	if burn_state(region_id) != "regrowth":
+	if burn_stage(region_id) != "herb":
 		return false
 	var after: Dictionary = _fire_cfg().get("after", {})
-	var days: int = int(life_log.get("days_lived", 1)) - int(region_burn[region_id])
-	return days >= int(after.get("ash_days", 12)) + int(after.get("sprout_days", 10))
+	return burn_effective_days(region_id) >= float(after.get("ash_days", 10)) + float(after.get("sprout_days", 10))
+
+# 畫面用的火況（地圖的標示、滑鼠提示、走進來的描述）：herb 分成剛冒芽 regrowth 與長滿嫩草 regrown
+func burn_display(region_id: String) -> String:
+	var st: String = burn_stage(region_id)
+	if st == "herb":
+		return "regrown" if regrowth_late(region_id) else "regrowth"
+	return st
 
 # 獵物出現率的倍率：資源消耗 × 火後（焦黑時稀少、草木新生時鹿變多）。
 # 年況對大型獵物體況的倍率（1.8 第 11 步）：嚴冬冬季虛弱多；暖冬後春季駝鹿被冬蜱拖垮
@@ -6189,12 +6220,16 @@ func prey_mults(region_id: String) -> Dictionary:
 			if HuntSystem.size_of(animal_id) in ["medium", "large"]:
 				result[animal_id] = float(result.get(animal_id, 1.0)) * pm
 	var after: Dictionary = _fire_cfg().get("after", {})
-	match burn_state(region_id):
+	var stage: String = burn_stage(region_id)
+	match stage:
 		"burning", "ash":
 			for animal_id in GameData.animals.keys():
 				result[animal_id] = float(result.get(animal_id, 1.0)) * float(after.get("ash_prey_mult", 0.3))
-		"regrowth":
-			var m: Dictionary = after.get("regrowth_prey_mult", {})
+		"":
+			pass
+		_:
+			# 火後的各階段（第 6 步）：草本、灌木長回來時鹿與雪兔變多
+			var m: Dictionary = after.get("stage_prey_mult", {}).get(stage, {})
 			for animal_id in m.keys():
 				result[animal_id] = float(result.get(animal_id, 1.0)) * float(m[animal_id])
 	return result

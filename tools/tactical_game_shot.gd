@@ -1,6 +1,7 @@
 extends SceneTree
 # 戰術狩獵從主遊戲開的畫面檢查（Phase 2c 第 2 步）：開主遊戲、對白尾鹿出手 → 截圖 → 狼放棄 → 截圖 → 按「繼續」→ 截圖。
 # 動物、生命階段、巢穴可以用 ANIMAL、STAGE、DEN 指定；YOUNG=1 時用開局的小狼（未滿 1 歲）（Phase 2f：駝鹿、野牛；預設白尾鹿成鹿、森林東部）。
+# BURN_DAYS=<燒完後幾天>：這一區燒過（看火後的階段）；SEASON=<季節序號>。
 # 用法：OUT=<輸出路徑前綴> xvfb-run -a -s "-screen 0 1920x1080x24" $GODOT --path . --rendering-driver opengl3 -s tools/tactical_game_shot.gd
 var f := 0
 var game
@@ -13,6 +14,12 @@ func _process(_d) -> bool:
 		gs.new_game(OS.get_environment("DEN") if OS.get_environment("DEN") != "" else "forest_east")
 		if OS.get_environment("YOUNG") == "":
 			gs.debug_force_transition("adult")
+		if OS.get_environment("SEASON") != "":
+			root.get_node("GameTime").season_index = int(OS.get_environment("SEASON"))
+		# BURN_DAYS=<燒完後幾天>：這一區燒過（Phase 2n 第 6 步，看火後各階段的樹與地面）
+		if OS.get_environment("BURN_DAYS") != "":
+			gs.region_burn[gs.current_region] = int(gs.life_log.get("days_lived", 1)) - int(OS.get_environment("BURN_DAYS"))
+			print("火後階段：", gs.burn_stage(gs.current_region))
 		game = load("res://scenes/Game.tscn").instantiate()
 		root.add_child(game)
 	if f == 6:

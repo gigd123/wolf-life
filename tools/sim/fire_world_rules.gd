@@ -146,5 +146,64 @@ func _process(_d) -> bool:
 	gs.tactical_fire_off = true
 	_ok(not gs.uses_tactical_fire(), "關掉時不用逃生地圖")
 	gs.tactical_fire_off = false
+	# 第 6 步：火後的五個階段、各區的恢復速度
+	gs.new_game("forest_east")
+	gs.fire = {}
+	var today: int = int(gs.life_log.get("days_lived", 1))
+	var expect := {5: "ash", 30: "herb", 100: "shrub", 250: "young", 500: "succession"}
+	for d in expect:
+		gs.region_burn["forest_east"] = today - d
+		_ok(gs.burn_stage("forest_east") == expect[d], "森林東部燒完 %d 天：%s（實際 %s）" % [d, expect[d], gs.burn_stage("forest_east")])
+	gs.region_burn["forest_east"] = today - 30
+	_ok(gs.burn_state("forest_east") == "regrowth", "草本恢復期在舊的火況算草木新生")
+	gs.region_burn["forest_east"] = today - 100
+	_ok(gs.burn_state("forest_east") == "", "灌木期以後舊的火況算平常（%s）" % gs.burn_state("forest_east"))
+	# 恢復速度：同樣 180 天，森林北部（快）已經是年輕的森林、森林西部（慢）還在灌木期
+	gs.region_burn["forest_north"] = today - 180
+	gs.region_burn["forest_west"] = today - 180
+	_ok(gs.burn_stage("forest_north") == "young" and gs.burn_stage("forest_west") == "shrub", "同樣 180 天：森林北部 %s、森林西部 %s" % [gs.burn_stage("forest_north"), gs.burn_stage("forest_west")])
+	# 再燒一次重新計時
+	gs.region_burn["forest_north"] = today - 500
+	gs._region_burned("forest_north")
+	_ok(gs.burn_stage("forest_north") == "ash", "持續演替的區域再燒一次：回到剛燒完（%s）" % gs.burn_stage("forest_north"))
+	# 獵物：剛燒完少、草本期鹿多、灌木期雪兔多
+	gs.region_burn.erase("forest_east")
+	var base_deer: float = float(gs.prey_mults("forest_east").get("white_tailed_deer", 1.0))
+	var base_hare: float = float(gs.prey_mults("forest_east").get("snowshoe_hare", 1.0))
+	gs.region_burn["forest_east"] = today - 5
+	_ok(float(gs.prey_mults("forest_east").get("white_tailed_deer", 1.0)) < base_deer * 0.5, "剛燒完：鹿少")
+	gs.region_burn["forest_east"] = today - 30
+	_ok(float(gs.prey_mults("forest_east").get("white_tailed_deer", 1.0)) > base_deer * 1.3, "草本期：鹿多")
+	gs.region_burn["forest_east"] = today - 100
+	_ok(float(gs.prey_mults("forest_east").get("snowshoe_hare", 1.0)) > base_hare * 1.3, "灌木期：雪兔多")
+	# 草本期找不到好睡處
+	gs.region_burn["forest_east"] = today - 30
+	gs.current_region = "forest_east"
+	var sleep_found := 0
+	for i in 400:
+		var nd: Dictionary = load("res://scripts/core/ExploreSystem.gd").generate({"region_id": "forest_east", "season": "summer", "period": "dawn", "depletion": {},
+			"burn": gs.burn_state("forest_east"), "burn_stage": gs.burn_stage("forest_east"), "known_features": [], "prey_knowledge": {}, "weather": "clear"})
+		if str(nd.get("feature_id", "")) == "good_sleep_spot":
+			sleep_found += 1
+	_ok(sleep_found == 0, "草本期找不到好睡處（%d 次）" % sleep_found)
+	var sleep_normal := 0
+	for i in 400:
+		var nd2: Dictionary = load("res://scripts/core/ExploreSystem.gd").generate({"region_id": "forest_east", "season": "summer", "period": "dawn", "depletion": {},
+			"burn": "", "burn_stage": "shrub", "known_features": [], "prey_knowledge": {}, "weather": "clear"})
+		if str(nd2.get("feature_id", "")) == "good_sleep_spot":
+			sleep_normal += 1
+	_ok(sleep_normal > 0, "灌木期找得到好睡處（%d 次；對照上一條是不是真的有效）" % sleep_normal)
+	# 走進來的描述：每個階段一次
+	var said: Array = []
+	var cb := func(t: String): said.append(t)
+	gs.log_message.connect(cb)
+	gs.region_burn["forest_east"] = today - 100
+	gs.life_log["burn_seen"] = {}
+	gs._describe_burned_arrival("forest_east")
+	gs._describe_burned_arrival("forest_east")
+	gs.region_burn["forest_east"] = today - 250
+	gs._describe_burned_arrival("forest_east")
+	gs.log_message.disconnect(cb)
+	_ok(said.size() == 2, "灌木期、年輕的森林各描述一次（%d 句：%s）" % [said.size(), str(said)])
 	print("大火接進世界的規則：%s" % ("全部通過" if fails == 0 else "失敗 %d 個" % fails))
 	return true

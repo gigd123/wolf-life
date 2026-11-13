@@ -1271,9 +1271,8 @@ func _refresh() -> void:
 		var marker: String = " ★" if region_id == GameState.den_region else ""
 		var unknown: String = "" if GameState.is_region_visited(region_id) else " " + tr("ui.unknown")
 		var danger: String = " ⚠" if not GameState.known_dangers(region_id, GameTime.current_season()).is_empty() else ""
-		var burn: String = GameState.burn_state(region_id)
-		if burn == "regrowth" and GameState.regrowth_late(region_id):
-			burn = "regrown"
+		# 火況（Phase 2n 第 6 步：火後的五個階段；地圖只標燒、焦、芽，其他的放滑鼠提示）
+		var burn: String = GameState.burn_display(region_id)
 		# 火況只用一個字標在名稱後（「新綠」兩個字會擠掉名稱），說明放在滑鼠提示；長滿嫩草後不再標示
 		var fire_mark: String = tr("map." + burn) if burn in ["burning", "ash", "regrowth"] else ""
 		# 藏了肉的區域（Phase 2e）：照你以為的（被挖走、燒掉的回到那裡才知道）

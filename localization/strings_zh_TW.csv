@@ -956,6 +956,9 @@ fire.arrive.ash.again,{region}還是一片焦黑，空氣裡仍有焦味。
 fire.arrive.ash.den,巢穴還在地下，但四周一片焦黑，洞口滿是嗆鼻的焦味。
 fire.arrive.regrowth,{region}焦黑的地上冒出了新芽，鹿的足跡又多了起來。
 fire.arrive.regrown,{region}燒過的地方已經長滿了嫩草和低矮的灌木，鹿常來這裡啃食新枝。
+fire.arrive.shrub,{region}當年燒過的地方，灌木已經長得密密的，白楊的幼苗從焦黑的樹樁旁冒出來，雪兔的足跡到處都是。
+fire.arrive.young,{region}當年燒過的坡上，白楊已經比你還高了。小樹長得密密麻麻，倒下的老樹卻一棵也還沒有。
+fire.arrive.succession,{region}已經看不出燒過的樣子了，但這不是原本的那片森林：白楊比以前多，樹也年輕得多。
 fire.region_out,{region}的火熄了，只剩焦黑的樹幹；火還在{list}燒著。
 fire.spread,火往{region}蔓延過去了。
 fire.option.flee,逃往{region}　平安率 {n}%
@@ -983,6 +986,9 @@ map.tip.burning,正在燒
 map.tip.ash,大火剛燒過，一片焦黑：獵物稀少，找不到好睡處
 map.tip.regrowth,焦黑的地上冒出新芽：鹿比較多
 map.tip.regrown,燒過的地方長滿了嫩草和灌木：鹿比較多
+map.tip.shrub,當年燒過的地方長滿灌木與幼苗：鹿和雪兔比較多
+map.tip.young,當年燒過的地方長成了年輕的森林：雪兔比較多
+map.tip.succession,大火後長起來的另一種森林：白楊比以前多
 death.fire,葬身火海
 death_bio.fire,死在一場森林大火裡
 injury_source.fire,大火
@@ -2493,6 +2499,14 @@ knowledge.fire_memory,經歷過大火：聞到煙味、看到動物往同一邊�
 fire.ui.ember,下風處的煙裡落下了火星。
 fire.ui.choke,濃煙嗆得你直咳。
 fire.ui.burned,火舌燒到了你。
+fire.animal.deer,{n} 隻鹿從煙裡竄出來，往{side}奔去。
+fire.animal.deer.one,一隻鹿從煙裡竄出來，往{side}奔去。
+fire.animal.hare,幾隻雪兔從灌木叢裡竄出來，往{side}逃。
+fire.animal.hare.one,一隻雪兔從灌木叢裡竄出來，往{side}逃。
+fire.animal.raven,一群渡鴉從林子裡飛起，往{side}飛去。
+fire.animal.raven.one,一隻渡鴉從林子裡飛起，往{side}飛去。
+fire.animal.bear,一頭熊頭也不回地往{side}走。
+fire.animal.bear.one,一頭熊頭也不回地往{side}走。
 fire.ui.wind_change,風變了。
 fire.ui.damage,這一場一共受了 {n} 點傷。
 fire.smoke.0,沒有

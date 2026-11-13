@@ -113,6 +113,14 @@ func _process(_d):
 	# BAL_SET='{"elder_death_base_chance": 0.004}'：覆寫 balance.json 的部分設定（字典逐層合併；Phase 3 整體校準用）
 	if OS.get_environment("BAL_SET") != "":
 		_merge(GS.get_node("/root/GameData").balance, JSON.parse_string(OS.get_environment("BAL_SET")))
+	# OLD_AFTER=1：火後用 Phase 2n 第 6 步之前的規則（焦黑 12 天、草木新生 40 天白尾鹿 ×1.5、之後恢復原狀；對照用）
+	if OS.get_environment("OLD_AFTER") != "":
+		var af: Dictionary = GS.get_node("/root/GameData").events["fire"]["after"]
+		af["ash_days"] = 12
+		af["stages"] = [{"id": "herb", "until_days": 52}, {"id": "shrub", "until_days": 52}, {"id": "young", "until_days": 52}]
+		af["stage_prey_mult"] = {"herb": {"white_tailed_deer": 1.5}}
+		af["stage_no_features"] = {}
+		af["region_speed"] = {}
 	# NO_SALMON=1：沒有鮭魚洄流（對照 Phase 2h）
 	if OS.get_environment("NO_SALMON") != "":
 		GS.get_node("/root/GameData").balance["salmon"]["find"] = {}

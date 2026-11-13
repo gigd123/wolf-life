@@ -25,6 +25,9 @@ func setup(th) -> void:
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
 	# 每張地圖自己的樹、地面（map_sets，2026-11-08）：先蓋，再套冬天
 	apply_map_set(str(h.game_mods.get("world_map", "")))
+	# 燒過的區域（Phase 2n 第 6 步）：火後的階段換樹與地面（map_sets 的 burn_<階段>）
+	if str(h.game_mods.get("burn_stage", "")) != "":
+		apply_map_set("burn_" + str(h.game_mods["burn_stage"]))
 	cfg["winter"] = winter
 	cfg["season"] = str(h.game_mods.get("season", ""))
 	if winter:
@@ -39,6 +42,10 @@ func setup(th) -> void:
 			var te: Dictionary = cfg["trees"][tk]
 			if te.has("winter_art"):
 				te["art"] = te["winter_art"]
+		# 剛燒完、草本恢復期的冬天：雪蓋住地面，燒焦的枯樹還站著（不換成積雪的松樹）
+		var bst: String = str(h.game_mods.get("burn_stage", ""))
+		if bst in ["burning", "ash", "herb"]:
+			cfg["tree_mix"] = (cfg.get("map_sets", {}).get("burn_" + bst, {}) as Dictionary).get("tree_mix", cfg["tree_mix"]).duplicate()
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()

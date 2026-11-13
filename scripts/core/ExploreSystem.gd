@@ -112,8 +112,10 @@ static func generate(ctx: Dictionary) -> Dictionary:
 	# 燒過一片焦黑（ctx.burn = burning／ash）：找不到次要特徵與採集物（SPEC 1.6「火後」）
 	var scorched: bool = str(ctx.get("burn", "")) in ["burning", "ash"]
 	var unknown: Array = []
+	# 火後的階段找不到的特徵（第 6 步：草本恢復期視野開闊，沒有好睡處）
+	var no_feat: Array = GameData.events.get("fire", {}).get("after", {}).get("stage_no_features", {}).get(str(ctx.get("burn_stage", "")), [])
 	for f in ([] if scorched else region.get("secondary_features", [])):
-		if not known_features.has(f):
+		if not known_features.has(f) and not no_feat.has(f):
 			unknown.append(f)
 	if not unknown.is_empty() and RNGService.chance(float(cfg.get("feature_chance", 0.12)) * float(mc.get("feature_mult", 1.0))):
 		return {"kind": "feature", "location": location, "feature_id": unknown[RNGService.randi_range(0, unknown.size() - 1)]}

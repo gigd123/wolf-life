@@ -43,6 +43,7 @@ var exit_side := ""
 var dmg := {"burn": 0.0, "heat": 0.0, "hot": 0.0, "smoke": 0.0, "choke": 0.0}
 var events: Array = []
 var wind_events: Array = [] # 風的變化（畫面寫一句）
+var fauna := FireFauna.new() # 其他動物（第 6 步；自己的亂數，不影響火與狼）
 
 func _init() -> void:
 	c = JSON.parse_string(FileAccess.get_file_as_string(CFG_PATH))
@@ -113,6 +114,9 @@ func setup(ctx: Dictionary) -> void:
 	wolf_pos = ctx.get("wolf_pos", _start_cell())
 	_update_smoke()
 	_see()
+	fauna = FireFauna.new()
+	if bool(ctx.get("animals", true)):
+		fauna.setup(self, seed)
 
 # 早先燒過的一塊地：地圖下風的一半裡挑一點，半徑 ash_patch_radius 內的燃料格變成焦土（x）
 func _carve_ash_patch() -> void:
@@ -379,6 +383,7 @@ func _end_round() -> void:
 	_update_smoke()
 	_hurt_wolf()
 	_see()
+	fauna.step(self)
 	if done:
 		return
 	if float(wolf["health"]) <= 0.0:

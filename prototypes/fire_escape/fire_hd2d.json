@@ -27,6 +27,12 @@
     "light_range": 5.0,
     "light_color": [1.0, 0.55, 0.22],
     "frame_sec": 0.14,
+    "animal_art": {
+      "deer": { "stand": "hd_deer_doe_graze", "run": "hd_deer_doe_run", "run_b": "hd_deer_doe_run_b" },
+      "hare": { "stand": "hd_snowhare_summer", "run": "hd_snowhare_summer", "scale": 1.0 },
+      "raven": { "stand": "raven_stand", "run": "raven_fly", "lift": 1.4 },
+      "bear": { "stand": "black_bear_stand", "run": "black_bear_walk", "run_b": "black_bear_walk_b" }
+    },
     "smoke_night": [0.4, 0.38, 0.42],
     "smoke_firelit": [1.0, 0.72, 0.5],
     "edge_label_px": 0.03,

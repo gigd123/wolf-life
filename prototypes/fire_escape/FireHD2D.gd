@@ -81,6 +81,7 @@ func setup(p_fe, season: String = "") -> void:
 	water_planes.clear()
 	_last_wolf = Vector2i(-999, -999)
 	_moved_round = -1
+	_animal_last.clear()
 	# 舊的地圖會被釋放：建好新的之前不要畫火（build 裡鏡頭換素材大小時會呼叫 refresh）
 	state_img = null
 	fx_root = null
@@ -478,6 +479,34 @@ func _draw_wind() -> void:
 		var b: Vector2 = tail + d * (3.0 + i * 3.0)
 		wind_box.draw_line(b + perp * 3, b - perp * 3, col, 1.5)
 
+# 其他動物（第 6 步）：看得到的才畫；逃跑時用跑的圖（鹿兩張輪流），渡鴉飛在空中
+var _animal_last := {} # id -> [上一次的位置, 面向]
+func _paint_animals() -> void:
+	var arts: Dictionary = cfg["fx"].get("animal_art", {})
+	for a in fe.fauna.visible_animals(fe):
+		var k: String = str(a["kind"])
+		var ac: Dictionary = arts.get(k, {})
+		var id: int = int(a["id"])
+		var pos: Vector2i = a["pos"]
+		var last: Array = _animal_last.get(id, [pos, Vector2i(1, 0)])
+		var face: Vector2i = last[1]
+		if pos != last[0]:
+			face = pos - (last[0] as Vector2i)
+		_animal_last[id] = [pos, face]
+		var pose: String = str(ac.get("stand", ""))
+		if bool(a["fleeing"]):
+			pose = str(ac.get("run_b", ac.get("run", pose))) if (fe.rounds + id) % 2 == 1 else str(ac.get("run", pose))
+		if pose == "":
+			continue
+		var art := hd_wolf_texture(pose)
+		art["ps"] = float(art["ps"]) * float(ac.get("scale", 1.0))
+		var key := "an%d" % id
+		unit(key, art, pos, (face.x < 0) if face.x != 0 else null)
+		if bool(fe.fauna.kcfg(k).get("fly", false)) and bool(a["fleeing"]):
+			var ent: Dictionary = units[key]
+			(ent["sprite"] as Sprite3D).position.y += float(ac.get("lift", 1.4))
+			(ent["shadow"] as MeshInstance3D).visible = false
+
 # --- 每次重畫：能走的格子、巢穴、四邊、狼 ---
 func paint() -> void:
 	if fe == null:
@@ -526,6 +555,7 @@ func paint() -> void:
 			_face = fe.wolf_pos - _last_wolf
 			_moved_round = fe.rounds
 		_last_wolf = fe.wolf_pos
+	_paint_animals()
 	if fe.in_den:
 		label(cell_center(fe.den_cell) + Vector3(0, 1.0, 0), tr("fire.ui.in_den"), _col(col["den"]))
 	elif not (fe.done and fe.result == "escaped"):
