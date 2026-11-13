@@ -20,6 +20,12 @@ uniform vec3 tint = vec3(1.0); // 上面的顏色乘上這個（戰鬥原型的�
 // 上面那層是 0、下面那層是方塊的高度，側面內插後就是每一點離頂面的距離（instance uniform 每格一個會超過上限）
 uniform float lip_texels = 0.0;
 uniform float lip_jag = 3.0;
+// 每一格的狀態（2026-11-13，Phase 2n 大火）：use_state 開著時照 state_tex（一格一個像素）改顏色；沒開時（狩獵、戰鬥）不影響
+//   r 燒焦的程度（0 沒燒、1 焦土）、g 火光（燃燒、剛燒過的餘燼發光）、b 看不看得到（1 看得到、約 0.45 看過但被煙遮住、0 沒看過）
+uniform bool use_state = false;
+uniform sampler2D state_tex : filter_nearest;
+uniform vec2 state_size = vec2(1.0);
+uniform float glow_pulse = 1.0;
 
 varying vec3 wpos;
 varying vec3 wnorm;
@@ -62,7 +68,25 @@ void fragment() {
 	if (wnorm.y > 0.5) {
 		col *= tint;
 	}
+	vec3 emit = vec3(0.0);
+	if (use_state) {
+		vec2 cell = floor(wpos.xz - wnorm.xz * 0.01);
+		if (cell.x >= 0.0 && cell.y >= 0.0 && cell.x < state_size.x && cell.y < state_size.y) {
+			vec4 st = texture(state_tex, (cell + 0.5) / state_size);
+			// 焦土：偏暖的黑灰，夾雜一點灰白的灰燼
+			vec2 tp = floor(wpos.xz * texels_per_unit);
+			float n = fract(sin(dot(tp, vec2(12.9898, 78.233))) * 43758.5453);
+			vec3 ash = vec3(0.12, 0.11, 0.10) + (n > 0.93 ? vec3(0.22) : vec3(n * 0.05));
+			col = mix(col, ash, st.r * 0.92);
+			// 火光：一點一點的亮紅（餘燼），燃燒中的整格偏橘
+			float speck = n > 0.8 ? 1.0 : (n > 0.6 ? 0.3 : 0.04);
+			emit = vec3(1.0, 0.36, 0.08) * st.g * speck * glow_pulse;
+			col *= mix(0.1, 1.0, st.b);
+			emit *= st.b > 0.01 ? 1.0 : 0.6;
+		}
+	}
 	ALBEDO = col;
+	EMISSION = emit;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 }

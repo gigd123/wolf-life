@@ -6621,6 +6621,7 @@ func start_fire_escape() -> FireEscape:
 		"wolf": {"perception": wolf.effective_perception(), "health": wolf.health, "health_max": wolf.health_max}})
 	fe.set_meta("sides", sides)
 	fe.set_meta("memory", knowledge_level({"type": "fire_memory"}) > 0)
+	fe.set_meta("season", GameTime.current_season()) # HD-2D 畫面（秋天的白樺換金黃）
 	in_tactical = true
 	return fe
 

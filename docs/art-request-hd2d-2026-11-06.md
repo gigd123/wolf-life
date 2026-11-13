@@ -3,6 +3,14 @@
 用途：讓戰術狩獵、戰術戰鬥的 HD-2D 畫面和 HD-2D 測試場景（`prototypes/hd2d_tactical/`）一樣好看。測試場景的狼、駝鹿、松樹、地面材質是照參考圖 `arts/hd2d_test_2026-11-04/reference.jpg` 做的；其他動物現在是舊的佔位圖，風格對不上。
 程式已經接好：交圖後換掉 `prototypes/hd2d_tactical/assets/` 或 `data/art.json` 對應的檔案就會出現，不用改程式。
 
+## 森林大火的佔位圖（2026-11-13，Phase 2n 第 5 步）
+
+現在是程式畫的（`prototypes/fire_escape/prep_fire_art.py`），之後想換成正式素材時照同樣的檔名（`_32`、`_48` 兩套，透明背景）放進 `prototypes/hd2d_tactical/assets/` 就好：
+- 火焰 `fire_flame_a／b／c`（一格寬、約 1.4 格高，三格輪流）、被風吹斜的 `fire_flame_lean_a／b／c`（往右倒）、剛點燃的小火 `fire_small_a／b`
+- 煙團 `smoke_puff_a／b`（半透明，約 1.5 格寬）、火星 `fire_ember`
+- 燒焦的樹 `burnt_<原本的樹>`：spruce、pine_dark、pine_snow（焦黑的樹幹與短枝）、birch、shrub、shrub_b、dead_tree、log、reeds、tallgrass（和原本的圖同尺寸）
+不急，等試玩確定畫面的方向再說。
+
 ## 目前還缺的圖（2026-11-06 晚上更新）
 
 **2026-11-11 現況**：戰術狩獵的每一種獵物、戰鬥的每一種對手（含郊狼、狼獾、猞猁）、所有會留下殘骸的動物（母、公、幼體）、環境物件、地面材質、每張地圖的樹與地面都有 HD-2D 專屬圖了；選單畫面也改用這些新圖（`data/art.json` 的 `hd_menu`）。下面一、二的表是 11/6 當時的清單，已經做完。

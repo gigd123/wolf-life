@@ -2,7 +2,7 @@ extends Control
 # 森林大火逃生地圖的原型畫面（Phase 2n 第 1 步，2026-11-13）：2D 佔位圖，主選單「大火逃生（原型）」進來，和遊戲進度無關。
 # 點格子移動（框起來的是走得到的格子）、站在地圖邊上可以往那一邊離開、「等」原地回喘、「交給本能」走一步。
 # 看不到的地方是黑的；看過但被煙遮住的地方照樣畫地形（暗一點），火與煙只畫看得到的範圍（燃燒的火光在兩倍視線內也看得到）。
-# 第 5 步換成 HD-2D。
+# 第 5 步（2026-11-13）：HD-2D 畫面 FireHD2D（火焰、煙、燒焦的樹、焦土、火星、火光），右下的按鈕可以切回 2D 地圖。
 
 const CELL := 8
 const MAP_ORIGIN := Vector2(4, 4)
@@ -28,6 +28,12 @@ var seed := 1
 var row2: HBoxContainer
 var game_mode := false # 主遊戲裡（Phase 2n 第 4 步）：沒有原型的選項，四個邊寫出連到的區域，結束時按「繼續」回主遊戲
 var on_done: Callable
+# HD-2D（第 5 步）：同一次執行裡記住選擇（和戰術狩獵各自記）
+static var hd_on := true
+var hd: FireHD2D
+var hd_btn: Button
+var hover := Vector2i(-1, -1)
+var season := ""
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -41,6 +47,24 @@ func _ready() -> void:
 	map.draw.connect(_draw_map)
 	map.gui_input.connect(_map_input)
 	add_child(map)
+	hd = FireHD2D.new()
+	hd.view = self
+	hd.position = MAP_ORIGIN
+	hd.size = map.size
+	hd.cell_hovered.connect(func(c: Vector2i):
+		if c != hover:
+			hover = c
+			if hd_on:
+				hd.refresh())
+	hd.cell_clicked.connect(_click_cell)
+	add_child(hd)
+	hd_btn = Button.new()
+	hd_btn.theme_type_variation = &"SmallButton"
+	hd_btn.focus_mode = Control.FOCUS_NONE
+	hd_btn.position = Vector2(568, 334)
+	hd_btn.custom_minimum_size = Vector2(68, 22)
+	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
+	add_child(hd_btn)
 	info = RichTextLabel.new()
 	info.position = Vector2(332, 4)
 	info.size = Vector2(304, 130)
@@ -73,7 +97,6 @@ func _ready() -> void:
 	den_check = CheckBox.new()
 	den_check.text = tr("fire.ui.has_den")
 	den_check.theme_type_variation = &"SmallButton"
-	setup_row.add_child(den_check)
 	row2 = HBoxContainer.new()
 	row2.position = Vector2(4, 300)
 	row2.add_theme_constant_override("separation", 3)
@@ -84,6 +107,7 @@ func _ready() -> void:
 		b.theme_type_variation = &"SmallButton"
 		b.pressed.connect(pair[1])
 		row2.add_child(b)
+	row2.add_child(den_check) # 放第二列（第一列的選單太寬會蓋到右邊的按鈕）
 	_new()
 
 # 主遊戲用：照世界的狀態產生好的火場；sides = {邊: {region, kind}}，done_cb 在按「繼續」時呼叫
@@ -93,12 +117,14 @@ func start_from_game(p_fe: FireEscape, intro: String, done_cb: Callable) -> void
 	setup_row.visible = false
 	row2.visible = false
 	fe = p_fe
+	season = str(fe.get_meta("season", ""))
 	log_box.clear()
 	if intro != "":
 		_log(intro)
 	if bool(fe.get_meta("memory", false)):
 		_log("[color=#e0c070]" + tr("fire.memory") + "[/color]")
 	_log(tr("fire.ui.start").format({"wind": _wind_text()}))
+	_new_board()
 	_refresh()
 
 # 某一邊連到哪裡（主遊戲）：區域名，在燒的寫出來；沒有連到的是「這一區的邊緣」
@@ -128,7 +154,19 @@ func _new() -> void:
 		"warning": WARN[warn_pick.selected], "den": den_check.button_pressed, "wolf": {"perception": 55, "health": 100, "health_max": 100}})
 	log_box.clear()
 	_log(tr("fire.ui.start").format({"wind": _wind_text()}))
+	_new_board()
 	_refresh()
+
+# 每一場重建 HD-2D 的地圖
+func _new_board() -> void:
+	hover = Vector2i(-1, -1)
+	hd.setup(fe, season)
+	_apply_hd()
+
+func _apply_hd() -> void:
+	hd.visible = hd_on
+	map.visible = not hd_on
+	hd_btn.text = tr("tactical.ui.view.hd" if hd_on else "tactical.ui.view.2d")
 
 func _wind_text() -> String:
 	var dirs := {Vector2i(1, 0): "fire.dir.e", Vector2i(-1, 0): "fire.dir.w", Vector2i(0, 1): "fire.dir.s", Vector2i(0, -1): "fire.dir.n"}
@@ -141,12 +179,14 @@ func _log(t: String) -> void:
 
 func _map_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-		var c := Vector2i(int(ev.position.x / CELL), int(ev.position.y / CELL))
-		if fe.done:
-			return
-		if fe.reachable().has(c):
-			fe.move_to(c)
-			_after()
+		_click_cell(Vector2i(int(ev.position.x / CELL), int(ev.position.y / CELL)))
+
+func _click_cell(c: Vector2i) -> void:
+	if fe.done or fe.in_den:
+		return
+	if fe.reachable().has(c):
+		fe.move_to(c)
+		_after()
 
 func _after() -> void:
 	for e in fe.events:
@@ -176,6 +216,8 @@ func _after() -> void:
 
 func _refresh() -> void:
 	map.queue_redraw()
+	if hd_on and hd.fe == fe:
+		hd.refresh()
 	var t: Array[String] = []
 	t.append(tr("fire.ui.round").format({"n": fe.rounds}) + "　" + _wind_text())
 	t.append(tr("fire.ui.breath").format({"n": roundi(fe.breath), "max": roundi(fe.breath_max)}) + "　" + tr("fire.ui.health").format({"n": roundi(float(fe.wolf["health"]))}))

@@ -1,0 +1,58 @@
+{
+  "_comment": "森林大火逃生地圖的 HD-2D 畫面（Phase 2n 第 5 步，2026-11-13；FireHD2D）。以戰術狩獵的 hunt_hd2d.json 為底，這裡的字典一層一層蓋過去（top、trees…），陣列整個換掉。火場多的地形字元：a 闊葉林（白楊）、h 灌木、g 碎石、x 早先燒過的焦土、n 巢穴洞口。數值都是畫面，規則照 data/fire_escape.json。",
+  "heights": { "a": 0, "h": 0, "g": 0, "x": 0, "n": 0 },
+  "top": { "a": "forest_floor", "h": "grass", "g": "rock", "x": "dirt", "n": "dirt" },
+  "side": { "a": "dirt", "h": "dirt", "g": "rock", "x": "dirt", "n": "dirt" },
+  "tint": { "a": [1.0, 1.0, 0.92], "g": [1.12, 1.1, 1.05], "n": [0.5, 0.42, 0.36] },
+  "trees": {
+    "a": { "art": "birch", "no_mix": true, "scale": 0.42, "chance": 0.55 },
+    "h": { "art": "shrub", "no_mix": true, "scale": 1.0, "chance": 0.85 },
+    "n": { "art": "cave", "no_mix": true, "scale": 1.0 }
+  },
+  "tree_mix": ["spruce", "spruce", "spruce", "spruce", "pine_dark", "birch", "shrub", "shrub_b", "dead_tree"],
+  "start_zoom": 1.6,
+  "_fx_comment": "火的演出：flame_scale 火焰的大小（地形字元 → 倍率；燃燒中的樹另外放大 crown）；small 剛點燃的火；smoke 煙團（level 1～3 的透明度、高度、往下風偏多少格 × 風力）；light 火光（最多幾盞、幾格算一群、亮度）；frame_sec 火焰換格的秒數；burnt 燒過的樹換成哪一張（沒寫就照 burnt_<原本的圖>；寫空字串就不畫）；mood 煙與夜裡的光線（越濃越暗、越偏橘）。",
+  "fx": {
+    "flame_scale": { ".": 0.75, "f": 1.1, "a": 0.9, "h": 0.95, "l": 1.0 },
+    "crown": 1.7,
+    "small": 0.55,
+    "smoke_alpha": [0.0, 0.32, 0.55, 0.78],
+    "smoke_lift": [0.0, 0.55, 0.8, 1.05],
+    "smoke_scale": [0.0, 1.0, 1.25, 1.5],
+    "smoke_drift": 0.3,
+    "smoke_near_wolf": 0.35,
+    "light_max": 8,
+    "light_block": 6,
+    "light_energy": [0.7, 0.08, 2.2],
+    "light_range": 5.0,
+    "light_color": [1.0, 0.55, 0.22],
+    "frame_sec": 0.14,
+    "smoke_night": [0.4, 0.38, 0.42],
+    "smoke_firelit": [1.0, 0.72, 0.5],
+    "edge_label_px": 0.03,
+    "burnt": { "pine_snow": "burnt_pine_snow", "stones": "stones", "boulder": "boulder", "cave": "cave", "reeds": "" },
+    "hot_tint": [0.55, 0.36, 0.28],
+    "burning_tint": [1.0, 0.62, 0.42],
+    "remembered_tint": [0.42, 0.42, 0.46],
+    "mood": {
+      "smoke_sun": [1.0, 0.62, 0.38],
+      "smoke_fog": [0.58, 0.5, 0.44],
+      "smoke_fog_density": [0.0025, 0.005, 0.009, 0.014],
+      "smoke_sun_energy": [1.25, 1.05, 0.8, 0.6],
+      "night_ambient": [0.22, 0.24, 0.36],
+      "night_ambient_energy": 0.22,
+      "night_sun_energy": 0.06,
+      "night_background": [0.08, 0.08, 0.12]
+    }
+  },
+  "fire_colors": {
+    "walk": [0.55, 0.85, 0.55, 0.3],
+    "trot": [0.95, 0.85, 0.3, 0.3],
+    "sprint": [1.0, 0.55, 0.2, 0.3],
+    "den": [0.88, 0.75, 0.44, 0.95],
+    "exit": [0.6, 0.9, 1.0, 0.95],
+    "edge_burning": [1.0, 0.35, 0.2, 1.0],
+    "edge_label": [0.9, 0.95, 1.0, 1.0],
+    "hover": [1.0, 0.92, 0.45, 0.35]
+  }
+}
