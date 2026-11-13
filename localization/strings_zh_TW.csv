@@ -2461,6 +2461,15 @@ fire.ui.hint,點框起來的格子移動；站在地圖邊上可以往那一邊�
 fire.ui.exit,往{side}離開
 fire.ui.wait,等
 fire.ui.instinct,交給本能
+fire.ui.has_den,有巢穴
+fire.ui.den_enter,鑽進巢穴
+fire.ui.den_stay,繼續躲著
+fire.ui.den_leave,衝出去
+fire.ui.den_in,你鑽進了巢穴，外面的火光一下子被擋住了。
+fire.ui.den_out,你從洞口衝了出來。
+fire.ui.den_smoke,大量濃煙竄進了巢穴，你被嗆得喘不過氣。
+fire.ui.in_den,你躲在巢穴裡。
+fire.ui.den_smoky,洞裡全是煙。
 fire.ui.ember,下風處的煙裡落下了火星。
 fire.ui.choke,濃煙嗆得你直咳。
 fire.ui.burned,火舌燒到了你。

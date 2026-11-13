@@ -3,10 +3,11 @@ extends RefCounted
 # 森林大火逃生地圖的「交給本能」與模擬用的打法（Phase 2n 第 1 步，2026-11-13；第 3 步再改進）。
 # smart：照危險（煙、靠近火、下風處會被火追上的格子）找代價最小的路，目標是不是上風邊、沒有在燒的出口，或深水、冷卻的焦土、岩坡；
 #        靠近火或在濃煙裡才衝刺，其他時候小跑；到了出口就離開，到了避難處就等。
-# 爛打法（模擬對照）：downwind 往下風邊跑、nearest 往最近的邊跑、stay 原地不動、water 跑到最近的水就等。
+# 爛打法（模擬對照）：downwind 往下風邊跑、nearest 往最近的邊跑、stay 原地不動、water 跑到最近的水就等（有深水就去深水）。
+# den（第 2 步）：跑到巢穴洞口鑽進去，濃煙灌進來就衝出來改用 smart；沒有巢穴時同 smart。
 # goal:<n/e/s/w/water> 只走某一個目標（檢查一張地圖有幾條走得通的路）。
 
-const POLICIES := ["smart", "downwind", "nearest", "stay", "water"]
+const POLICIES := ["smart", "downwind", "nearest", "stay", "water", "den"]
 
 # 一格的危險（加在走過去的代價上）：整張圖一次算好
 #   離燃燒的格子近（多源 BFS 的距離）、在火的下風處（從每個燃燒的格子往下風走幾格）、煙、剛燒過、火星
@@ -75,16 +76,27 @@ static func goals(fe, policy: String) -> Dictionary:
 			want = [fe.downwind_side()]
 		"water":
 			want = ["water"]
+		"den":
+			if fe.den_cell.x >= 0:
+				out[fe.den_cell] = "den"
+				return out
+			want = ["n", "e", "s", "w", "refuge"]
+			want.erase(up)
 		_:
 			if policy.begins_with("goal:"):
 				want = [policy.substr(5)]
+	var has_deep := false
+	for y in fe.height:
+		for x in fe.width:
+			if fe.terrain(Vector2i(x, y)) == "d":
+				has_deep = true
 	for s in want:
 		if s in ["refuge", "water"]:
 			for y in fe.height:
 				for x in fe.width:
 					var p := Vector2i(x, y)
 					var t: String = fe.terrain(p)
-					if t == "d" or (s == "water" and t == "w") or (s == "refuge" and (t in ["r", "g", "x"] or fe.state(p) == "ash")):
+					if t == "d" or (s == "water" and t == "w" and not has_deep) or (s == "refuge" and (t in ["r", "g", "x"] or fe.state(p) == "ash")):
 						out[p] = s
 		elif s in fe.SIDES:
 			if fe.edges_burning.has(s):
@@ -132,6 +144,15 @@ static func dijkstra(fe) -> Dictionary:
 static func step(fe, policy: String) -> void:
 	if fe.done:
 		return
+	# 在巢穴裡：躲到濃煙灌進來才衝出去（之後照 smart 逃）；其他打法一進來就出去
+	if fe.in_den:
+		if policy == "den" and not fe.den_smoke:
+			fe.wait()
+		else:
+			fe.leave_den()
+		return
+	if policy == "den" and fe.den_smoke:
+		policy = "smart"
 	if policy == "stay":
 		fe.wait()
 		return
@@ -148,6 +169,9 @@ static func step(fe, policy: String) -> void:
 	# 已經在目標上：出口就離開，避難處就等
 	if g.has(fe.wolf_pos):
 		var kind: String = str(g[fe.wolf_pos])
+		if kind == "den":
+			fe.enter_den()
+			return
 		if kind in fe.SIDES:
 			fe.exit_to(kind)
 		else:

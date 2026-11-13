@@ -23,6 +23,7 @@ var setup_row: HBoxContainer
 var map_pick: OptionButton
 var wind_pick: OptionButton
 var warn_pick: OptionButton
+var den_check: CheckBox
 var seed := 1
 
 func _ready() -> void:
@@ -66,6 +67,10 @@ func _ready() -> void:
 	wind_pick.selected = 1
 	warn_pick = _option(WARN.map(func(w): return tr("fire.ui.warn." + w)), 70)
 	warn_pick.selected = 1
+	den_check = CheckBox.new()
+	den_check.text = tr("fire.ui.has_den")
+	den_check.theme_type_variation = &"SmallButton"
+	setup_row.add_child(den_check)
 	var row2 := HBoxContainer.new()
 	row2.position = Vector2(4, 300)
 	row2.add_theme_constant_override("separation", 3)
@@ -91,7 +96,7 @@ func _new() -> void:
 	var winds := [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]
 	fe = FireEscape.new()
 	fe.setup({"hunt_map": MAPS[map_pick.selected], "seed": seed, "wind": winds[seed % 4], "strength": wind_pick.selected,
-		"warning": WARN[warn_pick.selected], "wolf": {"perception": 55, "health": 100, "health_max": 100}})
+		"warning": WARN[warn_pick.selected], "den": den_check.button_pressed, "wolf": {"perception": 55, "health": 100, "health_max": 100}})
 	log_box.clear()
 	_log(tr("fire.ui.start").format({"wind": _wind_text()}))
 	_refresh()
@@ -124,6 +129,12 @@ func _after() -> void:
 				_log(tr("fire.ui.choke"))
 			"burned":
 				_log(tr("fire.ui.burned"))
+			"den_in":
+				_log(tr("fire.ui.den_in"))
+			"den_out":
+				_log(tr("fire.ui.den_out"))
+			"den_smoke":
+				_log("[color=#ff9a6a]" + tr("fire.ui.den_smoke") + "[/color]")
 	fe.events = []
 	for w in fe.wind_events:
 		_log(tr("fire.ui.wind_change") + _wind_text())
@@ -138,6 +149,8 @@ func _refresh() -> void:
 	var t: Array[String] = []
 	t.append(tr("fire.ui.round").format({"n": fe.rounds}) + "　" + _wind_text())
 	t.append(tr("fire.ui.breath").format({"n": roundi(fe.breath), "max": roundi(fe.breath_max)}) + "　" + tr("fire.ui.health").format({"n": roundi(float(fe.wolf["health"]))}))
+	if fe.in_den:
+		t.append(tr("fire.ui.in_den") + ("　" + tr("fire.ui.den_smoky") if fe.den_smoke else ""))
 	t.append(tr("fire.ui.smoke").format({"s": tr("fire.smoke.%d" % fe.smoke_at(fe.wolf_pos))}) + "　" + tr("fire.ui.sight").format({"n": fe.sight_radius()}))
 	if not fe.edges_burning.is_empty():
 		t.append(tr("fire.ui.edges_burning").format({"list": "、".join(fe.edges_burning.map(func(s): return tr("fire.side." + s)))}))
@@ -147,6 +160,12 @@ func _refresh() -> void:
 		b.queue_free()
 	if fe.done:
 		return
+	if fe.in_den:
+		_btn(tr("fire.ui.den_stay"), func(): fe.wait(); _after())
+		_btn(tr("fire.ui.den_leave"), func(): fe.leave_den(); _after())
+		return
+	if fe.can_enter_den():
+		_btn(tr("fire.ui.den_enter"), func(): fe.enter_den(); _after())
 	for s in fe.can_exit():
 		_btn(tr("fire.ui.exit").format({"side": tr("fire.side." + s)}), func(): fe.exit_to(s); _after())
 	_btn(tr("fire.ui.wait"), func(): fe.wait(); _after())
@@ -188,7 +207,9 @@ func _draw_map() -> void:
 	if not fe.done:
 		for p in fe.reachable():
 			map.draw_rect(Rect2(Vector2(p) * CELL, Vector2(CELL, CELL)).grow(-1), Color(1, 1, 1, 0.25), false, 1.0)
-	map.draw_circle((Vector2(fe.wolf_pos) + Vector2(0.5, 0.5)) * CELL, CELL * 0.45, Color.WHITE)
+	if fe.den_cell.x >= 0 and fe.known.has(fe.den_cell):
+		map.draw_rect(Rect2(Vector2(fe.den_cell) * CELL, Vector2(CELL, CELL)).grow(-1), Color("#e0c070"), false, 1.5)
+	map.draw_circle((Vector2(fe.wolf_pos) + Vector2(0.5, 0.5)) * CELL, CELL * (0.25 if fe.in_den else 0.45), Color.WHITE)
 	# 地圖四邊：相鄰區在燒的那一邊畫紅線
 	for s in fe.edges_burning:
 		var a := Vector2.ZERO

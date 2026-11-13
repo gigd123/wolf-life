@@ -157,5 +157,78 @@ func _process(_d) -> bool:
 		de += a.wolf_pos.x
 		dl += b.wolf_pos.x
 	_ok(de > dl, "察覺得早離火遠（%.1f > %.1f）" % [de / 10.0, dl / 10.0])
+	# --- 第 2 步：避難地形 ---
+	# 巢穴：擋得住火和熱；火靠近時濃煙終究會灌進來，之後每回合扣血；在裡面不能移動、不能離開地圖；看不到外面
+	var rowsd := _rows(16, 8, "f")
+	rowsd[4] = "ffn" + "f".repeat(13)
+	var fd = _fe(rowsd, 1, Vector2(1, 0), {"wolf_pos": Vector2i(2, 4)})
+	fd.den_cell = Vector2i(2, 4)
+	_ok(fd.can_enter_den(), "站在洞口可以鑽進去")
+	fd.enter_den()
+	_ok(fd.in_den and fd.sight_radius() == 0, "在巢穴裡、看不到外面")
+	# 洞口在火的路上（地圖中間）：幾個種子裡濃煙都會灌進來
+	var rows_mid := _rows(24, 9, "f")
+	rows_mid[4] = "f".repeat(10) + "n" + "f".repeat(13)
+	var flooded := 0
+	var no_fire := true
+	var smoked := true
+	for sd in 6:
+		var fdm = _fe(rows_mid, 1, Vector2(1, 0), {"wolf_pos": Vector2i(10, 4), "seed": sd + 1})
+		fdm.den_cell = Vector2i(10, 4)
+		fdm.enter_den()
+		for r in 40:
+			fdm.wait()
+			if fdm.done:
+				break
+		if fdm.den_smoke:
+			flooded += 1
+			smoked = smoked and float(fdm.dmg["smoke"]) > 0.0
+		no_fire = no_fire and float(fdm.dmg["burn"]) == 0.0 and float(fdm.dmg["heat"]) == 0.0
+	_ok(no_fire, "巢穴裡不受火和熱的傷")
+	_ok(flooded >= 3, "火從旁邊燒過時，濃煙多半會灌進巢穴（6 次裡 %d 次）" % flooded)
+	_ok(smoked, "濃煙灌進來之後扣血")
+	var fd2 = _fe(rowsd, 1, Vector2(1, 0), {"wolf_pos": Vector2i(2, 4)})
+	fd2.den_cell = Vector2i(2, 4)
+	fd2.enter_den()
+	var before: Vector2i = fd2.wolf_pos
+	fd2.move_to(Vector2i(3, 4))
+	_ok(fd2.wolf_pos == before and fd2.in_den, "在巢穴裡不能移動")
+	fd2.leave_den()
+	_ok(not fd2.in_den and fd2.wolf_pos == Vector2i(2, 4), "衝出來回到洞口那一格")
+	# 本能 den：躲到濃煙灌進來才出來
+	var fd3 = _fe(rowsd, 1, Vector2(1, 0), {"wolf_pos": Vector2i(2, 4)})
+	fd3.den_cell = Vector2i(2, 4)
+	var FI = load("res://scripts/core/FireInstinct.gd")
+	FI.step(fd3, "den")
+	_ok(fd3.in_den, "本能 den：先鑽進去")
+	var left_after_smoke := true
+	for r in 30:
+		var was_smoke: bool = fd3.den_smoke
+		var was_in: bool = fd3.in_den
+		FI.step(fd3, "den")
+		if was_in and not fd3.in_den and not was_smoke:
+			left_after_smoke = false
+		if not fd3.in_den or fd3.done:
+			break
+	_ok(left_after_smoke, "本能 den：濃煙灌進來才出來")
+	# 地圖放巢穴、早先燒過的焦土
+	var FE = load("res://scripts/core/FireEscape.gd")
+	var fm = FE.new()
+	fm.setup({"hunt_map": "edge_1", "seed": 3, "wind": Vector2(1, 0), "strength": 1, "den": true, "ash_patch": true, "flank": false})
+	_ok(fm.den_cell.x >= 0 and fm.terrain(fm.den_cell) == "n", "巢穴所在的區域地圖上有洞口")
+	var ash := 0
+	for y in fm.height:
+		for x in fm.width:
+			if fm.terrain(Vector2i(x, y)) == "x":
+				ash += 1
+	_ok(ash >= 5, "早先燒過的一塊焦土（%d 格）" % ash)
+	# 岩坡：火不會燒進來，但熱照算（和旁邊有一樣多火的碎石一樣）
+	var rr := _rows(10, 5, "f")
+	for y in 5:
+		rr[y] = "f" + "a".repeat(9)
+	rr[2] = "fr" + "a".repeat(8)
+	var fr = _fe(rr, 0, Vector2(1, 0), {"wolf_pos": Vector2i(1, 2)})
+	fr.wait()
+	_ok(float(fr.dmg["heat"]) > 0.0 and not fr.fire.has(Vector2i(1, 2)), "岩坡不會燒、熱照算（%.1f）" % fr.dmg["heat"])
 	print("火場原型的規則：%s" % ("全部通過" if fails == 0 else "失敗 %d 個" % fails))
 	return true

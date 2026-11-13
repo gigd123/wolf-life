@@ -25,6 +25,10 @@ var night := false
 var dry := false
 var edges_burning: Array = [] # 這幾邊連到的區域正在燒（"n"/"e"/"s"/"w"）
 var warning := "normal" # 多早察覺：early／normal／late（決定狼離火多遠）
+var den_cell := Vector2i(-1, -1) # 巢穴洞口（第 2 步；巢穴所在的區域才有）
+var in_den := false # 鑽在巢穴裡
+var den_smoke := false # 濃煙灌進了巢穴
+var den_rounds := 0 # 在巢穴裡躲了幾回合
 
 var wolf_pos := Vector2i.ZERO
 var wolf: Dictionary = {}
@@ -82,6 +86,16 @@ func setup(ctx: Dictionary) -> void:
 	wind_events = []
 	for k in dmg:
 		dmg[k] = 0.0
+	in_den = false
+	den_smoke = false
+	den_rounds = 0
+	den_cell = Vector2i(-1, -1)
+	# 早先燒過的一塊地（真實的大火燒出來的是燒過、半燒、沒燒的鑲嵌地景）：冷卻的焦土
+	if bool(ctx.get("ash_patch", rng.randf() < float(c.get("ash_patch_chance", 0.0)))):
+		_carve_ash_patch()
+	# 巢穴所在的區域：地圖上有洞口
+	if bool(ctx.get("den", false)):
+		_place_den()
 	_ignite_upwind_edge()
 	# 相鄰區在燒的那幾邊，火也從那裡進來；有時火已經從兩側包過來
 	for s in edges_burning:
@@ -95,6 +109,32 @@ func setup(ctx: Dictionary) -> void:
 	wolf_pos = ctx.get("wolf_pos", _start_cell())
 	_update_smoke()
 	_see()
+
+# 早先燒過的一塊地：地圖下風的一半裡挑一點，半徑 ash_patch_radius 內的燃料格變成焦土（x）
+func _carve_ash_patch() -> void:
+	var rr: Array = c.get("ash_patch_radius", [2, 4])
+	var rad: int = rng.randi_range(int(rr[0]), int(rr[1]))
+	var center := Vector2i(rng.randi_range(4, width - 5), rng.randi_range(4, height - 5))
+	for y in range(center.y - rad, center.y + rad + 1):
+		for x in range(center.x - rad, center.x + rad + 1):
+			var p := Vector2i(x, y)
+			if in_bounds(p) and Vector2(p - center).length() <= rad + 0.3 and fuel(p) > 0.0:
+				grid[y][x] = "x"
+
+# 巢穴洞口：地圖中間一帶、離上風邊有距離的陸地（不是水），變成 n
+func _place_den() -> void:
+	var cands: Array = []
+	var up: String = upwind_side()
+	for y in range(3, height - 3):
+		for x in range(3, width - 3):
+			var p := Vector2i(x, y)
+			var d: int = {"w": x, "e": width - 1 - x, "n": y, "s": height - 1 - y}[up]
+			if d >= 8 and not terrain(p) in ["w", "d"]:
+				cands.append(p)
+	if cands.is_empty():
+		return
+	den_cell = cands[rng.randi_range(0, cands.size() - 1)]
+	grid[den_cell.y][den_cell.x] = "n"
 
 # 戰術狩獵的地圖轉成火場（字元對應；空地有一點機率是闊葉林、灌木，讓燃料有變化）
 func _rows_from_hunt_map(id: String, seed: int) -> Array:
@@ -276,7 +316,7 @@ func reachable() -> Dictionary:
 	return out
 
 func move_to(p: Vector2i) -> void:
-	if done:
+	if done or in_den:
 		return
 	var r := reachable()
 	if not r.has(p):
@@ -292,12 +332,31 @@ func wait() -> void:
 	breath = minf(breath_max, breath + float(c["move"]["breath_regen"]))
 	_end_round()
 
+# 巢穴：站在洞口時鑽進去（擋得住火、擋不住煙）；在裡面時衝出來（回到洞口那一格，外面的火可能已經不一樣了）
+func can_enter_den() -> bool:
+	return not done and not in_den and wolf_pos == den_cell
+
+func enter_den() -> void:
+	if not can_enter_den():
+		return
+	in_den = true
+	den_rounds = 0
+	events.append({"kind": "den_in"})
+	_end_round()
+
+func leave_den() -> void:
+	if done or not in_den:
+		return
+	in_den = false
+	events.append({"kind": "den_out"})
+	_end_round()
+
 # 站在地圖邊上：往那一邊離開（逃到那一邊連到的區域）
 func can_exit() -> Array:
 	return sides_of(wolf_pos)
 
 func exit_to(side: String) -> void:
-	if done or not can_exit().has(side):
+	if done or in_den or not can_exit().has(side):
 		return
 	done = true
 	exit_side = side
@@ -456,6 +515,34 @@ func _shelter(p: Vector2i, key: String) -> float:
 func _hurt_wolf() -> void:
 	var p := wolf_pos
 	var h := 0.0
+	# 在巢穴裡：火和熱進不來；火靠近或洞口有濃煙時，每回合有機率濃煙灌進來，之後每回合都像站在極濃的煙裡
+	if in_den:
+		den_rounds += 1
+		var dc: Dictionary = c.get("den", {})
+		var near_fire := false
+		for b in burning_cells():
+			if _cheb(b, p) <= int(dc.get("near", 4)):
+				near_fire = true
+				break
+		if not den_smoke and (near_fire or smoke_at(p) >= 2) and rng_d.randf() < float(dc.get("smoke_chance", 0.15)):
+			den_smoke = true
+			events.append({"kind": "den_smoke"})
+		if den_smoke:
+			var lv: int = int(dc.get("smoke_level", 3))
+			breath = maxf(0.0, breath - float(c["smoke_breath"][lv]))
+			var sh: float = float(c["smoke_health"][lv]) * float(dc.get("smoke_mult", 1.5))
+			dmg["smoke"] += sh
+			h += sh
+			if rng_d.randf() < float(c["choke_chance"][lv]):
+				var cd: Array = c.get("choke_damage", [4, 8])
+				var v0: float = float(rng_d.randi_range(int(cd[0]), int(cd[1])))
+				dmg["choke"] += v0
+				h += v0
+				events.append({"kind": "choke"})
+		else:
+			breath = minf(breath_max, breath + float(c["move"]["breath_regen"]) * 0.5)
+		wolf["health"] = float(wolf["health"]) - h
+		return
 	if burning(p):
 		var v: float = float(c.get("burn_on", 30))
 		dmg["burn"] += v
@@ -498,6 +585,8 @@ func total_damage() -> float:
 # --- 視線 ---
 
 func sight_radius() -> int:
+	if in_den:
+		return 0
 	var lv: int = smoke_at(wolf_pos)
 	var base: int = int(c["sight"][lv])
 	return base + maxi(0, roundi((float(wolf.get("perception", 50)) - 50.0) * float(c.get("sight_per_perception", 0.1)) / 1.0))

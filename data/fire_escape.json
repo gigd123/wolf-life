@@ -45,13 +45,17 @@
   "shelter": {
     "w": { "heat": 0.5, "smoke": 1.0 },
     "d": { "heat": 0.15, "smoke": 0.8 },
-    "r": { "heat": 0.8, "smoke": 1.0 },
-    "g": { "heat": 0.8, "smoke": 1.0 }
+    "r": { "heat": 1.0, "smoke": 1.0 },
+    "g": { "heat": 1.0, "smoke": 1.0 }
   },
   "_move_comment": "狼的移動：照戰術狩獵（小跑 trot 格、衝刺 sprint 格，扣喘）；喘用完只能走 walk 格。每回合回喘 breath_regen（沒有煙時）。",
   "move": { "walk": 2, "trot": 4, "sprint": 6, "breath_trot": -4, "breath_sprint": -14, "breath_walk": 2, "breath_regen": 4 },
   "max_rounds": 45,
   "_start_comment": "狼的起點離火幾格：early 早早察覺（徵兆時就注意到、火還遠）、normal、late 很晚才察覺（睡著、沒注意徵兆）。flank：火已經從兩側包過來的機率（兩側的邊靠上風的一半也在燒）。",
   "start_fire_dist": { "early": [16, 22], "normal": [11, 15], "late": [6, 9] },
-  "flank_chance": 0.35
+  "flank_chance": 0.35,
+  "_refuge_comment": "第 2 步（2026-11-13）：岩坡、碎石不會燒但熱和煙照算（SPEC）；ash_patch：地圖上早先燒過一塊（冷卻的焦土）的機率與半徑。den：巢穴——擋得住火和熱；火在 near 格內或洞口的煙 ≥ 2 時，每回合 smoke_chance 的機率濃煙灌進來，之後每回合照煙的程度 smoke_level 扣喘、扣血 × smoke_mult。",
+  "ash_patch_chance": 0.3,
+  "ash_patch_radius": [2, 4],
+  "den": { "near": 4, "smoke_chance": 0.15, "smoke_level": 3, "smoke_mult": 1.5 }
 }
