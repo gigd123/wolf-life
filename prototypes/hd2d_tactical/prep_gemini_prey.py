@@ -46,16 +46,16 @@ ANIMALS = {
     "mule_deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "mule_deer_fawn": (0.9, ["stand", "alert", "run", "graze"]),
     "caribou": (1.55, ["stand", "alert", "run", "graze"]),
-    "caribou_cow": (1.35, ["stand", "alert", "run", "graze"]),
+    "caribou_cow": (1.35, ["stand", "alert", "run", "graze", "run_b"]),
     "caribou_calf": (0.95, ["stand", "alert", "run", "graze"]),
     "moose_calf": (1.2, ["stand", "alert", "run", "graze"]),
     "moose_cow": (1.95, ["stand", "alert", "run", "graze", "fight"]),
     "moose_bull": (2.1, ["stand", "alert", "run", "graze", "fight"]),
     "elk_calf": (1.15, ["stand", "alert", "run", "graze"]),
-    "elk_cow": (1.6, ["stand", "alert", "run", "graze"]),
+    "elk_cow": (1.6, ["stand", "alert", "run", "graze", "run_b"]),
     "elk_bull": (1.85, ["stand", "alert", "run", "graze"]),
     # 白尾鹿母鹿（取代 PixelLab 的卡通風格）：站 png 960/1024、吃草與跑 1408×768（身體畫得比較大）→ 各自照身體長度指定
-    "deer_doe": (1.15, ["stand", "alert", "run", "graze"]),
+    "deer_doe": (1.15, ["stand", "alert", "run", "graze", "run_b"]),
     "deer_buck": (1.4, ["stand", "alert", "run", "graze"]),
     "deer_fawn": (0.8, ["stand", "alert", "run", "graze"]),
     "pronghorn": (1.45, ["stand", "alert", "run", "graze"]),
@@ -103,6 +103,7 @@ ANIMALS = {
     "carcass_bighorn_lamb": (0.95, ["stand"]),
     # 叉角羚、牧場的羊、母牛、小牛、大角羊母羊的殘骸（2026-11-11 ChatGPT）
     "carcass_pronghorn": (1.5, ["stand"]),
+    "carcass_pronghorn_kid": (1.15, ["stand"]),  # 2026-11-12 ChatGPT（1379×768）
     "carcass_sheep": (1.35, ["stand"]),
     "carcass_cattle": (2.6, ["stand"]),
     "carcass_cattle_calf": (1.6, ["stand"]),
@@ -125,6 +126,10 @@ SPECIAL = {
     # 2026-11-11 重出（原本和站很像，舊的留在 _*_v1.jpg）：小野兔、小河狸坐起來警覺，北美馴鹿母鹿回頭看、抬起一隻腳；小大角羊吃草（原本借母羊的）照站那張調色
     "hare_young_alert": {"cells": 0.32},
     "beaver_kit_alert": {"cells": 0.48},
+    # 跑的第二張（2026-11-12 ChatGPT，畫布和原本不一樣 → 直接指定寬幾格，照站的那張調色）：逃跑時和「跑」輪流
+    "deer_doe_run_b": {"cells": 1.5, "match": True},
+    "elk_cow_run_b": {"cells": 1.65},  # 照站的那張調色會把深褐色的脖子洗淡 → 不調
+    "caribou_cow_run_b": {"cells": 1.45, "match": True},
     "caribou_cow_alert": {"cells": 1.4, "match": True},  # 2026-11-12 重出（有小角、抬頭、抬一隻腳；舊的存成 _caribou_cow_alert_v2_noantler）
     "bighorn_lamb_graze": {"cells": 0.78, "match": True},
     "pronghorn_kid_run": {"cells": 1.1},

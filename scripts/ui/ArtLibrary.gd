@@ -91,9 +91,13 @@ static func _pair_strip(a: Texture2D, b: Texture2D) -> Texture2D:
 	return tex
 
 # 有第二張走路圖（hd_menu.walk_b）就播兩格，回傳 true；沒有回傳 false
-static func _hd_walk(icon: AnimatedIcon, first: Texture2D, who: String) -> bool:
+static func _hd_walk(icon: AnimatedIcon, first: Texture2D, who: String, action: String = "walk") -> bool:
 	var wb: Dictionary = _hd().get("walk_b", {})
-	var second := _hd_tex(str(wb.get(who, "")))
+	var e = wb.get(who, "")
+	# 動作分開的第二張（2026-11-12：獵物逃跑 move 用「跑」的第二張）
+	if e is Dictionary:
+		e = (e as Dictionary).get(action, "")
+	var second := _hd_tex(str(e))
 	if first == null or second == null:
 		return false
 	var strip := _pair_strip(first, second)
@@ -116,7 +120,7 @@ static func frame_size() -> Vector2i:
 static func setup_animal(icon: AnimatedIcon, animal_id: String, life_stage: String, action: String = "idle", animate: bool = true) -> bool:
 	var hd := hd_animal(animal_id, life_stage, action)
 	if hd != null:
-		if not (animate and action in ["move", "walk"] and life_stage == "adult" and _hd_walk(icon, hd, animal_id)):
+		if not (animate and action in ["move", "walk"] and life_stage == "adult" and _hd_walk(icon, hd, animal_id, action)):
 			icon.show_static(hd)
 		return true
 	var table: Dictionary = _cfg().get("animals", {}).get(animal_id, {})

@@ -3,6 +3,7 @@
 最後更新：2026-11-12
 
 ## 目前階段
+（2026-11-13）獵物跑的第二張（白尾鹿母鹿、馬鹿母鹿、北美馴鹿母鹿，ChatGPT）：戰術地圖 `hunt_hd2d.json` 的 `hd_art.*.flee_b`，`HuntHD2D._art_for` 逃跑時每回合和「跑」輪流、鹿群每一隻錯開一格；選單畫面 `art.json` `hd_menu.walk_b` 可以照動作分（`{"move": …}`，`ArtLibrary._hd_walk` 多一個 action），逃跑時兩張輪流。叉角羚幼體殘骸 `pronghorn.juvenile`。`prep_gemini_prey.py`：run_b 畫布不同 → 直接指定寬幾格；馬鹿那張不調色（調了脖子會變淡）。
 （2026-11-12）渡鴉（站、飛）、鮭魚（游、跳）新圖（ChatGPT）：`prototypes/hd2d_tactical/prep_birds_fish.py`（渡鴉提亮 1.25、約 0.6 格；盤旋＝三隻飛的錯開排成 `raven_circling`；鮭魚約 0.6 格），`art.json` `hd_menu.animals` 加 raven、salmon。選單畫面的動物全部是新圖了。小狐狸（站、走）先接上備用。
 （2026-11-12）小灰熊（站、走，ChatGPT）接進選單畫面（`art.json` `hd_menu.animals.grizzly_bear.juvenile`）；`prep_black_wolf.py` 加 `grizzlycub`（約 0.95 格，成年灰熊的四成五長；畫布不同 → `CANVAS_NORM`；走路那張偏黃 → `PALETTE_MATCH` 照站的那張調色）。北美馴鹿母鹿警覺換成有小角的新圖（`caribou_cow_alert` 1.4 格）。
 （2026-11-12）苔原狼補倒地（帶傷那張；沒傷的存成 `_tundrawolf_down_unused_nowound`）、叼肉，`combat_hd2d.json`、`art.json` 接上；洞穴入口冬天版 `cave_winter`（`prep_props.py`、`hunt_hd2d.json` 的地形 b `winter_art`）。出圖清單重新盤點（`docs/art-request-hd2d-2026-11-06.md` 最上面「2026-11-12 盤點」）。
@@ -345,6 +346,7 @@
 - 次成年期結束：`life_stage_ages.subadult_end = 2.0` 歲；規格改為 2 季（約 14 個月，≈1.17 歲）。
 
 ## 待使用者目視確認
+- （2026-11-13）戰術狩獵裡白尾鹿、馬鹿、北美馴鹿母鹿逃跑時，兩張跑的圖每回合輪流，看起來像不像在跑；選單畫面牠們逃走時也是兩張輪流
 - （2026-11-12）主選單下方的測試入口改成兩欄小按鈕；戰術戰鬥動作很多時動作區往上移（右上說明變短）是否還好看、好點；遭遇畫面描述很長時紀錄變短或角色圖收起來的樣子
 - 選單畫面的新圖（2026-11-11）：主畫面的遭遇、探索、選單式戰鬥（狐狸等）裡動物與灰狼的大小與位置；和舊圖混用的地方（紅狐、整群、灰狼吃與睡）會不會太突兀。除錯選單可以切回舊圖比較。
 - Phase 3 第 7 步（2026-10-30）：戰術地圖上好幾隻同伴（藍、橘、紫點，佔位用苔原狼的圖）、開場一行「你們 N 隻和你一起獵」；撞上鄰群多一個「撲上去打」按鈕。試玩清單 P7。

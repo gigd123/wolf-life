@@ -99,7 +99,7 @@ func _species_key(i: int) -> String:
 		return sp + "_buck"
 	return sp
 
-func _art_for(key: String, state: String = "") -> Dictionary:
+func _art_for(key: String, state: String = "", idx: int = 0) -> Dictionary:
 	var e: Array = cfg["species"].get(key, cfg["species"]["deer"])
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
 	# 有 HD-2D 圖的獵物（hd_art）用那張
@@ -107,6 +107,9 @@ func _art_for(key: String, state: String = "") -> Dictionary:
 	if not hd.is_empty():
 		if winter and hd.has("winter"):
 			return hd_wolf_texture(str(hd["winter"]))
+		# 跑的第二張（2026-11-12）：逃跑時每回合和「跑」輪流；鹿群裡每一隻錯開一格，不會整群同一個步伐
+		if state == "flee" and hd.has("flee_b") and (h.rounds + idx) % 2 == 1:
+			return hd_wolf_texture(str(hd["flee_b"]))
 		return hd_wolf_texture(str(hd.get(state, hd["name"])))
 	var a := HD2DBoard.animal_texture(str(e[0]), str(e[1]), float(e[2]), winter)
 	if a.is_empty():
@@ -151,7 +154,7 @@ func paint() -> void:
 		if i == h.target:
 			continue
 		var wk: bool = bool(h.herd[i].get("weakest", false))
-		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", ""))), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, tr("tactical.hd.weakest") if wk else "", _col(col["weakest"]))
+		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", "")), i), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, tr("tactical.hd.weakest") if wk else "", _col(col["weakest"]))
 		if wk:
 			frame(h.herd[i]["pos"], _col(col["weakest"]), 0.05, 0.05)
 	if not hid:
@@ -163,7 +166,7 @@ func paint() -> void:
 		var tint: Color = _col(col["held"]) if h.held else Color.WHITE
 		# 觀察後看出的最弱的那一隻（2026-11-08：原本只在腳下畫一小塊，被圖蓋住看不到）→ 頭上寫「最弱」、橘色框
 		var wkt: bool = bool(h.herd[h.target].get("weakest", false))
-		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", ""))), h.deer_pos, _flip(h.deer_facing), tint, tr("tactical.hd.weakest") if wkt else "", _col(col["weakest"]))
+		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", "")), h.target), h.deer_pos, _flip(h.deer_facing), tint, tr("tactical.hd.weakest") if wkt else "", _col(col["weakest"]))
 		if wkt:
 			frame(h.deer_pos, _col(col["weakest"]), 0.05, 0.06)
 		elif h.herd.size() > 1:
