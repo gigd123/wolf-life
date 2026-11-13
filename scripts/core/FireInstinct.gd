@@ -12,6 +12,17 @@ const POLICIES := ["smart", "downwind", "nearest", "stay", "water", "den"]
 # 一格的危險（加在走過去的代價上）：整張圖一次算好
 #   離燃燒的格子近（多源 BFS 的距離）、在火的下風處（從每個燃燒的格子往下風走幾格）、煙、剛燒過、火星
 static func danger_map(fe) -> Dictionary:
+	# 同一回合、同一個位置算過就用算好的
+	var key: String = "%d|%s|%d" % [fe.rounds, str(fe.wolf_pos), fe.fire.size()]
+	if fe.has_meta("dmap_key") and str(fe.get_meta("dmap_key")) == key:
+		return fe.get_meta("dmap")
+	var res: Dictionary = _danger_map(fe)
+	fe.set_meta("dmap_key", key)
+	fe.set_meta("dmap", res)
+	return res
+
+static func _danger_map(fe) -> Dictionary:
+	var eta_map: Dictionary = fire_eta(fe)
 	var burn: Array = fe.burning_cells()
 	var near := {}
 	var q: Array = []
@@ -57,8 +68,63 @@ static func danger_map(fe) -> Dictionary:
 				v += 1.0 + fe.strength
 			if fe.embers.has(p):
 				v += 4.0
+			# 火比你先到（第 3 步）：估計火幾回合後燒到這一格，比你走到這裡快就很危險
+			var arrive: float = float(fe._cheb(fe.wolf_pos, p)) / float(fe.move_budget("trot"))
+			var eta: float = float(eta_map.get(p, 999.0))
+			if eta < arrive + 1.0:
+				v += 8.0
+			elif eta < arrive + 3.0:
+				v += 2.5
 			out[p] = v
 	return out
+
+# 火大約幾回合後燒到每一格（第 3 步）：從燃燒中的格子出發，每走一格的時間 = 1 ÷（燃料 × 方向的倍率 × 一回合延燒幾次），不會燒的格子到不了
+static func fire_eta(fe) -> Dictionary:
+	var w: Dictionary = fe.wcfg()
+	var sp: Array = w["spread"]
+	var subs: int = int(w.get("substeps", 1))
+	var eta := {}
+	var open: Array = []
+	for b in fe.burning_cells():
+		eta[b] = 0.0
+		open.append(b)
+	for e in fe.embers:
+		eta[e] = maxf(0.0, float(fe.embers[e]) - fe.rounds)
+		open.append(e)
+	# 簡單的 Dijkstra（格子數不多，桶子以 0.25 回合為單位）
+	var buckets := {}
+	for p in open:
+		var k: int = roundi(float(eta[p]) * 4.0)
+		if not buckets.has(k):
+			buckets[k] = []
+		buckets[k].append(p)
+	var keys: Array = buckets.keys()
+	keys.sort()
+	var ki := 0
+	var maxk := 240
+	var k2 := 0
+	while k2 <= maxk:
+		if buckets.has(k2):
+			for cur in buckets[k2]:
+				if roundi(float(eta[cur]) * 4.0) != k2:
+					continue
+				for d in fe.DIRS8:
+					var n: Vector2i = cur + d
+					if not fe.in_bounds(n) or fe.fuel(n) <= 0.0 or (fe.fire.has(n) and str(fe.fire[n]["s"]) != "burning"):
+						continue
+					var a: float = Vector2(d).normalized().dot(fe.wind)
+					var fdir: float = float(sp[0]) if a > 0.5 else (float(sp[2]) / subs if a < -0.5 else float(sp[1]) / subs)
+					var rate: float = fe.fuel(n) * fdir * subs * (0.7 if d.x != 0 and d.y != 0 else 1.0)
+					var t: float = float(eta[cur]) + 1.0 / maxf(0.03, rate)
+					if t < float(eta.get(n, 999.0)):
+						eta[n] = t
+						var nk: int = roundi(t * 4.0)
+						if nk <= maxk:
+							if not buckets.has(nk):
+								buckets[nk] = []
+							buckets[nk].append(n)
+		k2 += 1
+	return eta
 
 static func danger(fe, p: Vector2i) -> float:
 	return float(danger_map(fe).get(p, 0.0))

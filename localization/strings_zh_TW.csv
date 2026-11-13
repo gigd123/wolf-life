@@ -2483,6 +2483,12 @@ fire.side.n,北邊
 fire.side.e,東邊
 fire.side.s,南邊
 fire.side.w,西邊
+fire.outcome.safe,你平安無事。
+fire.outcome.light,你受了輕度燒傷。
+fire.outcome.heavy,你受了重度燒傷。
+fire.outcome.light.smoke,你被濃煙嗆傷了，不算重。
+fire.outcome.heavy.smoke,你被濃煙嗆得很重。
+fire.outcome.death,你沒能逃出火場。
 fire.result.escaped,你從{side}逃出了火場。
 fire.result.into_fire,你往{side}跑，那一邊也在燒。
 fire.result.survived,火燒過去了，你撐了下來。

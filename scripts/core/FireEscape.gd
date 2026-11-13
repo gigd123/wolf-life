@@ -29,6 +29,8 @@ var den_cell := Vector2i(-1, -1) # 巢穴洞口（第 2 步；巢穴所在的區
 var in_den := false # 鑽在巢穴裡
 var den_smoke := false # 濃煙灌進了巢穴
 var den_rounds := 0 # 在巢穴裡躲了幾回合
+var start_down := "" # 開場時的下風邊（逃到下風的區域，火之後還會追過去：第 4 步用）
+var start_up := ""
 
 var wolf_pos := Vector2i.ZERO
 var wolf: Dictionary = {}
@@ -106,6 +108,8 @@ func setup(ctx: Dictionary) -> void:
 			if Vector2(SIDES[s]).dot(wind) == 0.0:
 				_ignite_edge(s, 0.5, 0.8)
 	warning = str(ctx.get("warning", "normal"))
+	start_down = downwind_side()
+	start_up = upwind_side()
 	wolf_pos = ctx.get("wolf_pos", _start_cell())
 	_update_smoke()
 	_see()
@@ -575,6 +579,43 @@ func _hurt_wolf() -> void:
 	elif adj == 0:
 		breath = minf(breath_max, breath + float(c["move"]["breath_regen"]) * 0.5)
 	wolf["health"] = float(wolf["health"]) - h
+
+# --- 結果（第 3 步）---
+
+# 平安／輕度燒傷／重度燒傷／死亡：照這一場累積的傷（outcome.light、outcome.heavy）
+func outcome() -> String:
+	if result == "dead" or float(wolf["health"]) <= 0.0:
+		return "death"
+	var o: Dictionary = c.get("outcome", {})
+	var td: float = total_damage()
+	if td >= float(o.get("heavy", 25.0)):
+		return "heavy"
+	if td >= float(o.get("light", 8.0)):
+		return "light"
+	return "safe"
+
+# 怎麼逃的（一生回顧、試玩紀錄、第 4 步接世界用）
+func summary() -> Dictionary:
+	var how := "open"
+	if result in ["escaped", "into_fire"]:
+		how = "exit"
+	elif in_den or wolf_pos == den_cell:
+		how = "den"
+	else:
+		match terrain(wolf_pos):
+			"d", "w":
+				how = "water"
+			"x":
+				how = "ash"
+			"r", "g":
+				how = "rock"
+		if how == "open" and state(wolf_pos) == "ash":
+			how = "ash"
+	var td: float = total_damage()
+	var smoke_part: float = float(dmg["smoke"]) + float(dmg["choke"])
+	return {"result": result, "outcome": outcome(), "how": how, "side": exit_side, "downwind": exit_side != "" and exit_side == start_down,
+		"upwind": exit_side != "" and exit_side == start_up, "damage": td, "cause": "smoke" if smoke_part >= td * 0.5 and td > 0.0 else "fire",
+		"den_smoke": den_smoke, "rounds": rounds, "strength": strength}
 
 func total_damage() -> float:
 	var t := 0.0

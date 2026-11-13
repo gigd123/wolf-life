@@ -141,7 +141,8 @@ func _after() -> void:
 	fe.wind_events = []
 	if fe.done:
 		_log("[b]" + tr("fire.result." + fe.result).format({"side": tr("fire.side." + fe.exit_side) if fe.exit_side != "" else ""}) + "[/b]")
-		_log(tr("fire.ui.damage").format({"n": roundi(fe.total_damage())}))
+		if fe.outcome() != "death":
+			_log(tr("fire.ui.damage").format({"n": roundi(fe.total_damage())}) + "　" + tr("fire.outcome." + fe.outcome() + ("" if fe.outcome() in ["safe", "death"] or str(fe.summary()["cause"]) == "fire" else ".smoke")))
 	_refresh()
 
 func _refresh() -> void:

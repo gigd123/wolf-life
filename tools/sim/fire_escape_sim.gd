@@ -24,7 +24,7 @@ func _process(_d) -> bool:
 	for st in 3:
 		print("== 風力 %s" % ["微風", "中風", "強風"][st])
 		for pol in FI.POLICIES:
-			var r := {"n": 0, "escaped": 0, "survived": 0, "dead": 0, "timeout": 0, "into_fire": 0, "dmg": 0.0, "heavy": 0, "light": 0, "rounds": 0}
+			var r := {"n": 0, "escaped": 0, "survived": 0, "dead": 0, "timeout": 0, "into_fire": 0, "dmg": 0.0, "heavy": 0, "light": 0, "rounds": 0, "how": {}, "down": 0}
 			for mi in maps.size():
 				for s in runs:
 					var fe = FE.new()
@@ -36,15 +36,21 @@ func _process(_d) -> bool:
 					var td: float = fe.total_damage()
 					r["dmg"] += td
 					r["rounds"] += fe.rounds
-					if fe.result != "dead":
-						if td >= HEAVY:
-							r["heavy"] += 1
-						elif td >= LIGHT:
-							r["light"] += 1
+					var oc: String = fe.outcome()
+					if oc == "heavy":
+						r["heavy"] += 1
+					elif oc == "light":
+						r["light"] += 1
+					var sm: Dictionary = fe.summary()
+					r["how"][sm["how"]] = int(r["how"].get(sm["how"], 0)) + 1
+					if bool(sm["downwind"]):
+						r["down"] += 1
 			var n: float = float(r["n"])
 			print("  %-9s 逃出 %3d%%、等火過去 %3d%%、死亡 %3d%%、時間到 %d%%；重傷 %3d%%、輕傷 %3d%%；平均傷 %.1f、%.1f 回合" % [pol,
 				roundi(100.0 * r["escaped"] / n), roundi(100.0 * r["survived"] / n), roundi(100.0 * r["dead"] / n), roundi(100.0 * r["timeout"] / n),
 				roundi(100.0 * r["heavy"] / n), roundi(100.0 * r["light"] / n), r["dmg"] / n, r["rounds"] / n])
+			if pol == "smart":
+				print("            本能怎麼逃的：%s；往下風逃 %d%%" % [str(r["how"]), roundi(100.0 * r["down"] / n)])
 		# 路線：每張地圖有幾條走得通；傷最少的是哪一種目標
 		var viable_counts := {}
 		var best_kind := {}

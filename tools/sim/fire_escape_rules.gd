@@ -230,5 +230,38 @@ func _process(_d) -> bool:
 	var fr = _fe(rr, 0, Vector2(1, 0), {"wolf_pos": Vector2i(1, 2)})
 	fr.wait()
 	_ok(float(fr.dmg["heat"]) > 0.0 and not fr.fire.has(Vector2i(1, 2)), "岩坡不會燒、熱照算（%.1f）" % fr.dmg["heat"])
+	# --- 第 3 步：結果與本能 ---
+	var fo = _fe(_rows(10, 6, "."), 0, Vector2(1, 0), {"wolf_pos": Vector2i(9, 3)})
+	_ok(fo.outcome() == "safe", "沒受傷：平安")
+	fo.dmg["heat"] = 10.0
+	_ok(fo.outcome() == "light", "傷 10：輕度燒傷")
+	fo.dmg["burn"] = 30.0
+	_ok(fo.outcome() == "heavy", "傷 40：重度燒傷")
+	fo.wolf["health"] = 0.0
+	fo.result = "dead"
+	_ok(fo.outcome() == "death", "血到 0：死亡")
+	var fs = _fe(_rows(10, 6, "."), 0, Vector2(1, 0), {"wolf_pos": Vector2i(9, 3)})
+	fs.dmg["smoke"] = 12.0
+	fs.dmg["heat"] = 3.0
+	_ok(str(fs.summary()["cause"]) == "smoke", "主因是煙：嗆傷")
+	fs.exit_to("e")
+	var sm: Dictionary = fs.summary()
+	_ok(str(sm["how"]) == "exit" and bool(sm["downwind"]) and str(sm["side"]) == "e", "往東（下風）逃出去：記成 exit、往下風（%s）" % str(sm))
+	var rw := _rows(12, 6, "a")
+	rw[3] = "a".repeat(6) + "d" + "a".repeat(5)
+	var fw = _fe(rw, 0, Vector2(1, 0), {"wolf_pos": Vector2i(6, 3)})
+	for r in 40:
+		fw.wait()
+		if fw.done:
+			break
+	_ok(str(fw.summary()["how"]) == "water", "在深水裡等到火燒過去：記成 water（%s）" % str(fw.summary()["how"]))
+	# 本能：強風的草原，火比你快的地方不去（不往下風跑）
+	var down_runs := 0
+	for sd in 6:
+		var fg = _fe(_rows(40, 32, "."), 2, Vector2(1, 0), {"wolf_pos": Vector2i(14, 16), "seed": sd + 3})
+		FI.play(fg, "smart")
+		if str(fg.summary()["side"]) == "e":
+			down_runs += 1
+	_ok(down_runs <= 2, "強風的草原：本能多半不往下風逃（6 次裡 %d 次往下風）" % down_runs)
 	print("火場原型的規則：%s" % ("全部通過" if fails == 0 else "失敗 %d 個" % fails))
 	return true

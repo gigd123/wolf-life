@@ -57,5 +57,7 @@
   "_refuge_comment": "第 2 步（2026-11-13）：岩坡、碎石不會燒但熱和煙照算（SPEC）；ash_patch：地圖上早先燒過一塊（冷卻的焦土）的機率與半徑。den：巢穴——擋得住火和熱；火在 near 格內或洞口的煙 ≥ 2 時，每回合 smoke_chance 的機率濃煙灌進來，之後每回合照煙的程度 smoke_level 扣喘、扣血 × smoke_mult。",
   "ash_patch_chance": 0.3,
   "ash_patch_radius": [2, 4],
+  "_outcome_comment": "第 3 步：這一場累積的傷 ≥ heavy 是重度燒傷、≥ light 是輕度燒傷，血到 0 是死亡（傷勢與恢復天數沿用主遊戲的燒傷，第 4 步接）。主因是煙（煙與嗆傷佔一半以上）時文字寫嗆傷。",
+  "outcome": { "light": 8, "heavy": 25 },
   "den": { "near": 4, "smoke_chance": 0.15, "smoke_level": 3, "smoke_mult": 1.5 }
 }
