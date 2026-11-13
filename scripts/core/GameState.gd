@@ -9385,6 +9385,13 @@ func debug_start_fire(origin: String) -> void:
 	start_fire_warning(origin)
 	state_changed.emit()
 
+# 燒過的區域都當作早燒了 days 天（除錯：看火後的階段，Phase 2n 第 6 步）；沒燒過的不變
+func debug_age_burns(days: int) -> void:
+	for r in region_burn.keys():
+		region_burn[r] = int(region_burn[r]) - days
+		log_message.emit("%s：%s" % [tr("region." + r), tr("map.tip." + burn_display(r)) if burn_display(r) != "" else ""])
+	state_changed.emit()
+
 # 跳到下一個乾季：一直換季到夏季的第一天。
 func debug_skip_to_dry_season() -> void:
 	var guard := 0

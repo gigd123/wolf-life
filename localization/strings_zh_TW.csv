@@ -1009,6 +1009,7 @@ bio.fire.burned,，身上留下了燒傷
 debug.skip_dry,跳到下一個乾季
 debug.fire.random,隨機區域
 debug.fire.start,森林大火
+debug.fire.age_year,燒過的區域過一年
 region.tundra_south,苔原林線
 region.tundra_central,開闊苔原
 region.tundra_east,苔原河谷

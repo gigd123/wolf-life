@@ -975,6 +975,12 @@ func _build_debug_overlay() -> void:
 		GameState.debug_start_fire(str(fire_pick.get_item_metadata(fire_pick.selected)))
 		_refresh()
 	)
+	# 火後的階段（Phase 2n 第 6 步）：燒過的區域都往前推一年（看草本、灌木、年輕的森林）
+	_debug_button(fire_row, tr("debug.fire.age_year"), func():
+		debug_overlay.visible = false
+		GameState.debug_age_burns(40)
+		_refresh()
+	)
 	# 苔原的事件（1.6 第 6d 步）
 	var tundra_row := _debug_row()
 	right.add_child(tundra_row)
