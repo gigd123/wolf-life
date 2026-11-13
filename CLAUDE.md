@@ -25,6 +25,7 @@
 | `docs/progress.md` | 進度紀錄（由你維護） | 每次開始與結束時 |
 | `docs/progress-archive.md` | 從 progress.md 移出的已完成步驟細節、模擬結果、已解決的待確認 | 需要查過去的實作細節或決定時 |
 | `docs/testing-guide.md` | 遇過的 bug 歸類、每次改動要跑的檢查、回歸測試案例、headless 測試寫法、模擬基準值 | 修 bug、做完一個步驟要測試時；修完新的 QA 時更新 |
+| `docs/art-request-backgrounds.md` | 選單畫面背景圖（區域 46 張、地形 44 張）的出圖清單與文案 | 換背景圖、使用者傳背景圖來時 |
 | `docs/playtest-checklist.md` | 試玩驗證清單：剩下的驗收與目視確認項目、觸發方法；使用者在這份打勾 | 使用者回報試玩結果時 |
 
 `SPEC.md` 與 `DESIGN.md` 衝突時，以 `SPEC.md` 為準；差異列在 `SPEC.md` 的「與 DESIGN.md 的差異」。

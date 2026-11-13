@@ -3,6 +3,7 @@
 最後更新：2026-11-12
 
 ## 目前階段
+（2026-11-13）使用者決定：選單畫面的佔位背景全部換掉（方案 1：全部請 AI 畫，慢慢出）→ `docs/art-request-backgrounds.md`（90 張的清單與每張的文案；基本圖＋冬天／秋天／燒過的變化版附基本圖出）。森林大火選 A（完整的戰術逃生地圖，不趕時間）→ 先寫規格草稿請使用者同意。
 （2026-11-13）獵物跑的第二張（白尾鹿母鹿、馬鹿母鹿、北美馴鹿母鹿，ChatGPT）：戰術地圖 `hunt_hd2d.json` 的 `hd_art.*.flee_b`，`HuntHD2D._art_for` 逃跑時每回合和「跑」輪流、鹿群每一隻錯開一格；選單畫面 `art.json` `hd_menu.walk_b` 可以照動作分（`{"move": …}`，`ArtLibrary._hd_walk` 多一個 action），逃跑時兩張輪流。叉角羚幼體殘骸 `pronghorn.juvenile`。`prep_gemini_prey.py`：run_b 畫布不同 → 直接指定寬幾格；馬鹿那張不調色（調了脖子會變淡）。
 （2026-11-12）渡鴉（站、飛）、鮭魚（游、跳）新圖（ChatGPT）：`prototypes/hd2d_tactical/prep_birds_fish.py`（渡鴉提亮 1.25、約 0.6 格；盤旋＝三隻飛的錯開排成 `raven_circling`；鮭魚約 0.6 格），`art.json` `hd_menu.animals` 加 raven、salmon。選單畫面的動物全部是新圖了。小狐狸（站、走）先接上備用。
 （2026-11-12）小灰熊（站、走，ChatGPT）接進選單畫面（`art.json` `hd_menu.animals.grizzly_bear.juvenile`）；`prep_black_wolf.py` 加 `grizzlycub`（約 0.95 格，成年灰熊的四成五長；畫布不同 → `CANVAS_NORM`；走路那張偏黃 → `PALETTE_MATCH` 照站的那張調色）。北美馴鹿母鹿警覺換成有小角的新圖（`caribou_cow_alert` 1.4 格）。
