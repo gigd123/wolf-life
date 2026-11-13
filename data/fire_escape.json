@@ -61,5 +61,17 @@
   "outcome": { "light": 8, "heavy": 25 },
   "_instinct_comment": "本能（FireInstinct smart）：避難處要比出口多 refuge_extra 的代價（Dial 的單位，0.5 一格）才選；在避難處時，出口的代價低於 leave_refuge_cost 就離開。",
   "instinct": { "refuge_extra": 30, "leave_refuge_cost": 40 },
-  "den": { "near": 4, "smoke_chance": 0.15, "smoke_level": 3, "smoke_mult": 1.5 }
+  "den": { "near": 4, "smoke_chance": 0.15, "smoke_level": 3, "smoke_mult": 1.5 },
+  "_world_comment": "第 4 步：接進世界的大火。wind_vec：世界的風向 wind_dir 0～3 對到地圖的方向（往哪裡吹）；strength_weights：每場大火開始時決定風力（微、中、強的權重，照季節；乾夏時強風 × dry_strong_mult）；spread_mult：世界的延燒——往下風的相鄰區 × down[風力]、往上風 × up[風力]（逃到下風的區域，火之後還會追過去）；region_families：區域的地形 → 戰術狩獵地圖的家族（火場地圖由兩張疊成）；den_damage：巢穴那一區燒過時洞口受損的機率（強風、密林倒木多時再乘）、受損幾天後自己能挖開、清理（一個時段、體力）的機率；memory_notice：經歷過大火的狼察覺徵兆的機率加成；flee_stamina：逃到相鄰區扣的體力；breath_from_stamina：火場的喘上限 = 體力（夾在 min～100）。",
+  "world": {
+    "wind_vec": [[1, 0], [0, 1], [-1, 0], [0, -1]],
+    "strength_weights": { "summer": [0.3, 0.5, 0.2], "autumn": [0.2, 0.5, 0.3] },
+    "dry_strong_mult": 1.5,
+    "spread_mult": { "down": [1.0, 1.3, 1.6], "up": [1.0, 0.8, 0.55] },
+    "region_families": { "dense_forest": ["dense"], "fallen_logs": ["logs"], "forest_edge": ["edge"], "stream": ["pond", "river"], "clearing": ["open"] },
+    "den_damage": { "chance": 0.25, "strong_mult": 1.4, "forest_mult": 1.2, "recover_days": [3, 5], "clear_base": 0.35, "clear_per_strength": 0.004, "clear_per_perception": 0.002, "clear_turns": 4, "clear_stamina": 10 },
+    "memory_notice": 0.15,
+    "flee_stamina": 15,
+    "breath_min": 40
+  }
 }

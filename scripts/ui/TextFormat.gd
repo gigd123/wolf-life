@@ -36,7 +36,7 @@ static func injury_source(source: String) -> String:
 static func knowledge_text(entry: Dictionary) -> String:
 	var level: String = t("knowledge.level.%d" % GameState.knowledge_level(entry))
 	# 狼嚎的知識本身就分三句寫出把握程度，不再加【似乎】（免得「【似乎】似乎有其他狼」）
-	if entry["type"] in ["territory", "pack_land", "size_lesson"]:
+	if entry["type"] in ["territory", "pack_land", "size_lesson", "fire_memory"]:
 		level = ""
 	var text: String = t("knowledge." + str(entry["type"]))
 	if entry["type"] == "territory":

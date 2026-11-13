@@ -263,6 +263,13 @@ func _handle_pending() -> void:
 			"driven_off":
 				GameState.apply_drive_off()
 			"fire_here":
+				# Phase 2n：逃生地圖交給本能
+				if GameState.uses_tactical_fire():
+					if not GameState.fire.is_empty() and str(GameState.fire.get("phase", "")) == "burning":
+						var fe: FireEscape = GameState.start_fire_escape()
+						FireInstinct.play(fe, "smart")
+						GameState.apply_fire_escape(fe)
+					continue
 				# 巢穴濃煙竄入時會再選一次（提案之十一）；火已經熄了就不用選
 				for attempt in 3:
 					if GameState.fire.is_empty():

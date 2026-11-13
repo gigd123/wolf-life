@@ -25,6 +25,9 @@ var wind_pick: OptionButton
 var warn_pick: OptionButton
 var den_check: CheckBox
 var seed := 1
+var row2: HBoxContainer
+var game_mode := false # 主遊戲裡（Phase 2n 第 4 步）：沒有原型的選項，四個邊寫出連到的區域，結束時按「繼續」回主遊戲
+var on_done: Callable
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -71,7 +74,7 @@ func _ready() -> void:
 	den_check.text = tr("fire.ui.has_den")
 	den_check.theme_type_variation = &"SmallButton"
 	setup_row.add_child(den_check)
-	var row2 := HBoxContainer.new()
+	row2 = HBoxContainer.new()
 	row2.position = Vector2(4, 300)
 	row2.add_theme_constant_override("separation", 3)
 	add_child(row2)
@@ -82,6 +85,32 @@ func _ready() -> void:
 		b.pressed.connect(pair[1])
 		row2.add_child(b)
 	_new()
+
+# 主遊戲用：照世界的狀態產生好的火場；sides = {邊: {region, kind}}，done_cb 在按「繼續」時呼叫
+func start_from_game(p_fe: FireEscape, intro: String, done_cb: Callable) -> void:
+	game_mode = true
+	on_done = done_cb
+	setup_row.visible = false
+	row2.visible = false
+	fe = p_fe
+	log_box.clear()
+	if intro != "":
+		_log(intro)
+	if bool(fe.get_meta("memory", false)):
+		_log("[color=#e0c070]" + tr("fire.memory") + "[/color]")
+	_log(tr("fire.ui.start").format({"wind": _wind_text()}))
+	_refresh()
+
+# 某一邊連到哪裡（主遊戲）：區域名，在燒的寫出來；沒有連到的是「這一區的邊緣」
+func _side_label(s: String) -> String:
+	var base: String = tr("fire.side." + s)
+	if not game_mode:
+		return base
+	var d: Dictionary = (fe.get_meta("sides", {}) as Dictionary).get(s, {})
+	var r: String = str(d.get("region", ""))
+	if r == "":
+		return base + tr("fire.ui.side_edge")
+	return base + "（" + tr("region." + r) + ("・" + tr("fire.ui.burning") if fe.edges_burning.has(s) else "") + "）"
 
 func _option(items: Array, w: float) -> OptionButton:
 	var o := OptionButton.new()
@@ -153,13 +182,19 @@ func _refresh() -> void:
 	if fe.in_den:
 		t.append(tr("fire.ui.in_den") + ("　" + tr("fire.ui.den_smoky") if fe.den_smoke else ""))
 	t.append(tr("fire.ui.smoke").format({"s": tr("fire.smoke.%d" % fe.smoke_at(fe.wolf_pos))}) + "　" + tr("fire.ui.sight").format({"n": fe.sight_radius()}))
-	if not fe.edges_burning.is_empty():
+	if game_mode:
+		t.append(tr("fire.ui.sides").format({"list": "　".join(["n", "e", "s", "w"].map(func(s): return _side_label(s)))}))
+	elif not fe.edges_burning.is_empty():
 		t.append(tr("fire.ui.edges_burning").format({"list": "、".join(fe.edges_burning.map(func(s): return tr("fire.side." + s)))}))
 	t.append("[color=#999999]" + tr("fire.ui.hint") + "[/color]")
 	info.text = "\n".join(t)
 	for b in buttons.get_children():
 		b.queue_free()
 	if fe.done:
+		if game_mode:
+			_btn(tr("ui.continue"), func():
+				var cb := on_done
+				cb.call(fe))
 		return
 	if fe.in_den:
 		_btn(tr("fire.ui.den_stay"), func(): fe.wait(); _after())
@@ -168,7 +203,7 @@ func _refresh() -> void:
 	if fe.can_enter_den():
 		_btn(tr("fire.ui.den_enter"), func(): fe.enter_den(); _after())
 	for s in fe.can_exit():
-		_btn(tr("fire.ui.exit").format({"side": tr("fire.side." + s)}), func(): fe.exit_to(s); _after())
+		_btn(tr("fire.ui.exit").format({"side": _side_label(s)}), func(): fe.exit_to(s); _after())
 	_btn(tr("fire.ui.wait"), func(): fe.wait(); _after())
 	_btn(tr("fire.ui.instinct"), func(): FireInstinct.step(fe, "smart"); _after())
 

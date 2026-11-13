@@ -15,6 +15,9 @@
 | `size.lesson.takedown`、`size.lesson.shaken`、`size.lesson.hurt` | 「比你壯太多了」「一次又一次」 | 體型的經驗剛記下的那一場（`GameState._maybe_size_lesson`）：未滿 1 歲、成年的大中型獵物、沒獵到；`.takedown` 壓倒失敗 ≥ 2 次、`.shaken` 被甩開、`.hurt` 被牠反擊傷到 ≥ 10 | 已經記過這種獵物、1 歲以上 |
 | `size.recall.young`、`size.recall.yearling`、`size.recall.grown` | 「上次」「小時候」「現在」「還沒長成」「撂得倒了」 | 有這種獵物的體型經驗（`knowledge` 的 size_lesson）；`.young` 未滿 1 歲、`.yearling` 1～2 歲（次成年）、`.grown` 成年後第一次（`grown_told`，之後不再寫） | 沒有經驗就出現；成年後每次都寫 |
 | `knowledge.size_lesson`、`knowledge.size_lesson.now.young`、`knowledge.size_lesson.now.adult` | 「幼年時（N 個月大）」「現在還很難／撂得倒了」 | 經驗記下時的年齡（`months`，不變）；「現在」照目前的生命階段（次成年 → still hard、成年以上 → 撂得倒） | — |
+| `fire.ui.start` | 「火已經燒進這一帶了」 | 只在火燒進你所在的區域、進逃生地圖時（`fire_here` → `GameState.start_fire_escape`） | — |
+| `log.clear_den.ok` | 「又扒又拖」（描述）、「總算清開了」 | 清理巢穴洞口成功（`GameState.action_clear_den` 為真）；「又」是描述動作，不是「再一次」 | 清理失敗時出現 |
+| `fire.memory` | 「你記得那年夏天的煙味」 | 有「經歷過大火」的知識（`knowledge_level({type: fire_memory}) > 0`，上一場大火的逃生地圖打完時學到） | 第一次遇到大火 |
 | `tactical.track.found` | 「又看到了」牠 | 只在 `TacticalHunt.follow_track` 追上時出現：目標之前看得到、在密林裡失去視線滿 2 回合（`track_pending`） | 沒失去過視線就出現 |
 | `salmon.clue.decline.spawned`、`salmon.clue.decline.bones` | 魚群已經稀了、往上游的已經不多 | 這一區的洄流強度是衰退（`GameState.salmon_stage` = decline：秋季第 4～6 天） | 初期、高峰期出現 |
 | `year.hint.spring.hare_low` | 雪兔比去年少很多 | 雪兔倍率 ≤ 0.3 且比去年低（`hare_mult_last_year`） | 從谷底回升的那年說「少了很多」 |

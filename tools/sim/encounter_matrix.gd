@@ -231,6 +231,10 @@ func _overlay_kind(game) -> String:
 	if tv != null and is_instance_valid(tv) and tv.is_inside_tree():
 		return "tactical"
 	# 戰術戰鬥（Phase 2k、2l）：蓋在整個畫面上，按它的動作按鈕（每按一個結算一回合）
+	# 森林大火的逃生地圖（Phase 2n 第 4 步）
+	var fv = game.get("fire_escape_view")
+	if fv != null and is_instance_valid(fv) and fv.is_inside_tree():
+		return "fire"
 	var cv = game.get("tactical_combat_view")
 	if cv != null and is_instance_valid(cv) and cv.is_inside_tree():
 		return "tcombat"
@@ -254,7 +258,7 @@ func _skip_button(b: Button, game) -> bool:
 
 func _top_buttons(game) -> Array:
 	var kind := _overlay_kind(game)
-	var scope: Node = game if kind == "main" else (game.tactical_view.buttons if kind == "tactical" else (game.tactical_combat_view.actions_box if kind == "tcombat" else game.get(kind + "_overlay")))
+	var scope: Node = game if kind == "main" else (game.tactical_view.buttons if kind == "tactical" else (game.tactical_combat_view.actions_box if kind == "tcombat" else (game.fire_escape_view.buttons if kind == "fire" else game.get(kind + "_overlay"))))
 	var out: Array = []
 	for n in scope.find_children("*", "Button", true, false):
 		var b := n as Button

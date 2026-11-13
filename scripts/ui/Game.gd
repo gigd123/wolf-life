@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "clear_den", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1757,6 +1757,8 @@ func _on_action_button(action_id: String) -> void:
 			_show_lie_down()
 		"leave_to_children":
 			_show_leave_to_children()
+		"clear_den":
+			_log(tr("log.clear_den." + ("ok" if GameState.action_clear_den() else "fail")))
 		"mark":
 			var r: String = GameState.action_mark()
 			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))
@@ -3452,6 +3454,10 @@ func _show_fire_escape(event: Dictionary) -> void:
 	# 火已經被暴雨澆熄（或熄滅）就不再跳逃生畫面
 	if GameState.fire.is_empty() or str(GameState.fire.get("phase", "")) != "burning":
 		return
+	# Phase 2n：火燒進你所在的區域 → 逃生地圖
+	if GameState.uses_tactical_fire():
+		_open_fire_escape(event)
+		return
 	var region: String = str(event.get("region", GameState.current_region))
 	var text: String = tr("fire.here" + (".entered" if event.get("entered", false) else "")).replace("{region}", tr("region." + region))
 	if event.get("smoke", false):
@@ -3492,6 +3498,40 @@ func _on_fire_escape(id: String) -> void:
 	if GameState.wolf != null and not GameState.wolf.alive:
 		_on_wolf_died(GameState.wolf.death_cause)
 
+const FIRE_ESCAPE_SCENE := "res://prototypes/fire_escape/FireEscape.tscn"
+var fire_escape_view: Control = null
+
+func _open_fire_escape(event: Dictionary) -> void:
+	encounter_overlay.visible = false
+	var region: String = str(event.get("region", GameState.current_region))
+	var intro: String = tr("fire.here" + (".entered" if event.get("entered", false) else "")).replace("{region}", tr("region." + region))
+	_log(intro)
+	var fe: FireEscape = GameState.start_fire_escape()
+	var view: Control = load(FIRE_ESCAPE_SCENE).instantiate()
+	add_child(view)
+	fire_escape_view = view
+	view.start_from_game(fe, intro, func(_f):
+		var res: Dictionary = GameState.apply_fire_escape(fe)
+		fire_escape_view = null
+		view.queue_free()
+		_log_fire_escape(res)
+		_refresh()
+		if GameState.wolf != null and not GameState.wolf.alive:
+			_on_wolf_died(GameState.wolf.death_cause))
+
+func _log_fire_escape(res: Dictionary) -> void:
+	var how: String = str(res.get("how", "open"))
+	var side: String = tr("fire.side." + str(res.get("side", "n"))) if str(res.get("side", "")) != "" else ""
+	var key: String = "fire.tactical." + how
+	if how == "exit" and str(res.get("kind", "")) == "edge":
+		key = "fire.tactical.exit_edge"
+	_log(tr(key).replace("{side}", side).replace("{region}", tr("region." + str(res.get("region", ""))) if str(res.get("region", "")) != "" else ""))
+	if bool(res.get("den_dig", false)):
+		_log(tr("fire.den_dig_out"))
+	var oc: String = str(res.get("outcome", "safe"))
+	if oc in ["light", "heavy"]:
+		_log(tr("fire.result." + oc + (".smoke" if str(res.get("cause", "")) == "smoke" else "")))
+
 func _show_fire_over(event: Dictionary) -> void:
 	var names: Array[String] = []
 	for r in event.get("burned", []):
@@ -3499,6 +3539,8 @@ func _show_fire_over(event: Dictionary) -> void:
 	var body: String = tr("fire.over").replace("{list}", "、".join(names))
 	if event.get("den_burned", false):
 		body += "\n\n" + tr("fire.over.den").replace("{region}", tr("region." + GameState.den_region))
+	if event.get("den_damaged", false):
+		body += "\n\n" + tr("fire.den_damaged")
 	_log(tr("fire.over").replace("{list}", "、".join(names)))
 	var burned: Array = event.get("burned", [])
 	_show_card(tr("fire.over.title"), body, ArtLibrary.region_background(str(burned[0]) if not burned.is_empty() else GameState.current_region, "burned"))

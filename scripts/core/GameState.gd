@@ -779,6 +779,8 @@ func available_actions() -> Array[String]:
 		actions.append("eat_cache")
 	if can_make_den_here():
 		actions.append("make_den")
+	if can_clear_den():
+		actions.append("clear_den")
 	if can_mark_here():
 		actions.append("mark")
 	if can_howl():
@@ -2931,6 +2933,7 @@ static func knowledge_key(entry: Dictionary) -> String:
 		"opponent": return "opponent|%s|%s" % [entry["animal"], entry["life_stage"]]
 		"combat_move": return "combat_move|%s|%s" % [entry["animal"], entry["move"]]
 		"size_lesson": return "size_lesson|%s" % entry["animal"]
+		"fire_memory": return "fire_memory"
 	return ""
 
 # 累積一次。回傳新的次數。
@@ -3077,7 +3080,7 @@ func action_find_sleep_spot() -> String:
 
 # 現在睡覺的睡處等級：巢穴 > 已知好睡處 > 找到的睡處 > 勉強過夜。
 func sleep_quality() -> String:
-	if current_region == den_region:
+	if current_region == den_region and not den_blocked():
 		return "den"
 	if _feature_known_here("sleep_spot"):
 		return "good"
@@ -5452,6 +5455,8 @@ func start_combat(animal_id: String, life_stage: String, context: String, encoun
 # =====================================================================
 
 var tactical_combat_off := false # 模擬對照用：關掉時一律用選單式
+var tactical_fire_off := false # 模擬對照用：森林大火關掉逃生地圖時用選單式的逃生選擇（Phase 2n）
+var den_damaged_until := -1 # 巢穴洞口受損到第幾天（Phase 2n 第 4 步；-1 = 完好）
 
 func _tc_game_cfg() -> Dictionary:
 	return _tc_cfg_cache().get("game", {})
@@ -6231,7 +6236,7 @@ func _update_fire() -> void:
 			went_out.append(region_id)
 	for region_id in regions.keys().duplicate():
 		for adj in EncounterSystem.region_data(region_id).get("adjacent", []):
-			if not regions.has(adj) and not fire["burned"].has(adj) and RNGService.chance(float(cfg.get("spread_chance", 0.55))):
+			if not regions.has(adj) and not fire["burned"].has(adj) and RNGService.chance(clampf(float(cfg.get("spread_chance", 0.55)) * _fire_spread_mult(region_id, adj), 0.0, 0.95)):
 				regions[adj] = now
 				spread.append(adj)
 	if regions.is_empty():
@@ -6274,7 +6279,7 @@ func start_fire_warning(origin: String) -> void:
 		origin = ids[RNGService.randi_range(0, ids.size() - 1)]
 	fire = {"origin": origin, "phase": "warning", "ignite_at": _abs_period() + int(_fire_cfg().get("warning_periods", 2)),
 		"noticed": false, "regions": {}, "burned": [], "alerted": [], "sheltered": "",
-		"start_age": snapped(wolf.age_years, 0.1), "season": GameTime.current_season()}
+		"start_age": snapped(wolf.age_years, 0.1), "season": GameTime.current_season(), "wind_strength": _roll_fire_wind()}
 	fire_at = -1
 	_maybe_notice_fire()
 
@@ -6285,8 +6290,12 @@ func _maybe_notice_fire() -> void:
 		return
 	var n: Dictionary = _fire_cfg().get("notice", {})
 	var chance_value: float = min(float(n.get("max", 0.9)), float(n.get("base", 0.35)) + (wolf.effective_perception() - 40.0) * float(n.get("per_perception", 0.01)))
+	# 經歷過大火的狼對煙味、動物異常的動向更敏感（Phase 2n 第 4 步）
+	if knowledge_level({"type": "fire_memory"}) > 0:
+		chance_value = min(float(n.get("max", 0.9)), chance_value + float(_fire_world().get("memory_notice", 0.15)))
 	if RNGService.chance(chance_value):
 		fire["noticed"] = true
+		fire["noticed_at"] = _abs_period()
 		pending_events.append({"type": "fire_warning", "origin": fire["origin"], "late": false})
 
 # 察覺得到大火的範圍（1.7-1）：人在起火的地圖（森林）是 "near"；在和那張地圖相連的區域（苔原林線）只看得到遠處的煙，是 "far"；其他地方察覺不到，是 ""。
@@ -6313,6 +6322,19 @@ func _check_fire_here(entered: bool = false) -> void:
 
 func _region_burned(region_id: String) -> void:
 	region_burn[region_id] = int(life_log.get("days_lived", 1))
+	# 巢穴那一區燒過：洞口可能被燒倒的樹、落下的土石堵住（Phase 2n 第 4 步；巢穴本身不會被燒毀）
+	if region_id == den_region and not fire.is_empty():
+		var dd: Dictionary = _fire_world().get("den_damage", {})
+		var ch: float = float(dd.get("chance", 0.25))
+		if int(fire.get("wind_strength", 1)) >= 2:
+			ch *= float(dd.get("strong_mult", 1.4))
+		var terr: Array = EncounterSystem.region_data(region_id).get("terrains", [])
+		if terr.has("dense_forest") or terr.has("fallen_logs"):
+			ch *= float(dd.get("forest_mult", 1.2))
+		if RNGService.chance(ch):
+			var rd: Array = dd.get("recover_days", [3, 5])
+			den_damaged_until = int(life_log.get("days_lived", 1)) + RNGService.randi_range(int(rd[0]), int(rd[1]))
+			fire["den_damaged"] = true
 	# 次要特徵（好睡處、獸徑等）失效；巢穴在地下，不會被燒毀
 	var rk: Dictionary = region_knowledge.get(region_id, {})
 	if not rk.is_empty():
@@ -6338,7 +6360,7 @@ func _end_fire() -> void:
 	list.append(entry)
 	life_log["fires"] = list
 	last_fire_abs = _abs_period()
-	_queue_notice({"type": "fire_over", "burned": entry["burned"], "den_burned": entry["den_burned"]})
+	_queue_notice({"type": "fire_over", "burned": entry["burned"], "den_burned": entry["den_burned"], "den_damaged": bool(fire.get("den_damaged", false))})
 	fire = {}
 
 # 逃生選擇：逃往還沒燒到的相鄰區域、到溪邊避難（區域有溪流）、躲進巢穴（正在巢穴）。
@@ -6354,7 +6376,7 @@ func fire_escape_options() -> Array:
 			list.append(_escape_option("other_map", str(link["to"])))
 	if EncounterSystem.region_data(current_region).get("terrains", []).has("stream"):
 		list.append(_escape_option("stream", ""))
-	if current_region == den_region:
+	if current_region == den_region and not den_blocked():
 		# 濃煙竄進巢穴之後（第二次逃生選擇），「繼續躲」的危險比第一次高
 		list.append(_escape_option("den_stay" if bool(fire.get("smoke", false)) else "den", ""))
 	return list
@@ -6481,6 +6503,217 @@ func _hide_until_fire_passes(kind: String) -> String:
 			fire["sheltered"] = ""
 			return "smoke"
 	return ""
+
+# --- 森林大火的逃生地圖接進世界（Phase 2n 第 4 步）---
+
+func _fire_world() -> Dictionary:
+	return _fire_escape_cfg().get("world", {})
+
+var _fire_escape_cfg_cache: Dictionary = {}
+func _fire_escape_cfg() -> Dictionary:
+	if _fire_escape_cfg_cache.is_empty():
+		_fire_escape_cfg_cache = JSON.parse_string(FileAccess.get_file_as_string(FireEscape.CFG_PATH))
+	return _fire_escape_cfg_cache
+
+func uses_tactical_fire() -> bool:
+	return not tactical_fire_off
+
+# 每場大火開始時的風力（0 微風、1 中風、2 強風）：照季節，乾夏時強風比較多
+func _roll_fire_wind() -> int:
+	var w: Dictionary = _fire_world()
+	var weights: Array = (w.get("strength_weights", {}) as Dictionary).get(GameTime.current_season(), [0.3, 0.5, 0.2]).duplicate()
+	if str(year_state().get("summer", "")) == "dry":
+		weights[2] = float(weights[2]) * float(w.get("dry_strong_mult", 1.5))
+	var total := 0.0
+	for x in weights:
+		total += float(x)
+	var r: float = RNGService.randf() * total
+	for i in weights.size():
+		r -= float(weights[i])
+		if r <= 0.0:
+			return i
+	return 1
+
+func fire_wind_vec() -> Vector2:
+	var v: Array = (_fire_world().get("wind_vec", [[1, 0], [0, 1], [-1, 0], [0, -1]]) as Array)[posmod(wind_dir, 4)]
+	return Vector2(float(v[0]), float(v[1]))
+
+# 區域在地圖上的位置（地圖的 layout 照 2×2 排：第 i 個在 (i % 2, i / 2)）
+func region_grid_pos(region_id: String) -> Vector2i:
+	var layout: Array = GameData.maps().get(GameData.map_of(region_id), {}).get("layout", [])
+	var i: int = layout.find(region_id)
+	return Vector2i(i % 2, i / 2) if i >= 0 else Vector2i.ZERO
+
+# 世界的延燒：往下風的相鄰區比較容易燒到、往上風比較難（逃到下風的區域，火之後還會追過去）
+func _fire_spread_mult(from_region: String, to_region: String) -> float:
+	if GameData.map_of(from_region) != GameData.map_of(to_region):
+		return 1.0
+	var d := Vector2(region_grid_pos(to_region) - region_grid_pos(from_region))
+	if d == Vector2.ZERO:
+		return 1.0
+	var a: float = d.normalized().dot(fire_wind_vec())
+	var st: int = int(fire.get("wind_strength", 1))
+	var sm: Dictionary = _fire_world().get("spread_mult", {})
+	if a > 0.5:
+		return float((sm.get("down", [1.0, 1.3, 1.6]) as Array)[st])
+	if a < -0.5:
+		return float((sm.get("up", [1.0, 0.8, 0.55]) as Array)[st])
+	return 1.0
+
+# 逃生地圖的四個邊各連到哪裡：同一張地圖的相鄰區照位置；連到別的地圖（往苔原、山地、草原）放在剩下朝外的邊；
+# 沒有連到的邊 = 這一區的邊緣（逃出火的路徑、還在這一區）
+func fire_sides(region_id: String) -> Dictionary:
+	var out := {}
+	var pos := region_grid_pos(region_id)
+	var vec := {"e": Vector2i(1, 0), "w": Vector2i(-1, 0), "s": Vector2i(0, 1), "n": Vector2i(0, -1)}
+	for adj in EncounterSystem.region_data(region_id).get("adjacent", []):
+		var d: Vector2i = region_grid_pos(str(adj)) - pos
+		for s in vec:
+			if vec[s] == d:
+				out[s] = {"region": str(adj), "kind": "adjacent"}
+	for link in GameData.links_from(region_id):
+		var to: String = str(link["to"])
+		if GameData.map_of(to) == GameData.map_of(region_id):
+			continue
+		# 朝外的邊（地圖 2×2 的外側）優先
+		var outward: Array = ["e" if pos.x == 1 else "w", "s" if pos.y == 1 else "n"]
+		for s in outward + ["n", "e", "s", "w"]:
+			if not out.has(s):
+				out[s] = {"region": to, "kind": "link"}
+				break
+	for s in vec:
+		if not out.has(s):
+			out[s] = {"region": "", "kind": "edge"}
+	return out
+
+# 多早察覺：起火前就察覺 → early；燒起來之後才察覺 → normal；沒察覺 → late
+func fire_warning_level() -> String:
+	if not bool(fire.get("noticed", false)):
+		return "late"
+	if int(fire.get("noticed_at", 99999999)) < int(fire.get("ignite_at", 0)):
+		return "early"
+	return "normal"
+
+# 火燒進你所在的區域：照世界的狀態產生逃生地圖
+func start_fire_escape() -> FireEscape:
+	var fe := FireEscape.new()
+	var w: Dictionary = _fire_world()
+	var fams: Dictionary = w.get("region_families", {})
+	var terr: Array = EncounterSystem.region_data(current_region).get("terrains", ["forest_edge"])
+	var maps_cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TacticalHunt.TUNING_PATH)).get("maps", {})
+	var pick_map := func(t: String) -> String:
+		var fl: Array = fams.get(t, ["edge"])
+		var fam: String = str(fl[RNGService.randi_range(0, fl.size() - 1)])
+		var ids: Array = maps_cfg.keys().filter(func(k): return str(maps_cfg[k].get("family", "")) == fam)
+		return str(ids[RNGService.randi_range(0, ids.size() - 1)]) if not ids.is_empty() else "edge_1"
+	var sides: Dictionary = fire_sides(current_region)
+	var burning_sides: Array = []
+	for s in sides:
+		var r: String = str(sides[s]["region"])
+		if r != "" and fire.get("regions", {}).has(r):
+			burning_sides.append(s)
+	var period: String = GameTime.current_period()
+	fe.setup({"hunt_map": pick_map.call(str(terr[0])), "hunt_map2": pick_map.call(str(terr[terr.size() - 1])),
+		"seed": RNGService.randi_range(1, 1 << 30), "wind": fire_wind_vec(), "strength": int(fire.get("wind_strength", 1)),
+		"night": period in ["night", "predawn"], "dry": GameTime.current_season() == "autumn" or str(year_state().get("summer", "")) == "dry",
+		"edges_burning": burning_sides, "den": current_region == den_region, "warning": fire_warning_level(),
+		"breath_max": clampf(wolf.stamina, float(w.get("breath_min", 40)), 100.0),
+		"wolf": {"perception": wolf.effective_perception(), "health": wolf.health, "health_max": wolf.health_max}})
+	fe.set_meta("sides", sides)
+	fe.set_meta("memory", knowledge_level({"type": "fire_memory"}) > 0)
+	in_tactical = true
+	return fe
+
+# 逃生地圖打完：寫回世界（傷勢、死亡、逃到哪、一生回顧、知識）。回傳 {outcome, how, region, side, kind}
+func apply_fire_escape(fe: FireEscape) -> Dictionary:
+	in_tactical = false
+	var sm: Dictionary = fe.summary()
+	var outcome: String = str(sm["outcome"])
+	var sides: Dictionary = fe.get_meta("sides", {})
+	var side: String = str(sm["side"])
+	var dest: Dictionary = sides.get(side, {"region": "", "kind": "edge"}) if side != "" else {}
+	var how: String = str(sm["how"])
+	var res := {"outcome": outcome, "how": how, "side": side, "region": str(dest.get("region", "")), "kind": str(dest.get("kind", "")),
+		"cause": sm["cause"], "den_dig": false}
+	record_decision("fire.tactical." + how)
+	# 傷：地圖裡扣的血照實寫回；死亡
+	wolf.health = float(fe.wolf["health"])
+	if outcome == "death" or wolf.health <= 0.0:
+		if not fire.is_empty():
+			fire["escape"] = "tactical_" + how
+			_end_fire_on_death()
+		_die("fire")
+		return res
+	var b: Dictionary = _fire_cfg().get("burn", {})
+	match outcome:
+		"light":
+			wolf.apply_injury(Wolf.Injury.LIGHT, int(b.get("light_days", 2)), "", "", "fire")
+		"heavy":
+			wolf.apply_injury(Wolf.Injury.HEAVY, RNGService.randi_range(int(b.get("heavy_days_min", 4)), int(b.get("heavy_days_max", 6))), "speed", "leg", "fire")
+	wolf.health = max(1.0, wolf.health)
+	if outcome != "safe":
+		life_log["burned"] = int(life_log.get("burned", 0)) + 1
+	# 一場大火裡最重的那次逃生記入一生回顧
+	var order := ["safe", "light", "heavy", "death"]
+	if not fire.is_empty() and (not fire.has("result") or order.find(outcome) >= order.find(str(fire.get("result", "safe")))):
+		fire["escape"] = "tactical_" + how
+		fire["escape_region"] = str(dest.get("region", ""))
+		fire["result"] = outcome
+		fire["escape_side_downwind"] = bool(sm["downwind"])
+	# 經歷過大火：學到一筆（之後更早察覺）
+	if knowledge_level({"type": "fire_memory"}) == 0:
+		learn({"type": "fire_memory"})
+	# 去哪裡
+	match how:
+		"exit":
+			var kind: String = str(dest.get("kind", "edge"))
+			if kind in ["adjacent", "link"] and str(dest.get("region", "")) != "":
+				GameTime.advance_turns(1)
+				if wolf.alive:
+					wolf.stamina = max(0.0, wolf.stamina - float(_fire_world().get("flee_stamina", 15)))
+					action_move_silent(str(dest["region"]))
+					if not fire.is_empty():
+						fire.erase("smoke")
+			else:
+				# 往這一區的邊緣逃出火的路徑：還在這一區，但已經不在火線前面
+				if not fire.is_empty():
+					fire["sheltered"] = current_region
+				GameTime.advance_turns(1)
+		_:
+			# 在水裡、焦土、岩坡、巢穴撐到火燒過去：快轉到這一區熄滅
+			if how == "den" and den_cell_damaged_now():
+				res["den_dig"] = true
+			_hide_until_fire_passes("tactical")
+	wolf.clamp_stats()
+	_check_fire_here(how == "exit")
+	state_changed.emit()
+	return res
+
+# 躲在巢穴裡時洞口受損（這一區剛燒完、洞口塌了）：要先擠出來
+func den_cell_damaged_now() -> bool:
+	return current_region == den_region and den_blocked()
+
+func den_blocked() -> bool:
+	return den_damaged_until >= int(life_log.get("days_lived", 1))
+
+func can_clear_den() -> bool:
+	return current_region == den_region and den_blocked()
+
+# 清理洞口：花一個時段與體力，有機會清開（力量、感知高比較快）
+func action_clear_den() -> bool:
+	if not can_clear_den():
+		return false
+	var dd: Dictionary = _fire_world().get("den_damage", {})
+	GameTime.advance_turns(int(dd.get("clear_turns", 4)))
+	if not wolf.alive:
+		return false
+	wolf.stamina = max(0.0, wolf.stamina - float(dd.get("clear_stamina", 10)))
+	var ch: float = float(dd.get("clear_base", 0.35)) + wolf.strength * float(dd.get("clear_per_strength", 0.004)) + wolf.effective_perception() * float(dd.get("clear_per_perception", 0.002))
+	var ok: bool = RNGService.chance(clampf(ch, 0.05, 0.95))
+	if ok:
+		den_damaged_until = -1
+	state_changed.emit()
+	return ok
 
 # 死在火裡：先把這場大火寫進一生回顧。
 func _end_fire_on_death() -> void:
@@ -8004,7 +8237,7 @@ func _check_blizzard_here() -> void:
 # 選擇：挖雪洞躲著、躲進巢穴或好睡處（巢穴、沙脊）、頂著風往林線撤退。每個選項附「平安率」（不凍傷的機率）。
 func blizzard_options() -> Array:
 	var list: Array = [_blizzard_option("dig")]
-	if current_region == den_region or _feature_known_here("sleep_spot"):
+	if (current_region == den_region and not den_blocked()) or _feature_known_here("sleep_spot"):
 		list.append(_blizzard_option("den"))
 	var target := _retreat_target()
 	if target != "":
@@ -9233,6 +9466,7 @@ func to_dict() -> Dictionary:
 		"current_region": current_region,
 		"found_sleep_spots": found_sleep_spots,
 		"notables": notables,
+		"den_damaged_until": den_damaged_until,
 		"snow": snow,
 		"rng_seed": rng_seed,
 		"region_depletion": region_depletion,
@@ -9278,6 +9512,7 @@ func load_from_dict(data: Dictionary) -> void:
 	current_region = data.get("current_region", den_region)
 	found_sleep_spots = data.get("found_sleep_spots", {})
 	notables = data.get("notables", [])
+	den_damaged_until = int(data.get("den_damaged_until", -1))
 	snow = data.get("snow", {})
 	rng_seed = int(data.get("rng_seed", 0))
 	RNGService.set_seed(rng_seed)

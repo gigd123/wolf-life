@@ -61,7 +61,8 @@ func _process(_d):
 	var season_days := {}; var season_hungry := {} # 各季的天數、挨餓天數（Phase 2e：冬季的挨餓要少一點但不歸零）
 	var cache_log := {"caches_made": 0, "caches_eaten": 0, "caches_lost": 0}
 	var elder_lean := [0, 0] # 老年荒年：天數、挨餓天數
-	var deaths := {}; var ages: Array = []
+	var deaths := {}
+	var fire_log := {"n": 0, "esc": {}}; var ages: Array = []
 	var fight_log := {"heavy": 0, "years": 0.0, "fights": 0, "combat_deaths": 0}
 	var fam := {"lives": 0, "mated": 0, "mated_age": 0.0, "mated_life": 0.0, "single_life": 0.0, "litters": 0, "born": 0, "grown": 0, "left": 0, "mate_died": 0, "handed": 0, "founded": 0, "joined": 0, "end_size": 0}
 	var hv_log := [0.0, 0, 0.0, 0]
@@ -123,6 +124,7 @@ func _process(_d):
 	_style = OS.get_environment("STYLE") if OS.get_environment("STYLE") != "" else "average"
 	# TC_OFF=1：灰熊、美洲獅的戰鬥用選單式（對照 Phase 2k 戰術戰鬥）
 	GS.tactical_combat_off = OS.get_environment("TC_OFF") != ""
+	GS.tactical_fire_off = OS.get_environment("FIRE_OFF") != "" # 對照：森林大火用選單式的逃生選擇（Phase 2n）
 	var dens: Array = Array(OS.get_environment("DENS_ONLY").split(",")) if OS.get_environment("DENS_ONLY") != "" else DENS
 	for r in runs:
 		var ap = AP.new("all", _style)
@@ -354,6 +356,15 @@ func _process(_d):
 		for k in GS.life_log.get("lynx_choices", {}).keys():
 			lynx_log[k] = int(lynx_log.get(k, 0)) + int(GS.life_log["lynx_choices"][k])
 		deaths[GS.wolf.death_cause] = int(deaths.get(GS.wolf.death_cause, 0)) + 1
+		# Phase 2n：大火的次數、怎麼逃的、結果
+		for fr in GS.life_log.get("fires", []):
+			fire_log["n"] += 1
+			var fres: String = str(fr.get("result", "safe"))
+			if fres == "":
+				fres = "safe"
+			fire_log[fres] = int(fire_log.get(fres, 0)) + 1
+			var fesc: String = str(fr.get("escape", ""))
+			fire_log["esc"][fesc] = int(fire_log["esc"].get(fesc, 0)) + 1
 		# Phase 2k 第 6 步：戰鬥與重傷（TC_OFF 對照用）
 		fight_log["heavy"] += GS.wolf.heavy_injury_count
 		fight_log["years"] += GS.wolf.age_years - 0.67
@@ -411,6 +422,8 @@ func _process(_d):
 	print("  戰鬥（%s）：每年 %.2f 場、每年重傷 %.2f 次、戰死 %d／%d 隻（%.0f%%）" % ["選單式 TC_OFF" if GS.tactical_combat_off else "戰術戰鬥", fight_log["fights"] / maxf(0.01, fight_log["years"]),
 		fight_log["heavy"] / maxf(0.01, fight_log["years"]), fight_log["combat_deaths"], runs, 100.0 * fight_log["combat_deaths"] / maxf(1.0, float(runs))])
 	print("  死因：", deaths, "；餓死：", ", ".join(starved) if not starved.is_empty() else "無")
+	print("  大火（%s）：%d 場；結果 %s；怎麼逃的 %s" % ["選單式" if GS.tactical_fire_off else "逃生地圖", fire_log["n"],
+		str({"safe": fire_log.get("safe", 0), "light": fire_log.get("light", 0), "heavy": fire_log.get("heavy", 0), "death": fire_log.get("death", 0)}), str(fire_log["esc"])])
 	for a in duel_ages:
 		var sn: float = max(1, int(stat_sum[a].get("n", 0)))
 		print("  %.0f 歲單挑黑狼：贏 %d%%（%d 場；黑狼已死的局不算）；這時平均 力量 %.0f 技巧 %.0f 速度 %.0f 血量上限 %.0f" % [a, roundi(100.0 * duel[a][1] / max(1, duel[a][0])), duel[a][0],
