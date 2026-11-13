@@ -232,7 +232,8 @@ static func step(fe, policy: String) -> void:
 				best = s
 		policy = "goal:" + best
 	var g: Dictionary = goals(fe, policy)
-	# 已經在目標上：出口就離開，避難處就等
+	# 已經在目標上：出口就離開；避難處就等——但 smart 在避難處時，出口的路已經安全（代價低）就走（第 3 步：微風時火慢、煙久，不要一直困在焦土上）
+	var dj: Dictionary = {}
 	if g.has(fe.wolf_pos):
 		var kind: String = str(g[fe.wolf_pos])
 		if kind == "den":
@@ -240,16 +241,32 @@ static func step(fe, policy: String) -> void:
 			return
 		if kind in fe.SIDES:
 			fe.exit_to(kind)
-		else:
+			return
+		if policy != "smart":
 			fe.wait()
-		return
-	var dj: Dictionary = dijkstra(fe)
+			return
+		dj = dijkstra(fe)
+		var best_exit := 1e9
+		for p in g:
+			if str(g[p]) in fe.SIDES and dj["dist"].has(p):
+				best_exit = minf(best_exit, float(dj["dist"][p]))
+		if best_exit > float(fe.c.get("instinct", {}).get("leave_refuge_cost", 40)):
+			fe.wait()
+			return
+		for p in g.keys():
+			if not str(g[p]) in fe.SIDES:
+				g.erase(p)
+	if dj.is_empty():
+		dj = dijkstra(fe)
 	var dist: Dictionary = dj["dist"]
 	var target := Vector2i(-1, -1)
 	var bt := 1e9
+	# 避難處（深水、焦土、岩坡）要比出口多 refuge_extra 的代價才選：出口優先，出口太危險才躲
+	var extra: float = float(fe.c.get("instinct", {}).get("refuge_extra", 30))
 	for p in g:
-		if dist.has(p) and float(dist[p]) < bt:
-			bt = float(dist[p])
+		var cost: float = float(dist.get(p, 1e9)) + (0.0 if str(g[p]) in fe.SIDES or str(g[p]) == "den" or policy != "smart" else extra)
+		if dist.has(p) and cost < bt:
+			bt = cost
 			target = p
 	if target.x < 0:
 		fe.wait()

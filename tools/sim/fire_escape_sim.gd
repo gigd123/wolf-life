@@ -4,7 +4,7 @@ extends SceneTree
 # 結果（逃出去、等火燒過去、死亡、時間到）、平均受的傷、重傷（≥ HEAVY）、輕傷（≥ LIGHT）的比例。
 # 路線：每一張地圖照每個目標（三個不是上風的邊、深水）各走一次（smart 的找路），算「走得通」（逃出去或等到火過去，傷 < HEAVY）的有幾條；
 # 再看各種風力下「傷最少的目標」是哪一種（上風側邊、下風、水……），看強風是不是真的改變最好的逃法。
-# 用法：RUNS=20 bash tools/run_sim.sh fire_escape_sim（WARNING=early／normal／late；MAPS=edge_1,river_1）
+# 用法：RUNS=20 bash tools/run_sim.sh fire_escape_sim（WARNING=early／normal／late；MAPS=edge_1,river_1；POLICIES=smart；NO_ROUTES=1 不算路線）
 const HEAVY := 25.0
 const LIGHT := 8.0
 var f := 0
@@ -23,7 +23,7 @@ func _process(_d) -> bool:
 	var warn: String = OS.get_environment("WARNING") if OS.get_environment("WARNING") != "" else "normal" # early／normal／late
 	for st in 3:
 		print("== 風力 %s" % ["微風", "中風", "強風"][st])
-		for pol in FI.POLICIES:
+		for pol in (OS.get_environment("POLICIES").split(",") if OS.get_environment("POLICIES") != "" else FI.POLICIES):
 			var r := {"n": 0, "escaped": 0, "survived": 0, "dead": 0, "timeout": 0, "into_fire": 0, "dmg": 0.0, "heavy": 0, "light": 0, "rounds": 0, "how": {}, "down": 0}
 			for mi in maps.size():
 				for s in runs:
@@ -52,6 +52,8 @@ func _process(_d) -> bool:
 			if pol == "smart":
 				print("            本能怎麼逃的：%s；往下風逃 %d%%" % [str(r["how"]), roundi(100.0 * r["down"] / n)])
 		# 路線：每張地圖有幾條走得通；傷最少的是哪一種目標
+		if OS.get_environment("NO_ROUTES") != "":
+			continue
 		var viable_counts := {}
 		var best_kind := {}
 		var total := 0

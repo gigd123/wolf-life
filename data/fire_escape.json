@@ -59,5 +59,7 @@
   "ash_patch_radius": [2, 4],
   "_outcome_comment": "第 3 步：這一場累積的傷 ≥ heavy 是重度燒傷、≥ light 是輕度燒傷，血到 0 是死亡（傷勢與恢復天數沿用主遊戲的燒傷，第 4 步接）。主因是煙（煙與嗆傷佔一半以上）時文字寫嗆傷。",
   "outcome": { "light": 8, "heavy": 25 },
+  "_instinct_comment": "本能（FireInstinct smart）：避難處要比出口多 refuge_extra 的代價（Dial 的單位，0.5 一格）才選；在避難處時，出口的代價低於 leave_refuge_cost 就離開。",
+  "instinct": { "refuge_extra": 30, "leave_refuge_cost": 40 },
   "den": { "near": 4, "smoke_chance": 0.15, "smoke_level": 3, "smoke_mult": 1.5 }
 }
