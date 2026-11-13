@@ -93,6 +93,14 @@ func _ready() -> void:
 	hd2d_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tests.add_child(hd2d_btn)
 
+	# 森林大火逃生地圖的原型（Phase 2n 第 1 步；和遊戲進度無關）
+	var fire_btn := Button.new()
+	fire_btn.text = tr("menu.fire_escape")
+	fire_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/fire_escape/FireEscape.tscn"))
+	fire_btn.theme_type_variation = &"SmallButton"
+	fire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tests.add_child(fire_btn)
+
 	var visual_test_btn := Button.new()
 	visual_test_btn.text = tr("menu.visual_test")
 	visual_test_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/visual_test/VisualTest.tscn"))

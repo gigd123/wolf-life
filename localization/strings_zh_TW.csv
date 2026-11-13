@@ -2434,6 +2434,51 @@ grizzly_cache.return,你正吃著，林子裡傳來沉重的腳步聲。灰熊�
 grizzly_cache.return.first,你正吃著，林子裡傳來沉重的腳步聲。一頭巨大的熊回來找牠藏的獵物，直接朝你衝了過來。
 debug.event.grizzly_cache,灰熊藏的獵物
 menu.hd2d_test,HD-2D 測試
+menu.fire_escape,大火逃生（原型）
+fire.wind.0,微風
+fire.wind.1,中風
+fire.wind.2,強風
+fire.dir.e,往東吹
+fire.dir.w,往西吹
+fire.dir.s,往南吹
+fire.dir.n,往北吹
+fire.dir.diag,斜吹
+fire.ui.wind,風：{dir}，{strength}
+fire.ui.warn.early,早察覺
+fire.ui.warn.normal,一般
+fire.ui.warn.late,很晚才察覺
+fire.ui.new,新地圖
+fire.ui.replay,重來
+fire.ui.back,返回
+fire.ui.start,濃煙從上風處壓過來，火已經燒進這一帶了。{wind}。
+fire.ui.round,第 {n} 回合
+fire.ui.breath,喘 {n}／{max}
+fire.ui.health,血 {n}
+fire.ui.smoke,煙：{s}
+fire.ui.sight,看得到 {n} 格
+fire.ui.edges_burning,在燒的方向：{list}
+fire.ui.hint,點框起來的格子移動；站在地圖邊上可以往那一邊離開。
+fire.ui.exit,往{side}離開
+fire.ui.wait,等
+fire.ui.instinct,交給本能
+fire.ui.ember,下風處的煙裡落下了火星。
+fire.ui.choke,濃煙嗆得你直咳。
+fire.ui.burned,火舌燒到了你。
+fire.ui.wind_change,風變了。
+fire.ui.damage,這一場一共受了 {n} 點傷。
+fire.smoke.0,沒有
+fire.smoke.1,淡淡的
+fire.smoke.2,很濃
+fire.smoke.3,嗆得看不見
+fire.side.n,北邊
+fire.side.e,東邊
+fire.side.s,南邊
+fire.side.w,西邊
+fire.result.escaped,你從{side}逃出了火場。
+fire.result.into_fire,你往{side}跑，那一邊也在燒。
+fire.result.survived,火燒過去了，你撐了下來。
+fire.result.dead,你倒在濃煙裡，再也沒有站起來。
+fire.result.timeout,火還沒燒完，你還困在這裡。
 menu.visual_test,3D 畫面測試（原型）
 hd2d.title,HD-2D 戰術場景測試
 hd2d.zoom_mode.step,縮放：分段
