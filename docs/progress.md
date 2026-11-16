@@ -3,6 +3,7 @@
 最後更新：2026-11-13
 
 ## 目前階段
+（2026-11-16）CLAUDE.md 的 22 項都實作完，剩下是試玩驗收。使用者選先處理 2026-10-30 試玩回饋第 2、3 項：量測 `tools/sim/tactical_feel_sim.gd`（地形：直直潛行和本能只差 0～11 點、接近時幾乎不在掩蔽裡；咬住後：先咬後腿、拖住比直接壓倒差 3～34 點，咬喉和壓倒結果一樣但機率低），方案寫在 `docs/proposals/hunt-terrain-and-hold.md`（咬住後 3A／3B／3C、地形 2A／2B／2C），待使用者選。另：角色移動動畫的方向（同步移動＋事件動畫）記在 `pre-2.0-plan.md` 六之三第 5 項，排在核心玩法之後。
 （2026-11-13）使用者決定：選單畫面的佔位背景全部換掉（方案 1：全部請 AI 畫，慢慢出）→ `docs/art-request-backgrounds.md`（90 張的清單與每張的文案；基本圖＋冬天／秋天／燒過的變化版附基本圖出）。森林大火選 A（完整的戰術逃生地圖，不趕時間）→ 先寫規格草稿請使用者同意。
 （2026-11-13）獵物跑的第二張（白尾鹿母鹿、馬鹿母鹿、北美馴鹿母鹿，ChatGPT）：戰術地圖 `hunt_hd2d.json` 的 `hd_art.*.flee_b`，`HuntHD2D._art_for` 逃跑時每回合和「跑」輪流、鹿群每一隻錯開一格；選單畫面 `art.json` `hd_menu.walk_b` 可以照動作分（`{"move": …}`，`ArtLibrary._hd_walk` 多一個 action），逃跑時兩張輪流。叉角羚幼體殘骸 `pronghorn.juvenile`。`prep_gemini_prey.py`：run_b 畫布不同 → 直接指定寬幾格；馬鹿那張不調色（調了脖子會變淡）。
 （2026-11-12）渡鴉（站、飛）、鮭魚（游、跳）新圖（ChatGPT）：`prototypes/hd2d_tactical/prep_birds_fish.py`（渡鴉提亮 1.25、約 0.6 格；盤旋＝三隻飛的錯開排成 `raven_circling`；鮭魚約 0.6 格），`art.json` `hd_menu.animals` 加 raven、salmon。選單畫面的動物全部是新圖了。小狐狸（站、走）先接上備用。
