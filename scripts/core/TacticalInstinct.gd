@@ -288,27 +288,37 @@ static func _stealth_map(h) -> Dictionary:
 	var key: String = "%d|%s" % [h.rounds, str(h.deer_pos)]
 	if str(h.game_mods.get("_stealth_key", "")) == key:
 		return h.game_mods["_stealth_map"]
+	# Dial 式的桶子（代價 × 4 取整當桶子的序號），比每次掃一遍找最小的快很多（40×16 格、每回合算一次）
+	# 每一格的掩蔽倍率先算好
+	var mults := {}
+	for y in h.height:
+		for x in h.width:
+			var c := Vector2i(x, y)
+			var cs0: String = h.cover_state(c)
+			mults[c] = EXPOSED_COST if cs0 == "exposed" else (0.8 if cs0 == "in" else 1.0)
 	var dist := {h.deer_pos: 0.0}
-	var open: Array = [h.deer_pos]
-	while not open.is_empty():
-		# 簡單的 Dijkstra（40×16 格）
-		var bi := 0
-		for i in open.size():
-			if float(dist[open[i]]) < float(dist[open[bi]]):
-				bi = i
-		var cur: Vector2i = open[bi]
-		open.remove_at(bi)
-		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
-			var n: Vector2i = cur + d
-			if not h.in_bounds(n):
+	var buckets: Array = [[h.deer_pos]]
+	var bi := 0
+	while bi < buckets.size():
+		var bucket: Array = buckets[bi]
+		var k := 0
+		while k < bucket.size():
+			var cur: Vector2i = bucket[k]
+			k += 1
+			if roundi(float(dist[cur]) * 4.0) != bi:
 				continue
-			var cs: String = h.cover_state(n)
-			var mult: float = EXPOSED_COST if cs == "exposed" else (0.8 if cs == "in" else 1.0)
-			var nd: float = float(dist[cur]) + h.step_cost(cur, n) * mult
-			if nd < float(dist.get(n, 1e9)):
-				if not dist.has(n):
-					open.append(n)
-				dist[n] = nd
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+				var n: Vector2i = cur + d
+				if not h.in_bounds(n):
+					continue
+				var nd: float = float(dist[cur]) + h.step_cost(cur, n) * float(mults[n])
+				if nd < float(dist.get(n, 1e9)):
+					dist[n] = nd
+					var nb: int = maxi(bi, roundi(nd * 4.0))
+					while buckets.size() <= nb:
+						buckets.append([])
+					(buckets[nb] as Array).append(n)
+		bi += 1
 	h.game_mods["_stealth_key"] = key
 	h.game_mods["_stealth_map"] = dist
 	return dist
