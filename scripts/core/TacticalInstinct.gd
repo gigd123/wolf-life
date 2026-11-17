@@ -253,9 +253,6 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 			# 掩蔽路線（Phase 2o 第 1 步）：目標是牠本身時，改用「經過暴露的格子比較貴」的路線距離
 			if target == h.deer_pos and _stealth_on(h):
 				s = float(_stealth_map(h).get(c, 999.0)) + _wind_penalty(h, c)
-			# 暴露時不小跑、不衝刺（遠遠就會被看到）
-			if _stealth_on(h) and str(reach[c]) != "creep" and h.cover_state(c) == "exposed" and h.dist(c, h.deer_pos) <= TROT_SAFE:
-				continue
 		if s < best_score:
 			best_score = s
 			best = c
@@ -276,7 +273,6 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 	h.move_to(best)
 
 const PATIENCE := 4 # 在開闊地最多連等幾回合牠低頭
-const TROT_SAFE := 14.0 # 離牠幾格內、站在暴露的地方就不小跑
 const EXPOSED_COST := 3.0 # 掩蔽路線：經過暴露的格子一格算幾格
 
 # 有沒有掩蔽的設定（沒有就照原本的找路）；牠還沒在逃
