@@ -141,7 +141,7 @@
     ],
     "mode": {
       "still": 0.1,
-      "creep": 0.5,
+      "creep": 0.4,
       "trot": 2.5,
       "sprint": 3.0
     },
@@ -175,7 +175,7 @@
     "_hearing_comment": "聽到（2026-10-29 QA：小跑貼近鹿群卻沒逃）：小跑、衝刺在近距離另外加的警覺，不受密林、晨昏、技巧影響；潛行、不動沒有聲音。close_bolt：小跑、衝刺結束時在牠身邊 1 格內，牠一定察覺（逃跑，會站定的照站定）。",
     "hearing": { "trot": [[2, 60.0], [4, 30.0]], "sprint": [[2, 80.0], [4, 40.0]] },
     "close_bolt": true,
-    "_cover_comment": "Phase 2o 第 1 步（2026-11-17）：潛行或不動（cover.modes）時，狼站在掩蔽裡（cover.terrain：密林、倒木）被看見 × cover.mult；這一格和周圍一格都沒有掩蔽（暴露）時潛行 × exposed.mult、看見的距離 × exposed.dist_mult（遠遠就看得到；不動不算）；牠低頭吃草的那一回合（沒察覺、deer.graze_idle 停下來吃草）× grazing_mult。潛行的看見倍率 mode.creep 0.3 → 0.5（掩蔽、吃草、放下戒心另外減）。2026-11-17 掃參數（tactical_feel_sim，每格 300 場）選定：本能和改動前一樣、直直潛行低 10～18 點。",
+    "_cover_comment": "Phase 2o 第 1 步（2026-11-17）：潛行或不動（cover.modes）時，狼站在掩蔽裡（cover.terrain：密林、倒木）被看見 × cover.mult；這一格和周圍一格都沒有掩蔽（暴露）時潛行 × exposed.mult、看見的距離 × exposed.dist_mult（遠遠就看得到；不動不算）；牠低頭吃草的那一回合（沒察覺、deer.graze_idle 停下來吃草）× grazing_mult。潛行的看見倍率 mode.creep 0.3 → 0.4（掩蔽、吃草、放下戒心另外減）；鹿群的警覺 herd.vigilance 每多一隻 0.15 → 0.05、上限 1.6 → 1.2（暴露的懲罰被鹿群放大，補回來）。2026-11-17 掃參數（tactical_feel_sim，每格 300 場，含鹿群 PART=H）選定：本能和改動前差 ±5 左右、直直潛行低 8～18 點。",
     "cover": { "terrain": ["f", "l"], "modes": ["creep", "still"], "mult": 0.25 },
     "exposed": { "mult": 2.5, "dist_mult": 0.5, "modes": ["creep"] },
     "grazing_mult": 0.2,
@@ -439,7 +439,7 @@
     "mother_slack": 2.0,
     "defend": { "trigger": 2.0, "reach": 4.0, "base": 0.06, "still_bonus": 0.02, "held_bonus": 0.02, "max_rounds": 3, "break_bonus": 0.2, "damage": [6, 14] },
     "_vigilance_comment": "鹿群越大越警覺（很多雙眼睛）：看見你的警覺增加 × (1 + per_extra × (場上的鹿 − 1))，最多 max（2026-10-16 使用者同意）。",
-    "vigilance": { "per_extra": 0.15, "max": 1.6 },
+    "vigilance": { "per_extra": 0.05, "max": 1.2 },
     "fawn": { "pounce": 0.15, "takedown": 0.25, "throat": 0.2, "break": -0.15 },
     "meat": { "adult": 3, "fawn": 2 }
   },

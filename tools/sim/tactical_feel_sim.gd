@@ -13,6 +13,7 @@ extends SceneTree
 var f := 0
 var TH
 var alert_set: Dictionary = {}
+var tune_set: Dictionary = {}
 
 static func _merge(a: Dictionary, b: Dictionary) -> void:
 	for k in b:
@@ -41,12 +42,17 @@ func _process(_d) -> bool:
 	# 調參（Phase 2o）：ALERT_SET='{"exposed": {"mult": 2.5}}' 合併進 tactical_hunt.json 的 alert；FAMS=open,edge、POLS=instinct,straight 只跑這些
 	if OS.get_environment("ALERT_SET") != "":
 		alert_set = JSON.parse_string(OS.get_environment("ALERT_SET"))
+	# TUNE_SET='{"herd": {"vigilance": {...}}}'：合併進整個 tactical_hunt.json
+	if OS.get_environment("TUNE_SET") != "":
+		tune_set = JSON.parse_string(OS.get_environment("TUNE_SET"))
 	var fams: Array = OS.get_environment("FAMS").split(",") if OS.get_environment("FAMS") != "" else FAMILIES
 	var pols: Array = OS.get_environment("POLS").split(",") if OS.get_environment("POLS") != "" else ["instinct", "stalk", "straight", "rush"]
 	if part in ["", "A"]:
 		_part_a(runs, fams, {"壯年": WOLF}, pols)
 	if part in ["", "A2"]:
 		_part_a(runs, ["open", "edge", "dense"], PROFILES, ["instinct", "straight"])
+	if part == "H":
+		_part_h(runs, fams if OS.get_environment("FAMS") != "" else ["open", "edge", "dense"])
 	if part in ["", "B"]:
 		_part_b(runs)
 	return true
@@ -81,6 +87,8 @@ func _part_a(runs: int, fams: Array, profiles: Dictionary, pols: Array) -> void:
 					var h = TH.new()
 					if not alert_set.is_empty():
 						_merge(h.t["alert"], alert_set.duplicate(true))
+					if not tune_set.is_empty():
+						_merge(h.t, tune_set.duplicate(true))
 					h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": profiles[pk], "wind_relation": WINDS[i % 3]})
 					var p: String = pol
 					if pol == "instinct":
@@ -241,3 +249,41 @@ func _part_b(runs: int) -> void:
 			n_held = nh
 			line += "  %s %2d%%／%2d%%／%2d%%／%.1f／%.0f" % [strat, roundi(100.0 * ok / maxi(1, nh)), roundi(100.0 * lost / maxi(1, nh)), roundi(100.0 * kicked / maxi(1, nh)), float(hr) / maxi(1, nh), hb / maxi(1, nh)]
 		print(line + "  （咬住 %d 場，位置 %s）" % [n_held, str(sides)])
+
+# --- H. 鹿群（一生模擬裡多半是鹿群，2026-11-17）：白尾鹿 4 隻＋1 隻小鹿、母馬鹿 6 隻；狼三種年齡；本能
+func _part_h(runs: int, fams: Array) -> void:
+	print("== H. 鹿群（本能；每格 %d 場）：成功率／回合／受傷／逃脫" % runs)
+	for sp in [["deer", 4, 1], ["elk", 6, 0]]:
+		for pk in ["年輕", "壯年", "老年"]:
+			var line := "%-4s %-4s" % [sp[0], pk]
+			for fam in fams:
+				var ok := 0
+				var hurt := 0
+				var esc := 0
+				var rounds: Array = []
+				for i in runs:
+					var h = TH.new()
+					if not alert_set.is_empty():
+						_merge(h.t["alert"], alert_set.duplicate(true))
+					if not tune_set.is_empty():
+						_merge(h.t, tune_set.duplicate(true))
+					var conds: Array = []
+					for k in int(sp[1]):
+						conds.append(_cond(i * 3 + k))
+					var ctx := {"family": fam, "seed": i * 6151 + 13, "wolf": PROFILES[pk], "wind_relation": WINDS[i % 3], "herd": {"conditions": conds, "calves": int(sp[2])}}
+					if sp[0] == "elk":
+						ctx["species"] = "elk"
+						ctx["family"] = fam
+					h.setup_from_game(ctx)
+					TacticalInstinct.play(h, "")
+					if h.result == "caught":
+						ok += 1
+					elif h.result in ["escaped", "lost"]:
+						esc += 1
+					if float(h.damage_taken) > 0.0:
+						hurt += 1
+					rounds.append(h.rounds)
+				rounds.sort()
+				line += "  %s %2d%%／%d／%2d%%／%2d%%" % [fam, roundi(100.0 * ok / runs), rounds[rounds.size() / 2], roundi(100.0 * hurt / runs), roundi(100.0 * esc / runs)]
+			print(line)
+

@@ -264,7 +264,7 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 		return
 	# 等時機（Phase 2o 第 1 步）：接近時下一步會暴露在開闊地、牠就在附近又沒在吃草 → 先等牠低頭（最多連等 PATIENCE 回合）
 	var waits: int = int(h.game_mods.get("_instinct_waits", 0))
-	if avoid_wind and h.deer_state in ["unaware", "suspicious"] and (h.cover_state(best) == "exposed" or h.cover_state(h.wolf_pos) == "exposed") and not h.grazing() \
+	if avoid_wind and h.deer_state in ["unaware", "suspicious"] and (h.cover_state(best) == "exposed" or h.cover_state(h.wolf_pos) == "exposed") and not _watcher_grazing(h) \
 			and h.dist(best, h.deer_pos) <= PATIENT_DIST and waits < PATIENCE:
 		h.game_mods["_instinct_waits"] = waits + 1
 		h.observe()
@@ -273,6 +273,17 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 	h.move_to(best)
 
 const PATIENCE := 4 # 在開闊地最多連等幾回合牠低頭
+
+# 等時機看的是離你最近、還沒在逃的那一隻（鹿群裡最可能看到你的；單隻就是目標）有沒有低頭吃草
+static func _watcher_grazing(h) -> bool:
+	var best := -1
+	var bd := INF
+	for i in h.active_deer():
+		var d: float = h.dist(h.herd[i]["pos"], h.wolf_pos)
+		if d < bd:
+			bd = d
+			best = i
+	return h.grazing(best if best >= 0 else -1)
 const EXPOSED_COST := 3.0 # 掩蔽路線：經過暴露的格子一格算幾格
 
 # 有沒有掩蔽的設定（沒有就照原本的找路）；牠還沒在逃
