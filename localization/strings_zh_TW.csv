@@ -1980,8 +1980,8 @@ tactical.ui.wind_side.upwind,你在上風
 tactical.ui.wind_side.downwind,你在下風
 tactical.ui.wind_side.crosswind,側風
 tactical.ui.cover.in,在掩蔽裡
-tactical.ui.cover.exposed,暴露在開闊地
-tactical.ui.grazing,牠低頭吃草
+tactical.ui.cover.exposed,沒有掩蔽
+tactical.ui.grazing,牠在吃草
 tactical.ui.breath,喘 {n}/{max}
 tactical.ui.health,血 {n}
 tactical.ui.target,目標 {animal}
