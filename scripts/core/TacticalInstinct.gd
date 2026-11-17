@@ -270,15 +270,16 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 const PATIENCE := 2 # 在開闊地最多連等幾回合牠低頭
 const PATIENT_DIST := 7.0 # 離牠幾格內才等
 
-# 接近時的掩蔽（Phase 2o 第 1 步）：在聞得到、看得到的距離內，暴露的格子不利、掩蔽裡有利
+# 接近時的掩蔽（Phase 2o 第 1 步）：在聞得到、看得到的距離內，暴露的格子不利、掩蔽裡有利。
+# 兩者的差（0.9）要小於潛行前進一格（1），不然站在掩蔽裡就永遠不出來
 static func _cover_penalty(h, c: Vector2i) -> float:
 	if h.dist(c, h.deer_pos) > 9.0:
 		return 0.0
 	match h.cover_state(c):
 		"exposed":
-			return 1.5
+			return 0.6
 		"in":
-			return -0.6
+			return -0.3
 	return 0.0
 
 # 站在上風（氣味吹向鹿）而且在聞得到的距離內：很不利

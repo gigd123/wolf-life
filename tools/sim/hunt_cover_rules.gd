@@ -11,7 +11,7 @@ func _ok(c: bool, msg: String) -> void:
 		fails += 1
 		print("FAIL ", msg)
 
-func _set(h, c: Vector2i, ch: String) -> void:
+func _set_ter(h, c: Vector2i, ch: String) -> void:
 	if not h.in_bounds(c):
 		return
 	var row: String = h.grid[c.y]
@@ -38,18 +38,18 @@ func _process(_d) -> bool:
 	# 這一格與周圍：先全部改成開闊，量暴露；再把狼那一格改成密林，量掩蔽
 	for dy in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
-			_set(h, wp + Vector2i(dx, dy), ".")
+			_set_ter(h, wp + Vector2i(dx, dy), ".")
 	_ok(h.cover_state() == "exposed", "四周都是開闊地：暴露（%s）" % h.cover_state())
 	var exposed: float = float(h.alert_gain("creep")["noise"])
-	_set(h, wp + Vector2i(1, 1), "f")
+	_set_ter(h, wp + Vector2i(1, 1), "f")
 	var plain: float = float(h.alert_gain("creep")["noise"])
 	_ok(h.cover_state() == "", "旁邊有一叢灌木：不算暴露也不算掩蔽")
-	_set(h, wp, "f")
+	_set_ter(h, wp, "f")
 	_ok(h.cover_state() == "in", "站在密林裡：在掩蔽裡")
 	var covered: float = float(h.alert_gain("creep")["noise"])
 	_ok(covered < plain and plain < exposed, "潛行被看見：掩蔽 %.1f < 一般 %.1f < 暴露 %.1f" % [covered, plain, exposed])
 	var trot_c: float = float(h.alert_gain("trot")["noise"])
-	_set(h, wp, ".")
+	_set_ter(h, wp, ".")
 	var trot_p: float = float(h.alert_gain("trot")["noise"])
 	_ok(absf(trot_c - trot_p) < 0.01, "小跑不受掩蔽影響（%.1f／%.1f）" % [trot_c, trot_p])
 	h.herd[h.di]["grazing"] = true
