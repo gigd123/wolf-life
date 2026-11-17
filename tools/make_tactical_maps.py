@@ -75,6 +75,25 @@ def band(g, pts, width, ch="f"):
                 put(g, round(cx), round(cy + dy), ch)
 
 
+def cover_strips(g, seed, n):
+    """Phase 2o 第 1 步：開闊、林緣、溪流的地圖多 n 條掩蔽帶（灌木叢 f 或倒木 l，4～8 格長、蜿蜒），
+    平均散在地圖的左、中、右，讓接近獵物時有「掩蔽到掩蔽」的路線；不蓋掉已經有的地形"""
+    rnd = random.Random(seed * 101 + 7)
+    for i in range(n):
+        x = int((i + 0.5) * W / n) + rnd.randint(-4, 4)
+        y = rnd.randint(3, H - 4)
+        ch = "l" if rnd.random() < 0.35 else "f"
+        dx, dy = rnd.choice([(1, 0), (1, 1), (1, -1), (0, 1)])
+        ln = rnd.randint(4, 8)
+        for k in range(ln):
+            if 0 <= x < W and 0 <= y < H and g[y][x] == ".":
+                g[y][x] = ch
+            if rnd.random() < 0.3:
+                dy = max(-1, min(1, dy + rnd.choice([-1, 1])))
+            x += dx if dx else rnd.choice([-1, 0, 1])
+            y += dy
+
+
 def maps():
     out = {}
     # --- 開闊地 ---
@@ -82,28 +101,34 @@ def maps():
     blob(g, 21, 2, 3, 2, rough=0.6, seed=1)
     blob(g, 12, 13, 3, 2, rough=0.6, seed=2)
     blob(g, 1, 1, 2, 2, seed=3); blob(g, 38, 14, 2, 2, seed=4)
+    cover_strips(g, 1, 3)
     out["open_1"] = {"name": "空地、兩叢灌木", "family": "open", "map": g}
     g = blank()
     for x, y in [(8, 4), (15, 11), (26, 3), (31, 12), (20, 8)]:
         blob(g, x, y, 1.3, 1.1, seed=x * 7 + y)
+    cover_strips(g, 2, 3)
     out["open_2"] = {"name": "空地、零星樹叢", "family": "open", "map": g}
     g = blank()
     edge_top(g, 2, 1, 5)
     blob(g, 30, 10, 2.5, 2, rough=0.5, seed=6)
+    cover_strips(g, 3, 3)
     out["open_3"] = {"name": "草原、遠處一排樹", "family": "open", "map": g}
     # --- 林緣 ---
     g = blank()
     edge_left(g, 9, 1, 11)
     blob(g, 12, 3, 2, 1.5, seed=12)
+    cover_strips(g, 4, 2)
     out["edge_1"] = {"name": "林緣（樹林在一側）", "family": "edge", "map": g}
     g = blank()
     edge_top(g, 5, 1, 13)
     blob(g, 18, 6, 3, 2, rough=0.5, seed=14)  # 伸出來的一角
+    cover_strips(g, 5, 2)
     out["edge_2"] = {"name": "林緣（樹林在上方，伸出一角）", "family": "edge", "map": g}
     g = blank()
     edge_left(g, 6, 1, 15)
     edge_top(g, 3, 1, 16)
     blob(g, 30, 12, 3, 2, rough=0.6, seed=17)
+    cover_strips(g, 6, 2)
     out["edge_3"] = {"name": "林緣（林子轉角）", "family": "edge", "map": g}
     # --- 密林 ---
     g = blank("f")
@@ -119,6 +144,7 @@ def maps():
     g = blank()
     band(g, [(0, 3), (14, 6), (26, 10), (39, 13)], 1)
     blob(g, 33, 3, 2, 1.5, seed=31)
+    cover_strips(g, 7, 2)
     out["stream_1"] = {"name": "溪邊（柳叢斜穿過）", "family": "stream", "map": g}
     g = blank()
     band(g, [(0, 3), (39, 4)], 1)
@@ -127,6 +153,7 @@ def maps():
         for y in range(H):
             if g[y][x] == "f" and (y < 6 or y > 9):
                 g[y][x] = "."
+    cover_strips(g, 8, 2)
     out["stream_2"] = {"name": "溪谷（兩岸柳叢）", "family": "stream", "map": g}
     # --- 倒木、岩堆 ---
     g = blank()

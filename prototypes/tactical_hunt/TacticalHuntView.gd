@@ -466,6 +466,10 @@ func _info_text() -> String:
 	t.append(tr("tactical.ui.round").replace("{n}", str(h.rounds)))
 	t.append(tr("tactical.ui.wind").replace("{dir}", {Vector2i(1, 0): "→", Vector2i(-1, 0): "←", Vector2i(0, 1): "↓", Vector2i(0, -1): "↑"}.get(h.wind, "?")))
 	t.append({"upwind": "[color=#e08a8a]%s[/color]", "downwind": "[color=#9fe08a]%s[/color]", "crosswind": "%s"}[h.wind_side()] % tr("tactical.ui.wind_side." + h.wind_side()))
+	# 掩蔽（Phase 2o 第 1 步）：站在掩蔽裡、暴露在開闊地
+	var cov: String = h.cover_state()
+	if cov != "" and not h.held and h.deer_state in ["unaware", "suspicious"]:
+		t.append(("[color=#9fe08a]%s[/color]" if cov == "in" else "[color=#e08a8a]%s[/color]") % tr("tactical.ui.cover." + cov))
 	t.append("")
 	t.append(tr("tactical.ui.breath").replace("{n}", str(roundi(h.breath))).replace("{max}", str(roundi(h.breath_max))))
 	t.append(_bar(h.breath, h.breath_max, "#7fb3e0"))
@@ -486,6 +490,8 @@ func _info_text() -> String:
 		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.factor.hamstrung"))
 	if h.hidden_unfound():
 		t.append("[color=#e0c070]%s[/color]" % tr("tactical.ui.hidden"))
+	if h.grazing(h.target):
+		t.append("[color=#9fe08a]%s[/color]" % tr("tactical.ui.grazing"))
 	if h.deer_state in ["unaware", "suspicious"]:
 		t.append(tr("tactical.ui.alert").replace("{n}", str(roundi(h.alert))))
 		t.append(_bar(h.alert, 100.0, "#e0c070"))

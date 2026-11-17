@@ -249,15 +249,37 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 			continue
 		var s: float = h.dist(c, target)
 		if avoid_wind:
-			s += _wind_penalty(h, c)
+			s += _wind_penalty(h, c) + _cover_penalty(h, c)
 		if s < best_score:
 			best_score = s
 			best = c
-	var here: float = h.dist(h.wolf_pos, target) + (_wind_penalty(h, h.wolf_pos) if avoid_wind else 0.0)
+	var here: float = h.dist(h.wolf_pos, target) + ((_wind_penalty(h, h.wolf_pos) + _cover_penalty(h, h.wolf_pos)) if avoid_wind else 0.0)
 	if best == Vector2i(-1, -1) or best_score >= here - 0.01:
 		h.observe()
-	else:
-		h.move_to(best)
+		return
+	# 等時機（Phase 2o 第 1 步）：接近時下一步會暴露在開闊地、牠就在附近又沒在吃草 → 先等牠低頭（最多連等 PATIENCE 回合）
+	var waits: int = int(h.game_mods.get("_instinct_waits", 0))
+	if avoid_wind and h.deer_state in ["unaware", "suspicious"] and h.cover_state(best) == "exposed" and not h.grazing() \
+			and h.dist(best, h.deer_pos) <= PATIENT_DIST and waits < PATIENCE:
+		h.game_mods["_instinct_waits"] = waits + 1
+		h.observe()
+		return
+	h.game_mods["_instinct_waits"] = 0
+	h.move_to(best)
+
+const PATIENCE := 2 # 在開闊地最多連等幾回合牠低頭
+const PATIENT_DIST := 7.0 # 離牠幾格內才等
+
+# 接近時的掩蔽（Phase 2o 第 1 步）：在聞得到、看得到的距離內，暴露的格子不利、掩蔽裡有利
+static func _cover_penalty(h, c: Vector2i) -> float:
+	if h.dist(c, h.deer_pos) > 9.0:
+		return 0.0
+	match h.cover_state(c):
+		"exposed":
+			return 1.5
+		"in":
+			return -0.6
+	return 0.0
 
 # 站在上風（氣味吹向鹿）而且在聞得到的距離內：很不利
 static func _wind_penalty(h, c: Vector2i) -> float:

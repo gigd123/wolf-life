@@ -1883,6 +1883,16 @@ func alert_gain(mode: String) -> Dictionary:
 	var sight: float = _band(al["sight_by_distance"], d) * float(al["mode"][mode])
 	if not has_sight():
 		sight *= float(al["no_sight"])
+	# 掩蔽與暴露（Phase 2o 第 1 步）：潛行或不動時，站在掩蔽裡（密林、倒木）× cover.mult；這一格和周圍一格都沒有掩蔽 × exposed.mult
+	var cov: String = cover_state()
+	if mode in (al.get("cover", {}).get("modes", ["creep", "still"]) as Array):
+		if cov == "in":
+			sight *= float(al.get("cover", {}).get("mult", 1.0))
+		elif cov == "exposed":
+			sight *= float(al.get("exposed", {}).get("mult", 1.0))
+	# 牠低頭吃草的那一回合（沒察覺時）：比較不會看到你
+	if deer_state == "unaware" and bool(herd[di].get("grazing", false)):
+		sight *= float(al.get("grazing_mult", 1.0))
 	# 鹿群越大越警覺（鹿群版）
 	if herd.size() > 1:
 		var vg: Dictionary = t["herd"]["vigilance"]
@@ -1898,6 +1908,26 @@ func alert_gain(mode: String) -> Dictionary:
 	# 聽到：小跑、衝刺在近距離的腳步聲，不受密林、晨昏、技巧影響（2026-10-29 QA）
 	var hear: float = _band(al.get("hearing", {}).get(mode, []), d)
 	return {"gain": sight + scent + hear, "scent": scent, "noise": sight + hear}
+
+# 狼現在這一格的掩蔽（Phase 2o 第 1 步）："in" 站在掩蔽裡、"exposed" 這一格和周圍一格都沒有掩蔽、"" 其他；沒有設定掩蔽時一律 ""
+func cover_state(c: Vector2i = Vector2i(-999, -999)) -> String:
+	var cov: Array = t["alert"].get("cover", {}).get("terrain", [])
+	if cov.is_empty():
+		return ""
+	var p: Vector2i = wolf_pos if c.x == -999 else c
+	if cov.has(terrain(p)):
+		return "in"
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var n := p + Vector2i(dx, dy)
+			if in_bounds(n) and cov.has(terrain(n)):
+				return ""
+	return "exposed"
+
+# 牠現在低頭吃草（沒察覺、這一回合停下來吃草；Phase 2o 第 1 步）
+func grazing(i: int = -1) -> bool:
+	var k: int = di if i < 0 else i
+	return str(herd[k].get("state", "")) == "unaware" and bool(herd[k].get("grazing", false))
 
 func _band(table: Array, d: float) -> float:
 	for pair in table:
@@ -2167,6 +2197,7 @@ func _dir_toward(from: Vector2i, to: Vector2i) -> Vector2i:
 
 # 沒察覺時：邊吃草邊往目的地（水邊、林緣…）慢慢走，走到了換下一個。有固定的去向，伏擊才有意義（2026-10-15 使用者同意）。
 func _deer_wander() -> void:
+	herd[di]["grazing"] = false
 	var others := deer_cells(di)
 	# 幼鹿跟在生母 1～2 格內
 	if is_fawn() and int(herd[di]["mother"]) >= 0 and not bool(herd[int(herd[di]["mother"])]["gone"]):
@@ -2188,6 +2219,7 @@ func _deer_wander() -> void:
 	if bool(sp().get("freeze", false)) or bool(herd[di].get("hiding", false)):
 		return
 	if rng.randf() < float(t["deer"]["graze_idle"]):
+		herd[di]["grazing"] = true # 低頭吃草（Phase 2o：下一回合比較不會看到你）
 		return
 	var goal: Vector2i = deer_goal()
 	if goal == deer_pos or (deer_goal_index >= 0 and dist(deer_pos, goal) <= 1.0):

@@ -107,6 +107,11 @@ func _species_key(i: int) -> String:
 	return sp
 
 func _art_for(key: String, state: String = "", idx: int = 0) -> Dictionary:
+	# 沒察覺時：低頭吃草才用吃草的圖，走動時用站著的圖（Phase 2o 第 1 步：看得出牠什麼時候低頭）
+	# 趴著不動的（兔子）、躲在草裡的幼鹿維持原本的圖
+	if state == "unaware" and idx >= 0 and idx < h.herd.size() and not h.grazing(idx) and not bool(h.sp(idx).get("freeze", false)) and not bool(h.herd[idx].get("hiding", false)):
+		state = "walking"
+
 	var e: Array = cfg["species"].get(key, cfg["species"]["deer"])
 	var winter: bool = str(h.game_mods.get("season", "")) == "winter"
 	# 有 HD-2D 圖的獵物（hd_art）用那張
