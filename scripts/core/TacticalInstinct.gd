@@ -250,16 +250,24 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 		var s: float = h.dist(c, target)
 		if avoid_wind:
 			s += _wind_penalty(h, c) + _cover_penalty(h, c)
+			# 掩蔽路線（Phase 2o 第 1 步）：目標是牠本身時，改用「經過暴露的格子比較貴」的路線距離
+			if target == h.deer_pos and _stealth_on(h):
+				s = float(_stealth_map(h).get(c, 999.0)) + _wind_penalty(h, c)
+			# 暴露時不小跑、不衝刺（遠遠就會被看到）
+			if _stealth_on(h) and str(reach[c]) != "creep" and h.cover_state(c) == "exposed" and h.dist(c, h.deer_pos) <= TROT_SAFE:
+				continue
 		if s < best_score:
 			best_score = s
 			best = c
 	var here: float = h.dist(h.wolf_pos, target) + ((_wind_penalty(h, h.wolf_pos) + _cover_penalty(h, h.wolf_pos)) if avoid_wind else 0.0)
+	if avoid_wind and target == h.deer_pos and _stealth_on(h):
+		here = float(_stealth_map(h).get(h.wolf_pos, 999.0)) + _wind_penalty(h, h.wolf_pos)
 	if best == Vector2i(-1, -1) or best_score >= here - 0.01:
 		h.observe()
 		return
 	# 等時機（Phase 2o 第 1 步）：接近時下一步會暴露在開闊地、牠就在附近又沒在吃草 → 先等牠低頭（最多連等 PATIENCE 回合）
 	var waits: int = int(h.game_mods.get("_instinct_waits", 0))
-	if avoid_wind and h.deer_state in ["unaware", "suspicious"] and h.cover_state(best) == "exposed" and not h.grazing() \
+	if avoid_wind and h.deer_state in ["unaware", "suspicious"] and (h.cover_state(best) == "exposed" or h.cover_state(h.wolf_pos) == "exposed") and not h.grazing() \
 			and h.dist(best, h.deer_pos) <= PATIENT_DIST and waits < PATIENCE:
 		h.game_mods["_instinct_waits"] = waits + 1
 		h.observe()
@@ -267,8 +275,45 @@ static func _go(h, reach: Dictionary, target: Vector2i, modes: Array, avoid_wind
 	h.game_mods["_instinct_waits"] = 0
 	h.move_to(best)
 
-const PATIENCE := 2 # 在開闊地最多連等幾回合牠低頭
-const PATIENT_DIST := 7.0 # 離牠幾格內才等
+const PATIENCE := 4 # 在開闊地最多連等幾回合牠低頭
+const TROT_SAFE := 14.0 # 離牠幾格內、站在暴露的地方就不小跑
+const EXPOSED_COST := 3.0 # 掩蔽路線：經過暴露的格子一格算幾格
+
+# 有沒有掩蔽的設定（沒有就照原本的找路）；牠還沒在逃
+static func _stealth_on(h) -> bool:
+	return not (h.t["alert"].get("cover", {}) as Dictionary).is_empty() and h.deer_state in ["unaware", "suspicious"]
+
+# 從牠的位置往外的路線距離：暴露的格子 × EXPOSED_COST、掩蔽 × 0.8，地形照走路的代價；每回合、牠的位置不變時用算好的
+static func _stealth_map(h) -> Dictionary:
+	var key: String = "%d|%s" % [h.rounds, str(h.deer_pos)]
+	if str(h.game_mods.get("_stealth_key", "")) == key:
+		return h.game_mods["_stealth_map"]
+	var dist := {h.deer_pos: 0.0}
+	var open: Array = [h.deer_pos]
+	while not open.is_empty():
+		# 簡單的 Dijkstra（40×16 格）
+		var bi := 0
+		for i in open.size():
+			if float(dist[open[i]]) < float(dist[open[bi]]):
+				bi = i
+		var cur: Vector2i = open[bi]
+		open.remove_at(bi)
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+			var n: Vector2i = cur + d
+			if not h.in_bounds(n):
+				continue
+			var cs: String = h.cover_state(n)
+			var mult: float = EXPOSED_COST if cs == "exposed" else (0.8 if cs == "in" else 1.0)
+			var nd: float = float(dist[cur]) + h.step_cost(cur, n) * mult
+			if nd < float(dist.get(n, 1e9)):
+				if not dist.has(n):
+					open.append(n)
+				dist[n] = nd
+	h.game_mods["_stealth_key"] = key
+	h.game_mods["_stealth_map"] = dist
+	return dist
+
+const PATIENT_DIST := 12.0 # 離牠幾格內才等
 
 # 接近時的掩蔽（Phase 2o 第 1 步）：在聞得到、看得到的距離內，暴露的格子不利、掩蔽裡有利。
 # 兩者的差（0.9）要小於潛行前進一格（1），不然站在掩蔽裡就永遠不出來

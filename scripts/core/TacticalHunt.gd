@@ -1880,7 +1880,11 @@ func has_sight() -> bool:
 func alert_gain(mode: String) -> Dictionary:
 	var al: Dictionary = t["alert"]
 	var d: float = dist(wolf_pos, deer_pos)
-	var sight: float = _band(al["sight_by_distance"], d) * float(al["mode"][mode])
+	# 暴露在開闊地（Phase 2o 第 1 步）：牠從比較遠的地方就看得到你（看見的距離 × exposed.dist_mult）
+	var d_sight: float = d
+	if mode in (al.get("exposed", {}).get("modes", ["creep", "still"]) as Array) and cover_state() == "exposed":
+		d_sight = d * float(al.get("exposed", {}).get("dist_mult", 1.0))
+	var sight: float = _band(al["sight_by_distance"], d_sight) * float(al["mode"][mode])
 	if not has_sight():
 		sight *= float(al["no_sight"])
 	# 掩蔽與暴露（Phase 2o 第 1 步）：潛行或不動時，站在掩蔽裡（密林、倒木）× cover.mult；這一格和周圍一格都沒有掩蔽 × exposed.mult
@@ -1888,7 +1892,7 @@ func alert_gain(mode: String) -> Dictionary:
 	if mode in (al.get("cover", {}).get("modes", ["creep", "still"]) as Array):
 		if cov == "in":
 			sight *= float(al.get("cover", {}).get("mult", 1.0))
-		elif cov == "exposed":
+		elif cov == "exposed" and mode in (al.get("exposed", {}).get("modes", ["creep", "still"]) as Array):
 			sight *= float(al.get("exposed", {}).get("mult", 1.0))
 	# 牠低頭吃草的那一回合（沒察覺時）：比較不會看到你
 	if deer_state == "unaware" and bool(herd[di].get("grazing", false)):
@@ -1946,6 +1950,13 @@ func _raise_alert(mode: String) -> void:
 		gain *= float(_allies_cfg().get("alert_mult", 1.0))
 	if gain <= 0.0 and deer_state == "unaware" and dist(wolf_pos, deer_pos) > float(t["alert"]["relax_beyond"]):
 		alert = max(0.0, alert - float(t["alert"]["relax"]))
+		return
+	# 近處也會慢慢放下戒心（Phase 2o 第 1 步）：這一回合沒看到、聞到什麼可疑的（警覺增加 ≤ relax_near_gain）就減 relax_near——
+	# 不動、等牠低頭吃草才有意義（原本 9 格內警覺只會往上加）
+	if deer_state in ["unaware", "suspicious"] and gain <= float(t["alert"].get("relax_near_gain", -1.0)):
+		alert = max(0.0, alert - float(t["alert"].get("relax_near", 0.0)))
+		if deer_state == "suspicious" and alert < float(t["deer"]["suspicious_at"]) * 0.5:
+			deer_state = "unaware"
 		return
 	alert = min(100.0, alert + gain)
 	# 小跑、衝刺貼到牠身邊（1 格內）：一定察覺（2026-10-29 QA，使用者選 A 加 B）

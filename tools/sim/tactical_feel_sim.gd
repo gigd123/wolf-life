@@ -12,6 +12,14 @@ extends SceneTree
 # 用法：bash tools/run_sim.sh tactical_feel_sim "" 1000（第三個參數是每格的場數，預設 1000；探索用 120）；PART=A／A2／B 只跑一部分
 var f := 0
 var TH
+var alert_set: Dictionary = {}
+
+static func _merge(a: Dictionary, b: Dictionary) -> void:
+	for k in b:
+		if a.has(k) and a[k] is Dictionary and b[k] is Dictionary:
+			_merge(a[k], b[k])
+		else:
+			a[k] = b[k]
 
 const FAMILIES := ["open", "edge", "dense", "logs", "stream", "river", "slope", "tundra"]
 const WINDS := ["headwind", "crosswind", "tailwind"]
@@ -30,8 +38,13 @@ func _process(_d) -> bool:
 	TH = load("res://scripts/core/TacticalHunt.gd")
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 1000
 	var part: String = OS.get_environment("PART")
+	# 調參（Phase 2o）：ALERT_SET='{"exposed": {"mult": 2.5}}' 合併進 tactical_hunt.json 的 alert；FAMS=open,edge、POLS=instinct,straight 只跑這些
+	if OS.get_environment("ALERT_SET") != "":
+		alert_set = JSON.parse_string(OS.get_environment("ALERT_SET"))
+	var fams: Array = OS.get_environment("FAMS").split(",") if OS.get_environment("FAMS") != "" else FAMILIES
+	var pols: Array = OS.get_environment("POLS").split(",") if OS.get_environment("POLS") != "" else ["instinct", "stalk", "straight", "rush"]
 	if part in ["", "A"]:
-		_part_a(runs, FAMILIES, {"壯年": WOLF}, ["instinct", "stalk", "straight", "rush"])
+		_part_a(runs, fams, {"壯年": WOLF}, pols)
 	if part in ["", "A2"]:
 		_part_a(runs, ["open", "edge", "dense"], PROFILES, ["instinct", "straight"])
 	if part in ["", "B"]:
@@ -66,6 +79,8 @@ func _part_a(runs: int, fams: Array, profiles: Dictionary, pols: Array) -> void:
 				var esc := 0
 				for i in runs:
 					var h = TH.new()
+					if not alert_set.is_empty():
+						_merge(h.t["alert"], alert_set.duplicate(true))
 					h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": profiles[pk], "wind_relation": WINDS[i % 3]})
 					var p: String = pol
 					if pol == "instinct":
