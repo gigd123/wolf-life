@@ -2703,6 +2703,17 @@ func _deer_flee() -> void:
 	# 從最好的二到三個方向隨機選一個；在密林裡有機會急轉成第二好的
 	# 之字形跑（兔子，2026-10-22）：物種可以覆寫，最好的二到三個方向機率比較平均
 	var weights: Array = sp().get("pick_weights", t["deer"]["pick_weights"])
+	# 只在走得通的方向裡挑（2026-11-19 試玩回報 Bug #3：在地圖上下邊緣時，第二、三好的方向是撞牆（分數 < -10），
+	# 照權重有四成挑到它們，原地停一回合）
+	var valid: Array = []
+	for k in opts.size():
+		if float(opts[k]["score"]) <= -10.0:
+			continue
+		var tr_k := _run_line(deer_pos, opts[k]["dir"], _flee_budget())
+		if bool(tr_k["out"]) or int(tr_k.get("moved", 1)) > 0:
+			valid.append(opts[k])
+	if not valid.is_empty():
+		opts = valid
 	var n: int = mini(3, opts.size())
 	var pick: int = 0
 	var r := rng.randf() * (float(weights[0]) + (float(weights[1]) if n > 1 else 0.0) + (float(weights[2]) if n > 2 else 0.0))
