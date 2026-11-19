@@ -5058,7 +5058,7 @@ func resolve_scavenger(event: String, choice: String) -> Dictionary:
 		state_changed.emit()
 		return result
 	match choice:
-		"grab":
+		"grab", "bite_leave":
 			_note_food(str(current_feeding.get("src", "carcass")) + ":" + str(current_feeding.get("animal_id", "")), float(current_feeding.get("segment_value", 0)))
 			wolf.hunger += float(current_feeding.get("segment_value", 0))
 			current_feeding = {}

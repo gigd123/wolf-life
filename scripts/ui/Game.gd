@@ -2299,11 +2299,18 @@ func _discovery_text(d: Dictionary) -> String:
 		.replace("{fresh}", fresh).replace("{sign}", tr("explore.sign." + _sign_of(str(d["source"]), str(d.get("life_stage", "adult")))))
 	if not d.get("fresh_known", true):
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
+	# 接在線索後面的句子：線索本身沒有句號，先補上（2026-11-19 試玩回報 Bug #5：「…是小馬鹿留下的母鹿在附近徘徊不走」連成一串）
 	if d.get("hidden", false):
-		text += tr("explore.hidden_young")
+		text = _then(text, tr("explore.hidden_young"))
 	if d.has("ambush"):
-		text += tr("explore.water.ambush")
+		text = _then(text, tr("explore.water.ambush"))
 	return text
+
+# 兩句接起來：前一句沒有以句號、問號、驚嘆號結尾就補一個句號
+func _then(a: String, b: String) -> String:
+	if a == "" or a.right(1) in ["。", "！", "？"]:
+		return a + b
+	return a + "。" + b
 
 # 發現畫面的圖：目擊到的動物用動物圖，採集物用物品圖示，其他用線索圖示。
 func _show_discovery_sprite(d: Dictionary) -> void:
@@ -2526,7 +2533,7 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 		_log(tr(key))
 	# 認得的灰熊：先選怎麼從牠口中搶肉，或對峙、放棄（1.8 第 7 步）
 	if event == "bear" and bear_known:
-		_show_bear_steal(tr(key))
+		_show_bear_steal(tr(key), not returning and not intro_logged)
 		return
 	# 狐狸：進入戰鬥模式（守住、叼走一塊、放棄、不理都在對峙畫面選）
 	if bear_known:
@@ -2545,12 +2552,24 @@ func _show_scavenger(event: String, returning: bool, intro_logged: bool = false)
 	encounter_overlay.visible = true
 
 # 灰熊佔住殘骸（1.8 第 7 步，提案之九）：咬一塊就跑、整個叼走（或撕一條後腿）、對峙、放棄。
-func _show_bear_steal(text: String) -> void:
+func _show_bear_steal(text: String, arriving: bool = false) -> void:
 	encounter_message.text = text
 	encounter_detail.text = tr("bear_steal.hint")
-	_set_creature(encounter_sprite, "grizzly_bear", "adult", "idle")
+	_set_creature(encounter_sprite, "grizzly_bear", "adult", "idle" if not arriving else "move")
 	_set_terrain_bg(encounter_bg, str(GameState.current_feeding.get("terrain", "")))
 	_clear_children(encounter_buttons_box)
+	# 灰熊正朝你的獵物走來、你還在殘骸旁（2026-11-19 試玩回報 Bug #4：「悄悄靠近」是牠已經佔住殘骸時才合理）：
+	# 守住食物（和牠對峙、可能打起來）、咬一口就走、直接放棄
+	if arriving:
+		encounter_detail.text = tr("bear_steal.hint.arriving")
+		_add_encounter_button(tr("bear_steal.guard"), func():
+			var gc: Combat = GameState.start_combat("grizzly_bear", "adult", "carcass")
+			gc.set_meta("tc_layout", "arrives")
+			_begin_combat(gc, "move"))
+		_add_encounter_button(tr("bear_steal.bite_leave"), _on_scavenger_choice.bind("bear", "bite_leave"))
+		_add_encounter_button(tr("scavenger.abandon"), _on_scavenger_choice.bind("bear", "abandon"))
+		encounter_overlay.visible = true
+		return
 	# Phase 2k：從熊口搶肉改在戰術地圖上（靠近、看準時機叼一塊或撕一條腿、撤出）
 	if not GameState.tactical_combat_off and (GameState._tc_game_cfg().get("animals", []) as Array).has("grizzly_bear"):
 		encounter_detail.text = tr("bear_steal.hint.tactical")

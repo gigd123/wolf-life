@@ -317,10 +317,10 @@ pack.sign.sight.pack,，身後跟著好幾隻狼
 pack.sign.mark.pair,標記旁還有另一隻狼的氣味。
 pack.sign.mark.pack,這裡的標記一層疊著一層，不只一隻狼。
 pack.sign.howl.pair,是兩個聲音交疊在一起。
-pack.sign.howl.pack,好幾個聲音此起彼落，連成一片合嚎。
-pack.sign.howl.pups,合嚎裡夾著幾聲細細的尖叫，是幼狼。
-pack.news.paired.known,{region}傳來兩隻狼的合嚎。那隻黑狼身邊多了一隻淺色的母狼。
-pack.news.paired.unknown,{region}那一帶，夜裡傳來兩隻狼的合嚎。
+pack.sign.howl.pack,好幾個聲音此起彼落，連成一片嚎叫。
+pack.sign.howl.pups,嚎叫裡夾著幾聲細細的尖叫，是幼狼。
+pack.news.paired.known,{region}傳來兩隻狼的嚎叫。那隻黑狼身邊多了一隻淺色的母狼。
+pack.news.paired.unknown,{region}那一帶，夜裡傳來兩隻狼的嚎叫。
 pack.news.pups.known,{region}傳來幼狼細細的尖嚎。那隻黑狼有了自己的孩子。
 pack.news.pups.unknown,{region}那一帶，傳來幼狼細細的尖嚎。
 pack.news.expanded.known,那隻黑狼一家的標記，蓋過了{region}的邊界。牠們的範圍變大了。
@@ -349,6 +349,7 @@ scavenger.fox.returning,你回來時，一隻狐狸正在偷吃。
 scavenger.grab,叼走一部分
 scavenger.abandon,直接放棄
 scavenger.result.grab,你叼走一大塊肉，迅速撤退。
+scavenger.result.bite_leave,你趁牠還沒走近，大口撕下一塊肉吞下，轉身離開。
 scavenger.result.abandon,你放棄了獵物，退到安全的地方。
 explore.injured,受傷的
 hunt.option.search,找出牠
@@ -866,7 +867,7 @@ pack.option.standoff,對峙（嚎叫示威，勝算 {p}%）
 pack.option.flee,逃走（甩掉牠們 {p}%）
 pack.retreat,你慢慢往後退，離開了這一帶，來到{region}。牠們沒有追上來。
 pack.standoff.won,你豎起頸毛長嚎，聲音在林間迴盪。{who}遲疑了一下，掉頭走進林子深處。
-pack.standoff.lost,你的嚎聲被牠們的合嚎蓋了過去。牠們一擁而上，你被咬了幾口，只能逃到{region}。
+pack.standoff.lost,你的嚎聲被牠們此起彼落的嚎叫蓋了過去。牠們一擁而上，你被咬了幾口，只能逃到{region}。
 pack.flee.safe,你轉身就跑，一路跑到{region}，身後的腳步聲漸漸聽不見了。
 pack.flee.caught,你轉身就跑，還是被追上咬了幾口，好不容易才逃到{region}。
 pack.meet.young,{location}，一隻年輕的狼獨自在林間嗅聞。牠的毛色偏黑，是那隻黑狼的孩子，身邊沒有別的狼。
@@ -1478,12 +1479,15 @@ death_bio.combat.elk.hunt,在和馬鹿的搏鬥中倒下
 factor.herd_eyes,鹿群裡很多雙眼睛
 hunt.herd.all_healthy,你看了一遍鹿群：每一隻都很壯，腳步輕快。追了大概也是白追。
 explore.clue.bugle,{location}，遠處傳來公馬鹿高亢的吼叫聲，一聲接著一聲。
-explore.hidden_young,母鹿在附近徘徊不走——牠的孩子大概就躲在附近的草裡。
+explore.hidden_young,牠的母親在附近徘徊不去，孩子或許就躲在周圍的草叢裡。
 fox.killed.eaten,你餓壞了，連{animal}也吃了下去。
 fox.killed.left,你把{animal}的屍體丟在一旁，沒有吃牠。
 bear_steal.hint,牠低頭撕咬著肉，背對著你。單憑你自己守不住，也搶不回來——但牠吃得專心的時候，也許能偷到一點。
 bear_steal.hint.tactical,牠低頭在吃，背對著風。靠近的話，要看準牠沒注意的時候叼一塊就走。
 bear_steal.approach,悄悄靠近
+bear_steal.hint.arriving,牠還沒走到殘骸旁。單憑你自己很難守住，守的話免不了一場硬仗。
+bear_steal.guard,守住食物
+bear_steal.bite_leave,咬一口就走
 bear_steal.bite,趁牠低頭，衝進去咬一塊就跑
 bear_steal.carry_whole,整個叼了就跑
 bear_steal.carry_leg,撕下一整條後腿拖走
@@ -1881,7 +1885,7 @@ tactical.flee.noise,牠聽到動靜，拔腿就跑！
 tactical.flee.close,牠發現你了，拔腿就跑！
 tactical.flee.another,另一隻{animal}也拔腿跑了。
 tactical.flee.others,另外{n}隻{animal}也拔腿跑了。
-tactical.hidden.intro,母鹿不在附近，{animal}就趴在這一塊草叢裡，一動也不動。牠身上幾乎沒有氣味，要靠眼睛找。
+tactical.hidden.intro,牠的母親不在附近，{animal}就趴在這一塊草叢裡，一動也不動。牠身上幾乎沒有氣味，要靠眼睛找。
 tactical.hidden.found_look,你盯著草叢看了一會兒——看見了，{animal}就趴在那裡，耳朵貼著背。
 tactical.hidden.look_miss,你盯著草叢看，草葉一動也不動，看不出牠在哪。
 tactical.hidden.found_walk,走近時你看見牠了：{animal}縮在草裡，大氣也不敢出。
@@ -1893,7 +1897,7 @@ tactical.flee.other,牠跑了！
 tactical.herd_runs,整群跟著跑了起來。
 tactical.defend.hit,{animal}轉身朝你衝過來，前蹄踢中了你（血量 −{n}）！
 tactical.defend.miss,{animal}轉身朝你衝過來，你閃開了牠的前蹄。
-tactical.separated,幼鹿和母鹿跑散了！
+tactical.separated,{young}和{mother}跑散了！
 tactical.regroup,跑散的鹿又聚到了一起。
 tactical.herd.weakest,你看出那隻{animal}步伐有點拖，是群裡最弱的一隻。
 tactical.hd.weakest,最弱
@@ -2295,8 +2299,8 @@ pack_sign.core,沿路的石頭、灌木上到處是同一群狼的氣味標記�
 pack_sign.border,路旁的石頭上有一群狼留下的氣味標記，還算新鮮。牠們的地方就在{region}那頭。
 pack_sign.border_off,路旁的石頭上有一群狼留下的氣味標記，還算新鮮。牠們是從更遠的地方巡過來的。
 pack_sign.probed,你之前留下的氣味已經淡了，上面蓋著另一群狼新的標記。再不補上，這一帶會變成牠們的。
-pack_sign.howl,深夜，一群狼的合嚎從{region}那頭傳來，此起彼落。
-pack_sign.howl.many,深夜，一群狼的合嚎從{region}那頭傳來。聲音很多，至少有好幾隻。
+pack_sign.howl,深夜，一群狼的嚎叫從{region}那頭傳來，此起彼落。
+pack_sign.howl.many,深夜，一群狼的嚎叫從{region}那頭傳來。聲音很多，至少有好幾隻。
 territory_card.title.lost,地盤被佔走
 territory_card.lost,你在{region}留下的氣味早就被蓋過去了。那一帶現在是那群狼的地方。
 territory_card.title.won,新的地盤

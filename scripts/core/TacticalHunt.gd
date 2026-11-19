@@ -518,6 +518,14 @@ func label(i: int = -1) -> String:
 		return _tx(str(sp(k).get("name_key", "tactical.label.fawn")))
 	return _tx(str(sp(k).get("name_key", "tactical.label.doe")))
 
+# 物種的稱呼（只有一隻時 label() 是「牠」，有些句子要寫出是什麼：「竄出一隻騾鹿幼鹿」；2026-11-19 試玩回報）
+func species_name(k: int = -1) -> String:
+	if k < 0:
+		k = di
+	if is_fawn(k):
+		return _tx(str(sp(k).get("name_key", "tactical.label.fawn")))
+	return _tx(str(sp(k).get("name_key", "tactical.label.doe")))
+
 func set_target(i: int) -> void:
 	if i >= 0 and i < herd.size() and not bool(herd[i]["gone"]) and not held:
 		target = i
@@ -1458,7 +1466,7 @@ func _setup_hidden(det: float) -> void:
 	hidden_revealed = false
 	hidden_det = det
 	herd[target]["hiding"] = true
-	events.append(_tx("tactical.hidden.intro").replace("{animal}", label(target)))
+	events.append(_tx("tactical.hidden.intro").replace("{animal}", species_name(target)))
 
 # 還躲著、你還沒看出牠在哪
 func hidden_unfound() -> bool:
@@ -1489,7 +1497,7 @@ func _check_hidden() -> void:
 		var n0: int = events.size()
 		_start_flee("close")
 		events.resize(n0) # 換成竄出來的寫法
-		events.append(_tx("tactical.hidden.bolt").replace("{animal}", label(target)))
+		events.append(_tx("tactical.hidden.bolt").replace("{animal}", species_name(target)))
 		stats["hidden_bolt"] = int(stats.get("hidden_bolt", 0)) + 1
 	elif dist(wolf_pos, deer_pos) <= hidden_reveal_dist():
 		hidden_revealed = true
@@ -2512,7 +2520,7 @@ func _split_groups() -> bool:
 			var mo: int = int(herd[i].get("mother", -1))
 			if mo >= 0 and not bool(herd[i]["separated"]) and not bool(herd[mo]["gone"]) and int(herd[mo]["group"]) != int(herd[i]["group"]):
 				herd[i]["separated"] = true
-				events.append(_tx("tactical.separated"))
+				events.append(_tx("tactical.separated").replace("{young}", species_name(i)).replace("{mother}", species_name(mo)))
 	return any
 
 # 跑散的小群合回來：分開 regroup_rounds 回合以上、彼此 regroup_dist 格內、狼離兩群都 regroup_wolf_dist 格以上。
@@ -2685,7 +2693,7 @@ func _deer_flee() -> void:
 				herd[di]["separated"] = false
 		elif scattered and rng.randf() < float(t["herd"]["separate_forest" if terrain(deer_pos) == "f" else "separate"]):
 			herd[di]["separated"] = true
-			events.append(_tx("tactical.separated"))
+			events.append(_tx("tactical.separated").replace("{young}", species_name(di)).replace("{mother}", species_name(m)))
 	var opts := _grouped(flee_options())
 	if opts.is_empty() or float(opts[0]["score"]) < -10.0:
 		deer_state = "stand"

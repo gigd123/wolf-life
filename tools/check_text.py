@@ -34,6 +34,10 @@ for k, v in texts.items():
         errors.append(f'半形標點：{k}  {v}')
     if '我' in v or '玩家' in v:
         errors.append(f'不該出現「我／玩家」：{k}  {v}')
+    # 統一的用語（2026-11-19 使用者：狼群的聲音寫「嚎叫」，不寫「合嚎」）
+    for bad, good in [('合嚎', '嚎叫')]:
+        if bad in v:
+            errors.append(f'用語「{bad}」請改成「{good}」：{k}  {v}')
     if not k.startswith(UI_PREFIX):
         for t in GAME_TERMS:
             if t in v:
