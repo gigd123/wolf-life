@@ -1067,6 +1067,8 @@ func pounce_at(cell: Vector2i) -> void:
 	events.append(_tx("tactical.miss"))
 	if _refuge_dive():
 		rounds += 1
+		if not done and bool(herd[target]["gone"]):
+			_retarget()
 		return
 	if deer_state != "flee" and not _stands():
 		_start_flee("missed")
@@ -2069,8 +2071,10 @@ func _deer_turn(after_throat_miss: bool = false, hanging: bool = false) -> void:
 		if not hanging:
 			breath = max(0.0, breath - float(t["hold"]["hold_breath"]) * _ally_breath_mult() * hold_size_mult()) # 咬著不放也很累（死咬拖住那一回合只花招式本身的喘；苔原狼一起咬著時省喘）
 		_deer_struggle(after_throat_miss, hanging)
-		if not bool(herd[target]["gone"]):
-			di = target
+		# 掙脫後跳上峭壁、跑出場：換成還在場上的那一隻（2026-11-19 試玩回報：目標已經離場還畫在地圖上、還能撲咬）
+		if not done and bool(herd[target]["gone"]):
+			_retarget()
+		di = target
 		return
 	if _ally_holding() > 0:
 		_ally_held_struggle()
@@ -2747,7 +2751,8 @@ func _check_lost() -> void:
 	if done or deer_state != "flee":
 		lost_turns = 0
 		return
-	if terrain(deer_pos) == "f" and not has_sight():
+	# 離你很近（lost_min_dist 格內）不會跟丟：小樹叢就在旁邊，聽得到也聞得到（2026-11-19 試玩回報：兩格外的小樹叢裡「不見了」，地圖上卻還在）
+	if terrain(deer_pos) == "f" and not has_sight() and dist(wolf_pos, deer_pos) > float(t["deer"].get("lost_min_dist", 0.0)):
 		lost_turns += 1
 		if lost_turns >= int(t["deer"]["lost_sight_turns"]):
 			# Phase 2m：你盯上的那一隻第一次在密林裡不見 → 先停下來，讓你選要不要循著足跡追
@@ -2797,6 +2802,9 @@ func track_breath() -> float:
 func follow_track() -> void:
 	if not track_pending:
 		return
+	# 喘不夠追不了（畫面的按鈕灰掉；模擬、自動玩家也一樣）
+	if breath < track_breath():
+		return
 	track_pending = false
 	tracked = true
 	di = target
@@ -2835,6 +2843,8 @@ func give_up_track() -> void:
 	herd[di]["held"] = false
 	if active_deer().is_empty():
 		_finish("lost", _tx("tactical.herd_gone"))
+	else:
+		_retarget()
 
 # 追上時牠在哪：密林外、離你 3～4 格、看得到；沒有這種格子就放寬距離
 func _track_appear_cell() -> Vector2i:
@@ -2901,6 +2911,8 @@ func _deer_gone(kind: String, text: String, own_text: bool = false) -> void:
 		events.append(line)
 	if active_deer().is_empty():
 		_finish(kind, _tx("tactical.herd_gone"))
+	elif di == target:
+		_retarget() # 盯上的那一隻離場：換成還在場上、最近的那一隻（2026-11-19 試玩回報）
 
 # 鹿群裡同樣稱呼的幾隻做同一件事（抬頭、逃跑、離場）：第一隻寫完整的句子，之後寫「另一隻…也」；
 # 同一個動作裡又有一隻時合成一句「另外兩隻…也」（2026-11-12 影片回饋：紀錄重複）

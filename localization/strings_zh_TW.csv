@@ -1915,10 +1915,10 @@ tactical.known.wounded,你認出牠了——就是上次從你面前逃掉的那
 tactical.known.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻。
 tactical.known.wounded.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻，身上還帶著你留下的傷。
 tactical.track.found,你低頭循著足跡鑽進林子，在另一頭又看到了{animal}！
-tactical.track.lost.forest,你循著足跡鑽進林子，可是氣味在密林深處散開了，足跡斷了。
-tactical.track.lost.logs,你循著足跡追進林子，足跡在一片倒木間斷了。
-tactical.track.lost.stream,你循著足跡追到溪邊，足跡進了水裡，再也找不到。
-tactical.track.lost.rock,你循著足跡追進林子，足跡在岩石間斷了。
+tactical.track.lost.forest,你循著足跡鑽進林子，可是氣味在密林深處散開了，一時追不下去。
+tactical.track.lost.logs,你循著足跡追進林子，足跡在一片倒木間斷斷續續，一時追不下去。
+tactical.track.lost.stream,你循著足跡追到溪邊，足跡進了水裡，一時找不到了。
+tactical.track.lost.rock,你循著足跡追進林子，足跡在岩石間斷斷續續，一時追不下去。
 tactical.track.f.perception,你的鼻子
 tactical.track.f.snow,雪地上的足跡很清楚
 tactical.track.f.blood,牠在流血
@@ -1953,8 +1953,8 @@ knowledge.size_lesson.now.young,現在還很難撂倒成年的{animal}。
 knowledge.size_lesson.now.adult,現在撂得倒了。
 tactical.ui.ally_intro,苔原狼和你一起獵：藍點驅趕的會繞到另一側，把獵物往你這邊趕；橘點追擊的會跟著獵物跑。牠們咬住時你撲上去更容易，你咬住時牠們會圍過來。滑鼠停在牠們身上看牠在做什麼。
 tactical.ui.result.caught,獵到了
-tactical.ui.result.escaped,牠逃掉了，留下一條新鮮的足跡
-tactical.ui.result.lost,跟丟了，留下一條新鮮的足跡
+tactical.ui.result.escaped,牠逃掉了。足跡還留在這一帶，之後或許能再找到
+tactical.ui.result.lost,跟丟了。足跡還留在這一帶，之後或許能再找到
 tactical.ui.result.gave_up,你放棄了
 tactical.ui.result.timeout,拖太久，牠走遠了
 tactical.ui.result_line,{result}（{n} 個回合）。
@@ -1966,6 +1966,7 @@ tactical.ui.release,鬆口
 tactical.ui.breath_cost,（{n} 喘）
 tactical.ui.breath_gain,（回 {n} 喘）
 tactical.ui.no_breath,（喘不夠）
+tactical.ui.track_no_breath,要 {n} 喘，你現在只剩 {have}，追不動了。
 tactical.ui.no_breath_tip,要 {n} 喘，你現在只剩 {have}。可以死咬拖住把牠拖累，或鬆口退開喘一下。
 tactical.ui.no_breath_pounce,喘不夠，撲不上去
 tactical.ui.no_breath_pounce_tip,撲一下要 {n} 喘，你現在只剩 {have}。先「觀察」原地回喘。

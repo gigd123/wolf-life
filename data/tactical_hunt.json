@@ -112,6 +112,8 @@
     "suspicious_at": 50.0,
     "flee_at": 100.0,
     "lost_sight_turns": 2,
+    "_lost_min_dist_comment": "2026-11-19 試玩回報：離狼 lost_min_dist 格內不會在密林裡跟丟（小樹叢就在旁邊）。",
+    "lost_min_dist": 3.0,
     "graze_idle": 0.4,
     "_goal_comment": "沒察覺時邊吃草邊往目的地（goals）走：每回合 graze_idle 的機率停下吃草，否則往目的地走 1 格。",
     "escape_dist": 14,

@@ -353,6 +353,10 @@ func _build_buttons() -> void:
 		fb.text = tr("tactical.ui.track_follow").replace("{p}", str(roundi(float(tch["chance"]) * 100.0))) + tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(tch["breath"]), 0.1)))
 		fb.tooltip_text = "、".join((tch["factors"] as Array).map(func(f): return "%s %+d%%" % [f[0], roundi(float(f[1]) * 100.0)]))
 		fb.pressed.connect(func(): h.follow_track(); _after_action())
+		# 喘不夠追（2026-11-19 試玩回報：只剩 7 喘還能按「追 22 喘」）：灰掉、滑鼠提示寫要多少喘
+		if h.breath < float(tch["breath"]):
+			fb.disabled = true
+			fb.tooltip_text = tr("tactical.ui.track_no_breath").replace("{n}", str(roundi(float(tch["breath"])))).replace("{have}", str(floori(h.breath)))
 		buttons.add_child(fb)
 		var gb := Button.new()
 		gb.theme_type_variation = &"SmallButton"
