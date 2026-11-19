@@ -76,7 +76,8 @@ static func step(h, pol: String) -> void:
 		else:
 			h.give_up_track()
 		return
-	# 咬住了：壓倒和咬喉挑機率高的；都做不到就鬆口
+	# 咬住了（Phase 2o 第 2 步：照情況挑招）：
+	#   累了、受傷的 → 壓倒、咬喉挑機率高的（咬喉這時最有效）；健康的大型獵物 → 先咬後腿削弱；喘不夠 → 死咬拖住撐著；都做不到就鬆口
 	if h.held:
 		var opts: Dictionary = h.hold_options()
 		var pick := "release"
@@ -85,12 +86,19 @@ static func step(h, pol: String) -> void:
 			if opts.has(k) and float(opts[k]["chance"]) > bc:
 				bc = float(opts[k]["chance"])
 				pick = k
-		# 大型獵物（物種有咬住後的加減，例如馬鹿；Phase 2d 第 2 步）：機會不大時先咬後腿、再不行就死咬拖住，把牠拖垮
-		if h.sp().has("hold") and bc < float(h.t["game"].get("instinct_wear_down", 0.3)):
+		var hams: int = int(h.herd[h.di].get("hamstrung", 0))
+		var tired: bool = h.deer_fatigue_any() >= 0.5 or h.wounds >= 2
+		if not tired and h._large_healthy() and opts.has("hamstring") and hams < 1:
+			pick = "hamstring"
+		elif h.sp().has("hold") and bc < float(h.t["game"].get("instinct_wear_down", 0.3)):
+			# 大型獵物（物種有咬住後的加減）機會太小：先咬後腿、再不行就死咬拖住，把牠拖垮
 			if opts.has("hamstring"):
 				pick = "hamstring"
 			elif opts.has("hang"):
 				pick = "hang"
+		# 喘不夠下一次壓倒：死咬拖住（只花一點喘、牠踢不太到你、越掙扎越累）
+		if pick in ["takedown", "throat"] and opts.has("hang") and h.breath < float(opts[pick]["breath"]) * 2.0 and bc < 0.6:
+			pick = "hang"
 		# 苔原狼在旁邊（群體狩獵實驗）：牠們一起拖倒的機會比自己出手好，就死咬拖住
 		if opts.has("hang") and float(opts["hang"].get("ally_takedown_any", 0.0)) > bc:
 			pick = "hang"

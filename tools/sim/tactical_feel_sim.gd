@@ -175,13 +175,14 @@ func _step(h, pol: String) -> void:
 func _part_b(runs: int) -> void:
 	print("== B. 咬住之後的招式（同一個種子照本能打到第一次咬住，之後換打法；每格最多 %d 場，只算有咬住的）" % runs)
 	print("   打法：獵到／掙脫或鬆口後逃走／被踢的場次比例／咬住後幾回合（平均）／咬住後的喘消耗（平均）")
-	var cases := [["deer", "healthy"], ["deer", "average"], ["deer", "weak"], ["elk", ""]]
+	# 第三個欄位 low：咬住時把喘降到上限的 25%（喘不夠的時候，Phase 2o 第 2 步）
+	var cases := [["deer", "healthy", ""], ["deer", "average", ""], ["deer", "weak", ""], ["elk", "healthy", ""], ["elk", "weak", ""], ["deer", "healthy", "low"], ["elk", "healthy", "low"]]
 	for cs in cases:
-		var line := "%-5s %-8s" % [cs[0], cs[1]]
+		var line := "%-5s %-8s %-3s" % [cs[0], cs[1], cs[2]]
 		var n_held := 0
 		var sides := {}
 		var res := {}
-		for strat in ["takedown", "throat", "best", "ham", "hang2", "hang_throat"]:
+		for strat in ["takedown", "throat", "best", "ham1", "ham", "hang2", "hang_throat"]:
 			var ok := 0
 			var lost := 0
 			var kicked := 0
@@ -205,6 +206,8 @@ func _part_b(runs: int) -> void:
 					TacticalInstinct.step(h, p)
 				if not h.held:
 					continue
+				if str(cs[2]) == "low":
+					h.breath = h.breath_max * 0.25
 				nh += 1
 				if strat == "takedown":
 					sides[h.hold_side] = int(sides.get(h.hold_side, 0)) + 1
@@ -225,6 +228,8 @@ func _part_b(runs: int) -> void:
 						"best":
 							TacticalInstinct.step(h, p)
 							continue
+						"ham1":
+							pick = "hamstring" if opts.has("hamstring") and int(h.herd[h.di].get("hamstrung", 0)) < 1 and n <= 2 else "takedown"
 						"ham":
 							pick = "hamstring" if opts.has("hamstring") else "takedown"
 						"hang2":

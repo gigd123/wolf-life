@@ -1844,6 +1844,9 @@ tactical.factor.rush,衝過去，牠先驚覺
 tactical.factor.strength,你的力量
 tactical.factor.skill,你的技巧
 tactical.factor.hamstrung,後腿受傷
+tactical.factor.large_healthy,牠又大又壯，很難直接壓倒
+tactical.factor.wounded,牠受了傷
+tactical.factor.throat_healthy,牠還有力氣掙扎
 tactical.factor.neck,咬在頸部
 tactical.factor.break,牠掙脫的機會
 tactical.kick.rear,牠的後腿踢中了你（血量 −{n}）。

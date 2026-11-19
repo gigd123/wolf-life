@@ -1184,6 +1184,10 @@ func hold_options() -> Dictionary:
 		+ hams * float(h["hamstring"]["takedown"])
 	var tf: Array = [[_tx("tactical.factor.strength"), (float(wolf["strength"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
 	td += _cond_factor(tf, "takedown")
+	# 健康的大型獵物很難直接壓倒（Phase 2o 第 2 步：先咬後腿削弱牠）
+	if _large_healthy():
+		td += float(h.get("large_healthy_takedown", 0.0))
+		tf.append([_tx("tactical.factor.large_healthy"), float(h.get("large_healthy_takedown", 0.0))])
 	td += _stand_factor(tf, "takedown")
 	td += _age_factor(tf, true)
 	if hams > 0:
@@ -1194,9 +1198,16 @@ func hold_options() -> Dictionary:
 		tf.append([_tx("tactical.factor.ally"), ally_h])
 	out["takedown"] = {"chance": clamp(td, 0.05, 0.95), "breath": float(h["takedown_breath"]), "factors": tf}
 	var front_b: float = float(h["front"]["throat"]) if hold_side == "front" else 0.0
-	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + fat * float(h["tired"]) + wounds * float(h["per_wound"]) \
+	# 咬喉：對累的、受傷的獵物有效（Phase 2o 第 2 步：疲勞與傷口的加成 × throat_tired_mult），健康的再減 throat_healthy
+	var tmul: float = float(h.get("throat_tired_mult", 1.0))
+	var th: float = float(h["throat_base"]) + (float(wolf["skill"]) - 50.0) / float(h["divisor"]) + (fat * float(h["tired"]) + wounds * float(h["per_wound"])) * tmul \
 		+ float(fb.get("throat", 0.0)) + front_b
-	var thf: Array = [[_tx("tactical.factor.skill"), (float(wolf["skill"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"])]]
+	var thf: Array = [[_tx("tactical.factor.skill"), (float(wolf["skill"]) - 50.0) / float(h["divisor"])], [_tx("tactical.factor.tired"), fat * float(h["tired"]) * tmul]]
+	if wounds > 0 and tmul != 1.0:
+		thf.append([_tx("tactical.factor.wounded"), wounds * float(h["per_wound"]) * tmul])
+	if not is_fawn() and condition == "healthy" and float(h.get("throat_healthy", 0.0)) != 0.0:
+		th += float(h["throat_healthy"])
+		thf.append([_tx("tactical.factor.throat_healthy"), float(h["throat_healthy"])])
 	th += _cond_factor(thf, "throat")
 	th += _stand_factor(thf, "throat")
 	th += _age_factor(thf, true)
@@ -1236,6 +1247,12 @@ func hold_options() -> Dictionary:
 	out["release"] = {"chance": 1.0, "breath": 0.0, "factors": []}
 	return out
 
+# 健康的大型獵物（Phase 2o 第 2 步）：hold.large 的物種，或成年公鹿（主遊戲的 life_stage buck）；體況是健康
+func _large_healthy() -> bool:
+	if is_fawn() or condition != "healthy":
+		return false
+	return (t["hold"].get("large", []) as Array).has(str(herd[di].get("species", "deer"))) or str(game_mods.get("life_stage", "")) == "buck"
+
 # 牠掙脫的機率（每回合）：越累越低；咬喉失敗那一回合更容易掙脫
 func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> float:
 	var h: Dictionary = t["hold"]
@@ -1246,6 +1263,8 @@ func break_chance(after_throat_miss: bool = false, hanging: bool = false) -> flo
 		v += float(t["herd"]["fawn"]["break"])
 	v += float(sp().get("hold", {}).get("break", 0.0))
 	v += cond_mod("break")
+	# 後腿受傷（Phase 2o 第 2 步）：咬住時比較甩不開你
+	v += int(herd[di].get("hamstrung", 0)) * float(h["hamstring"].get("break", 0.0))
 	if wolves.size() > 1:
 		v -= _allies_adjacent() * float(_allies_cfg().get("hold", {}).get("break_per_wolf", 0.0)) * _pack_help()
 	if mother_hit_fawn_held:
@@ -1329,6 +1348,9 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 	herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + 1
 	var h: Dictionary = t["hold"]
 	var kick_p: float = float(sp().get("hold", {}).get("kick", h["kick"])) * (float(h["front"]["kick_mult"]) if hold_side == "front" else 1.0)
+	# 死咬拖住的那一回合（Phase 2o 第 2 步）：用體重掛著，牠踢不太到你
+	if hanging:
+		kick_p *= float(h["hang"].get("kick_mult", 1.0))
 	if not is_fawn() and rng.randf() < kick_p:
 		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
 		var dmg: int = _prey_dmg(rng.randi_range(int(k[0]), int(k[1])))
