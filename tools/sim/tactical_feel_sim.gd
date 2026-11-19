@@ -175,7 +175,7 @@ func _step(h, pol: String) -> void:
 func _part_b(runs: int) -> void:
 	print("== B. 咬住之後的招式（同一個種子照本能打到第一次咬住，之後換打法；每格最多 %d 場，只算有咬住的）" % runs)
 	print("   打法：獵到／掙脫或鬆口後逃走／被踢的場次比例／咬住後幾回合（平均）／咬住後的喘消耗（平均）")
-	# 第三個欄位 low：咬住時把喘降到上限的 25%（喘不夠的時候，Phase 2o 第 2 步）
+	# 第三個欄位 low：咬住時喘只剩 7（不夠壓倒；Phase 2o 第 2 步）
 	var cases := [["deer", "healthy", ""], ["deer", "average", ""], ["deer", "weak", ""], ["elk", "healthy", ""], ["elk", "weak", ""], ["deer", "healthy", "low"], ["elk", "healthy", "low"]]
 	for cs in cases:
 		var line := "%-5s %-8s %-3s" % [cs[0], cs[1], cs[2]]
@@ -191,6 +191,8 @@ func _part_b(runs: int) -> void:
 			var hb := 0.0
 			for i in runs:
 				var h = TH.new()
+				if not tune_set.is_empty():
+					_merge(h.t, tune_set.duplicate(true))
 				var ctx := {"family": "edge", "seed": i * 4421 + 7, "wolf": WOLF, "wind_relation": WINDS[i % 3]}
 				if cs[0] == "elk":
 					ctx["species"] = "elk"
@@ -207,7 +209,7 @@ func _part_b(runs: int) -> void:
 				if not h.held:
 					continue
 				if str(cs[2]) == "low":
-					h.breath = h.breath_max * 0.25
+					h.breath = 7.0 # 夠咬喉（5）、不夠壓倒（8）：只剩咬喉、死咬拖住或鬆口
 				nh += 1
 				if strat == "takedown":
 					sides[h.hold_side] = int(sides.get(h.hold_side, 0)) + 1
