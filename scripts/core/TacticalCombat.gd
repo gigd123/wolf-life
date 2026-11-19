@@ -113,6 +113,9 @@ func setup(p_scenario: String, opts: Dictionary = {}) -> void:
 		var au := _make_wolf(str(a["id"]), "ally", _v(a["pos"]), (a["stats"] as Dictionary).duplicate() if a.has("stats") else wp.duplicate())
 		if a.has("name"):
 			au["name"] = str(a["name"])
+		# 畫面用哪一種狼的圖（幫你打狼獾的苔原狼，2026-11-19）
+		if a.has("art_key"):
+			au["art_key"] = str(a["art_key"])
 		units.append(au)
 	var o: Dictionary = sc["opponent"]
 	_add_enemy(o, opts.get("opponent_stats", {}), float(opts.get("stake", 1.0)))

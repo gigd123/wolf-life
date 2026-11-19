@@ -5656,6 +5656,22 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 				allies.append({"id": uid, "pos": [ally_spots[k - 1].x, ally_spots[k - 1].y], "stats": st})
 				members[uid] = m.id
 		sc["allies"] = allies
+	# 幫苔原狼對付狼獾（2026-11-19 試玩回報 Bug #9：選了一起對付，戰場上卻只有你）：那對苔原狼一起上場（自動行動），
+	# 照選單式的「狼獾已經被咬傷」（start_hp_ratio）
+	if c.context == "mob":
+		var al2: Array = sc.get("allies", [])
+		var used: int = al2.size()
+		var tw: Array = tundra_pair()
+		for k in tw.size():
+			if used + k >= ally_spots.size():
+				break
+			var tn: NpcWolf = tw[k]
+			var sp2: Vector2i = ally_spots[used + k]
+			al2.append({"id": "tundra_ally_%d" % (k + 1), "pos": [sp2.x, sp2.y], "art_key": "tundra_wolf", "name": tr("animal.tundra_wolf"),
+				"stats": {"speed": tn.speed, "strength": tn.strength, "skill": tn.skill, "perception": tn.perception, "stamina": 80.0, "health": tn.health, "health_max": tn.health_max}})
+		sc["allies"] = al2
+		if c.npc != null and opts.has("opponent_stats"):
+			opts["opponent_stats"]["health"] = float(opts["opponent_stats"]["health"]) * float(_mob_cfg().get("start_hp_ratio", 0.7))
 	# 第 5 步：多隻對手（苔原狼一對）
 	var extra_npcs: Array = _tc_extra_foes(c)
 	var extras: Array = []

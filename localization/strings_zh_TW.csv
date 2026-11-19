@@ -2625,6 +2625,7 @@ tcombat.info.mode.back,退開
 tcombat.info.mode.escape,受傷撤退
 tcombat.info.mode.carry,叼著肉撤
 tcombat.info.mode.duel,和牠對峙
+tcombat.info.mode.guard_food,守著肉
 tcombat.info.carcass,殘骸：剩 {n} 段
 tcombat.in_zone,這一格在牠看起來要打的範圍裡
 tcombat.level.0,（看不清楚）

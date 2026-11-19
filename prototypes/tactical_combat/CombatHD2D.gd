@@ -21,7 +21,7 @@ func setup(combat: TacticalCombat) -> void:
 
 func _unit_art(i: int) -> Dictionary:
 	var u: Dictionary = tc.units[i]
-	var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
+	var key: String = str(u.get("art_key", u["id"])) if str(u["species"]) == "wolf" else str(u["species"])
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
 		var wp := _wolf_pose(i)
