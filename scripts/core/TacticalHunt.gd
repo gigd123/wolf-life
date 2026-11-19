@@ -1289,8 +1289,9 @@ func hold_action(id: String) -> void:
 		rounds += 1
 		_deer_turn()
 		return
-	breath = max(0.0, breath - float(o["breath"]))
-	breath_used += float(o["breath"])
+	# 喘的消耗；負的是回喘（死咬拖住用體重掛著，Phase 2o 第 2 步），不超過上限
+	breath = clamp(breath - float(o["breath"]), 0.0, breath_max)
+	breath_used += maxf(0.0, float(o["breath"]))
 	if id == "hang":
 		# 死咬拖住：那一回合只花 hang 的喘（不再扣咬著的消耗），獵物掙扎得更累
 		herd[di]["struggle"] = int(herd[di].get("struggle", 0)) + int(t["hold"]["hang"]["struggle"].get(hold_side, 1)) - 1

@@ -1964,6 +1964,7 @@ tactical.ui.hang,死咬拖住
 tactical.ui.hamstring,咬後腿
 tactical.ui.release,鬆口
 tactical.ui.breath_cost,（{n} 喘）
+tactical.ui.breath_gain,（回 {n} 喘）
 tactical.ui.no_breath,（喘不夠）
 tactical.ui.no_breath_tip,要 {n} 喘，你現在只剩 {have}。可以死咬拖住把牠拖累，或鬆口退開喘一下。
 tactical.ui.no_breath_pounce,喘不夠，撲不上去

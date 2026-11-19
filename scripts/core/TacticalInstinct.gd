@@ -96,9 +96,9 @@ static func step(h, pol: String) -> void:
 				pick = "hamstring"
 			elif opts.has("hang"):
 				pick = "hang"
-		# 喘不夠下一次壓倒：死咬拖住（只花一點喘、牠踢不太到你、越掙扎越累）
-		if pick in ["takedown", "throat"] and opts.has("hang") and h.breath < float(opts[pick]["breath"]) * 2.0 and bc < 0.6:
-			pick = "hang"
+		# 喘不夠壓倒（Phase 2o 第 2 步）：咬喉的機會夠就咬喉，不然死咬拖住（回一點喘、牠踢不太到你、越掙扎越累），撐到喘夠再壓倒
+		if not opts.has("takedown") and h.hold_short.has("takedown") and opts.has("hang"):
+			pick = "throat" if opts.has("throat") and float(opts["throat"]["chance"]) >= 0.35 else "hang"
 		# 苔原狼在旁邊（群體狩獵實驗）：牠們一起拖倒的機會比自己出手好，就死咬拖住
 		if opts.has("hang") and float(opts["hang"].get("ally_takedown_any", 0.0)) > bc:
 			pick = "hang"

@@ -376,7 +376,9 @@ func _build_buttons() -> void:
 				var b := Button.new()
 				b.theme_type_variation = &"SmallButton"
 				b.text = names[id] + ("" if id in ["release", "hang"] else " %d%%" % roundi(float(opts[id]["chance"]) * 100.0))
-				var cost: String = tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(float(opts[id]["breath"]), 0.1)))
+				var bv: float = float(opts[id]["breath"])
+				# 負的是回喘（死咬拖住，Phase 2o 第 2 步）
+				var cost: String = tr("tactical.ui.breath_gain").replace("{n}", str(snappedf(-bv, 0.1))) if bv < 0.0 else tr("tactical.ui.breath_cost").replace("{n}", str(snappedf(bv, 0.1)))
 				var allies_help: bool = id == "hang" and opts[id].has("ally_takedown_any")
 				# 死咬拖住寫喘；旁邊有苔原狼時改寫牠們拖倒的機率（按鈕放不下兩個，喘寫在滑鼠提示）
 				if id == "hang" and not allies_help:
