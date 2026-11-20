@@ -75,6 +75,21 @@ def band(g, pts, width, ch="f"):
                 put(g, round(cx), round(cy + dy), ch)
 
 
+def river(g, pts, deep, shallow):
+    """沿折線畫一條河：離中線 deep 格內是深水 d、shallow 格內是淺水 s（連成一片，不會有破洞）"""
+    def seg_dist(px, py, x0, y0, x1, y1):
+        vx, vy = x1 - x0, y1 - y0
+        t = max(0.0, min(1.0, ((px - x0) * vx + (py - y0) * vy) / float(vx * vx + vy * vy)))
+        return math.hypot(px - (x0 + t * vx), py - (y0 + t * vy))
+    for y in range(H):
+        for x in range(W):
+            d = min(seg_dist(x, y, *a, *b) for a, b in zip(pts, pts[1:]))
+            if d <= deep:
+                g[y][x] = "d"
+            elif d <= shallow and g[y][x] != "d":
+                g[y][x] = "s"
+
+
 def cover_strips(g, seed, n):
     """Phase 2o 第 1 步：開闊、林緣、溪流的地圖多 n 條掩蔽帶（灌木叢 f 或倒木 l，4～8 格長、蜿蜒），
     平均散在地圖的左、中、右，讓接近獵物時有「掩蔽到掩蔽」的路線；不蓋掉已經有的地形"""
@@ -155,6 +170,19 @@ def maps():
                 g[y][x] = "."
     cover_strips(g, 8, 2)
     out["stream_2"] = {"name": "溪谷（兩岸柳叢）", "family": "stream", "map": g}
+    # --- 河彎（Phase 2o 第 3 步，逃跑路線受限的地圖）：一條深水河從地圖左上沿著左邊流下、彎到下方。
+    # 左邊的出口被河擋住；從右邊開闊處逼近，牠只能往河彎裡跑；從河那一側逼近，等於把牠往右邊的開闊地趕
+    g = blank()
+    bend = [(5, -1), (5, 6), (6, 9), (9, 11), (14, 13), (22, 14), (30, 15), (40, 16)]
+    river(g, bend, 1.3, 2.4)
+    for (x, y) in [(10, 2), (11, 6), (14, 9), (21, 10), (28, 11)]:  # 岸邊零星的柳叢（只長在平地上）
+        rnd = random.Random(x * 7 + y)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if 0 <= x + dx < W and 0 <= y + dy < H and g[y + dy][x + dx] == "." and (dx == 0 or dy == 0 or rnd.random() < 0.5):
+                    g[y + dy][x + dx] = "f"
+    cover_strips(g, 9, 2)
+    out["stream_3"] = {"name": "河彎（深水擋住左邊與下方）", "family": "stream", "map": g}
     # --- 倒木、岩堆 ---
     g = blank()
     line(g, 12, 2, 15, 8); line(g, 24, 9, 28, 14); line(g, 20, 3, 26, 2)

@@ -2760,6 +2760,7 @@ func _deer_flee() -> void:
 		deer_state = "stand"
 		deer_facing = _dir_toward(deer_pos, wolf_pos)
 		events.append(_tx("tactical.cornered"))
+		stats["cornered"] = int(stats.get("cornered", 0)) + 1
 		return
 	# 從最好的二到三個方向隨機選一個；在密林裡有機會急轉成第二好的
 	# 之字形跑（兔子，2026-10-22）：物種可以覆寫，最好的二到三個方向機率比較平均
@@ -2804,6 +2805,12 @@ func _deer_flee() -> void:
 				sim = alt
 				break
 	var before := dist(deer_pos, wolf_pos)
+	# 量測用（Phase 2o 第 3 步）：這一回合逃跑偏離「正背對狼」超過約 45°（繞路）、穿過難走的地形（受阻）
+	stats["flee_moves"] = int(stats.get("flee_moves", 0)) + 1
+	if Vector2(d).normalized().dot(_away_dir()) < 0.7:
+		stats["flee_detour"] = int(stats.get("flee_detour", 0)) + 1
+	if int(sim["logs"]) > 0:
+		stats["flee_rough"] = int(stats.get("flee_rough", 0)) + 1
 	flee_round += 1
 	deer_facing = d
 	if sim["out"]:

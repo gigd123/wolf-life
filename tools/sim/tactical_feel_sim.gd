@@ -299,58 +299,81 @@ func _part_h(runs: int, fams: Array) -> void:
 			print(line)
 
 
-# D. 地形與逃跑路線（Phase 2o 第 3 步）
+# D. 地形與逃跑路線（Phase 2o 第 3 步）：MAP=stream_3 只用這一張地圖；POLS 預設 instinct,straight
+# 每個方向用同一組種子（獵物位置、體況、亂數一樣），只差狼從哪一側開始
 func _part_d(runs: int, fams: Array) -> void:
-	print("== D. 地形與逃跑路線（白尾鹿單隻、體況照遊戲比例、側風、本能；每格 %d 場）" % runs)
-	print("   追逐後逃掉＝牠開始逃之後逃走、不見或你放棄的比例；方向＝狼從西／東／北／南接近的成功率，差＝最高減最低")
+	var only_map: String = OS.get_environment("MAP")
+	var pols: Array = OS.get_environment("POLS").split(",") if OS.get_environment("POLS") != "" else ["instinct", "straight"]
+	print("== D. 地形與逃跑路線（白尾鹿單隻、體況照遊戲比例、側風；每格 %d 場%s）" % [runs, ("，地圖 " + only_map) if only_map != "" else ""])
+	print("   每個方向：獵到／追逐後逃掉（逃走、不見、放棄）／站定（被逼到）／逃跑時繞路／穿過難走地形／追逐回合／喘的消耗")
 	var dirs := {"西": Vector2i(-1, 0), "東": Vector2i(1, 0), "北": Vector2i(0, -1), "南": Vector2i(0, 1)}
+	if only_map != "":
+		fams = [TH.new().t["maps"][only_map]["family"]]
 	for fam in fams:
-		var fled := 0
-		var fled_esc := 0
-		var gave_open := 0
-		var by_dir := {}
-		for dk in dirs:
-			var ok := 0
-			for i in runs:
-				var h = TH.new()
-				if not tune_set.is_empty():
-					_merge(h.t, tune_set.duplicate(true))
-				h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": WOLF, "wind_relation": "crosswind"})
-				# 把狼放在鹿的那個方向約 10 格、最近的平地（同一張圖、同一隻鹿）
-				var want: Vector2i = h.deer_pos + dirs[dk] * 10
-				want = Vector2i(clampi(want.x, 1, h.width - 2), clampi(want.y, 1, h.height - 2))
-				var best: Vector2i = h.wolf_pos
-				var bd := INF
-				for y in h.height:
-					for x in h.width:
-						var c := Vector2i(x, y)
-						if h.terrain(c) == "." and h.dist(c, h.deer_pos) >= 6.0 and h.dist(c, want) < bd:
-							bd = h.dist(c, want)
-							best = c
-				h.wolf_pos = best
-				h.wind = h.wind_for("crosswind")
-				TacticalInstinct.pick_target(h)
-				var p: String = TacticalInstinct.pick_policy(h)
-				var guard := 0
-				var was_flee := false
-				while not h.done and guard < 70:
-					guard += 1
-					TacticalInstinct.step(h, p)
-					if str(h.deer_state) == "flee":
-						was_flee = true
-				if h.result == "caught":
-					ok += 1
-				if was_flee:
-					fled += 1
-					if h.result in ["escaped", "lost", "gave_up"]:
-						fled_esc += 1
-					if h.result == "gave_up" and str(h.reason) == h._tx("tactical.gave_up_open").replace("{animal}", h.label()):
-						gave_open += 1
-			by_dir[dk] = roundi(100.0 * ok / runs)
-		var vals: Array = by_dir.values()
-		vals.sort()
-		var line := "%-7s 追逐後逃掉 %2d%%（開闊地放棄 %2d%%）  方向" % [fam, roundi(100.0 * fled_esc / maxi(1, fled)), roundi(100.0 * gave_open / maxi(1, fled))]
-		for dk in dirs:
-			line += " %s%2d%%" % [dk, by_dir[dk]]
-		line += "  差 %d" % (int(vals[-1]) - int(vals[0]))
-		print(line)
+		for pol in pols:
+			var by_dir := {}
+			var lines: Array = []
+			for dk in dirs:
+				var ok := 0
+				var fled := 0
+				var fled_esc := 0
+				var corner := 0
+				var moves := 0
+				var detour := 0
+				var rough := 0
+				var chase_r := 0
+				var breath := 0.0
+				for i in runs:
+					var h = TH.new()
+					if not tune_set.is_empty():
+						_merge(h.t, tune_set.duplicate(true))
+					if only_map != "":
+						h.t["maps"] = {only_map: h.t["maps"][only_map]}
+					h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": WOLF, "wind_relation": "crosswind"})
+					# 把狼放在鹿的那個方向約 10 格、最近的平地（同一張圖、同一隻鹿）
+					var want: Vector2i = h.deer_pos + dirs[dk] * 10
+					want = Vector2i(clampi(want.x, 1, h.width - 2), clampi(want.y, 1, h.height - 2))
+					var best: Vector2i = h.wolf_pos
+					var bd := INF
+					for y in h.height:
+						for x in h.width:
+							var c := Vector2i(x, y)
+							if h.terrain(c) == "." and h.dist(c, h.deer_pos) >= 6.0 and h.dist(c, want) < bd:
+								bd = h.dist(c, want)
+								best = c
+					h.wolf_pos = best
+					h.wind = h.wind_for("crosswind")
+					var p: String = pol
+					if pol == "instinct":
+						TacticalInstinct.pick_target(h)
+						p = TacticalInstinct.pick_policy(h)
+					var guard := 0
+					var was_flee := false
+					var r0 := -1
+					while not h.done and guard < 70:
+						guard += 1
+						_step(h, p)
+						if str(h.deer_state) in ["flee", "stand"] and not was_flee:
+							was_flee = true
+							r0 = h.rounds
+					if h.result == "caught":
+						ok += 1
+					if was_flee:
+						fled += 1
+						chase_r += h.rounds - r0
+						if h.result in ["escaped", "lost", "gave_up"]:
+							fled_esc += 1
+						if int(h.stats.get("cornered", 0)) > 0:
+							corner += 1
+					moves += int(h.stats.get("flee_moves", 0))
+					detour += int(h.stats.get("flee_detour", 0))
+					rough += int(h.stats.get("flee_rough", 0))
+					breath += float(h.breath_used)
+				by_dir[dk] = roundi(100.0 * ok / runs)
+				lines.append("    %s %2d%%／%2d%%／%2d%%／%2d%%／%2d%%／%.1f／%.0f" % [dk, by_dir[dk], roundi(100.0 * fled_esc / maxi(1, fled)), roundi(100.0 * corner / maxi(1, fled)),
+					roundi(100.0 * detour / maxi(1, moves)), roundi(100.0 * rough / maxi(1, moves)), float(chase_r) / maxi(1, fled), breath / runs])
+			var vals: Array = by_dir.values()
+			vals.sort()
+			print("%-7s %-9s 方向差 %d" % [fam, pol, int(vals[-1]) - int(vals[0])])
+			for l in lines:
+				print(l)
