@@ -2581,8 +2581,9 @@ func _flee_budget(i: int = -1) -> float:
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
 	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - _snow_slow(k))
 	# 從草裡竄出來的幼鹿（Phase 2i 第 6 步）：前 bolt_rounds 回合多跑 bolt_bonus 格（被踩到才跑，一開始衝得最猛）
-	if bool(h.get("bolted", false)) and int(h["flee_round"]) < int(_hidden_cfg().get("bolt_rounds", 0)):
-		b += float(_hidden_cfg().get("bolt_bonus", 0.0))
+	# 物種可以覆寫（2026-11-20 使用者選 A：鹿的幼體竄出那一下約和狼一樣快；叉角羚幼體維持原本的 +3、2 回合）
+	if bool(h.get("bolted", false)) and int(h["flee_round"]) < int(sp(k).get("bolt_rounds", _hidden_cfg().get("bolt_rounds", 0))):
+		b += float(sp(k).get("bolt_bonus", _hidden_cfg().get("bolt_bonus", 0.0)))
 	if bool(h.get("injured", false)):
 		var g: Dictionary = t.get("game", {})
 		b = max(1.0, b * float(g.get("injured_speed_by", {}).get(str(h.get("species", "")), g.get("injured_speed_mult", 1.0))))

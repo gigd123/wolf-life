@@ -44,13 +44,17 @@ func _process(_d) -> bool:
 					if sp != "deer":
 						ctx["species"] = sp
 					h.setup_from_game(ctx)
+					# 和 TacticalInstinct.play 一樣先挑目標與打法（2026-11-20：原本傳空字串，狼追得很差，驚起後的成功率被低估）
+					TacticalInstinct.pick_target(h)
+					var pol: String = TacticalInstinct.pick_policy(h)
+					h.game_mods["instinct_penalty"] = float(h.t.get("game", {}).get("instinct_penalty", 0.0))
 					var was_b := false
 					var guard := 0
 					while not h.done and guard < 60:
 						guard += 1
 						var before: bool = bool(h.herd[h.target].get("bolted", false))
 						var p0: Vector2i = h.deer_pos
-						TacticalInstinct.step(h, "")
+						TacticalInstinct.step(h, pol)
 						if not before and bool(h.herd[h.target].get("bolted", false)):
 							was_b = true
 							run1 += h.dist(p0, h.deer_pos)
