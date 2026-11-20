@@ -197,6 +197,21 @@ def maps():
     for x, y in [(10, 4), (16, 11), (24, 6), (30, 12), (33, 3)]:
         blob(g, x, y, 1.6, 1.2, "l", rough=0.5, seed=x + y * 3)
     out["logs_3"] = {"name": "岩堆", "family": "logs", "map": g}
+    # --- 倒木密集區（Phase 2o 第 3 步，逃跑路線受限的地圖）：地圖右側一整片風倒木，斜斜地佔掉右邊的出口。
+    # 和河彎不一樣：倒木走得過去、只是慢，中間有零星的空隙，你在裡面也一樣慢、但有掩蔽。
+    # 從左邊開闊處逼近，牠只能往倒木裡鑽；從倒木那一側逼近，等於把牠往左邊的開闊地趕
+    g = blank()
+    rnd = random.Random(404)
+    for y in range(H):
+        edge = 23 + int(y * 0.8) + rnd.randint(-1, 1)
+        for x in range(W):
+            if x >= edge:
+                r = rnd.random()
+                g[y][x] = "l" if r < 0.72 else ("f" if r < 0.82 else ".")
+            elif x >= edge - 2 and rnd.random() < 0.3:  # 邊緣零星的倒木
+                g[y][x] = "l"
+    cover_strips(g, 10, 2)
+    out["logs_4"] = {"name": "倒木密集區（右側一整片風倒木）", "family": "logs", "map": g}
     # --- 岩坡（Phase 2d 第 3 步）：鹿在下方的草甸、岩坡在幾格外 ---
     g = blank()
     edge_top(g, 5, 1, 51, "r")
