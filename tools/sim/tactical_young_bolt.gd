@@ -2,7 +2,8 @@ extends SceneTree
 # 躲在草裡的幼體被驚起之後追不追得上（2026-11-20 試玩回報 Bug #6）：物種 × 地圖族 × 狼，本能打法，每格 RUNS 場。
 # 印：獵到、被驚起的比例、驚起後獵到、驚起後第一回合幼體跑幾格與狼能衝幾格。
 # TUNE_SET='{"special": {...}}' 合併進 tactical_hunt.json（試驚起的加成、幼體的逃跑格數）。
-# 用法：RUNS=300 bash tools/run_sim.sh tactical_young_bolt
+# 用法：RUNS=300 bash tools/run_sim.sh tactical_young_bolt（SPECIES=mule_deer FAMS=slope,edge 只跑一部分）
+# 叉角羚的幼體在主遊戲是 pronghorn_kid、沒有母親（game.no_mother），這裡照主遊戲開
 var f := 0
 
 static func _merge(a: Dictionary, b: Dictionary) -> void:
@@ -23,8 +24,10 @@ func _process(_d) -> bool:
 		"1歲": {"speed": 58, "skill": 42, "strength": 42, "perception": 48, "stamina": 70, "health": 90, "health_max": 90},
 		"1歲累": {"speed": 58, "skill": 42, "strength": 42, "perception": 48, "stamina": 30, "health": 90, "health_max": 90},
 		"成年": {"speed": 62, "skill": 58, "strength": 58, "perception": 55, "stamina": 80, "health": 100, "health_max": 100}}
-	for sp in ["deer", "elk", "mule_deer", "pronghorn"]:
-		for fam in ["open", "edge", "dense"]:
+	var sps: Array = OS.get_environment("SPECIES").split(",") if OS.get_environment("SPECIES") != "" else ["deer", "elk", "mule_deer", "pronghorn_kid"]
+	var fams: Array = OS.get_environment("FAMS").split(",") if OS.get_environment("FAMS") != "" else ["open", "edge", "dense", "slope"]
+	for sp in sps:
+		for fam in fams:
 			var line := "%-10s %-6s" % [sp, fam]
 			for wk in wolves:
 				var ok := 0
@@ -36,7 +39,7 @@ func _process(_d) -> bool:
 					var h = TH.new()
 					if not tune.is_empty():
 						_merge(h.t, tune.duplicate(true))
-					var ctx := {"family": fam, "seed": i * 331 + 9, "wolf": wolves[wk], "wind_relation": "crosswind", "fawn": true,
+					var ctx := {"family": fam, "seed": i * 331 + 9, "wolf": wolves[wk], "wind_relation": "crosswind", "fawn": sp != "pronghorn_kid",
 						"herd": {"calf_alone": true}, "hidden": true, "hidden_detection": 30}
 					if sp != "deer":
 						ctx["species"] = sp
