@@ -142,6 +142,12 @@ static func step(h, pol: String) -> void:
 	if fleeing and not pol.begins_with("dumb") and h.wolves.size() <= 1 and h.open_chase_hopeless():
 		h.give_up_open()
 		return
+	# 繞到有利的一側（Phase 2o 第 3 步）：從這一側逼近，牠的逃跑路線會被水、障礙擋住的話，先繞過去再潛近
+	if not fleeing and pol in ["stalk", "pace"] and bool(_push_cfg(h).get("far", false)):
+		var goal := _push_goal(h)
+		if goal.x >= 0 and h.dist(h.wolf_pos, goal) > 1.5:
+			_go(h, reach, goal, ["trot", "creep"] if h.dist(h.wolf_pos, h.deer_pos) > 8.0 else ["creep"], true)
+			return
 	match pol:
 		"dumb_sprint":
 			_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"])
@@ -159,7 +165,9 @@ static func step(h, pol: String) -> void:
 			elif h.dist(h.wolf_pos, h.deer_pos) > 8.0:
 				_go(h, reach, h.deer_pos, ["trot", "creep"], true)
 			else:
-				_go(h, reach, _behind(h), ["creep"], true)
+				# 最後潛近時往讓牠最難逃的那一側偏（Phase 2o 第 3 步）；不適用時照原本的「牠的側後方」
+				var pc := _push_close(h)
+				_go(h, reach, pc if pc.x >= 0 else _behind(h), ["creep"], true)
 		"hold":
 			# 等同伴趕（群體狩獵實驗）：沒察覺時潛到 hold_dist 格內就停下等（同伴繞到另一側把獵物趕過來）；
 			# 被趕過來時只潛行迎上去（衝出去就沒有埋伏的加成；撲出去那一下可以衝），其他時候截住
@@ -404,3 +412,143 @@ static func _cover_near(h) -> Vector2i:
 					bd = d
 					best = c
 	return best if bd <= 5.0 else Vector2i(-1, -1)
+
+# --- 繞到有利的一側（Phase 2o 第 3 步）---
+# 設定在 tactical_hunt.json 的 instinct_push：radius 繞到離牠幾格、dirs 看幾個方向、min_gain 比現在這一側少讓牠拉開幾格才繞、
+# max_dist 離牠幾格內才考慮、travel 每走一格算多少（太遠的有利位置不值得）
+static func _push_cfg(h) -> Dictionary:
+	return h.t.get("instinct_push", {})
+
+# 狼站在 from 時，牠照現在的逃跑規則跑兩回合，離 from 拉開幾格（跑出場地另加 6）。只是試算，狀態原樣還回去
+static func _escape_gain(h, from: Vector2i) -> float:
+	var sw: Vector2i = h.wolf_pos
+	var sd: Vector2i = h.deer_pos
+	var sf: Vector2i = h.deer_facing
+	var sr: int = h.flee_round
+	var ss: String = str(h.herd[h.di]["state"])
+	h.wolf_pos = from
+	h.herd[h.di]["state"] = "flee"
+	var away := Vector2(sd - from)
+	h.deer_facing = Vector2i(int(signf(away.x)) if absf(away.x) * 2.0 >= absf(away.y) else 0, int(signf(away.y)) if absf(away.y) * 2.0 >= absf(away.x) else 0)
+	var d0: float = h.dist(sd, from)
+	var gain := 0.0
+	for r in 2:
+		h.flee_round = 1 + r
+		var opts: Array = h.flee_options()
+		if opts.is_empty() or float(opts[0]["score"]) < -10.0:
+			break
+		var sim: Dictionary = h._run_line(h.deer_pos, opts[0]["dir"], h._flee_budget())
+		if bool(sim["out"]):
+			gain += 6.0
+			break
+		h.deer_facing = opts[0]["dir"]
+		h.deer_pos = sim["end"]
+	gain += h.dist(h.deer_pos, from) - d0
+	h.deer_pos = sd
+	h.wolf_pos = sw
+	h.deer_facing = sf
+	h.flee_round = sr
+	h.herd[h.di]["state"] = ss
+	return gain
+
+# 最後潛近（離牠 8 格內）的目標：你現在來的方向左右各 close_arc 度內、離牠 close_radius 格的格子裡，
+# 讓牠拉開最少的那一格；和「牠的側後方」比，少 close_min_gain 格以上才換。附近沒有難走的地形時不用
+static func _push_close(h) -> Vector2i:
+	var cfg: Dictionary = _push_cfg(h)
+	var none := Vector2i(-1, -1)
+	if cfg.is_empty() or h.wolves.size() > 1 or h.herd.size() > 1 or h.hidden_unfound():
+		return none
+	if not h.sp().get("seek", {}).is_empty() or not str(h.sp().get("escape_terrain", "")).is_empty():
+		return none
+	var key: String = "%d|%s|%s" % [h.rounds, str(h.deer_pos), str(h.wolf_pos)]
+	if str(h.game_mods.get("_pushc_key", "")) == key:
+		return h.game_mods["_pushc_goal"]
+	var goal := none
+	var r: float = float(cfg.get("close_radius", 2.5))
+	if _barrier_near(h, int(r) + int(cfg.get("barrier_extra", 4))):
+		var to_w := Vector2(h.wolf_pos - h.deer_pos).normalized()
+		var arc: float = cos(deg_to_rad(float(cfg.get("close_arc", 90.0))))
+		var behind: Vector2i = _behind(h)
+		var base_gain: float = _escape_gain(h, behind if h.in_bounds(behind) else h.wolf_pos)
+		var best_g := INF
+		var n: int = int(cfg.get("dirs", 16))
+		for k in n:
+			var v := Vector2(cos(TAU * k / n), sin(TAU * k / n))
+			if v.dot(to_w) < arc:
+				continue
+			var p: Vector2i = h.deer_pos + Vector2i((v * r).round())
+			if not h.in_bounds(p) or not (h.terrain(p) in [".", "f", "l"]) or _wind_penalty(h, p) > 0.0:
+				continue
+			var g: float = _escape_gain(h, p)
+			if g < best_g:
+				best_g = g
+				goal = p
+		if goal.x >= 0 and base_gain - best_g < float(cfg.get("close_min_gain", 2.0)):
+			goal = none
+	h.game_mods["_pushc_key"] = key
+	h.game_mods["_pushc_goal"] = goal
+	return goal
+
+static func _barrier_near(h, bd: int) -> bool:
+	for y in range(h.deer_pos.y - bd, h.deer_pos.y + bd + 1):
+		for x in range(h.deer_pos.x - bd, h.deer_pos.x + bd + 1):
+			var c := Vector2i(x, y)
+			if h.in_bounds(c) and h.deer_rough(c):
+				return true
+	return false
+
+# 有利的那一側（離牠 radius 格的一格；instinct_push.far 打開才用：2026-11-20 量測遠處大繞反而變差）；現在這一側就夠好、或不適用時回傳 (-1, -1)。每回合、牠的位置不變時用算好的
+static func _push_goal(h) -> Vector2i:
+	var cfg: Dictionary = _push_cfg(h)
+	var none := Vector2i(-1, -1)
+	if cfg.is_empty() or h.wolves.size() > 1 or h.herd.size() > 1 or h.hidden_unfound() or not _stealth_on(h):
+		return none
+	if not h.sp().get("seek", {}).is_empty() or not str(h.sp().get("escape_terrain", "")).is_empty():
+		return none # 有自己避難地形的物種（騾鹿、河狸、旱獺、大角羊）照原本的打法
+	var dw: float = h.dist(h.wolf_pos, h.deer_pos)
+	if dw > float(cfg.get("max_dist", 13.0)):
+		return none
+	var key: String = "%d|%s" % [h.rounds, str(h.deer_pos)]
+	if str(h.game_mods.get("_push_key", "")) == key:
+		return h.game_mods["_push_goal"]
+	var r: float = float(cfg.get("radius", 5.0))
+	# 附近要有對牠來說難走的地形（水、倒木、岩坡……）才值得繞：開闊地圖只有地圖邊界不對稱，繞了只會被看到
+	var barrier := false
+	var bd: int = int(r) + int(cfg.get("barrier_extra", 4))
+	for y in range(h.deer_pos.y - bd, h.deer_pos.y + bd + 1):
+		for x in range(h.deer_pos.x - bd, h.deer_pos.x + bd + 1):
+			var c := Vector2i(x, y)
+			if h.in_bounds(c) and h.deer_rough(c):
+				barrier = true
+				break
+		if barrier:
+			break
+	if not barrier:
+		h.game_mods["_push_key"] = key
+		h.game_mods["_push_goal"] = none
+		return none
+	var n: int = int(cfg.get("dirs", 16))
+	var to_w := Vector2(h.wolf_pos - h.deer_pos).normalized()
+	var here: Vector2i = h.deer_pos + Vector2i((to_w * r).round())
+	var here_gain: float = _escape_gain(h, here if h.in_bounds(here) else h.wolf_pos)
+	var stealth: Dictionary = _stealth_map(h)
+	var best := none
+	var bs := INF
+	var best_gain := INF
+	for k in n:
+		var ang: float = TAU * k / n
+		var p: Vector2i = h.deer_pos + Vector2i((Vector2(cos(ang), sin(ang)) * r).round())
+		if not h.in_bounds(p) or not (h.terrain(p) in [".", "f", "l"]) or _wind_penalty(h, p) > 0.0 or not stealth.has(p):
+			continue
+		var g: float = _escape_gain(h, p)
+		var sc: float = g + h.dist(h.wolf_pos, p) * float(cfg.get("travel", 0.15))
+		if sc < bs:
+			bs = sc
+			best = p
+			best_gain = g
+	var goal := none
+	if best.x >= 0 and here_gain - best_gain >= float(cfg.get("min_gain", 3.0)):
+		goal = best
+	h.game_mods["_push_key"] = key
+	h.game_mods["_push_goal"] = goal
+	return goal
