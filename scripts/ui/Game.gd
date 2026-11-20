@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "clear_den", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "clear_den", "fish_salmon", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1764,6 +1764,10 @@ func _on_action_button(action_id: String) -> void:
 			_show_leave_to_children()
 		"clear_den":
 			_log(tr("log.clear_den." + ("ok" if GameState.action_clear_den() else "fail")))
+		"fish_salmon":
+			GameState.action_fish_salmon()
+			_open_river()
+			return
 		"mark":
 			var r: String = GameState.action_mark()
 			_log(tr("log.mark." + r).replace("{region}", tr("region." + GameState.current_region)))

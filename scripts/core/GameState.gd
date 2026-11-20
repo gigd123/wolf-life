@@ -448,7 +448,7 @@ func _queue_day_summary(before_injury: int, before_injury_stat: String, before_p
 	lines.append_array(_day_events)
 	_day_events = []
 	if not lines.is_empty():
-		_queue_notice({"type": "day_summary", "lines": lines, "day": int(life_log.get("days_lived", 1))})
+		_queue_notice({"type": "day_summary", "lines": lines, "day": _today()})
 
 # 睡覺結算：記下這次睡覺時的能力值，下次睡覺時比較。
 const SLEEP_SUMMARY_STATS := ["speed", "strength", "health_max", "skill", "perception"]
@@ -781,6 +781,8 @@ func available_actions() -> Array[String]:
 		actions.append("make_den")
 	if can_clear_den():
 		actions.append("clear_den")
+	if can_fish_salmon():
+		actions.append("fish_salmon")
 	if can_mark_here():
 		actions.append("mark")
 	if can_howl():
@@ -1285,7 +1287,27 @@ func _maybe_salmon(mode: String) -> bool:
 	current_discovery = {"kind": "salmon", "stage": stage, "clue": clue, "location": _water_terrain(current_region)}
 	var sl: Dictionary = life_log.get_or_add("salmon", {})
 	sl["seen"] = int(sl.get("seen", 0)) + 1
+	_remember_salmon_here()
 	return true
+
+# 這一季在這一區見過鮭魚洄流（2026-11-20 試玩回報 Bug #8：捕過一次之後不知道怎麼再捕）：之後這一區有「到河邊捕鮭魚」，到洄流結束或換季
+func _remember_salmon_here() -> void:
+	var known: Dictionary = life_log.get_or_add("salmon_known", {})
+	known[current_region] = {"season": GameTime.season_index, "day": _today()}
+
+func can_fish_salmon() -> bool:
+	if not salmon_fishing_enabled() or salmon_stage() == "" or blizzard_here():
+		return false
+	var k: Dictionary = life_log.get("salmon_known", {}).get(current_region, {})
+	if k.is_empty() or int(k.get("season", -1)) != GameTime.season_index:
+		return false
+	var season_days: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10))
+	return _today() - int(k.get("day", 0)) < season_days
+
+# 到河邊捕鮭魚（行動）：當成這一次探索看到了洄流，照現在的強度開河岸模式
+func action_fish_salmon() -> void:
+	_record_action("fish_salmon")
+	current_discovery = {"kind": "salmon", "stage": salmon_stage(), "clue": "", "location": _water_terrain(current_region)}
 
 # 這一區的水邊地形（溪流、河谷柳叢、大河），沒有就隨便一個
 func _water_terrain(region_id: String) -> String:
@@ -3763,7 +3785,7 @@ func _update_main_tendency() -> void:
 		return
 	life_log["main_tendency"] = best
 	var history: Array = life_log.get("tendency_history", [])
-	history.append({"type": best, "age": snapped(wolf.age_years, 0.1), "day": int(life_log.get("days_lived", 1))})
+	history.append({"type": best, "age": snapped(wolf.age_years, 0.1), "day": _today()})
 	life_log["tendency_history"] = history
 	_queue_notice({"type": "tendency_changed", "tendency": best, "from": current})
 

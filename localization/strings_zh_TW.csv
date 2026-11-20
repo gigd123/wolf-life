@@ -2509,6 +2509,7 @@ fire.den_damaged,巢穴的洞口被燒倒的樹和落下的土石堵住了，暫
 fire.result.light.smoke,濃煙嗆傷了你的喉嚨，不算重。
 fire.result.heavy.smoke,你被濃煙嗆得很重，每喘一口氣都痛。
 action.clear_den,清理巢穴洞口
+action.fish_salmon,到河邊捕鮭魚
 log.clear_den.ok,你又扒又拖，總算把洞口清開了。
 log.clear_den.fail,你扒了半天，洞口還是堵著。
 knowledge.fire_memory,經歷過大火：聞到煙味、看到動物往同一邊逃，就知道該走了。
