@@ -74,6 +74,7 @@
 | `fire.arrive.young、map.tip.young` | 「當年燒過」、白楊比你還高、倒下的老樹還沒有 | `burn_stage` = young（燒完後約 5～10 年，照 region_speed 換算） | — |
 | `fire.arrive.succession、map.tip.succession` | 看不出燒過、白楊比以前多、不是原本的森林 | `burn_stage` = succession（約 10 年以上）；這一區燒過（SPEC：恢復的不是原本的成熟森林） | — |
 | `fire.arrive.ash.again` | 還是一片焦黑 | 第二次以後來到焦黑的區域 | — |
+| `ranch.news.recall` | 「前一陣子…那些陌生的東西，都是從這裡來的」 | 牧場出現前的那一季找到過線索（`life_log.ranch.clues > 0`） | 沒找到線索就只寫 `ranch.news` |
 | `explore.again` | 又是那頭動物 | 同一個發現（`current_discovery.again`） | — |
 | `death.card.injury` | 傷一直沒有好 | 非戰鬥、沒有挨餓到 0 的死亡（目前只有血量極低時被螫） | —（戰死、灰熊搶食致死都另有卡片） |
 | `death.card.starvation` | 好幾天沒吃到東西 | 血量歸零時飽食度 ≤ 0 | — |

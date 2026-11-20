@@ -4059,7 +4059,7 @@ func _maybe_neighbor_howl() -> void:
 			continue
 		if RNGService.chance(float(_packs_cfg().get("signs", {}).get("howl_night_chance", 0.25))):
 			learn({"type": "pack_land", "region": r})
-			_queue_event({"type": "neighbor_howl", "region": r, "pack": p.id, "many": pack_size_of(p) >= int(_packs_cfg().get("signs", {}).get("many", 5))})
+			_queue_event({"type": "neighbor_howl", "region": r, "pack": p.id, "off_map": p.off_map, "many": pack_size_of(p) >= int(_packs_cfg().get("signs", {}).get("many", 5))})
 			return
 
 # 探索時：在牠們的地方或旁邊發現氣味標記；你被試探的地盤上看到牠們新的氣味（警告：換季前沒補就會被佔走）
@@ -5562,7 +5562,7 @@ func _tc_wolf_stats() -> Dictionary:
 	return {"speed": wolf.speed, "strength": wolf.strength, "skill": wolf.skill, "perception": wolf.perception,
 		"stamina": wolf.stamina, "health": wolf.health, "health_max": wolf.health_max}
 
-# 你的狼畫多大（只是畫面，2026-11-11）：未滿 1 歲 × 0.8、1～2 歲 × 0.9（art.json 的 hd_menu.wolf_scale_by_age）
+# 你的狼畫多大（只是畫面，2026-11-11）：未滿 1 歲 × 0.8、1～2 歲 × 0.85（2026-11-20）（art.json 的 hd_menu.wolf_scale_by_age）
 func wolf_display_scale() -> float:
 	if wolf == null:
 		return 1.0

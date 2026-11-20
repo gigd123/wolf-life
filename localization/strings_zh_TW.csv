@@ -1479,7 +1479,7 @@ death_bio.combat.elk.hunt,在和馬鹿的搏鬥中倒下
 factor.herd_eyes,鹿群裡很多雙眼睛
 hunt.herd.all_healthy,你看了一遍鹿群：每一隻都很壯，腳步輕快。追了大概也是白追。
 explore.clue.bugle,{location}，遠處傳來公馬鹿高亢的吼叫聲，一聲接著一聲。
-explore.hidden_young,牠的母親在附近徘徊不去，孩子或許就躲在周圍的草叢裡。
+explore.hidden_young,牠或許就躲在周圍的草叢裡。
 fox.killed.eaten,你餓壞了，連{animal}也吃了下去。
 fox.killed.left,你把{animal}的屍體丟在一旁，沒有吃牠。
 bear_steal.hint,牠低頭撕咬著肉，背對著你。單憑你自己守不住，也搶不回來——但牠吃得專心的時候，也許能偷到一點。
@@ -2119,13 +2119,14 @@ region.ranch_edge,牧場邊緣
 region_main.ranch_pasture,圍起來的大片草地，牛群低頭吃草
 region_main.ranch_yard,木屋、穀倉和畜欄，到處是人和狗的氣味
 region_main.ranch_edge,柵欄外的灌木叢和小溪，離牧場不遠
-ranch.clue.cattle_smell,{location}，風裡夾著一股陌生的氣味：悶悶的、很濃，像是很多大型動物擠在一起。
-ranch.clue.smoke,{location}，你看到遠處有一道細細的煙直直升起，不像是野火。
-ranch.clue.axe,{location}，遠處傳來一下一下的敲擊聲，很規律，停一陣、響一陣。
+ranch.clue.cattle_smell,{location}，風從這一帶的邊緣外吹來，夾著一股陌生的氣味：悶悶的、很濃，像是很多大型動物擠在一起。
+ranch.clue.smoke,{location}，你看到這一帶的邊緣再過去，有一道細細的煙直直升起，不像是野火。
+ranch.clue.axe,{location}，這一帶的邊緣再過去，傳來一下一下的敲擊聲，很規律，停一陣、響一陣。
 ranch.clue.fence_posts,{location}，你看到幾根削尖的木樁插成整齊的一排，木頭還是新的。
 ranch.season.clues,{region}那一頭最近不太一樣：風裡有陌生的氣味，偶爾飄來煙。
 ranch.season.open,{region}外面，原本空曠的地方圍起了木柵欄。
 ranch.news,{region}外面，原本空曠的地方圍起了長長的木柵欄。柵欄裡有一群你沒見過的大型動物在吃草，遠處有一間冒著煙的木屋，空氣裡是人和狗的氣味。
+ranch.news.recall,前一陣子在這一帶聞到、聽到、看到的那些陌生的東西，都是從這裡來的。
 debug.event.ranch_clues,牧場出現（線索）
 debug.event.ranch_open,牧場開放
 debug.ranch.done,除錯：牧場{state}，連到{a}、{b}。
@@ -2301,6 +2302,8 @@ pack_sign.border_off,路旁的石頭上有一群狼留下的氣味標記，還�
 pack_sign.probed,你之前留下的氣味已經淡了，上面蓋著另一群狼新的標記。再不補上，這一帶會變成牠們的。
 pack_sign.howl,深夜，一群狼的嚎叫從{region}那頭傳來，此起彼落。
 pack_sign.howl.many,深夜，一群狼的嚎叫從{region}那頭傳來。聲音很多，至少有好幾隻。
+pack_sign.howl.outer,深夜，一群狼的嚎叫從{region}再過去的遠山那頭傳來，此起彼落。那是住在更遠地方的狼群。
+pack_sign.howl.outer.many,深夜，一群狼的嚎叫從{region}再過去的遠山那頭傳來。聲音很多，那是住在更遠地方的一大群狼。
 territory_card.title.lost,地盤被佔走
 territory_card.lost,你在{region}留下的氣味早就被蓋過去了。那一帶現在是那群狼的地方。
 territory_card.title.won,新的地盤

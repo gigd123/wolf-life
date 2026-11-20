@@ -2300,17 +2300,18 @@ func _discovery_text(d: Dictionary) -> String:
 	if not d.get("fresh_known", true):
 		text += tr("explore.fresh_unknown").replace("{wind}", tr("factor.wind." + str(d.get("wind", "crosswind"))))
 	# 接在線索後面的句子：線索本身沒有句號，先補上（2026-11-19 試玩回報 Bug #5：「…是小馬鹿留下的母鹿在附近徘徊不走」連成一串）
+	# 躲在草裡的幼體（2026-11-20 使用者：畫面上沒有母親，不寫母親）：「…是小馬鹿留下的，牠或許就躲在周圍的草叢裡。」
 	if d.get("hidden", false):
-		text = _then(text, tr("explore.hidden_young"))
+		text = _then(text, tr("explore.hidden_young"), "，")
 	if d.has("ambush"):
 		text = _then(text, tr("explore.water.ambush"))
 	return text
 
 # 兩句接起來：前一句沒有以句號、問號、驚嘆號結尾就補一個句號
-func _then(a: String, b: String) -> String:
+func _then(a: String, b: String, sep: String = "。") -> String:
 	if a == "" or a.right(1) in ["。", "！", "？"]:
 		return a + b
-	return a + "。" + b
+	return a + sep + b
 
 # 發現畫面的圖：目擊到的動物用動物圖，採集物用物品圖示，其他用線索圖示。
 func _show_discovery_sprite(d: Dictionary) -> void:
@@ -2731,7 +2732,11 @@ func _process_events() -> void:
 			_show_ranch_encounter(GameState.start_ranch_encounter(str(event.get("kind", "patrol"))))
 			return
 		"ranch_news":
-			_show_event_message(tr("ranch.news").replace("{region}", tr("region." + str(event.get("region", "")))), "")
+			# 之前看過出現前的線索（煙、氣味、敲擊聲、木樁）：補一句呼應（2026-11-20 試玩回報 Bug #10）
+			var rn: String = tr("ranch.news").replace("{region}", tr("region." + str(event.get("region", ""))))
+			if int(GameState.life_log.get("ranch", {}).get("clues", 0)) > 0:
+				rn += tr("ranch.news.recall")
+			_show_event_message(rn, "")
 			encounter_sprite.show_static(ArtLibrary.icon("clue.fence"))
 			return
 		"sleep_summary":
@@ -2772,7 +2777,9 @@ func _process_events() -> void:
 			_show_event_message(sign_text, "tundra_wolf")
 			return
 		"neighbor_howl":
-			_show_event_message(tr("pack_sign.howl" + (".many" if event.get("many", false) else "")).replace("{region}", tr("region." + str(event.get("region", "")))), "stranger_wolf")
+			# 住在地圖外的鄰群（2026-11-20 試玩回報 Bug #11：和那隻黑狼一家分不出來）：聲音從那一區再過去的遠處傳來
+			var hk: String = "pack_sign.howl" + (".outer" if event.get("off_map", false) else "") + (".many" if event.get("many", false) else "")
+			_show_event_message(tr(hk).replace("{region}", tr("region." + str(event.get("region", "")))), "stranger_wolf")
 			return
 		"territory_lost", "territory_won":
 			_show_card(tr("territory_card.title." + str(event["type"]).trim_prefix("territory_")), tr("territory_card." + str(event["type"]).trim_prefix("territory_")).replace("{region}", tr("region." + str(event.get("region", "")))))
