@@ -119,6 +119,8 @@
     "escape_dist": 14,
     "_escape_comment": "2026-10-15 截圖發現：16 格高的場地，鹿往上下邊緣跑 2 回合就「逃出場地」。改成上下邊緣擋住、左右兩端可以跑出去；另外和狼拉開到 escape_dist 格以上也算逃脫。",
     "max_flee_rounds": 10,
+    "_flee_terrain_comment": "Phase 2o 第 3 步（地形與逃跑路線）：從開闊的平地（這一格與周圍一格都是平地）起跑、狼在 open_bonus_min_dist 格以外，這一回合多跑 open_bonus 格；穿過 rough_terrain 只多花狼的地形代價的 rough_mult 倍（物種的 terrain_cost 照舊覆寫）；逃跑方向加上「跑到的那一格周圍有幾成是平地」× open_pref；你盯上的那一隻在開闊地、離你超過衝刺一回合 + give_up.gap 格時，本能放棄、畫面提示追不上。物種可以覆寫 open_bonus、rough_mult、open_pref。初始值，第 4 步校準。rough_mult 1.0：程式裡獵物本來就付全額地形代價（規格寫的「狼的一半」會讓牠在密林裡比改動前快，密林成功率 59 → 38，2026-11-20 量測）。",
+    "flee_terrain": { "open_bonus": 1.0, "open_bonus_min_dist": 4.0, "rough_terrain": ["f", "l", "r", "w", "s"], "rough_mult": 1.0, "open_pref": 2.0, "give_up": { "gap": 5.0, "min_flee_rounds": 1 } },
     "momentum": 3.0
   },
   "alert": {
@@ -549,7 +551,7 @@
       "meat": 2
     },
     "_beaver_comment": "河狸（2026-10-22 使用者的構想）：一律用水塘地圖（family pond）；開局離深水近 1～3 格（岸邊或淺水裡）或遠 5～8 格（spawn_refuge，照主遊戲 HuntSystem.refuge_near 的季節機率）；陸上慢（flee_profile），淺水稍快（terrain_cost s −0.3）、深水很快（d −0.6），被追時直奔深水（seek），一進深水就潛走（escape_terrain）；小獵物，代價照短版：一場最多 1 個遊戲回合、體力 ×0.5（2026-10-22）；淺水裡難撲；咬住後幾乎甩不掉（hold.break −0.3）、會咬你一口（kick）。數值為初始值，tactical_beaver_sim 校準到選單式（一般的狼約 70%）。",
-    "beaver": {
+    "beaver": { "open_bonus": 0.0,
       "name": "河狸",
       "name_key": "tactical.label.beaver",
       "family": "pond",
@@ -570,7 +572,7 @@
       "hold": { "takedown": 0.2, "throat": 0.15, "break": -0.2, "kick": -0.05 },
       "meat": 1
     },
-    "beaver_kit": {
+    "beaver_kit": { "open_bonus": 0.0,
       "name": "小河狸",
       "name_key": "tactical.label.beaver_kit",
       "family": "pond",
@@ -667,7 +669,7 @@
       "meat": 1
     },
     "_marmot_comment": "黃腹旱獺（Phase 2g，docs/proposals/small-prey-marmot-lynx.md）：一律用岩坡草甸地圖（family talus）；開局離洞口近 1～2 格或遠 4～7 格（spawn_refuge，照主遊戲 refuge_near 的機率），狼在 5～8 格外（start_dist）；沒察覺時趴著吃草不動（freeze）；視力好（alert_mult），岩塊擋住牠的視線（sight_block r）；比狼慢（flee_profile），碎石上比狼好走（terrain_cost r −0.3）；被發現就往最近的洞跑（seek，toward：每靠近洞口 1 格加分；往狼的方向、但一下就能進洞的也跑），牠在洞口 2 格內（斜的算 2.9）很難撲（refuge_pounce，撲之前你已經擋在牠和洞口之間就不算），撲空或被掙脫時就在洞口邊、你又沒站在洞口上，就一縮進洞；你站在牠最近的洞口上，牠改往下一個洞跑；咬人（kick_text、struggle_text），一鑽進洞就算逃掉（escape_terrain b）；狼可以站在洞口上擋住。小獵物：一場最多 1 個遊戲回合、體力 × game.cost_mult；咬住後會咬回來（kick_damage 2～6），壓倒、咬喉都容易。數值為初始值，tactical_marmot_sim 校準：一般的狼 近洞約 25%、遠約 75%；未成年約四成；會選位置的打法要明顯比直衝好。",
-    "marmot": {
+    "marmot": { "open_bonus": 0.0,
       "name": "旱獺",
       "name_key": "tactical.label.marmot",
       "family": "talus",
@@ -696,7 +698,7 @@
       "hold": { "takedown": 0.3, "throat": 0.25, "break": -0.12, "kick": -0.05 },
       "meat": 1
     },
-    "marmot_young": {
+    "marmot_young": { "open_bonus": 0.0,
       "name": "幼獺",
       "name_key": "tactical.label.marmot_young",
       "family": "talus",
@@ -846,10 +848,10 @@
       "meat": 2
     },
     "_livestock_comment": "牧場的家畜（Phase 2i 第 7 步）：先用現有的地圖。牛犢單獨（沒人看，跑不快）；一歲牛像白尾鹿但比較重、比較不耐跑；成牛用野牛的站定規則（會站定、會踢、會衝撞），比野牛慢、比較不耐跑；羊擠成一群、跑不快、容易撲倒（狗與牧羊人的威脅由牧場的注意與遭遇處理）。老狼也要獵得到（2026-10-25 使用者選 C：用一生模擬裡的成年、老年狼校準）。數值為初始值，tactical_livestock_calib 校準到 Phase 4a 的驗算（成年狼 牛犢約 83%、一歲牛 66%、成牛 17%、羊 85%）。",
-    "cattle_calf": { "name": "牛犢", "name_key": "tactical.label.cattle_calf", "flee_profile": { "healthy": [2, 2, 1, 1, 1], "average": [2, 2, 1, 1, 1], "weak": [2, 1, 1, 1] }, "pounce": 0.1, "kick_mult": 0.3, "hold": { "takedown": 0.0, "throat": 0.0, "break": 0.0, "kick": 0.0, "hamstring": 0.0 }, "meat": 2 },
-    "cattle": { "name": "一歲牛", "name_key": "tactical.label.cattle", "flee_profile": { "healthy": [3, 4, 3, 2, 2], "average": [3, 3, 2, 2, 1], "weak": [3, 3, 2, 1, 1] }, "pounce": -0.05, "kick_mult": 1.0, "kick_damage": [4, 9], "hold": { "takedown": -0.2, "throat": -0.15, "break": 0.15, "kick": 0.08, "hamstring": 0.0 }, "meat": 4 },
-    "cattle_cow": { "pack_help": 0.25, "name": "成牛", "name_key": "tactical.label.cattle_cow", "flee_profile": { "healthy": [3, 4, 4, 3, 3, 2], "average": [3, 4, 3, 3, 2], "weak": [3, 3, 3, 2, 2] }, "pounce": -0.1, "kick_mult": 1.8, "kick_damage": [10, 22], "hold": { "takedown": -0.5, "throat": -0.4, "break": 0.3, "kick": 0.12, "hamstring": -0.2 }, "meat": 6, "snow_slow": 2.0, "stand": { "healthy": 0.7, "average": 0.55, "weak": 0.3, "break": { "healthy": 0.03, "average": 0.1, "weak": 0.25 }, "startle": 0.1, "ignore_dist": 8.0, "charge": 0.3, "charge_damage": [10, 22], "kick_mult": 1.3 }, "stand_mods": { "healthy": { "pounce": -0.35, "takedown": -0.4, "throat": -0.3 }, "average": { "pounce": -0.2, "takedown": -0.25, "throat": -0.15 }, "weak": { "pounce": -0.1, "takedown": -0.15, "throat": -0.05 } } },
-    "sheep": { "name": "羊", "name_key": "tactical.label.sheep", "flee_profile": { "healthy": [2, 3, 2, 1, 1], "average": [2, 3, 2, 1, 1], "weak": [2, 2, 1, 1] }, "alert_mult": 1.0, "pounce": 0.2, "kick_mult": 0.2, "hold": { "takedown": 0.1, "throat": 0.05, "break": -0.05, "kick": 0.0, "hamstring": 0.0 }, "meat": 2 }
+    "cattle_calf": { "open_bonus": 0.0, "name": "牛犢", "name_key": "tactical.label.cattle_calf", "flee_profile": { "healthy": [2, 2, 1, 1, 1], "average": [2, 2, 1, 1, 1], "weak": [2, 1, 1, 1] }, "pounce": 0.1, "kick_mult": 0.3, "hold": { "takedown": 0.0, "throat": 0.0, "break": 0.0, "kick": 0.0, "hamstring": 0.0 }, "meat": 2 },
+    "cattle": { "open_bonus": 0.0, "name": "一歲牛", "name_key": "tactical.label.cattle", "flee_profile": { "healthy": [3, 4, 3, 2, 2], "average": [3, 3, 2, 2, 1], "weak": [3, 3, 2, 1, 1] }, "pounce": -0.05, "kick_mult": 1.0, "kick_damage": [4, 9], "hold": { "takedown": -0.2, "throat": -0.15, "break": 0.15, "kick": 0.08, "hamstring": 0.0 }, "meat": 4 },
+    "cattle_cow": { "open_bonus": 0.0, "pack_help": 0.25, "name": "成牛", "name_key": "tactical.label.cattle_cow", "flee_profile": { "healthy": [3, 4, 4, 3, 3, 2], "average": [3, 4, 3, 3, 2], "weak": [3, 3, 3, 2, 2] }, "pounce": -0.1, "kick_mult": 1.8, "kick_damage": [10, 22], "hold": { "takedown": -0.5, "throat": -0.4, "break": 0.3, "kick": 0.12, "hamstring": -0.2 }, "meat": 6, "snow_slow": 2.0, "stand": { "healthy": 0.7, "average": 0.55, "weak": 0.3, "break": { "healthy": 0.03, "average": 0.1, "weak": 0.25 }, "startle": 0.1, "ignore_dist": 8.0, "charge": 0.3, "charge_damage": [10, 22], "kick_mult": 1.3 }, "stand_mods": { "healthy": { "pounce": -0.35, "takedown": -0.4, "throat": -0.3 }, "average": { "pounce": -0.2, "takedown": -0.25, "throat": -0.15 }, "weak": { "pounce": -0.1, "takedown": -0.15, "throat": -0.05 } } },
+    "sheep": { "open_bonus": 0.0, "name": "羊", "name_key": "tactical.label.sheep", "flee_profile": { "healthy": [2, 3, 2, 1, 1], "average": [2, 3, 2, 1, 1], "weak": [2, 2, 1, 1] }, "alert_mult": 1.0, "pounce": 0.2, "kick_mult": 0.2, "hold": { "takedown": 0.1, "throat": 0.05, "break": -0.05, "kick": 0.0, "hamstring": 0.0 }, "meat": 2 }
   },
   "special": {
     "front_lock": { "min_speed": 70, "min_skill": 60, "base": 0.4, "ability_divisor": 100.0, "tired": 0.25, "condition": { "healthy": -0.1, "average": 0.0, "weak": 0.1 }, "breath": 20.0, "fail_hit": 0.35, "fail_damage": [10, 20] }

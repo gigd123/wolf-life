@@ -9,6 +9,8 @@ extends SceneTree
 #    看獵到、掙脫、被踢的比例與回合。物種：白尾鹿（健康、普通、虛弱）、母馬鹿。
 # 指標（2026-11-17 使用者：不只看成功率）：成功率、回合數（中位數）、狼受傷的場次比例、喘的消耗（平均）、獵物逃脫（逃走或不見）的比例。
 # A2. 狼的狀態：年輕（1～2 歲）、壯年、老年、體力低的壯年，在開闊、林緣、密林各比較本能與直直潛行。
+# D.（Phase 2o 第 3 步）地形與逃跑路線：每種地圖族，本能打法下「牠開始逃之後」逃掉（逃走、不見、你放棄）的比例；
+#    同一張地圖、同一個起點的鹿，狼從西、東、北、南四個方向（離鹿約 10 格的平地）接近的成功率，差最多幾點。
 # 用法：bash tools/run_sim.sh tactical_feel_sim "" 1000（第三個參數是每格的場數，預設 1000；探索用 120）；PART=A／A2／B 只跑一部分
 var f := 0
 var TH
@@ -55,6 +57,8 @@ func _process(_d) -> bool:
 		_part_h(runs, fams if OS.get_environment("FAMS") != "" else ["open", "edge", "dense"])
 	if part in ["", "B"]:
 		_part_b(runs)
+	if part == "D":
+		_part_d(runs, fams if OS.get_environment("FAMS") != "" else ["open", "edge", "dense", "logs", "stream"])
 	return true
 
 func _cond(i: int) -> String:
@@ -294,3 +298,59 @@ func _part_h(runs: int, fams: Array) -> void:
 				line += "  %s %2d%%／%d／%2d%%／%2d%%" % [fam, roundi(100.0 * ok / runs), rounds[rounds.size() / 2], roundi(100.0 * hurt / runs), roundi(100.0 * esc / runs)]
 			print(line)
 
+
+# D. 地形與逃跑路線（Phase 2o 第 3 步）
+func _part_d(runs: int, fams: Array) -> void:
+	print("== D. 地形與逃跑路線（白尾鹿單隻、體況照遊戲比例、側風、本能；每格 %d 場）" % runs)
+	print("   追逐後逃掉＝牠開始逃之後逃走、不見或你放棄的比例；方向＝狼從西／東／北／南接近的成功率，差＝最高減最低")
+	var dirs := {"西": Vector2i(-1, 0), "東": Vector2i(1, 0), "北": Vector2i(0, -1), "南": Vector2i(0, 1)}
+	for fam in fams:
+		var fled := 0
+		var fled_esc := 0
+		var gave_open := 0
+		var by_dir := {}
+		for dk in dirs:
+			var ok := 0
+			for i in runs:
+				var h = TH.new()
+				if not tune_set.is_empty():
+					_merge(h.t, tune_set.duplicate(true))
+				h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": WOLF, "wind_relation": "crosswind"})
+				# 把狼放在鹿的那個方向約 10 格、最近的平地（同一張圖、同一隻鹿）
+				var want: Vector2i = h.deer_pos + dirs[dk] * 10
+				want = Vector2i(clampi(want.x, 1, h.width - 2), clampi(want.y, 1, h.height - 2))
+				var best: Vector2i = h.wolf_pos
+				var bd := INF
+				for y in h.height:
+					for x in h.width:
+						var c := Vector2i(x, y)
+						if h.terrain(c) == "." and h.dist(c, h.deer_pos) >= 6.0 and h.dist(c, want) < bd:
+							bd = h.dist(c, want)
+							best = c
+				h.wolf_pos = best
+				h.wind = h.wind_for("crosswind")
+				TacticalInstinct.pick_target(h)
+				var p: String = TacticalInstinct.pick_policy(h)
+				var guard := 0
+				var was_flee := false
+				while not h.done and guard < 70:
+					guard += 1
+					TacticalInstinct.step(h, p)
+					if str(h.deer_state) == "flee":
+						was_flee = true
+				if h.result == "caught":
+					ok += 1
+				if was_flee:
+					fled += 1
+					if h.result in ["escaped", "lost", "gave_up"]:
+						fled_esc += 1
+					if h.result == "gave_up" and str(h.reason) == h._tx("tactical.gave_up_open").replace("{animal}", h.label()):
+						gave_open += 1
+			by_dir[dk] = roundi(100.0 * ok / runs)
+		var vals: Array = by_dir.values()
+		vals.sort()
+		var line := "%-7s 追逐後逃掉 %2d%%（開闊地放棄 %2d%%）  方向" % [fam, roundi(100.0 * fled_esc / maxi(1, fled)), roundi(100.0 * gave_open / maxi(1, fled))]
+		for dk in dirs:
+			line += " %s%2d%%" % [dk, by_dir[dk]]
+		line += "  差 %d" % (int(vals[-1]) - int(vals[0]))
+		print(line)

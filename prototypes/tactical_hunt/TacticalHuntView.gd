@@ -492,6 +492,9 @@ func _info_text() -> String:
 	t.append(prefix + tr("tactical.ui.state." + h.deer_state) + (tr("tactical.ui.held") if h.held else (tr("tactical.ui.ally_held") if h._ally_holding() > 0 else "")))
 	if h.held:
 		t.append(tr("tactical.ui.hold_at." + h.hold_side))
+	# 牠跑進開闊地、拉開了距離（Phase 2o 第 3 步）：提示追不上
+	if h.open_chase_hopeless():
+		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.ui.open_hopeless"))
 	if int(h.herd[h.target].get("hamstrung", 0)) > 0:
 		t.append("[color=#e08a8a]%s[/color]" % tr("tactical.factor.hamstrung"))
 	if h.hidden_unfound():

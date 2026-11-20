@@ -561,7 +561,57 @@ func step_cost(from: Vector2i, to: Vector2i) -> float:
 func deer_extra(c: Vector2i) -> float:
 	var tc: Dictionary = sp().get("terrain_cost", {})
 	var k := terrain(c)
-	return float(tc[k]) if tc.has(k) else float(t["move"]["terrain_extra"].get(k, 0.0))
+	if tc.has(k):
+		return float(tc[k])
+	var ex: float = float(t["move"]["terrain_extra"].get(k, 0.0))
+	# 難走的地形（Phase 2o 第 3 步）：獵物穿過倒木、淺水、岩坡、密林只多花狼的地形代價的 rough_mult 倍（牠熟悉、腿長）；峭壁、深水不變
+	var ft: Dictionary = _flee_terrain()
+	if k in ft.get("rough_terrain", []):
+		ex *= float(sp().get("rough_mult", ft.get("rough_mult", 1.0)))
+	return ex
+
+# --- 地形與逃跑路線（Phase 2o 第 3 步）---
+func _flee_terrain() -> Dictionary:
+	return t["deer"].get("flee_terrain", {})
+
+# 開闊的平地：這一格與周圍一格都是平地（沒有障礙、掩蔽）；地圖外不算擋
+func open_ground(c: Vector2i) -> bool:
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var n := c + Vector2i(dx, dy)
+			if in_bounds(n) and terrain(n) != ".":
+				return false
+	return true
+
+# 周圍 3×3 有幾成是平地（逃跑方向的偏好：往開闊、好跑的地方）
+func _openness(c: Vector2i) -> float:
+	var n := 0
+	var open := 0
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var e := c + Vector2i(dx, dy)
+			if in_bounds(e):
+				n += 1
+				if terrain(e) == ".":
+					open += 1
+	return float(open) / maxf(1.0, float(n))
+
+# 牠跑進開闊地、拉開了距離，追不上（本能放棄、畫面提示）：你盯上的那一隻在逃、站在開闊的平地上，
+# 離你超過衝刺一回合再加 give_up_gap 格
+func open_chase_hopeless() -> bool:
+	if done or held or deer_state != "flee" or di != target:
+		return false
+	var gu: Dictionary = _flee_terrain().get("give_up", {})
+	if gu.is_empty() or flee_round < int(gu.get("min_flee_rounds", 1)):
+		return false
+	if not open_ground(deer_pos):
+		return false
+	return _wolf_dist(deer_pos) > sprint_range() + float(gu.get("gap", 3.0))
+
+func give_up_open() -> void:
+	if done:
+		return
+	_finish("gave_up", _tx("tactical.gave_up_open").replace("{animal}", label()))
 
 # 離最近的某種地形幾格（旱獺離洞口，Phase 2g）；地圖上沒有就 0
 func _nearest_terrain_dist(c: Vector2i, ter: String) -> float:
@@ -2328,6 +2378,9 @@ func flee_options(lead_group: int = -1) -> Array:
 		score += Vector2(d).normalized().dot(Vector2(prev).normalized()) * float(t["deer"]["momentum"])
 		score -= float(sim["logs"]) * 2.5
 		score -= float(sim["blocked"]) * 3.0
+		# 往開闊、好跑的地方（Phase 2o 第 3 步）：從開闊的那一側逼近，會把牠趕向倒木、水邊、峭壁腳下
+		if in_bounds(end):
+			score += _openness(end) * float(sp().get("open_pref", _flee_terrain().get("open_pref", 0.0)))
 		# 往牠想逃去的地形跑（騾鹿往岩坡，Phase 2d 第 3 步）
 		var sk: Dictionary = sp().get("seek", {})
 		if not sk.is_empty():
@@ -2580,6 +2633,10 @@ func _flee_budget(i: int = -1) -> float:
 	var prof: Array = sp(k).get("calf_flee", t["herd"]["fawn_flee"]) if is_fawn(k) else sp(k).get("flee_profile", t["deer"]["flee_profile"])[h["condition"]]
 	# 帶傷：每道傷少 wound_slow 格（最少 1 格）
 	var b: float = max(1.0, float(prof[mini(int(h["flee_round"]), prof.size() - 1)]) - int(h["wounds"]) * float(t["hold"]["wound_slow"]) - _snow_slow(k))
+	# 開闊地（Phase 2o 第 3 步）：從開闊的平地起跑，這一回合多跑 open_bonus 格——開闊地是牠甩開你的地方（物種可以覆寫）
+	# 狼還貼在後面（open_bonus_min_dist 格內）時不算：開闊地讓牠「拉開」距離，不是讓牠甩開貼身的狼
+	if open_ground(h["pos"]) and _wolf_dist(h["pos"]) >= float(_flee_terrain().get("open_bonus_min_dist", 0.0)):
+		b += float(sp(k).get("open_bonus", _flee_terrain().get("open_bonus", 0.0)))
 	# 從草裡竄出來的幼鹿（Phase 2i 第 6 步）：前 bolt_rounds 回合多跑 bolt_bonus 格（被踩到才跑，一開始衝得最猛）
 	# 物種可以覆寫 bolt_bonus、bolt_rounds（目前都用 game.hidden 的設定；2026-11-20 試過縮短，變成找到就一定獵到，使用者選維持）
 	if bool(h.get("bolted", false)) and int(h["flee_round"]) < int(sp(k).get("bolt_rounds", _hidden_cfg().get("bolt_rounds", 0))):

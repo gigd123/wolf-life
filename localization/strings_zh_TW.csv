@@ -1831,6 +1831,8 @@ tactical.condition.healthy,健康
 tactical.condition.average,普通
 tactical.condition.weak,虛弱
 tactical.gave_up,你放棄了。
+tactical.gave_up_open,{animal}跑進開闊地，越拉越遠。追不上了，你停下腳步。
+tactical.ui.open_hopeless,牠跑進開闊地了，追不上
 tactical.factor.cond.healthy,牠很健康
 tactical.factor.cond.average,牠體況普通
 tactical.factor.cond.weak,牠很虛弱

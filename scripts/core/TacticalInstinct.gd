@@ -138,6 +138,10 @@ static func step(h, pol: String) -> void:
 	if h.wolves.size() > 1 and h._ally_holding() > 0:
 		_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"])
 		return
+	# 牠跑進開闊地、拉開了距離（Phase 2o 第 3 步）：不白白耗體力，放棄（單獨狩獵時；有同伴時牠們可能還追得上）
+	if fleeing and not pol.begins_with("dumb") and h.wolves.size() <= 1 and h.open_chase_hopeless():
+		h.give_up_open()
+		return
 	match pol:
 		"dumb_sprint":
 			_go(h, reach, h.deer_pos, ["sprint", "trot", "creep"])
