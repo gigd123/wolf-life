@@ -28,6 +28,9 @@ const EXTRA := [
 	{"name": "L 白尾鹿群、空地", "family": "open", "species": "deer", "herd": 4, "condition": "average"},
 	{"name": "M 健康駝鹿、密林", "family": "dense", "species": "moose", "herd": 1, "condition": "healthy"},
 	{"name": "N 虛弱駝鹿、密林", "family": "dense", "species": "moose", "herd": 1, "condition": "weak"},
+	# 逃跑路線受限的地圖（Phase 2o 第 3 步）：固定用這一張
+	{"name": "O 白尾鹿、河彎", "family": "stream", "species": "deer", "herd": 1, "condition": "average", "map_only": "stream_3"},
+	{"name": "P 白尾鹿、倒木密集區", "family": "logs", "species": "deer", "herd": 1, "condition": "average", "map_only": "logs_4"},
 ]
 const ALLIES := [[], ["drive", "chase"], ["drive"], ["chase"]]
 const ALLY_COLORS := {"drive": Color("#7fc8ff"), "chase": Color("#ffb060"), "ambush": Color("#c49bff")}
@@ -237,6 +240,10 @@ func _new_hunt(new_seed: bool) -> void:
 			for i in int(e["herd"]):
 				conds.append(e["condition"])
 			ctx["herd"] = {"conditions": conds, "calves": 0}
+		# 每局重讀地圖（上一局固定某張地圖時把其他的拿掉了）
+		h.t["maps"] = JSON.parse_string(FileAccess.get_file_as_string(TH.TUNING_PATH))["maps"]
+		if e.has("map_only"):
+			h.t["maps"] = {e["map_only"]: h.t["maps"][e["map_only"]]}
 		h.setup_from_game(ctx)
 		sc_name = str(e["name"]).substr(2)
 	for role in ALLIES[ally_pick.selected]:
