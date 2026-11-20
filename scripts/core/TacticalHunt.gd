@@ -2637,6 +2637,9 @@ func _flee_budget(i: int = -1) -> float:
 	# 狼還貼在後面（open_bonus_min_dist 格內）時不算：開闊地讓牠「拉開」距離，不是讓牠甩開貼身的狼
 	if open_ground(h["pos"]) and _wolf_dist(h["pos"]) >= float(_flee_terrain().get("open_bonus_min_dist", 0.0)):
 		b += float(sp(k).get("open_bonus", _flee_terrain().get("open_bonus", 0.0)))
+	elif not open_ground(h["pos"]):
+		# 周圍有障礙、掩蔽：起跑慢一點（cover_less 格，最少 1 格；試驗用，預設 0）
+		b = maxf(1.0, b - float(_flee_terrain().get("cover_less", 0.0)))
 	# 從草裡竄出來的幼鹿（Phase 2i 第 6 步）：前 bolt_rounds 回合多跑 bolt_bonus 格（被踩到才跑，一開始衝得最猛）
 	# 物種可以覆寫 bolt_bonus、bolt_rounds（目前都用 game.hidden 的設定；2026-11-20 試過縮短，變成找到就一定獵到，使用者選維持）
 	if bool(h.get("bolted", false)) and int(h["flee_round"]) < int(sp(k).get("bolt_rounds", _hidden_cfg().get("bolt_rounds", 0))):
