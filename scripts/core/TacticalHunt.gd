@@ -606,6 +606,9 @@ func open_chase_hopeless() -> bool:
 		return false
 	if not open_ground(deer_pos):
 		return false
+	# 牠已經跑累了（疲勞 ≥ max_fatigue）就還追得到，不放棄（2026-11-21 一生模擬：年輕狼的放棄 11% → 25%）
+	if deer_fatigue_any() >= float(gu.get("max_fatigue", 1.0)):
+		return false
 	return _wolf_dist(deer_pos) > sprint_range() + float(gu.get("gap", 3.0))
 
 func give_up_open() -> void:

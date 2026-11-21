@@ -119,8 +119,8 @@
     "escape_dist": 14,
     "_escape_comment": "2026-10-15 截圖發現：16 格高的場地，鹿往上下邊緣跑 2 回合就「逃出場地」。改成上下邊緣擋住、左右兩端可以跑出去；另外和狼拉開到 escape_dist 格以上也算逃脫。",
     "max_flee_rounds": 10,
-    "_flee_terrain_comment": "Phase 2o 第 3 步（地形與逃跑路線）：從開闊的平地（這一格與周圍一格都是平地）起跑、狼在 open_bonus_min_dist 格以外，這一回合多跑 open_bonus 格；穿過 rough_terrain 只多花狼的地形代價的 rough_mult 倍（物種的 terrain_cost 照舊覆寫）；逃跑方向加上「跑到的那一格周圍有幾成是平地」× open_pref；你盯上的那一隻在開闊地、離你超過衝刺一回合 + give_up.gap 格時，本能放棄、畫面提示追不上。物種可以覆寫 open_bonus、rough_mult、open_pref。初始值，第 4 步校準。rough_mult 1.0：程式裡獵物本來就付全額地形代價（規格寫的「狼的一半」會讓牠在密林裡比改動前快，密林成功率 59 → 38，2026-11-20 量測）。",
-    "flee_terrain": { "open_bonus": 1.0, "open_bonus_min_dist": 4.0, "rough_terrain": ["f", "l", "r", "w", "s"], "rough_mult": 1.0, "open_pref": 2.0, "give_up": { "gap": 5.0, "min_flee_rounds": 1 } },
+    "_flee_terrain_comment": "Phase 2o 第 3 步（地形與逃跑路線）：從開闊的平地（這一格與周圍一格都是平地）起跑、狼在 open_bonus_min_dist 格以外，這一回合多跑 open_bonus 格；穿過 rough_terrain 只多花狼的地形代價的 rough_mult 倍（物種的 terrain_cost 照舊覆寫）；逃跑方向加上「跑到的那一格周圍有幾成是平地」× open_pref；你盯上的那一隻在開闊地、離你超過衝刺一回合 + give_up.gap 格、牠還沒累（疲勞 < give_up.max_fatigue）時，本能放棄、畫面提示追不上。物種可以覆寫 open_bonus、rough_mult、open_pref。初始值，第 4 步校準。rough_mult 1.0：程式裡獵物本來就付全額地形代價（規格寫的「狼的一半」會讓牠在密林裡比改動前快，密林成功率 59 → 38，2026-11-20 量測）。",
+    "flee_terrain": { "open_bonus": 1.0, "open_bonus_min_dist": 4.0, "rough_terrain": ["f", "l", "r", "w", "s"], "rough_mult": 1.0, "open_pref": 2.0, "give_up": { "gap": 5.0, "min_flee_rounds": 1, "max_fatigue": 0.5 } },
     "momentum": 3.0
   },
   "alert": {
