@@ -1974,7 +1974,11 @@ func alert_gain(mode: String) -> Dictionary:
 	var cov: String = cover_state()
 	if mode in (al.get("cover", {}).get("modes", ["creep", "still"]) as Array):
 		if cov == "in":
-			sight *= float(al.get("cover", {}).get("mult", 1.0))
+			# cover.stack_no_sight 為 false 時，視線已經被密林擋住（× no_sight）就不再疊掩蔽，取比較小的那個倍率（第 4 步校準用）
+			if bool(al.get("cover", {}).get("stack_no_sight", true)) or has_sight():
+				sight *= float(al.get("cover", {}).get("mult", 1.0))
+			else:
+				sight *= minf(1.0, float(al.get("cover", {}).get("mult", 1.0)) / float(al["no_sight"]))
 		elif cov == "exposed" and mode in (al.get("exposed", {}).get("modes", ["creep", "still"]) as Array):
 			sight *= float(al.get("exposed", {}).get("mult", 1.0))
 	# 牠低頭吃草的那一回合（沒察覺時）：比較不會看到你
