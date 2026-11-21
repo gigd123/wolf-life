@@ -5,6 +5,8 @@ extends Control
 # 主遊戲用 start(rf, done_cb)：結束時按「繼續」呼叫 done_cb(rf)，時間、體力、飽食度由 GameState.finish_salmon_fishing 結算。
 
 const RF := preload("res://scripts/core/RiverFishing.gd")
+# HD-2D 畫面（2026-11-21）：和戰術狩獵共用同一個開關（TacticalHuntView.hd_on），開著時取代 2D 地圖
+const TV := preload("res://prototypes/tactical_hunt/TacticalHuntView.gd")
 const CELL := 14
 const MAP_ORIGIN := Vector2(4, 4)
 const COLORS := {
@@ -26,6 +28,8 @@ var art_sprites := {}
 var art_tiles := {}
 var wolf_facing := Vector2i(1, 0)
 var last_wolf_pos := Vector2i(-99, -99)
+var hd: RiverHD2D
+var hd_btn: Button
 
 func _ready() -> void:
 	var bg := ColorRect.new()
@@ -46,6 +50,20 @@ func _ready() -> void:
 	map.gui_input.connect(_map_input)
 	map.mouse_exited.connect(func(): hover = Vector2i(-1, -1); _refresh())
 	add_child(map)
+	hd = RiverHD2D.new()
+	hd.view = self
+	hd.position = MAP_ORIGIN
+	hd.size = map.size
+	hd.cell_hovered.connect(_on_hover)
+	hd.cell_clicked.connect(_on_click)
+	add_child(hd)
+	hd_btn = Button.new()
+	hd_btn.theme_type_variation = &"SmallButton"
+	hd_btn.focus_mode = Control.FOCUS_NONE
+	hd_btn.position = Vector2(568, 234)
+	hd_btn.custom_minimum_size = Vector2(68, 22)
+	hd_btn.pressed.connect(func(): TV.hd_on = not TV.hd_on; _apply_hd(); _refresh())
+	add_child(hd_btn)
 	info = RichTextLabel.new()
 	info.position = Vector2(568, 2)
 	info.size = Vector2(70, 230)
@@ -77,7 +95,14 @@ func start(p_rf, done_cb: Callable) -> void:
 	rf = p_rf
 	on_done = done_cb
 	lines = [tr("river.ui.intro")]
+	hd.setup(rf, GameTime.current_season(), GameState.current_map())
+	_apply_hd()
 	_after_action()
+
+func _apply_hd() -> void:
+	hd.visible = TV.hd_on
+	map.visible = not TV.hd_on
+	hd_btn.text = tr("tactical.ui.view.hd" if TV.hd_on else "tactical.ui.view.2d")
 
 # --- 輸入 ---
 
@@ -88,17 +113,22 @@ func _map_input(ev: InputEvent) -> void:
 	if rf == null:
 		return
 	if ev is InputEventMouseMotion:
-		var c := _cell_at(ev.position)
-		if c != hover:
-			hover = c
-			_refresh()
+		_on_hover(_cell_at(ev.position))
 	elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-		if rf.done:
-			return
-		var c := _cell_at(ev.position)
-		if rf.reachable().has(c):
-			rf.move_to(c)
-			_after_action()
+		_on_click(_cell_at(ev.position))
+
+# 2D 地圖與 HD-2D 畫面共用
+func _on_hover(c: Vector2i) -> void:
+	if c != hover:
+		hover = c
+		_refresh()
+
+func _on_click(c: Vector2i) -> void:
+	if rf == null or rf.done:
+		return
+	if rf.reachable().has(c):
+		rf.move_to(c)
+		_after_action()
 
 func _after_action() -> void:
 	for e in rf.events:
@@ -148,6 +178,8 @@ func _build_buttons() -> void:
 
 func _refresh() -> void:
 	map.queue_redraw()
+	if TV.hd_on and hd.rf == rf:
+		hd.refresh()
 	info.text = _info_text()
 	hover_box.text = _hover_text()
 

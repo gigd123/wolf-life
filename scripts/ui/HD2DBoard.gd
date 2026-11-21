@@ -537,6 +537,8 @@ func quad(c: Vector2i, color: Color, size: float, lift: float) -> void:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.albedo_color = color
+	# 疊上去的標記比半透明的水面晚畫（2026-11-21：河岸的魚量、水上能走的格子原本被水面蓋成灰色）
+	m.render_priority = 1
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.position = cell_center(c) + Vector3(0, lift, 0)
@@ -554,6 +556,7 @@ func frame(c: Vector2i, color: Color, lift: float, thick: float = 0.08) -> void:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.albedo_color = color
+		m.render_priority = 1
 		mi.material_override = m
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.position = p + side[0]
