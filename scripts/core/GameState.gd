@@ -1856,7 +1856,7 @@ func action_lie_down() -> void:
 	_die("lay_down")
 
 # --- 地盤（Phase 1.9b 第 1 步）---
-# life_log["marks"]：{區域: 最後標記的那一天}；life_log["overmarked"]：{區域: true}（黑狼把牠的標記蓋在你的上面）
+# life_log["marks"]：{區域: 最後標記的那一天}；life_log["overmarked"]：{區域: 誰蓋的}（"stranger" 那隻黑狼、"black" 黑狼一家、鄰群的 id；見 overmarked_by）
 func _territory_cfg() -> Dictionary:
 	return GameData.balance.get("territory", {})
 
@@ -1930,7 +1930,7 @@ func _update_marks() -> void:
 	for r in own_territories():
 		if (r == stranger_territory or near.has(r)) and RNGService.chance(float(_territory_cfg().get("overmark_chance", 0.15))):
 			var over: Dictionary = life_log.get("overmarked", {})
-			over[r] = true
+			over[r] = "stranger"
 			life_log["overmarked"] = over
 
 # 黑狼一家試探你的地盤（Phase 3a 第 4 步）：和牠們的領域相鄰（或在裡面）的地盤，
@@ -1946,7 +1946,7 @@ func _pack_probe() -> void:
 		if own.has(r):
 			if RNGService.chance(float(cfg.get("overmark_chance", 0.15)) * mult):
 				var over: Dictionary = life_log.get("overmarked", {})
-				over[r] = true
+				over[r] = "black"
 				life_log["overmarked"] = over
 		elif not probe.has(r) and RNGService.chance(float(cfg.get("faded_chance", 0.3)) * mult):
 			probe[r] = int(life_log.get("days_lived", 1))
@@ -1973,7 +1973,21 @@ func _pack_take_probed() -> Array:
 	return taken
 
 func is_overmarked(region_id: String = "") -> bool:
-	return bool(life_log.get("overmarked", {}).get(current_region if region_id == "" else region_id, false)) and is_own_territory(region_id)
+	return overmarked_by(region_id) != "" and is_own_territory(region_id)
+
+# 誰把標記蓋在你的上面（2026-11-23 試玩回報：原本只記「被蓋過」，鄰群、黑狼一家蓋的也寫成那隻黑狼，循著氣味找到的也是牠）：
+# "stranger" 那隻黑狼、"black" 黑狼一家、其他是鄰群的 id；沒有被蓋過是空字串（舊存檔的 true 當成那隻黑狼）
+func overmarked_by(region_id: String = "") -> String:
+	var v = life_log.get("overmarked", {}).get(current_region if region_id == "" else region_id, "")
+	if v is bool:
+		return "stranger" if v else ""
+	return str(v)
+
+func _neighbor_pack(id: String) -> WolfPack:
+	for p in neighbor_packs:
+		if p.id == id:
+			return p
+	return null
 
 # 讓出：這一區不再是你的地盤
 func yield_territory() -> void:
@@ -1991,6 +2005,13 @@ func yield_territory() -> void:
 func seek_stranger_from_mark() -> Dictionary:
 	record_decision("territory.seek")
 	clear_discovery()
+	# 蓋記號的是一群狼：循著氣味找到的是牠們（撞上狼群）
+	var who: String = overmarked_by()
+	if who == "black" and pack_active():
+		return {"event": _pack_meet_event()}
+	var np := _neighbor_pack(who)
+	if np != null and pack_is_active(np):
+		return {"event": _neighbor_meet_event(np)}
 	if stranger_can_interact():
 		return {"combat": start_stranger_combat("meet")}
 	current_discovery = {"kind": "clue", "source_kind": "threat", "source": "stranger_wolf", "clue": "wolf_track", "location": _random_terrain(current_region),
@@ -2227,7 +2248,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 	# 黑狼的標記蓋在你的地盤上：在那一區探索時發現（1.9b 第 1 步）
 	if is_overmarked() and RNGService.chance(0.6):
 		current_discovery = {"kind": "overmarked", "location": _random_terrain(current_region)}
-		if pack_active():
+		if pack_active() and overmarked_by() == "black":
 			_pack_note("overmarked")
 		state_changed.emit()
 		return current_discovery
@@ -4060,15 +4081,19 @@ func _maybe_neighbor_meet() -> void:
 		var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value_of(p, "meet_mult", 1.0) * _howl_meet_mult()
 		if RNGService.chance(chance_value):
 			set_quiet(p.id, int(cfg.get("quiet_periods", 8)))
-			if p.young.any(func(a): return float(a) >= 1.0) and RNGService.chance(float(cfg.get("lone_young_chance", 0.15))):
-				_queue_event({"type": "pack_meet", "pack": p.id, "lone": "young", "location": _random_terrain(current_region)})
-			else:
-				_queue_event({"type": "pack_meet", "pack": p.id, "lone": "", "attitude": pack_attitude_of(p), "charge": _pack_attitude_value_of(p, "charge", 0.0) >= 0.5,
-					"size": pack_size_of(p), "stage": p.stage, "location": _random_terrain(current_region)})
+			_queue_event(_neighbor_meet_event(p))
 			return
 
 # 一般鄰群的徵兆（Phase 3 第 4 步補）：深夜的合嚎（同一張地圖，從牠們的地方傳來）、探索時的氣味標記、你淡掉的標記被試探。
 # 都會累積「那一帶是一群狼的地方」的知識（pack_land）。
+# 撞上一般鄰群的事件（偶爾只遇到落單的年輕成員）
+func _neighbor_meet_event(p: WolfPack) -> Dictionary:
+	var cfg := _pack_meet_cfg()
+	if p.young.any(func(a): return float(a) >= 1.0) and RNGService.chance(float(cfg.get("lone_young_chance", 0.15))):
+		return {"type": "pack_meet", "pack": p.id, "lone": "young", "location": _random_terrain(current_region)}
+	return {"type": "pack_meet", "pack": p.id, "lone": "", "attitude": pack_attitude_of(p), "charge": _pack_attitude_value_of(p, "charge", 0.0) >= 0.5,
+		"size": pack_size_of(p), "stage": p.stage, "location": _random_terrain(current_region)}
+
 func pack_home_region(p: WolfPack) -> String:
 	return p.border if p.off_map else (str(p.regions[0]) if not p.regions.is_empty() else "")
 
@@ -4121,7 +4146,7 @@ func _probe_by(p: WolfPack) -> void:
 		if own.has(r):
 			if RNGService.chance(float(cfg.get("overmark_chance", 0.15)) * mult):
 				var over: Dictionary = life_log.get("overmarked", {})
-				over[r] = true
+				over[r] = p.id
 				life_log["overmarked"] = over
 		elif not probe.has(r) and RNGService.chance(float(cfg.get("faded_chance", 0.3)) * mult):
 			probe[r] = int(life_log.get("days_lived", 1))

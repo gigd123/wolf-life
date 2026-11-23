@@ -4375,11 +4375,19 @@ func _show_challenger(d: Dictionary, carcass: bool) -> void:
 
 # 黑狼的標記蓋在你的地盤上（1.9b 第 1 步）：重新標記、去找牠、讓出。
 func _show_overmarked(d: Dictionary) -> void:
-	var text: String = tr("territory.overmarked." + ("known" if GameState.is_identified("stranger_wolf") else "unknown"))
+	# 誰蓋的（2026-11-23 試玩回報）：那隻黑狼（認得／不認得）、黑狼一家、別的狼群
+	var who: String = GameState.overmarked_by()
+	var tkey: String = "known" if GameState.is_identified("stranger_wolf") else "unknown"
+	if who == "black":
+		tkey = "black"
+	elif who != "stranger" and who != "":
+		tkey = "pack"
+	var text: String = tr("territory.overmarked." + tkey)
 	_log(text)
 	encounter_message.text = text
 	encounter_detail.text = ""
-	_set_wolf_pose(encounter_sprite, "idle")
+	# 只聞到氣味、沒看到牠：用氣味線索的圖（原本畫你自己的狼）
+	encounter_sprite.show_static(ArtLibrary.texture(str(GameData.discovery.get("clue_icon_path", "")).replace("{type}", "scent")))
 	_set_terrain_bg(encounter_bg, str(d.get("location", "")))
 	_clear_children(encounter_buttons_box)
 	_add_encounter_button(tr("territory.remark"), func():
@@ -4393,6 +4401,12 @@ func _show_overmarked(d: Dictionary) -> void:
 		var res := GameState.seek_stranger_from_mark()
 		if res.has("combat"):
 			_begin_combat(res["combat"], "move")
+		elif res.has("event"):
+			encounter_overlay.visible = false
+			if str(res["event"].get("type", "")) == "stranger_confront":
+				_show_stranger_confront()
+			else:
+				_show_pack_meet(res["event"])
 		else:
 			_show_discovery(res["discovery"])
 	)

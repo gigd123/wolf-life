@@ -1590,6 +1590,8 @@ log.mark.new,你在{region}的樹根、石頭上留下氣味，這一帶現在�
 log.mark.refresh,你沿著{region}的邊界補上氣味。
 log.mark.remark,你把黑狼的氣味蓋掉，重新在{region}留下自己的記號。
 territory.overmarked.known,你留下記號的地方，蓋著一層新的氣味——是那隻黑狼。牠來過了。
+territory.overmarked.black,你留下記號的地方，蓋著好幾層新的氣味——是那隻黑狼和牠的家人。牠們來過了。
+territory.overmarked.pack,你留下記號的地方，蓋著好幾層新的氣味，是同一群狼的。牠們來過了。
 territory.overmarked.unknown,你留下記號的地方，蓋著一層陌生的狼的氣味。有誰來過，而且不怕你。
 territory.remark,蓋回自己的氣味
 territory.seek,循著氣味去找牠
