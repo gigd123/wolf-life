@@ -475,7 +475,7 @@ salmon.clue.decline.bones,{location}的岸邊堆著發臭的魚骨，魚群已�
 salmon.clue.decline.bear,{location}的淺灘上有一頭灰熊在慢慢翻找，叼起的多半是快死的魚。
 salmon.go_fish,到河邊捕魚
 salmon.clue.peak.bears,{location}的河邊站著好幾頭灰熊，各自守著一段淺灘，彼此隔得遠遠的。水裡的魚多得數不清。
-river.ui.intro,點亮起的格子移動；站上淺灘按「撲魚」。淺灘上的紅點是魚量，三點最多。
+river.ui.intro,點亮起的格子移動；站上淺灘按「撲魚」。淺灘上的紅點（HD-2D 是粉紅色方塊）越多、越大，魚越多；滑鼠移過去會寫出來。
 river.ui.fish,撲魚　{p}%
 river.ui.fish_here,站上淺灘才能撲魚
 river.ui.full,吃不下了
