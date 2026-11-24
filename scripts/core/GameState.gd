@@ -2252,7 +2252,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 			_pack_note("overmarked")
 		state_changed.emit()
 		return current_discovery
-	if _maybe_meet_she_wolf() or _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
+	if _maybe_meet_she_wolf() or _maybe_she_scent() or _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -7107,18 +7107,10 @@ func _she_wolf_here() -> bool:
 func _today() -> int:
 	return int(life_log.get("days_lived", 1))
 
-# 每天換日時擲一次（昨天嚎叫過、標記過、這一區獵物沒被獵少時乘倍率）。成年、還沒有母狼時才會遇到。
+# 這張地圖上沒有離群母狼時，每天換日時擲一次「有一隻走進這張地圖」（Phase 3c 第 1 步：照季節，不再看昨天嚎叫、標記；
+# 要找到牠靠嚎叫、探索、循聲）。成年、還沒有伴侶時才會。
 func lone_female_chance() -> float:
-	var cfg := _mate_cfg()
-	var yesterday: int = _today() - 1
-	var c: float = float(cfg.get("daily_chance", {}).get(GameTime.current_season(), 0.0))
-	if int(life_log.get("howled_day", -1)) == yesterday:
-		c *= float(cfg.get("howl_mult", 3.0))
-	if int(life_log.get("marked_day", -1)) == yesterday:
-		c *= float(cfg.get("mark_mult", 1.5))
-	if (region_depletion.get(current_region, {}) as Dictionary).is_empty():
-		c *= float(cfg.get("prey_mult", 1.2))
-	return c
+	return float(_mate_cfg().get("enter_chance", {}).get(GameTime.current_season(), 0.0))
 
 func _update_she_wolf() -> void:
 	if wolf == null or not wolf.alive:
@@ -7137,33 +7129,82 @@ func _update_she_wolf() -> void:
 	if wp != null:
 		n.territory = pack_home_region(wp) if wp.regions.is_empty() else str(wp.regions[RNGService.randi_range(0, wp.regions.size() - 1)])
 		return
-	# 太久沒見：關係下降，可能離開這一帶
-	var absent: int = _today() - int(life_log.get("she_last_seen", _today()))
-	if absent >= int(cfg.get("absent_days", 7)):
-		n.relation += int(cfg.get("relation", {}).get("absent_per_day", -1))
-		if n.relation < 0 or RNGService.chance(float(cfg.get("leave_chance_per_day", 0.25))):
-			_she_wolf_leaves("absent")
-			return
-	# 牠自己也在走動（同一張地圖）
+	# Phase 3c 第 1 步：取消「7 天沒見就離開」「太久沒見每天 −1」；牠一直留在這張地圖
+	# 牠自己也在走動（同一張地圖），不走進狼群的領域核心
 	var roam: float = float(cfg.get("roam_chance", 0.3)) * (float(cfg.get("own_territory_roam_mult", 0.5)) if is_own_territory(n.territory) else 1.0)
 	if RNGService.chance(roam):
-		var adj: Array = (EncounterSystem.region_data(n.territory).get("adjacent", []) as Array).filter(func(r): return GameData.map_of(r) == GameData.map_of(n.territory))
+		var adj: Array = (EncounterSystem.region_data(n.territory).get("adjacent", []) as Array).filter(func(r): return GameData.map_of(r) == GameData.map_of(n.territory) and not _pack_core_region(str(r)))
 		if not adj.is_empty():
 			n.territory = str(adj[RNGService.randi_range(0, adj.size() - 1)])
+	_she_trail_add(n.territory)
 
+# 離群母狼走進這張地圖（Phase 3c 第 1 步）：出現在離你最遠的區域之一（不在你這一區、盡量兩區外、不在狼群的領域核心），
+# 不跳卡片——要靠嚎叫、探索、循聲找到。生命事件 she_wolf.sign 記「牠來到這一帶」（模擬用）
 func _spawn_she_wolf() -> void:
 	var count: int = int(life_log.get("she_wolf_count", 0)) + 1
 	life_log["she_wolf_count"] = count
-	var adj: Array = adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
-	var region: String = current_region if adj.is_empty() or RNGService.chance(0.5) else str(adj[RNGService.randi_range(0, adj.size() - 1)])
+	var region: String = _far_region_on_map(current_region)
 	var id: String = "she_wolf_%d" % count
 	var n := NpcWolf.create(id, region, "lone_female")
 	npcs[id] = n
 	life_log["mate_id"] = id
 	life_log["mate_stage"] = "candidate"
 	life_log["she_last_seen"] = _today()
+	life_log["she_trail"] = {}
+	_she_trail_add(region)
 	add_life_event("she_wolf.sign", {"who": id, "region": region})
-	_queue_event({"type": "she_wolf_sign", "how": "scent" if RNGService.chance(0.6) else "sight", "region": region})
+
+# 同一張地圖上離 from 最遠的區域（走幾步，照區域的相鄰）；同樣遠的隨機挑；狼群的領域核心不選（都是時才選）
+func _far_region_on_map(from: String) -> String:
+	var map_id: String = GameData.map_of(from)
+	var dist := {from: 0}
+	var queue: Array = [from]
+	while not queue.is_empty():
+		var cur: String = queue.pop_front()
+		for r in EncounterSystem.region_data(cur).get("adjacent", []):
+			if GameData.map_of(str(r)) == map_id and not dist.has(str(r)):
+				dist[str(r)] = int(dist[cur]) + 1
+				queue.append(str(r))
+	var cands: Array = dist.keys().filter(func(r): return r != from and not _pack_core_region(str(r)))
+	if cands.is_empty():
+		cands = dist.keys().filter(func(r): return r != from)
+	if cands.is_empty():
+		return from
+	var far: int = 0
+	for r in cands:
+		far = maxi(far, int(dist[r]))
+	var best: Array = cands.filter(func(r): return int(dist[r]) == far)
+	return str(best[RNGService.randi_range(0, best.size() - 1)])
+
+# 這一區是不是某一群狼（鄰群、黑狼一家）的領域核心
+func _pack_core_region(region_id: String) -> bool:
+	for p in all_packs():
+		if pack_zone_of(p, region_id) == "core":
+			return true
+	return false
+
+# 牠最近走過的區域（{區域: 那一天}），留 trail_days 天：在這些區域探索時有機會聞到牠的氣味（Phase 3c 第 1 步）
+func _she_trail_add(region_id: String) -> void:
+	var trail: Dictionary = life_log.get_or_add("she_trail", {})
+	trail[region_id] = _today()
+	var keep: int = int(_mate_cfg().get("trail_days", 2))
+	for r in trail.keys():
+		if _today() - int(trail[r]) >= keep:
+			trail.erase(r)
+
+# 探索時聞到離群母狼的氣味（不是牠出現時自動跳出的卡片）：牠最近走過這一區；寫牠往哪裡去了（在這一區就寫「就在這一帶」）
+func _maybe_she_scent() -> bool:
+	var n := she_wolf()
+	if n == null or mate_stage() != "candidate" or blizzard_here() or _widow_pack() != null:
+		return false
+	var trail: Dictionary = life_log.get("she_trail", {})
+	if not trail.has(current_region) or _today() - int(trail[current_region]) >= int(_mate_cfg().get("trail_days", 2)):
+		return false
+	if not RNGService.chance(float(_mate_cfg().get("scent_chance", 0.3))):
+		return false
+	current_discovery = {"kind": "she_scent", "toward": n.territory, "location": _random_terrain(current_region)}
+	life_log["she_scent_found"] = int(life_log.get("she_scent_found", 0)) + 1
+	return true
 
 func _she_wolf_leaves(reason: String) -> void:
 	var n := she_wolf()

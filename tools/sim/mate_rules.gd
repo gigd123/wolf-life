@@ -34,7 +34,7 @@ func _adult(den: String) -> void:
 func _run() -> void:
 	var data = root.get_node("GameData")
 	var cfg: Dictionary = data.balance["mate"]
-	cfg["daily_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
+	cfg["enter_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
 	# 1
 	gs.new_game("forest_east")
 	gs.wolf.age_years = 1.0
@@ -43,20 +43,20 @@ func _run() -> void:
 	_adult("forest_east")
 	gs._update_she_wolf()
 	var n = gs.she_wolf()
-	var near: Array = gs.adjacent_regions() + ["forest_east"]
-	_check(n != null and gs.mate_stage() == "candidate" and n.sex == "female" and near.has(n.territory), "成年後遇到：母狼、還在認識、在這一區或相鄰（%s）" % (n.territory if n else "-"))
-	_check(gs.pending_events.any(func(e): return str(e.get("type", "")) == "she_wolf_sign"), "先是徵兆（氣味或遠遠看到）")
+	# Phase 3c 第 1 步：出現在離你最遠的區域（森林從森林東部最遠是兩步外的那一區），不跳卡片
+	_check(n != null and gs.mate_stage() == "candidate" and n.sex == "female" and n.territory != "forest_east" and not gs.adjacent_regions().has(n.territory), "成年後：一隻母狼走進這張地圖，在離你最遠的區域（%s）" % (n.territory if n else "-"))
+	_check(not gs.pending_events.any(func(e): return str(e.get("type", "")) == "she_wolf_sign"), "牠來的時候不跳徵兆卡")
 	# 2
-	cfg["daily_chance"] = {"spring": 0.01, "summer": 0.01, "autumn": 0.01, "winter": 0.01}
+	cfg["enter_chance"] = {"spring": 0.01, "summer": 0.01, "autumn": 0.01, "winter": 0.01}
 	_adult("forest_east")
 	gs.region_depletion["forest_east"] = {"white_tailed_deer": 0.5}
+	cfg["enter_chance"] = {"spring": 0.015, "summer": 0.01, "autumn": 0.04, "winter": 0.05}
 	var base: float = gs.lone_female_chance()
 	gs.life_log["howled_day"] = gs._today() - 1
-	var howl: float = gs.lone_female_chance()
 	gs.life_log["marked_day"] = gs._today() - 1
 	var both: float = gs.lone_female_chance()
-	_check(is_equal_approx(howl, base * 3.0) and is_equal_approx(both, base * 4.5), "昨天嚎叫過 ×3、再加標記 ×1.5（%.4f → %.4f → %.4f）" % [base, howl, both])
-	cfg["daily_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
+	_check(is_equal_approx(base, both) and is_equal_approx(base, float(cfg["enter_chance"][gt.current_season()])), "走進來的機率只看季節，昨天嚎叫、標記不影響（%.4f／%.4f）" % [base, both])
+	cfg["enter_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
 	# 3
 	_adult("forest_east")
 	gs._update_she_wolf()
@@ -79,13 +79,45 @@ func _run() -> void:
 	_check(gs.she_wolf() == null and gs.life_events("she_wolf.left").size() == 1, "關係 < 0：牠離開這一帶")
 	_adult("forest_east")
 	gs._update_she_wolf()
-	cfg["leave_chance_per_day"] = 1.0
-	cfg["daily_chance"] = {"spring": 0.0, "summer": 0.0, "autumn": 0.0, "winter": 0.0}
-	gs.life_log["days_lived"] = gs._today() + int(cfg["absent_days"])
-	gs._update_she_wolf()
-	_check(gs.she_wolf() == null, "%d 天沒見：牠離開" % int(cfg["absent_days"]))
-	cfg["leave_chance_per_day"] = 0.25
-	cfg["daily_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
+	cfg["enter_chance"] = {"spring": 0.0, "summer": 0.0, "autumn": 0.0, "winter": 0.0}
+	n = gs.she_wolf()
+	n.relation = 2
+	for d in 30:
+		gs.life_log["days_lived"] = gs._today() + 1
+		gs._update_she_wolf()
+	_check(gs.she_wolf() != null and gs.she_wolf().relation == 2, "30 天沒見：牠還在這張地圖、關係沒有掉（Phase 3c）")
+	_check(gs.she_wolf() != null and data.map_of(gs.she_wolf().territory) == "forest", "牠一直在同一張地圖")
+	# 氣味：牠最近走過的區域探索時聞得到，寫牠往哪裡去了
+	cfg["scent_chance"] = 1.0
+	var mc: float = float(cfg["meet_chance"])
+	cfg["meet_chance"] = 0.0
+	n = gs.she_wolf()
+	gs.current_region = n.territory
+	gs._she_trail_add(n.territory)
+	var got := false
+	for i in 20:
+		gs.clear_discovery()
+		gs.action_explore()
+		if str(gs.current_discovery.get("kind", "")) == "she_scent":
+			got = str(gs.current_discovery.get("toward", "")) == n.territory
+			break
+	_check(got, "在牠走過的區域探索：聞到牠的氣味（寫牠在哪）")
+	gs.clear_discovery()
+	var rc: float = float(cfg["roam_chance"])
+	cfg["roam_chance"] = 0.0
+	gs.current_region = str(gs.adjacent_regions().filter(func(r): return r != n.territory)[0]) if gs.adjacent_regions().any(func(r): return r != n.territory) else gs.current_region
+	gs.life_log["she_trail"] = {}
+	var none := true
+	for i in 20:
+		gs.clear_discovery()
+		gs.action_explore()
+		if str(gs.current_discovery.get("kind", "")) == "she_scent":
+			none = false
+	_check(none, "牠沒走過的區域：聞不到")
+	cfg["roam_chance"] = rc
+	cfg["meet_chance"] = mc
+	cfg["scent_chance"] = 0.3
+	cfg["enter_chance"] = {"spring": 1.0, "summer": 1.0, "autumn": 1.0, "winter": 1.0}
 	# 5
 	_adult("forest_east")
 	gs._update_she_wolf()
