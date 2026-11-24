@@ -10,6 +10,7 @@
 | 文字的鍵 | 在說什麼 | 依據是哪個狀態 | 不該出現的情況 |
 | --- | --- | --- | --- |
 | `howl.again` | 「你又嚎了一聲」 | 同一個時段、同一區已經嚎過（`action_howl` 回傳 `repeat`：`life_log.howl_cache.key` 是這個時段＋這一區） | 這個時段第一次嚎叫、換了區域 |
+| `she_wolf.sign.scent`、`she_wolf.sign.scent.known` | 「一隻陌生的母狼」／「那隻母狼」「還是獨自一隻」 | `life_log.she_met`（這一隻見過沒有；新的一隻走進來時重設）為否用前者、為是用 `.known`；只在還沒成為伴侶、不屬於狼群的離群母狼時出現 | 見過牠還寫「陌生」；新的一隻寫成「那隻母狼」 |
 | `tactical.known`、`tactical.known.wounded`、`tactical.known.herd`、`tactical.known.wounded.herd` | 「上次從你面前逃掉的那一隻」「身上還帶著你留下的傷」 | 戰術地圖的第一隻是會延續的個體裡逃掉的那一頭（`GameState.hunting_notable` 有 `at`、ctx `known_individual`）；`.wounded` 只在牠現在的傷（每 2 天好一處）> 0 | 第一次遇到的獵物、傷已經好了還說帶著傷 |
 | `explore.trait.fled` | 「上次從你面前逃掉的」 | 探索再遇到（`again`）的會延續個體 trait = fled（逃掉時沒受傷） | 不是同一頭 |
 | `factor.track_old` | 「足跡已經過了好幾天」 | 循著會延續個體的足跡、逃掉後第 2 天以上（`notable_state.days` ≥ 2） | 當天、隔天 |

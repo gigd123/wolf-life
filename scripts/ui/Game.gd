@@ -2281,6 +2281,8 @@ func _discovery_text(d: Dictionary) -> String:
 			if str(d.get("who", "")) == "stranger_wolf" and GameState.pack_sign_key("mark") != "":
 				mark_text += tr(GameState.pack_sign_key("mark"))
 			return mark_text
+		"she_scent":
+			return _she_scent_text(d)
 		"feature":
 			return tr("explore.feature").replace("{location}", location) \
 				.replace("{feature}", tr("feature." + str(d["feature_id"])))
@@ -2332,6 +2334,16 @@ func _discovery_text(d: Dictionary) -> String:
 		text = _then(text, tr("explore.water.ambush"))
 	return text
 
+# 離群母狼的氣味（Phase 3c）：見過牠就不寫「陌生」；後面接牠的去向（還在這一區、往哪一區去）
+func _she_scent_text(d: Dictionary) -> String:
+	var toward: String = str(d.get("toward", ""))
+	var text: String = tr("she_wolf.sign.scent" + (".known" if bool(GameState.life_log.get("she_met", false)) else ""))
+	if toward == GameState.current_region:
+		return text + tr("she_wolf.sign.here")
+	if toward != "":
+		return text + tr("she_wolf.sign.near").replace("{region}", tr("region." + toward))
+	return text
+
 # 兩句接起來：前一句沒有以句號、問號、驚嘆號結尾就補一個句號
 func _then(a: String, b: String, sep: String = "。") -> String:
 	if a == "" or a.right(1) in ["。", "！", "？"]:
@@ -2365,6 +2377,8 @@ func _show_discovery_sprite(d: Dictionary) -> void:
 			return
 	if kind == "nothing":
 		icon_key = "unknown"
+	elif kind == "she_scent":
+		icon_key = "scent"
 	elif kind == "clue":
 		var clue: String = str(d.get("clue", "track"))
 		if source_kind == "threat":

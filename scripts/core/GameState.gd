@@ -7175,6 +7175,7 @@ func _spawn_she_wolf() -> void:
 	npcs[id] = n
 	life_log["mate_id"] = id
 	life_log["mate_stage"] = "candidate"
+	life_log["she_met"] = false # 新的一隻：上一隻（死去、離開、已成伴侶）見過不算
 	life_log["she_last_seen"] = _today()
 	life_log["she_trail"] = {}
 	_she_trail_add(region)
