@@ -3467,7 +3467,8 @@ func finish_hunt(hunt: HuntSystem) -> void:
 				var me: int = int(_pack_life_cfg().get("eat_segments", 1)) + ceili(hunt.pack_allies.size() / 2.0)
 				current_feeding["segments_left"] = max(1, int(current_feeding["segments_left"]) - me)
 				current_feeding["with_mate"] = true
-			log_message.emit(tr("tundra.hunt.shared" + ("" if tundra_pair().size() > 1 else ".single")))
+			# 伴侶（或你的狼群）吃了一部分（2026-11-24 試玩回報：原本寫成「苔原狼也圍上來吃了一部分」）
+			log_message.emit(tr("pack.hunt.shared." + ("pack" if not hunt.pack_allies.is_empty() else ("mate" if mate_stage() == "mate" else "she"))))
 	else:
 		if hunt.in_herd and hunt.stage_reached_stalk():
 			_spook(current_region, hunt.animal_id)

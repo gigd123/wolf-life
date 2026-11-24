@@ -2921,12 +2921,16 @@ func _show_howl_replies(hr: Dictionary) -> void:
 	)
 	encounter_overlay.visible = true
 
-# 循聲按鈕的字：往下一區走，或回應就在這一區時在附近找一找
+# 循聲按鈕的字（2026-11-24 試玩回報：行動欄放不下，兩顆都截成「循著那幾個聲音…」分不出來）：先寫往哪一區；
+# 兩個回應要走同一區時，再補哪一種聲音（一隻、幾隻）
 func _follow_label(r: Dictionary) -> String:
 	var step: String = GameState.howl_next_step(str(r.get("region", "")))
-	# 好幾個回應可能要經過同一區：按鈕寫是哪一種聲音（一隻、那幾個），不寫是誰
-	var k: String = "one" if str(r.get("kind", "one")) == "one" else "group"
-	return tr("howl.follow.here." + k) if step == "" else tr("howl.follow.go." + k).replace("{region}", tr("region." + step))
+	var same := 0
+	for o in GameState.howl_follow_options():
+		if GameState.howl_next_step(str(o.get("region", ""))) == step:
+			same += 1
+	var k: String = tr("howl.follow.kind." + ("one" if str(r.get("kind", "one")) == "one" else "group")) if same > 1 else ""
+	return (tr("howl.follow.here") if step == "" else tr("howl.follow.go").replace("{region}", tr("region." + step))) + k
 
 func _follow_howl(idx: int) -> void:
 	var res: Dictionary = GameState.action_follow_howl(idx)
@@ -3957,7 +3961,7 @@ func _show_she_wolf(d: Dictionary, extra: String = "") -> void:
 		_add_encounter_button(tr("she_wolf.follow").replace("{n}", str(int(round(GameState.she_follow_chance() * 100.0)))), func():
 			var res := GameState.she_follow()
 			if res.get("success", false) and res.has("assessment"):
-				var text: String = tr("she_wolf.follow.success").replace("{text}", tr("stranger.compare." + str(res["assessment"]["compare"])))
+				var text: String = tr("she_wolf.follow.success").replace("{text}", tr("she_wolf.look." + str(res["assessment"]["age"])))
 				_log(text)
 				_show_she_wolf(d, text)
 			else:

@@ -323,11 +323,11 @@ pack.news.paired.known,{region}傳來兩隻狼的嚎叫。那隻黑狼身邊多�
 pack.news.paired.unknown,{region}那一帶，夜裡傳來兩隻狼的嚎叫。
 pack.news.pups.known,{region}傳來幼狼細細的尖嚎。那隻黑狼有了自己的孩子。
 pack.news.pups.unknown,{region}那一帶，傳來幼狼細細的尖嚎。
-pack.news.expanded.known,那隻黑狼一家的標記，蓋過了{region}的邊界。牠們的範圍變大了。
+pack.news.expanded.known,黑狼一家的標記，蓋過了{region}的邊界。牠們的範圍變大了。
 pack.news.expanded.unknown,{region}那一帶，多了好幾隻狼的氣味標記。
 pack.news.succession.known,{region}的狼群還在，帶頭的換成了一隻年輕的黑狼。
 pack.news.succession.unknown,{region}那一帶的狼嚎還在，只是聲音年輕了些。
-pack.news.dissolved.known,{region}安靜了下來。那隻黑狼一家，散了。
+pack.news.dissolved.known,{region}安靜了下來。黑狼一家，散了。
 pack.news.dissolved.unknown,{region}那一帶，好一陣子沒聽見狼嚎了。
 encounter.mother,一頭帶著幼熊的母灰熊擋在前面，牠非常激動。
 encounter.direct,你撞見了一頭{animal}，牠沒有示威，直接朝你衝了過來。
@@ -854,7 +854,7 @@ stranger.confront,那隻黑狼從林間走出來，壓低了頭，喉嚨裡滾�
 stranger.stand,對峙
 stranger.yielded,你退開了，往{region}走去。
 pack.who.pair,那隻黑狼和牠的伴侶
-pack.who.pack,那隻黑狼一家
+pack.who.pack,黑狼一家
 pack.who.heir,黑狼留下的那群狼
 pack.meet.neutral,{location}，{who}就在前面。牠們停下腳步，一起盯著你，頸毛慢慢豎了起來。
 pack.meet.scorn,{location}，{who}一看到你，壓低身子朝你逼過來。牠們記得你曾經在那隻黑狼面前退讓。
@@ -881,7 +881,7 @@ pack.remains.eat,撕一段來吃（被發現 {p}%）
 log.pack_remains.ate,你飛快地撕下一段肉吞下去（飽食度 +{n}）。
 pack.remains.caught,林子裡傳來腳步聲，牠們回來了。
 pack.remains.done,殘骸只剩骨頭了，你舔舔嘴離開。
-pack.news.took.known,那隻黑狼一家的標記佔滿了{region}。你沒有回去補上，那裡已經是牠們的了。
+pack.news.took.known,黑狼一家的標記佔滿了{region}。你沒有回去補上，那裡已經是牠們的了。
 pack.news.took.unknown,{region}那一帶滿是別的狼的標記，你的氣味已經被蓋過了。
 stranger.won_territory,{region}原本是牠的地盤，從此是你的了。
 stranger.killed_card.title,那隻黑狼
@@ -2215,10 +2215,10 @@ action.howl,嚎叫（不花時間）
 log.howl,你仰起頭，長長地嚎了一聲。聲音傳得很遠，慢慢散開。
 howl.again,你又嚎了一聲。
 howl.stay,留在這裡
-howl.follow.go.one,循著一隻狼的聲音（往{region}）
-howl.follow.go.group,循著那幾個聲音（往{region}）
-howl.follow.here.one,循著一隻狼的聲音，在附近找一找
-howl.follow.here.group,循著那幾個聲音，在附近找一找
+howl.follow.go,循聲往{region}
+howl.follow.here,循聲在附近找
+howl.follow.kind.one,（一隻）
+howl.follow.kind.group,（幾隻）
 howl.follow.searching,你循著剛才的聲音，在附近慢慢找。
 howl.follow.going,你循著剛才的聲音，往{region}走去。
 action.follow_howl_0,循著嚎聲而去
@@ -2254,6 +2254,12 @@ she_wolf.avoided,你繞開了，沒有驚動牠。
 she_wolf.approached,你慢慢走近。牠沒有退開，鼻子湊過來嗅了嗅你。
 she_wolf.approach.refused,你才走近幾步，牠就轉身小跑著走開了。
 she_wolf.follow.success,你遠遠跟著牠走了一段。{text}
+she_wolf.look.prime,牠正年輕力壯，毛色發亮，腳步輕快。
+she_wolf.look.past_peak,牠還很結實，只是口鼻邊有了幾根白毛。
+she_wolf.look.elder,牠不年輕了，口鼻泛白，走得很慢。
+pack.hunt.shared.mate,你的伴侶也低頭吃了一部分。
+pack.hunt.shared.she,那隻母狼也湊上來吃了一部分。
+pack.hunt.shared.pack,你的狼群也圍上來吃了一部分。
 she_wolf.follow.fail,牠早就發現你了，回頭看了你一眼，走遠了。
 she_wolf.eat.allowed,牠低吼了一聲，卻沒有趕你走。你們一起撕咬著那隻獵物。
 she_wolf.eat.refused,你才靠近，牠就壓低身子、露出牙齒。你退了回來。
