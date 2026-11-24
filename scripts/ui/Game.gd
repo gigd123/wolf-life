@@ -777,8 +777,16 @@ func _build_debug_overlay() -> void:
 	)
 	_debug_button(event_row2, tr("debug.event.she_wolf"), func():
 		debug_overlay.visible = false
-		GameState.debug_she_wolf()
-		_show_discovery(GameState.current_discovery)
+		var sr: String = GameState.debug_she_wolf()
+		_log(tr("debug.she_wolf.placed").replace("{region}", tr("region." + sr)))
+		_refresh()
+	)
+	_debug_button(event_row2, tr("debug.event.howl_listeners"), func():
+		debug_overlay.visible = false
+		var parts: Array[String] = []
+		for l in GameState.debug_howl_listeners():
+			parts.append("%s@%s %s %d%%%s" % [str(l["who"]), tr("region." + str(l["region"])), str(l["dist"]), roundi(float(l["chance"]) * 100.0), (" 注意×%.0f" % float(l["alert"])) if float(l.get("alert", 1.0)) > 1.0 else ""])
+		_log(tr("debug.howl_listeners") + ("、".join(parts) if not parts.is_empty() else "—"))
 		_refresh()
 	)
 	_debug_button(event_row2, tr("debug.event.she_wolf_closer"), func():
@@ -1775,10 +1783,13 @@ func _on_action_button(action_id: String) -> void:
 			var got: float = GameState.regurgitate()
 			_log(tr("den.regurgitated").replace("{days}", str(snapped(GameState.den_food_days(), 0.5))) if got > 0.0 else tr("den.cannot_regurgitate"))
 		"howl":
+			# Phase 3c 第 2 步：不花時間；按下直接顯示回應卡片（母狼就在這一區、循聲走過來時接相遇）
 			var hr: Dictionary = GameState.action_howl()
-			_log(tr("log.howl"))
 			if hr.get("came", false):
+				_log(tr("log.howl"))
 				_show_discovery(GameState.current_discovery)
+			else:
+				_show_howl_replies(hr)
 		"return_to_carcass":
 			var res := GameState.action_return_to_carcass()
 			if res.get("gone", false) or res.is_empty():
@@ -2852,6 +2863,32 @@ func _show_year_review(s: Dictionary) -> void:
 	_set_card_wolf("")
 
 # image_key：art.json 的 events（例如暴風雪徵兆），有圖就用圖，沒有才用動物。
+# 嚎叫的回應（Phase 3c 第 2 步）：只寫聽得到的——那一帶、遠近、一隻或一群、聲音；不寫是誰、也不寫牠的意圖
+func howl_reply_text(r: Dictionary) -> String:
+	return tr("howl.reply.%s.%s" % [str(r.get("kind", "one")), str(r.get("dist", "near"))]).replace("{region}", tr("region." + str(r.get("region", ""))))
+
+func _show_howl_replies(hr: Dictionary) -> void:
+	var replies: Array = hr.get("replies", [])
+	var lines: Array[String] = [tr("log.howl") if not bool(hr.get("repeat", false)) else tr("howl.again")]
+	if replies.is_empty():
+		lines.append(tr("howl.silence"))
+	else:
+		for r in replies:
+			lines.append(howl_reply_text(r))
+	var text: String = "\n".join(lines)
+	_log(" ".join(lines))
+	encounter_message.text = text
+	encounter_detail.text = ""
+	_set_wolf_pose(encounter_sprite, "howl")
+	_set_terrain_bg(encounter_bg, "")
+	_clear_children(encounter_buttons_box)
+	_add_encounter_button(tr("ui.continue"), func():
+		encounter_overlay.visible = false
+		_refresh()
+		_process_events()
+	)
+	encounter_overlay.visible = true
+
 func _show_event_message(text: String, sprite_id: String, image_key: String = "") -> void:
 	_log(text)
 	encounter_message.text = text

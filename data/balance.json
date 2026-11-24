@@ -504,14 +504,20 @@
   "start_health_max": 80,
   "_black_pack_comment": "Phase 3a 黑狼的一生（WolfPack.gd）：每次換季更新。成家：你打贏牠之後或你滿 pair_min_player_age 歲之後，每季 pair_chance × pair_season_mult，牠還沒老才會。伴侶的年齡 mate_age，每季死亡 mate_death_per_season（mate_old_age 歲起 mate_old_death_per_season）。春季 pup_chance 生 litter 隻，幼狼每季存活 pup_survival_per_season（第一年約一半）；disperse_per_season：1 歲以上的子女每季離群的機會。數量 ≥ expand_min_size 時秋季 expand_chance 擴張一區，最多 max_regions 區；數量上限 max_size。帶頭的死了，有伴侶和 heir_min_age 歲以上的子女就由最年長的接手（換代），否則解散。黑狼的開局年齡 2.5～3 歲（原本 3～4，讓牠的家族撐過你的壯年）。",
   "mate": {
-    "_comment": "Phase 3 第 2 步（SPEC「離群母狼與配對」）：Phase 3c 第 1 步改：enter_chance 這張地圖上沒有離群母狼時每天換日擲一次「有一隻走進來」（成年、還沒有伴侶），出現在離你最遠的區域、不跳卡片，一直留在這張地圖（取消 7 天離開、太久沒見扣關係）；trail_days 牠走過的區域留幾天，在那裡探索 scent_chance 聞到牠的氣味。牠在某一區（roam_chance 每天換到相鄰區，在你的地盤裡 ×own_territory_roam_mult）；探索時 meet_chance 遇上（eating_chance 牠正在吃），你在吃東西時 feed_chance 牠來到旁邊。關係：levels 到 mate 成為伴侶；relation 是各種互動的加減；關係 < 0 離開。howl：嚎叫花的回合、體力，牠在這一區或相鄰時 come_chance 循聲找來，嚎叫的那天撞上黑狼一家 ×pack_meet_mult。tundra_replace_chance：苔原狼只剩一隻母狼、關係友善時，換季時留下來跟你。",
+    "_comment": "Phase 3 第 2 步（SPEC「離群母狼與配對」）：Phase 3c 第 1 步改：enter_chance 這張地圖上沒有離群母狼時每天換日擲一次「有一隻走進來」（成年、還沒有伴侶），出現在離你最遠的區域、不跳卡片，一直留在這張地圖（取消 7 天離開、太久沒見扣關係）；trail_days 牠走過的區域留幾天，在那裡探索 scent_chance 聞到牠的氣味。牠在某一區（roam_chance 每天換到相鄰區，在你的地盤裡 ×own_territory_roam_mult）；探索時 meet_chance 遇上（eating_chance 牠正在吃），你在吃東西時 feed_chance 牠來到旁邊。關係：levels 到 mate 成為伴侶；relation 是各種互動的加減；關係 < 0 離開。howl：牠就在你這一區時 come_chance 循聲找來（Phase 3c：不花回合、體力，回應見 howl_reply），和伴侶一起嚎叫的那天撞上狼群 ×together_meet_mult。tundra_replace_chance：苔原狼只剩一隻母狼、關係友善時，換季時留下來跟你。",
     "enter_chance": { "spring": 0.015, "summer": 0.01, "autumn": 0.04, "winter": 0.05 }, "trail_days": 2, "scent_chance": 0.3,
     "roam_chance": 0.3, "own_territory_roam_mult": 0.5,
     "meet_chance": 0.3, "eating_chance": 0.25, "feed_chance": 0.3,
     "wary_accept": 0.6, "follow_base": 0.5, "follow_divisor": 150, "eat_gain": 20, "steal_gain": 30,
     "levels": { "familiar": 3, "friendly": 6, "mate": 9 },
     "relation": { "approach": 1, "follow": 1, "howl_reply": 1, "eat_together": 1, "share": 2, "joint_hunt": 2, "steal": -3, "flee": -1 },
-    "howl": { "turns": 1, "stamina": 2, "come_chance": 0.5, "pack_meet_mult": 1.5, "together_meet_mult": 0.6 },
+    "howl": { "come_chance": 0.5, "together_meet_mult": 0.6 },
+    "_howl_reply_comment": "Phase 3c 第 2 步：嚎叫的回應（不花回合、體力）。she／pack：回應率（near 同區或相鄰、far 兩區外、remote 地圖外或相連的另一張地圖）；period_mult 時段倍率；she_season／pack_season 季節倍率；known_bonus 見過你、關係熟悉以上的母狼（與循聲走過來）加多少；many 狼群幾隻以上寫「好幾個聲音」；max 最多幾個回應；alert：在狼群的 core 領域、border 邊界嚎叫，那一群注意你 periods 個時段、撞上的機率 × mult（取最長、不疊加），come 這一次直接循聲過來。初始值，mate_howl_sim、howl_risk 校準。",
+    "howl_reply": { "she": { "near": 0.6, "far": 0.3 }, "pack": { "near": 0.55, "far": 0.3, "remote": 0.25 },
+      "period_mult": { "dawn": 1.0, "day": 0.4, "dusk": 1.0, "night": 1.2, "predawn": 0.9 },
+      "she_season": { "spring": 0.8, "summer": 0.7, "autumn": 1.0, "winter": 1.2 }, "pack_season": { "summer": 0.8 },
+      "known_bonus": 0.2, "many": 4, "max": 3,
+      "alert": { "core": { "periods": 4, "mult": 3.0, "come": 0.3 }, "border": { "periods": 4, "mult": 2.0 } } },
     "tundra_replace_chance": 0.5
   },
   "pack_life": {

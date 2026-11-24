@@ -3,7 +3,7 @@ extends SceneTree
 #   1. 每一區屬於誰：地圖上的鄰群有領域（core）與相鄰（border）；住在地圖外的只有邊界那一區
 #   2. 撞上鄰群：每個時段擲；之後這一群冷卻；事件帶著是哪一群
 #   3. 對峙的勝算主要看數量：伴侶跟著時比較高
-#   4. 嚎叫的那天：一個人嚎叫 × 1.5（引來），和伴侶一起嚎叫 × 0.6（宣示領域）
+#   4. 嚎叫的那天：一個人嚎叫不再固定 × 1.5（Phase 3c 改成狼群「注意到你」，見 howl_reply_rules），和伴侶一起嚎叫 × 0.6（宣示領域）
 #   5. 試探：你的標記淡掉、和牠們相鄰 → 被試探；換季時沒補就變成牠們的（地圖外的只清掉你的標記）
 #   6. 在牠們領域的邊緣對峙贏了、你也標記了：換季時變成你的（牠們留下核心）
 #   7. 有伴侶後地盤最多 3 區
@@ -71,7 +71,7 @@ func _run() -> void:
 	gs.she_wolf().task = "den"
 	var alone: float = gs._howl_meet_mult()
 	gs.she_wolf().task = "follow"
-	_check(is_equal_approx(alone, 1.5) and is_equal_approx(together, 0.6), "嚎叫的那天：一個人 ×%.1f、和伴侶一起 ×%.1f" % [alone, together])
+	_check(is_equal_approx(alone, 1.0) and is_equal_approx(together, 0.6), "嚎叫的那天（沒被注意時）：一個人 ×%.1f、和伴侶一起 ×%.1f" % [alone, together])
 	gs.life_log["howled_day"] = -1
 	# 7
 	_check(gs.territory_max() == 3, "有伴侶後地盤最多 3 區")

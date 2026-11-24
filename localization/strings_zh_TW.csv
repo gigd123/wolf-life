@@ -2211,8 +2211,19 @@ debug.event.ranch_patrol,牧場巡查
 debug.event.ranch_warning,牧場預警
 debug.event.ranch_hunt,牧場追獵
 debug.event.ranch_eating,牧場吃到一半被打斷
-action.howl,嚎叫
+action.howl,嚎叫（不花時間）
 log.howl,你仰起頭，長長地嚎了一聲。聲音傳得很遠，慢慢散開。
+howl.again,你又嚎了一聲。
+howl.silence,四周一片安靜，沒有聲音回來。
+howl.reply.one.near,{region}那一帶傳來一隻狼的聲音，悠長、斷斷續續，離這裡很近。
+howl.reply.one.far,{region}那一帶，隱約有一隻狼回應，聲音拉得很長，停了一下又響起，離這裡有一段路。
+howl.reply.one.remote,遠遠的，{region}那一帶再過去，有一隻狼的聲音，細得幾乎聽不見。
+howl.reply.few.near,{region}那一帶有兩三個聲音一起回應，又低又連續，離這裡很近。
+howl.reply.few.far,{region}那一帶傳來兩三個聲音，一個接著一個，低沉，離這裡有一段路。
+howl.reply.few.remote,遠遠的，{region}那一帶再過去，有幾個聲音此起彼落，聽不清楚。
+howl.reply.many.near,{region}那一帶響起好幾個聲音，此起彼落，又低又急，就在不遠處。
+howl.reply.many.far,{region}那一帶傳來好幾個聲音的合聲，低沉、連續，離這裡有一段路。
+howl.reply.many.remote,遠遠的，{region}那一帶再過去，好幾個聲音混在一起，像一陣低低的風。
 she_wolf.sign.scent,樹根旁有一股陌生母狼的氣味，還很新鮮，只有牠一個。
 she_wolf.sign.sight,遠處有一隻陌生的母狼獨自走著。牠停下來朝你這邊看了一會兒，才轉身走遠。
 she_wolf.sign.here,牠就在這一帶走動。
@@ -2244,7 +2255,10 @@ she_wolf.wait.shared,你往旁邊挪了挪，牠走過來，撕下一段肉。
 she_wolf.mate.title,伴侶
 she_wolf.mate.courted,這幾天，那隻母狼總是走在你身邊。你們一起嚎叫，睡在同一個地方。牠不再離開了。
 she_wolf.mate.tundra,失去伴侶的那隻苔原狼沒有跟著其他狼走。牠留在你身邊，和你一起睡、一起嚎叫。
-debug.event.she_wolf,離群的母狼
+debug.event.she_wolf,離群的母狼（放在兩區外）
+debug.she_wolf.placed,（除錯）離群的母狼在{region}。
+debug.event.howl_listeners,這個時段的回應
+debug.howl_listeners,（除錯）這個時段可能回應的：
 debug.event.she_wolf_closer,母狼的關係 +4
 tactical.ally.role.ambush,埋伏：
 tactical.ally.name.ambush,埋伏

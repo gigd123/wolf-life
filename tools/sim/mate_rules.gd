@@ -122,10 +122,10 @@ func _run() -> void:
 	_adult("forest_east")
 	gs._update_she_wolf()
 	n = gs.she_wolf()
-	n.territory = str(gs.adjacent_regions()[0])
+	n.territory = gs.current_region
 	cfg["howl"]["come_chance"] = 1.0
 	var res: Dictionary = gs.action_howl()
-	_check(res.get("came", false) and n.territory == gs.current_region and str(gs.current_discovery.get("kind", "")) == "she_wolf", "嚎叫：牠從相鄰的區域循聲找來")
+	_check(res.get("came", false) and n.territory == gs.current_region and str(gs.current_discovery.get("kind", "")) == "she_wolf", "嚎叫：牠就在這一區時循聲走過來（相鄰區改成回應，Phase 3c）")
 	_check(gs.howled_today(), "記下今天嚎叫過")
 	gs.clear_discovery()
 	# 6

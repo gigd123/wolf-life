@@ -4059,11 +4059,13 @@ func _set_pack_rel(p: WolfPack, att: String) -> void:
 	life_log["pack_rel"] = rel
 
 # 嚎叫的那天：一個人嚎叫會把鄰群引來；和伴侶一起嚎叫是在宣示領域，鄰群比較會避開（SPEC Phase 3）
-func _howl_meet_mult() -> float:
-	if not howled_today():
-		return 1.0
-	var h: Dictionary = _mate_cfg().get("howl", {})
-	return float(h.get("together_meet_mult", 0.6)) if mate_follows_here() else float(h.get("pack_meet_mult", 1.5))
+# 嚎叫對撞上狼群的影響（Phase 3c 取代原本「嚎叫的那天 × 1.5」）：那一群注意到你時 × 注意的倍率；
+# 和伴侶一起嚎叫的那天 × together_meet_mult（兩隻狼的聲音，牠們比較不敢來）
+func _howl_meet_mult(pack_id: String = "black") -> float:
+	var m: float = pack_alert_mult(pack_id)
+	if howled_today() and mate_follows_here():
+		m *= float(_mate_cfg().get("howl", {}).get("together_meet_mult", 0.6))
+	return m
 
 # 地盤最多幾區：有伴侶後升級成領域（SPEC Phase 3：最多 3 區）
 func territory_max() -> int:
@@ -4078,7 +4080,7 @@ func _maybe_neighbor_meet() -> void:
 		var zone: String = pack_zone_of(p, current_region)
 		if zone == "" or is_quiet(p.id):
 			continue
-		var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value_of(p, "meet_mult", 1.0) * _howl_meet_mult()
+		var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value_of(p, "meet_mult", 1.0) * _howl_meet_mult(p.id)
 		if RNGService.chance(chance_value):
 			set_quiet(p.id, int(cfg.get("quiet_periods", 8)))
 			_queue_event(_neighbor_meet_event(p))
@@ -4210,7 +4212,7 @@ func _maybe_pack_meet() -> void:
 		return
 	var cfg := _pack_meet_cfg()
 	var chance_value: float = float(cfg.get("core_chance" if zone == "core" else "border_chance", 0.0)) * _pack_attitude_value("meet_mult", 1.0)
-	chance_value *= _howl_meet_mult() # 嚎叫的那天（SPEC Phase 3：一個人嚎叫引來、和伴侶一起嚎叫宣示領域）
+	chance_value *= _howl_meet_mult("black") # 嚎叫：黑狼一家注意到你、和伴侶一起嚎叫（SPEC Phase 3c）
 	if RNGService.chance(chance_value):
 		var e := _pack_meet_event()
 		_pack_note(str(e.get("lone", "")) if str(e.get("lone", "")) != "" else ("leader" if str(e.get("type", "")) == "stranger_confront" else "meet"))
@@ -4264,6 +4266,7 @@ func _pack_record(kind: String, outcome: String) -> void:
 	list.append({"kind": kind, "outcome": outcome, "age": snapped(wolf.age_years, 0.1), "size": pack_size_of(meet_pack()), "attitude": pack_attitude_of(meet_pack()), "pack": meet_pack().id})
 	life_log["pack_meetings"] = list
 	_stat_inc("pack_meet", kind + "." + outcome)
+	life_log.erase("howl_cache") # 撞上狼群：世界變了，再嚎重新判定（Phase 3c）
 
 # 離開牠們的地方：往相鄰、不是牠們領域的區域（優先巢穴）。lose_food：這一帶的殘骸與進食被牠們拿走。
 func _pack_leave(lose_food: bool) -> String:
@@ -4482,14 +4485,34 @@ func debug_pack_remains() -> void:
 	current_discovery = {"kind": "pack_remains", "location": _random_terrain(current_region), "segments": 3, "zone": zone if zone != "" else "border"}
 
 # 離群的母狼（Phase 3 第 2 步）：還沒有就在這一區出現一隻，接著遇上（一半機會牠正在吃東西）
-func debug_she_wolf() -> void:
+# 除錯「離群的母狼」（Phase 3c）：放在離你最遠的區域（測試嚎叫、循聲）；回傳牠在哪一區
+func debug_she_wolf() -> String:
 	if she_wolf() == null:
 		_spawn_she_wolf()
-		pending_events = pending_events.filter(func(e): return str(e.get("type", "")) != "she_wolf_sign")
-	she_wolf().territory = current_region
-	current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)),
-		"eating": RNGService.chance(0.5) and mate_stage() == "candidate"}
-	_she_seen()
+	else:
+		she_wolf().territory = _far_region_on_map(current_region)
+		_she_trail_add(she_wolf().territory)
+	life_log.erase("howl_cache")
+	return she_wolf().territory
+
+# 除錯「這個時段的回應」：每個可能的回應者、在哪、遠近、這個時刻的回應機率（不擲骰）
+func debug_howl_listeners() -> Array:
+	var cfg: Dictionary = _howl_cfg()
+	var pm: float = float(cfg.get("period_mult", {}).get(GameTime.current_period(), 1.0))
+	var season: String = GameTime.current_season()
+	var out: Array = []
+	var n := she_wolf()
+	if n != null and mate_stage() == "candidate":
+		var h: Dictionary = _howl_hear(n.territory)
+		var c: float = 0.0 if h.is_empty() else float(cfg.get("she", {}).get(str(h["dist"]), 0.0)) * pm * float(cfg.get("she_season", {}).get(season, 1.0))
+		out.append({"who": "she", "region": n.territory, "dist": str(h.get("dist", "聽不到")) if n.territory != current_region else "here", "chance": c})
+	for p in all_packs():
+		if not pack_is_active(p):
+			continue
+		var h2: Dictionary = _howl_hear(pack_home_region(p), p.off_map)
+		var c2: float = 0.0 if h2.is_empty() else float(cfg.get("pack", {}).get(str(h2["dist"]), 0.0)) * pm * float(cfg.get("pack_season", {}).get(season, 1.0))
+		out.append({"who": p.id, "region": pack_home_region(p), "dist": str(h2.get("dist", "聽不到")), "chance": c2, "alert": pack_alert_mult(p.id)})
+	return out
 
 # 母狼的關係 +3（到伴侶的門檻就成為伴侶）
 func debug_she_wolf_closer() -> void:
@@ -7282,6 +7305,7 @@ func she_approach() -> bool:
 		var adj: Array = adjacent_regions().filter(func(r): return GameData.map_of(r) == current_map())
 		if n != null and not adj.is_empty():
 			n.territory = str(adj[RNGService.randi_range(0, adj.size() - 1)])
+			life_log.erase("howl_cache") # 牠走開了：世界變了，再嚎重新判定（Phase 3c）
 	state_changed.emit()
 	return accepted
 
@@ -7348,24 +7372,134 @@ func she_wait_choice(share: bool) -> void:
 func can_howl() -> bool:
 	return wolf != null and wolf.life_stage() != Wolf.LifeStage.SUBADULT and not blizzard_here()
 
+# 嚎叫（Phase 3c 第 2 步）：不花回合、不花體力、沒有冷卻。同一個時段、同一區的回應結果固定（第一次嚎叫時決定，
+# 再嚎只是再聽一次，不重新判定、不重複累加狼群的注意）；時段推進、你移動、或世界改變後才重新判定。
+# 回傳 {replies: [{who, kind, dist, region}], repeat, came（母狼就在這一區、循聲走過來）, pack_event（狼群循聲過來）}
 func action_howl() -> Dictionary:
 	_record_action("howl")
-	var cfg: Dictionary = _mate_cfg().get("howl", {})
-	GameTime.advance_turns(int(cfg.get("turns", 1)))
-	wolf.stamina -= float(cfg.get("stamina", 2))
-	wolf.clamp_stats()
 	life_log["howled_day"] = _today()
+	var key: String = "%d|%s" % [_abs_period(), current_region]
+	var cache: Dictionary = life_log.get("howl_cache", {})
+	if str(cache.get("key", "")) == key:
+		return {"replies": cache.get("replies", []), "repeat": true, "came": false, "pack_event": {}}
+	var replies: Array = _howl_replies()
+	life_log["howl_cache"] = {"key": key, "replies": replies}
+	# 循聲的記憶（第 3 步用）：到下一個時段結束
+	life_log["howl_heard"] = {"until": _abs_period() + 1, "from": current_region, "replies": replies}
+	var cfg: Dictionary = _howl_cfg()
+	# 母狼就在你這一區：照原本的「循聲走過來」
 	var n := she_wolf()
 	var came := false
-	if n != null and mate_stage() == "candidate" and (n.territory == current_region or adjacent_regions().has(n.territory)) \
-			and RNGService.chance(float(cfg.get("come_chance", 0.5))):
-		n.territory = current_region
+	if n != null and mate_stage() == "candidate" and n.territory == current_region and not blizzard_here() \
+			and RNGService.chance(float(_mate_cfg().get("howl", {}).get("come_chance", 0.5)) + (float(cfg.get("known_bonus", 0.2)) if she_relation_key() != "wary" else 0.0)):
 		came = true
 		_she_relation_add("howl_reply")
 		current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)), "came": true, "eating": false}
 		_she_seen()
+	# 暴露：在狼群的領域核心或邊界嚎叫，那一群注意到你；核心時這一次可能直接循聲過來
+	var pack_event: Dictionary = {}
+	for p in all_packs():
+		var zone: String = pack_zone_of(p, current_region)
+		var ac: Dictionary = cfg.get("alert", {}).get(zone, {})
+		if zone == "" or ac.is_empty():
+			continue
+		var alerts: Dictionary = life_log.get_or_add("pack_alert", {})
+		var prev: Dictionary = alerts.get(p.id, {})
+		var until: int = maxi(int(prev.get("until", -1)), _abs_period() + int(ac.get("periods", 4)))
+		alerts[p.id] = {"until": until, "mult": maxf(float(ac.get("mult", 1.0)), float(prev.get("mult", 1.0)) if int(prev.get("until", -1)) >= _abs_period() else 0.0)}
+		if not came and pack_event.is_empty() and not is_quiet(p.id) and not (p == black_pack and is_quiet("black")) and RNGService.chance(float(ac.get("come", 0.0))):
+			pack_event = _pack_meet_event() if p == black_pack else _neighbor_meet_event(p)
+			if p == black_pack:
+				_black_wolf_quiet()
+			else:
+				set_quiet(p.id, int(_pack_meet_cfg().get("quiet_periods", 8)))
+	if not pack_event.is_empty():
+		_queue_event(pack_event)
 	state_changed.emit()
-	return {"came": came}
+	return {"replies": replies, "repeat": false, "came": came, "pack_event": pack_event}
+
+func _howl_cfg() -> Dictionary:
+	return _mate_cfg().get("howl_reply", {})
+
+# 這個時刻聽得到、而且回應的狼（最多 max 個，越近越先）：還沒成為伴侶的離群母狼、鄰群（含地圖外的）、黑狼一家。
+# 聽得到的範圍（SPEC Phase 3c）：同一張地圖裡；別張地圖只有你這一區和牠們那張地圖直接相連時才聽得到，算「遠處」。
+func _howl_replies() -> Array:
+	var cfg: Dictionary = _howl_cfg()
+	var period_mult: float = float(cfg.get("period_mult", {}).get(GameTime.current_period(), 1.0))
+	var season: String = GameTime.current_season()
+	var out: Array = []
+	if blizzard_here():
+		return out
+	var n := she_wolf()
+	if n != null and mate_stage() == "candidate" and _widow_pack() == null and n.territory != current_region:
+		var h: Dictionary = _howl_hear(n.territory)
+		if not h.is_empty():
+			var c: float = float(cfg.get("she", {}).get(str(h["dist"]), 0.0)) * period_mult * float(cfg.get("she_season", {}).get(season, 1.0))
+			if bool(life_log.get("she_met", false)) and she_relation_key() != "wary":
+				c += float(cfg.get("known_bonus", 0.2))
+			if RNGService.chance(c):
+				out.append({"who": "she", "kind": "one", "dist": h["dist"], "region": h["region"], "rank": h["rank"]})
+	for p in all_packs():
+		if not pack_is_active(p):
+			continue
+		var home: String = pack_home_region(p)
+		if home == "":
+			continue
+		var h2: Dictionary = _howl_hear(home, p.off_map)
+		if h2.is_empty():
+			continue
+		var c2: float = float(cfg.get("pack", {}).get(str(h2["dist"]), 0.0)) * period_mult * float(cfg.get("pack_season", {}).get(season, 1.0))
+		if RNGService.chance(c2):
+			var size: int = pack_size_of(p)
+			out.append({"who": p.id, "kind": "many" if size >= int(cfg.get("many", 4)) else "few", "dist": h2["dist"], "region": h2["region"], "rank": h2["rank"]})
+	out.sort_custom(func(a, b): return int(a["rank"]) < int(b["rank"]))
+	out = out.slice(0, int(cfg.get("max", 3)))
+	for r in out:
+		r.erase("rank")
+	return out
+
+# 從你這一區聽 region_id 傳來的聲音：{dist: near／far／remote, region: 寫在文字裡的那一帶, rank: 排序用}；聽不到時空字典。
+# off_map：地圖外的狼群，region_id 是牠們邊界那一區，聲音「從那一帶再過去」傳來（遠處）
+func _howl_hear(region_id: String, off_map: bool = false) -> Dictionary:
+	var here_map: String = current_map()
+	if GameData.map_of(region_id) == here_map:
+		if off_map:
+			return {"dist": "remote", "region": region_id, "rank": 9}
+		var d: int = _map_steps(current_region, region_id)
+		if d < 0:
+			return {}
+		return {"dist": "near" if d <= 1 else "far", "region": region_id, "rank": d}
+	# 別張地圖：你這一區直接連到那張地圖時才聽得到（遠處，寫你這邊那條通道通往的區域）
+	for link in GameData.links_from(current_region):
+		if GameData.map_of(str(link["to"])) == GameData.map_of(region_id):
+			return {"dist": "remote", "region": str(link["to"]), "rank": 10}
+	return {}
+
+# 同一張地圖上兩區之間走幾步（照區域的相鄰）；到不了是 −1
+func _map_steps(from: String, to: String) -> int:
+	if from == to:
+		return 0
+	var map_id: String = GameData.map_of(from)
+	var dist := {from: 0}
+	var queue: Array = [from]
+	while not queue.is_empty():
+		var cur: String = queue.pop_front()
+		for r in EncounterSystem.region_data(cur).get("adjacent", []):
+			var rs: String = str(r)
+			if GameData.map_of(rs) != map_id or dist.has(rs):
+				continue
+			dist[rs] = int(dist[cur]) + 1
+			if rs == to:
+				return int(dist[rs])
+			queue.append(rs)
+	return -1
+
+# 狼群注意到你（嚎叫的暴露，Phase 3c）：注意期間在牠們那一帶撞上的機率乘上的倍率（取最長、不疊加）；沒有注意是 1
+func pack_alert_mult(pack_id: String) -> float:
+	var a: Dictionary = life_log.get("pack_alert", {}).get(pack_id, {})
+	if a.is_empty() or int(a.get("until", -1)) < _abs_period():
+		return 1.0
+	return float(a.get("mult", 1.0))
 
 func howled_today() -> bool:
 	return int(life_log.get("howled_day", -1)) == _today()
