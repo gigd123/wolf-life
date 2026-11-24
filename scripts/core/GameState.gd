@@ -7396,7 +7396,10 @@ func action_howl() -> Dictionary:
 	if n != null and mate_stage() == "candidate" and n.territory == current_region and not blizzard_here() \
 			and RNGService.chance(float(_mate_cfg().get("howl", {}).get("come_chance", 0.5)) + (float(cfg.get("known_bonus", 0.2)) if she_relation_key() != "wary" else 0.0)):
 		came = true
-		_she_relation_add("howl_reply")
+		# 循聲走過來的關係 +1：每天最多一次（2026-11-24 校準：每個時段都嚎的玩家原本配對特別快）
+		if int(life_log.get("she_howl_rel_day", -1)) != _today():
+			life_log["she_howl_rel_day"] = _today()
+			_she_relation_add("howl_reply")
 		current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)), "came": true, "eating": false}
 		_she_seen()
 	# 暴露：在狼群的領域核心或邊界嚎叫，那一群注意到你；核心時這一次可能直接循聲過來
