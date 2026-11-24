@@ -884,6 +884,7 @@ pack.remains.done,殘骸只剩骨頭了，你舔舔嘴離開。
 pack.news.took.known,黑狼一家的標記佔滿了{region}。你沒有回去補上，那裡已經是牠們的了。
 pack.news.took.unknown,{region}那一帶滿是別的狼的標記，你的氣味已經被蓋過了。
 stranger.won_territory,{region}原本是牠的地盤，從此是你的了。
+stranger.won_family,牠退回家人那邊去了。那一帶還是牠們的地方。
 stranger.killed_card.title,那隻黑狼
 first_win.grizzly_bear.title,那頭灰熊
 first_win.grizzly_bear.body,你獨自和一頭成年灰熊周旋，閃過一掌又一掌，直到牠喘著粗氣轉身離開。很少有狼做得到。
@@ -2417,10 +2418,12 @@ pack.option.fight,撲上去打（勝算 {p}%）
 pack.option.fight.tactical,撲上去打
 pack.fight.parted,你們和牠們咬了幾口、互相逼視，誰也沒有退。最後雙方各自散開，你們退到{region}。
 pack.fight.parted.alone,你和牠們咬了幾口、互相逼視，誰也沒有退。最後你退到{region}。
-pack.fight.won,你們撲了上去，咬成一團。{who}丟下一隻受傷的同伴，退走了。
+pack.fight.won,你們撲了上去，咬成一團。{who}身上都帶了傷，退走了。
+pack.fight.won_killed,你們撲了上去，咬成一團。你們咬死了牠們一隻年輕的狼，{who}丟下牠的屍體，退走了。
 pack.fight.lost,你們撲了上去，卻被牠們的數量壓了回來。你們帶著傷逃到{region}。
 pack.fight.member_lost,有一隻沒有跟上來。
-pack.fight.won.alone,你撲了上去，和牠們咬成一團。{who}丟下一隻受傷的同伴，退走了。
+pack.fight.won.alone,你撲了上去，和牠們咬成一團。{who}身上都帶了傷，退走了。
+pack.fight.won_killed.alone,你撲了上去，和牠們咬成一團。你咬死了牠們一隻年輕的狼，{who}丟下牠的屍體，退走了。
 pack.fight.lost.alone,你撲了上去，卻被牠們的數量壓了回來。你帶著傷逃到{region}。
 pack.vacancy,{region}那頭傳來的嚎聲變了，少了那個低沉的聲音。那群狼裡，帶頭的公狼似乎不在了。
 she_wolf.meet.widow,那群狼的母狼站在不遠處看著你。牠身邊少了帶頭的公狼。牠沒有低吼。

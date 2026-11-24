@@ -4387,16 +4387,22 @@ func pack_fight() -> Dictionary:
 	return _pack_fight_after(mp, won, lost_id)
 
 # 撲上去打的後果（選單式與戰術戰鬥共用）：贏了牠們少一隻年輕的、照對峙贏了佔區域；輸了被趕走、這一帶的食物沒了
-func _pack_fight_after(mp: WolfPack, won: bool, lost_id: String) -> Dictionary:
+# killed：打贏時牠們被咬死幾隻（2026-11-24 試玩回報：原本寫「丟下一隻受傷的同伴」看不出那隻怎麼了）。
+# 戰術戰鬥照戰鬥裡實際死掉的（帶頭的不算）；選單式（−1）照原本的規則，有年輕成員時咬死一隻
+func _pack_fight_after(mp: WolfPack, won: bool, lost_id: String, killed: int = -1) -> Dictionary:
 	_pack_record("meet", "fight_won" if won else "fight_lost")
-	var res := {"won": won, "region": current_region, "member_lost": lost_id}
+	var res := {"won": won, "region": current_region, "member_lost": lost_id, "killed": 0}
 	if won:
 		_set_pack_rel(mp, "wary")
 		_standoff_won_here(mp)
-		var lost: float = mp.young.filter(func(a): return float(a) >= 1.0).size()
-		if lost > 0:
+		var can: int = mp.young.filter(func(a): return float(a) >= 1.0).size()
+		var n_kill: int = mini(can, 1 if killed < 0 else killed)
+		for i in n_kill:
 			mp._remove_oldest_young()
-		add_life_event("pack.fight", {"pack": mp.id, "won": true})
+		res["killed"] = n_kill
+		if n_kill > 0:
+			add_life_event("pack.member_killed", {"pack": mp.id, "n": n_kill})
+		add_life_event("pack.fight", {"pack": mp.id, "won": true, "killed": n_kill})
 	else:
 		_set_pack_rel(mp, "scorn")
 		add_life_event("pack.fight", {"pack": mp.id, "won": false, "lost": res["member_lost"]})
@@ -4459,7 +4465,12 @@ func finish_pack_tactical(tc: TacticalCombat) -> Dictionary:
 	var won: bool = tc.outcome in ["routed", "enemy_left", "enemy_submit"]
 	if tc.outcome == "died":
 		die_in_combat("pack_wolf", "adult", "territory")
-	var res := _pack_fight_after(mp, won, lost_id)
+	# 戰鬥裡被咬死的對手（帶頭的不算）
+	var killed := 0
+	for i in tc.units.size():
+		if i != li and str(tc.units[i]["side"]) == "enemy" and (str(tc.units[i].get("out_reason", "")) == "died" or float(tc.units[i]["hp"]) <= 0.0):
+			killed += 1
+	var res := _pack_fight_after(mp, won, lost_id, killed)
 	return res
 
 # 自動玩家、模擬：照「交給本能」打完
@@ -8490,11 +8501,15 @@ func _after_stranger_combat(c: Combat) -> float:
 		"drove_off", "killed":
 			_year_flag("stranger_win")
 			# 第一次打贏牠的成長改由 _after_first_win 統一處理（2026-10-15）
-			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕
-			life_log["own_territory"] = npc.territory
-			var marks: Dictionary = life_log.get("marks", {})
-			marks[npc.territory] = int(life_log.get("days_lived", 1)) # 打贏的那一帶接上地盤（1.9b 第 1 步）
-			life_log["marks"] = marks
+			# 你贏了：牠占據的那一帶變成你的範圍，之後不再被驅趕。
+			# 牠已經有家人（黑狼一家）時不算（2026-11-24 試玩回報：打贏牠一隻就寫「從此是你的」，牠們卻還住在那裡、一直打起來）：
+			# 牠退回家人那邊；要讓牠們讓出那一帶，得在撞上整群時打贏或對峙贏
+			c.set_meta("family_kept", pack_active())
+			if not pack_active():
+				life_log["own_territory"] = npc.territory
+				var marks: Dictionary = life_log.get("marks", {})
+				marks[npc.territory] = int(life_log.get("days_lived", 1)) # 打贏的那一帶接上地盤（1.9b 第 1 步）
+				life_log["marks"] = marks
 			if c.outcome == "killed":
 				_queue_notice({"type": "stranger_killed", "region": npc.territory})
 			npc.yielded_to_player = true

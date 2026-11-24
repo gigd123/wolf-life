@@ -4707,6 +4707,9 @@ func _show_pack_meet(event: Dictionary) -> void:
 	var fight_label: String = tr("pack.option.fight.tactical") if tactical_fight else tr("pack.option.fight").replace("{p}", str(roundi(GameState.pack_fight_chance() * 100.0)))
 	var fight_done := func(r: Dictionary, alone: bool) -> void:
 		var res_key: String = "parted" if bool(r.get("parted", false)) else ("won" if r["won"] else "lost")
+		# 打贏時寫明有沒有咬死牠們的狼（2026-11-24 試玩回報）
+		if res_key == "won" and int(r.get("killed", 0)) > 0:
+			res_key = "won_killed"
 		var msg: String = tr("pack.fight." + res_key + (".alone" if alone else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
 		if str(r.get("member_lost", "")) != "":
 			msg += tr("pack.fight.member_lost")
@@ -4905,7 +4908,10 @@ func _finish_combat_ui() -> void:
 			_log_result(tr("combat.grow." + str(r["grow"])))
 		# 咬死時後面有「那隻黑狼」卡片，不另外寫地盤（QA-67）
 		if c.npc != null and c.npc.id == "stranger_wolf" and c.outcome == "drove_off":
-			_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
+			if bool(c.get_meta("family_kept", false)):
+				_log_result(tr("stranger.won_family"))
+			else:
+				_log_result(tr("stranger.won_territory").replace("{region}", tr("region." + str(GameState.life_log.get("own_territory", "")))))
 		if c.npc != null and GameState.TUNDRA_WOLF_IDS.has(c.npc.id) and not GameState.tundra_pair().is_empty() \
 				and GameState.tundra_relation_key() != str(c.get_meta("tundra_relation_before", GameState.tundra_relation_key())):
 			_log(_tt("tundra.relation_change." + GameState.tundra_relation_key()))
