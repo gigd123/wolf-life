@@ -24,6 +24,7 @@ ERR_PATTERN='SCRIPT_CHECK_FAIL|SCRIPT ERROR|Parse Error|Compile Error|ERROR:|Fai
 LOG="$(mktemp)"
 fail=0
 
+source tools/isolate_user.sh
 run() { "$GODOT_BIN" --headless --path . "$@" >"$LOG" 2>&1; }
 report() {
   if grep -qE "$ERR_PATTERN" "$LOG"; then

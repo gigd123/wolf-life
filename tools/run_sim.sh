@@ -30,6 +30,7 @@ if [ -z "$GODOT_BIN" ]; then
   exit 2
 fi
 
+source tools/isolate_user.sh
 "$GODOT_BIN" --headless --path . --import >/dev/null 2>&1
 # 過濾掉音效驅動、資源洩漏等與模擬無關的訊息
 DAYS="${2:-}" RUNS="${3:-}" "$GODOT_BIN" --headless --path . -s "res://tools/sim/$NAME.gd" 2>&1 \

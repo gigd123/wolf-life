@@ -9,6 +9,7 @@ export UI_CHECK_SEED="${1:-7}" UI_CHECK_STEPS="${2:-400}" UI_CHECK_OUT="${UI_CHE
 rm -rf "$UI_CHECK_OUT"
 BEFORE=$(ls playtest_logs 2>/dev/null)
 LOG=$(mktemp)
+source tools/isolate_user.sh
 xvfb-run -a -s "-screen 0 1920x1080x24" "$G" --path . --rendering-driver opengl3 -s tools/ui_check.gd > "$LOG" 2>&1
 # 狼死亡時遊戲會存試玩紀錄；測試產生的紀錄不留
 for f in $(ls playtest_logs 2>/dev/null); do echo "$BEFORE" | grep -qx "$f" || rm -f "playtest_logs/$f"; done
