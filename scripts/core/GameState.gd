@@ -323,6 +323,27 @@ func _season_review(fed_ratio: float) -> Dictionary:
 # --- 轉變與回饋提示（SPEC 1.6「轉變與回饋提示」）---
 # 提示放進 pending_events，畫面層在目前的行動結束後依序顯示；不佔每天的事件上限。
 
+# 地盤被佔走、拿回來的字卡（2026-11-24 試玩回報：人在森林卻看到山地的地盤被佔走，很怪）：
+# 那一區在你現在這張地圖才馬上跳；在別張地圖就等你走回那張地圖時才跳
+func _queue_territory_notice(event: Dictionary) -> void:
+	if GameData.map_of(str(event.get("region", ""))) == current_map():
+		_queue_notice(event)
+		return
+	var later: Array = life_log.get_or_add("deferred_notices", [])
+	later.append(event)
+
+func _flush_deferred_notices() -> void:
+	var later: Array = life_log.get("deferred_notices", [])
+	if later.is_empty():
+		return
+	var keep: Array = []
+	for e in later:
+		if GameData.map_of(str(e.get("region", ""))) == current_map():
+			_queue_notice(e)
+		else:
+			keep.append(e)
+	life_log["deferred_notices"] = keep
+
 func _queue_notice(event: Dictionary) -> void:
 	if wolf == null or not wolf.alive:
 		return
@@ -2144,6 +2165,7 @@ func action_move(target_region: String, via_ice: bool = false) -> void:
 	if not _quiet_move_log:
 		log_message.emit(tr("log.moved").replace("{region}", tr("region." + target_region)))
 	_cache_arrival_notice(target_region)
+	_flush_deferred_notices()
 	if lost_from != "":
 		log_message.emit(tr("log.whiteout_lost").replace("{target}", tr("region." + lost_from)).replace("{region}", tr("region." + target_region)))
 	if not is_region_visited(target_region):
@@ -4178,7 +4200,7 @@ func _take_probed_by(p: WolfPack) -> Array:
 			p.regions.append(r)
 			taken.append(r)
 			add_life_event("territory.lost", {"region": r, "pack": p.id})
-			_queue_notice({"type": "territory_lost", "region": r})
+			_queue_territory_notice({"type": "territory_lost", "region": r})
 	life_log.erase(key)
 	return taken
 
@@ -4190,7 +4212,7 @@ func _settle_pack_claims() -> void:
 		if p != null and p.regions.has(r) and p.regions.size() > 1 and str(p.regions[0]) != r and is_own_territory(r):
 			p.regions.erase(r)
 			add_life_event("territory.won", {"region": r, "pack": p.id})
-			_queue_notice({"type": "territory_won", "region": r})
+			_queue_territory_notice({"type": "territory_won", "region": r})
 	life_log.erase("pack_claims")
 
 func pack_attitude() -> String:
