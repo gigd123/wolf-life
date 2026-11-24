@@ -107,10 +107,11 @@ func _risk() -> void:
 	var core: String = str(p.regions[0])
 	var border := ""
 	var far := ""
-	var adj: Array = root.get_node("EncounterSystem").region_data(core).get("adjacent", [])
-	border = str(adj[0]) if not adj.is_empty() else ""
 	for r in root.get_node("GameData").maps().get("mountain", {}).get("layout", []):
-		if GS._map_steps(core, str(r)) >= 2:
+		var st: int = GS._map_steps(core, str(r))
+		if st == 1 and border == "":
+			border = str(r)
+		elif st >= 2:
 			far = str(r)
 	print("== howl_risk：山地鄰群（核心 %s、邊界 %s、兩區外 %s），每格 %d 天；每天撞上幾次" % [core, border, far, days])
 	var order := ["dusk", "dawn", "night", "predawn", "day"]
