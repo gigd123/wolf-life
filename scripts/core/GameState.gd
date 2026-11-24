@@ -783,6 +783,9 @@ func available_actions() -> Array[String]:
 		actions.append("clear_den")
 	if can_fish_salmon():
 		actions.append("fish_salmon")
+	var fopts: Array = howl_follow_options()
+	for i in mini(3, fopts.size()):
+		actions.append("follow_howl_%d" % i)
 	if can_mark_here():
 		actions.append("mark")
 	if can_howl():
@@ -2252,7 +2255,7 @@ func action_explore(mode: String = "trail") -> Dictionary:
 			_pack_note("overmarked")
 		state_changed.emit()
 		return current_discovery
-	if _maybe_meet_she_wolf() or _maybe_she_scent() or _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
+	if _maybe_follow_result() or _maybe_meet_she_wolf() or _maybe_she_scent() or _maybe_tundra_den() or _maybe_tundra_mob() or _maybe_tundra_hunt() or _maybe_meet_tundra_wolves():
 		state_changed.emit()
 		return current_discovery
 	# 風雪後凍死的動物：還沒找到的屍體，探索時有機會發現
@@ -7493,6 +7496,90 @@ func _map_steps(from: String, to: String) -> int:
 				return int(dist[rs])
 			queue.append(rs)
 	return -1
+
+# --- 循著嚎聲而去（Phase 3c 第 3 步）---
+
+# 現在聽得到、可以循聲的回應：這個時段（或下一個時段）在這一區嚎叫聽到的；移動後就要再嚎一次
+func howl_follow_options() -> Array:
+	var heard: Dictionary = life_log.get("howl_heard", {})
+	if heard.is_empty() or int(heard.get("until", -1)) < _abs_period() or str(heard.get("from", "")) != current_region:
+		return []
+	return heard.get("replies", [])
+
+# 往 target 走的下一區（照區域的相鄰與地圖之間的通道）；就在這一區時是空字串（在附近找一找）
+func howl_next_step(target: String) -> String:
+	if target == current_region:
+		return ""
+	var prev := {current_region: ""}
+	var queue: Array = [current_region]
+	while not queue.is_empty():
+		var cur: String = queue.pop_front()
+		var nbrs: Array = (EncounterSystem.region_data(cur).get("adjacent", []) as Array).duplicate()
+		for link in GameData.links_from(cur):
+			nbrs.append(str(link["to"]))
+		for r in nbrs:
+			var rs: String = str(r)
+			if prev.has(rs):
+				continue
+			prev[rs] = cur
+			if rs == target:
+				var step: String = rs
+				while str(prev[step]) != current_region:
+					step = str(prev[step])
+				return step
+			queue.append(rs)
+	return ""
+
+# 選了「循著嚎聲而去」：記下要去哪裡、找誰（到下一個時段結束後兩個時段內有效）；回傳 {mode: search（在附近找一找）／move, to: 下一區}
+func action_follow_howl(idx: int) -> Dictionary:
+	var opts: Array = howl_follow_options()
+	if idx < 0 or idx >= opts.size():
+		return {}
+	var r: Dictionary = opts[idx]
+	record_decision("howl.follow." + ("one" if str(r.get("kind", "")) == "one" else "pack"))
+	var target: String = str(r.get("region", ""))
+	life_log["howl_follow"] = {"who": str(r.get("who", "")), "target": target, "until": _abs_period() + int(_howl_cfg().get("follow_periods", 2))}
+	life_log["howl_follows"] = int(life_log.get("howl_follows", 0)) + 1
+	var step: String = howl_next_step(target)
+	return {"mode": "search" if step == "" else "move", "to": step}
+
+# 循聲到了那一區：探索時照實際情況出現一種結果（Phase 3c「到達後的探索」）；記憶過期或不在那一區時不影響
+func _maybe_follow_result() -> bool:
+	var fol: Dictionary = life_log.get("howl_follow", {})
+	if fol.is_empty() or int(fol.get("until", -1)) < _abs_period() or str(fol.get("target", "")) != current_region or blizzard_here():
+		return false
+	var cfg: Dictionary = _howl_cfg().get("arrive", {})
+	var who: String = str(fol.get("who", ""))
+	if who == "she":
+		var n := she_wolf()
+		if n == null or mate_stage() != "candidate":
+			return false
+		if n.territory == current_region:
+			if RNGService.chance(float(cfg.get("she_meet", 0.6))):
+				current_discovery = {"kind": "she_wolf", "location": _random_terrain(current_region), "first": not bool(life_log.get("she_met", false)),
+					"eating": RNGService.chance(float(_mate_cfg().get("eating_chance", 0.25))), "widow": _widow_pack() != null}
+				_she_seen()
+				_stat_inc("howl_follow", "she_meet")
+				return true
+			if RNGService.chance(float(cfg.get("she_sign", 0.4))):
+				current_discovery = {"kind": "she_scent", "toward": n.territory, "location": _random_terrain(current_region)}
+				_stat_inc("howl_follow", "she_sign")
+				return true
+		elif (EncounterSystem.region_data(current_region).get("adjacent", []) as Array).has(n.territory) and RNGService.chance(float(cfg.get("she_moved_sign", 0.5))):
+			current_discovery = {"kind": "she_scent", "toward": n.territory, "location": _random_terrain(current_region)}
+			_stat_inc("howl_follow", "she_moved")
+			return true
+		return false
+	var p := pack_by_id(who)
+	if p == null or not pack_is_active(p):
+		return false
+	var zone: String = pack_zone_of(p, current_region)
+	if zone != "" and RNGService.chance(float(cfg.get("pack_sign", 0.5))):
+		learn({"type": "pack_land", "region": current_region if zone == "core" else pack_home_region(p)})
+		current_discovery = {"kind": "pack_sign", "sign": zone + ("_off" if p.off_map else ""), "pack": p.id, "location": _random_terrain(current_region), "home": pack_home_region(p)}
+		_stat_inc("howl_follow", "pack_sign")
+		return true
+	return false
 
 # 狼群注意到你（嚎叫的暴露，Phase 3c）：注意期間在牠們那一帶撞上的機率乘上的倍率（取最長、不疊加）；沒有注意是 1
 func pack_alert_mult(pack_id: String) -> float:

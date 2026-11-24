@@ -3,7 +3,7 @@ extends Control
 const REGION_ORDER := ["forest_north", "forest_east", "forest_west", "forest_south"]
 const STAT_KEYS := ["health", "stamina", "hunger", "health_value", "speed", "strength", "skill", "perception"]
 const FIRE_TINT := Color(1.0, 0.62, 0.45) # 正在燒的區域：原本的背景加火光
-const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "clear_den", "fish_salmon", "mark", "howl", "regurgitate", "leave_to_children", "lie_down"]
+const ACTION_ORDER := ["explore", "explore_modes", "routine", "gather", "find_sleep_spot", "short_rest", "rest_until", "sleep", "return_to_carcass", "eat_cache", "make_den", "clear_den", "fish_salmon", "mark", "howl", "follow_howl_0", "follow_howl_1", "follow_howl_2", "regurgitate", "leave_to_children", "lie_down"]
 const STATUS_ICON_KINDS := ["injury", "burn", "frostbite", "poison", "hunger", "cold", "gorged"]
 const LOG_VISIBLE_LINES := 4
 
@@ -1308,6 +1308,13 @@ func _refresh() -> void:
 	for action_id in action_buttons.keys():
 		var btn: Button = action_buttons[action_id]
 		btn.visible = available.has(action_id)
+	# 循著嚎聲而去（Phase 3c 第 3 步）：按鈕寫往哪一區、或在附近找一找
+	var fopts: Array = GameState.howl_follow_options()
+	for i in 3:
+		var fb: Button = action_buttons["follow_howl_%d" % i]
+		if i < fopts.size():
+			fb.text = _follow_label(fopts[i])
+			fb.tooltip_text = fb.text + "\n" + howl_reply_text(fopts[i])
 	# 「確定」的獵物出沒知識：寫明這次探索發現最可能的獵物的機率（按鈕上只寫名稱和百分比時，容易誤會成「去找這種獵物」）
 	explore_hint_label.text = _explore_hint()
 	explore_hint_label.visible = available.has("explore") and explore_hint_label.text != ""
@@ -1782,6 +1789,9 @@ func _on_action_button(action_id: String) -> void:
 		"regurgitate":
 			var got: float = GameState.regurgitate()
 			_log(tr("den.regurgitated").replace("{days}", str(snapped(GameState.den_food_days(), 0.5))) if got > 0.0 else tr("den.cannot_regurgitate"))
+		"follow_howl_0", "follow_howl_1", "follow_howl_2":
+			_follow_howl(int(action_id.substr(action_id.length() - 1)))
+			return
 		"howl":
 			# Phase 3c 第 2 步：不花時間；按下直接顯示回應卡片（母狼就在這一區、循聲走過來時接相遇）
 			var hr: Dictionary = GameState.action_howl()
@@ -2882,12 +2892,40 @@ func _show_howl_replies(hr: Dictionary) -> void:
 	_set_wolf_pose(encounter_sprite, "howl")
 	_set_terrain_bg(encounter_bg, "")
 	_clear_children(encounter_buttons_box)
-	_add_encounter_button(tr("ui.continue"), func():
+	# 每個回應一顆「循著嚎聲而去」（Phase 3c 第 3 步）；不想去就留在這裡（按鈕會留在行動欄到下一個時段結束）
+	var fopts: Array = GameState.howl_follow_options()
+	for i in fopts.size():
+		var idx: int = i
+		_add_encounter_button(_follow_label(fopts[i]), func():
+			encounter_overlay.visible = false
+			_follow_howl(idx)
+		)
+	_add_encounter_button(tr("howl.stay") if not fopts.is_empty() else tr("ui.continue"), func():
 		encounter_overlay.visible = false
 		_refresh()
 		_process_events()
 	)
 	encounter_overlay.visible = true
+
+# 循聲按鈕的字：往下一區走，或回應就在這一區時在附近找一找
+func _follow_label(r: Dictionary) -> String:
+	var step: String = GameState.howl_next_step(str(r.get("region", "")))
+	# 好幾個回應可能要經過同一區：按鈕寫是哪一種聲音（一隻、那幾個），不寫是誰
+	var k: String = "one" if str(r.get("kind", "one")) == "one" else "group"
+	return tr("howl.follow.here." + k) if step == "" else tr("howl.follow.go." + k).replace("{region}", tr("region." + step))
+
+func _follow_howl(idx: int) -> void:
+	var res: Dictionary = GameState.action_follow_howl(idx)
+	if res.is_empty():
+		return
+	_new_main_entry()
+	if str(res["mode"]) == "search":
+		_log(tr("howl.follow.searching"))
+		_show_discovery(GameState.action_explore())
+		_refresh()
+	else:
+		_log(tr("howl.follow.going").replace("{region}", tr("region." + str(res["to"]))))
+		_on_region_button(str(res["to"]))
 
 func _show_event_message(text: String, sprite_id: String, image_key: String = "") -> void:
 	_log(text)

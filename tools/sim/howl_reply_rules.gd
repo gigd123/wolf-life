@@ -158,5 +158,72 @@ func _process(_d) -> bool:
 	var hs: Dictionary = gs.action_howl()
 	_ok(hs["came"] and str(gs.current_discovery.get("kind", "")) == "she_wolf", "母狼就在這一區：循聲走過來")
 	cfg["howl"]["come_chance"] = 0.5
+	# --- 第 3 步：循著嚎聲而去 ---
+	gs.clear_discovery()
+	cfg["howl_reply"]["she"] = {"near": 1.0, "far": 1.0}
+	gt.period_index = gt.PERIODS.find("night")
+	gs.black_pack.stage = "solo"
+	n.territory = "forest_west"
+	_fresh("forest_east")
+	var fr: Dictionary = gs.action_howl()
+	var opts: Array = gs.howl_follow_options()
+	var si: int = -1
+	for i in opts.size():
+		if str(opts[i]["who"]) == "she":
+			si = i
+	_ok(si >= 0 and gs.available_actions().has("follow_howl_%d" % si), "有回應：行動欄有循著嚎聲而去")
+	var step: String = gs.howl_next_step("forest_west")
+	_ok(step != "" and step != "forest_west" and gs.adjacent_regions().has(step), "兩區外：下一步是相鄰的區域（%s）" % step)
+	var fres: Dictionary = gs.action_follow_howl(si)
+	_ok(str(fres.get("mode", "")) == "move" and str(fres.get("to", "")) == step, "循聲：只走一區（%s）" % str(fres))
+	gs.action_move(step)
+	_ok(gs.howl_follow_options().is_empty(), "走到下一區後：要再嚎一次才有新的方向")
+	# 到了牠那一區：探索時遇上牠的機率提高
+	var with_f := 0
+	var without := 0
+	for i in 400:
+		gs.current_region = "forest_west"
+		n.territory = "forest_west"
+		gs.life_log["howl_follow"] = {"who": "she", "target": "forest_west", "until": gs._abs_period() + 2}
+		gs.clear_discovery()
+		if gs._maybe_follow_result() and str(gs.current_discovery.get("kind", "")) == "she_wolf":
+			with_f += 1
+		gs.life_log.erase("howl_follow")
+		gs.clear_discovery()
+		if gs._maybe_follow_result() or (randf() < float(cfg["meet_chance"]) and gs._she_wolf_here()):
+			without += 1
+	_ok(with_f > 200 and with_f > without * 1.5, "循聲到了牠那一區：遇上牠比較容易（循聲 %d、沒有 %d／400）" % [with_f, without])
+	# 牠已經走到相鄰區：看到往那裡去的痕跡
+	var moved := 0
+	for i in 200:
+		gs.current_region = "forest_west"
+		n.territory = "forest_south"
+		gs.life_log["howl_follow"] = {"who": "she", "target": "forest_west", "until": gs._abs_period() + 2}
+		gs.clear_discovery()
+		if gs._maybe_follow_result() and str(gs.current_discovery.get("kind", "")) == "she_scent" and str(gs.current_discovery.get("toward", "")) == "forest_south":
+			moved += 1
+	_ok(moved > 60 and moved < 140, "牠走到相鄰區：有時看到往那裡去的痕跡（%d／200）" % moved)
+	# 記憶過期：沒有效果
+	gs.life_log["howl_follow"] = {"who": "she", "target": "forest_west", "until": gs._abs_period() - 1}
+	n.territory = "forest_west"
+	var any_exp := false
+	for i in 50:
+		gs.clear_discovery()
+		if gs._maybe_follow_result():
+			any_exp = true
+	_ok(not any_exp, "循聲的記憶過期：沒有效果")
+	# 狼群那一側：先看到標記
+	_black_pack("forest_west")
+	gs.current_region = "forest_south"
+	var signs := 0
+	for i in 200:
+		gs.life_log["howl_follow"] = {"who": "black", "target": "forest_south", "until": gs._abs_period() + 2}
+		gs.clear_discovery()
+		if gs._maybe_follow_result() and str(gs.current_discovery.get("kind", "")) == "pack_sign":
+			signs += 1
+	_ok(signs > 60 and signs < 140, "循聲到狼群的邊界：有時先看到標記（%d／200）" % signs)
+	# 回應就在這一區：在附近找一找（下一步是空字串）
+	_ok(gs.howl_next_step(gs.current_region) == "", "回應就在這一區：在附近找一找")
+	cfg["howl_reply"]["she"] = {"near": 0.6, "far": 0.3}
 	print("嚎叫回應的規則：%s" % ("全部通過" if fails == 0 else "失敗 %d 個" % fails))
 	return true

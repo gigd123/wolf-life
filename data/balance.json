@@ -517,7 +517,9 @@
       "period_mult": { "dawn": 1.0, "day": 0.4, "dusk": 1.0, "night": 1.2, "predawn": 0.9 },
       "she_season": { "spring": 0.8, "summer": 0.7, "autumn": 1.0, "winter": 1.2 }, "pack_season": { "summer": 0.8 },
       "known_bonus": 0.2, "many": 4, "max": 3,
-      "alert": { "core": { "periods": 4, "mult": 3.0, "come": 0.3 }, "border": { "periods": 4, "mult": 2.0 } } },
+      "alert": { "core": { "periods": 4, "mult": 3.0, "come": 0.3 }, "border": { "periods": 4, "mult": 2.0 } },
+      "_follow_comment": "Phase 3c 第 3 步：循著嚎聲而去。follow_periods 選了之後幾個時段內到達算數；arrive：到了那一區探索時，母狼還在 she_meet 遇上、否則 she_sign 聞到氣味或看到足跡，牠已經走到相鄰區 she_moved_sign 看到往那裡去的痕跡，狼群那一側（邊界、領域）pack_sign 看到標記、抓痕。",
+      "follow_periods": 2, "arrive": { "she_meet": 0.6, "she_sign": 0.4, "she_moved_sign": 0.5, "pack_sign": 0.5 } },
     "tundra_replace_chance": 0.5
   },
   "pack_life": {

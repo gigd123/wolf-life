@@ -2214,6 +2214,16 @@ debug.event.ranch_eating,牧場吃到一半被打斷
 action.howl,嚎叫（不花時間）
 log.howl,你仰起頭，長長地嚎了一聲。聲音傳得很遠，慢慢散開。
 howl.again,你又嚎了一聲。
+howl.stay,留在這裡
+howl.follow.go.one,循著一隻狼的聲音（往{region}）
+howl.follow.go.group,循著那幾個聲音（往{region}）
+howl.follow.here.one,循著一隻狼的聲音，在附近找一找
+howl.follow.here.group,循著那幾個聲音，在附近找一找
+howl.follow.searching,你循著剛才的聲音，在附近慢慢找。
+howl.follow.going,你循著剛才的聲音，往{region}走去。
+action.follow_howl_0,循著嚎聲而去
+action.follow_howl_1,循著嚎聲而去
+action.follow_howl_2,循著嚎聲而去
 howl.silence,四周一片安靜，沒有聲音回來。
 howl.reply.one.near,{region}那一帶傳來一隻狼的聲音，悠長、斷斷續續，離這裡很近。
 howl.reply.one.far,{region}那一帶，隱約有一隻狼回應，聲音拉得很長，停了一下又響起，離這裡有一段路。
