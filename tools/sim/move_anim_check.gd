@@ -57,6 +57,12 @@ func _process(_d) -> bool:
 	_ok(s.position.distance_to(w_before) < 0.02, "衝完回到原位")
 	hd._animate_units(0.6)
 	_ok(dsp.position.distance_to(hd.cell_center(h.deer_pos) + Vector3(0, 0, 0.05)) < 0.02 and dsp.modulate == Color.WHITE, "撲完獵物才移動到新位置、顏色恢復")
+	# 略過：播放中點一下直接到結果
+	h.wolf_pos = h.wolf_pos + Vector2i(0, 2)
+	hd.refresh()
+	_ok(hd.is_animating(), "換格子後在播動畫")
+	hd.finish_anims()
+	_ok(not hd.is_animating() and s.position.distance_to(hd.cell_center(h.wolf_pos) + Vector3(0, 0, 0.05)) < 0.01, "略過：直接到新的格子")
 	# 逃出邊緣
 	h.herd[h.target]["exit_to"] = Vector2i(-3, h.deer_pos.y)
 	h.done = true

@@ -84,6 +84,8 @@ func build(w: int, h: int, terrain_fn: Callable) -> void:
 		world.queue_free()
 	units.clear()
 	tree_sprites.clear()
+	# 速度照設定（user://settings.cfg [combat] anim，和選單式戰鬥的動畫共用）：一般 0.5 秒、快 0.25 秒、略過 0
+	move_time = {"normal": 0.5, "fast": 0.25, "off": 0.0}.get(CombatAnimator.mode(), 0.5)
 	world = Node3D.new()
 	sub.add_child(world)
 	_build_env()
@@ -570,6 +572,28 @@ func _place_unit(ent: Dictionary, p: Vector3) -> void:
 	(ent["shadow"] as MeshInstance3D).position = p + Vector3(0, 0.02, 0)
 	(ent["label"] as Label3D).position = p + Vector3(0, float(ent.get("h", 1.0)) + 0.25, 0)
 
+func is_animating() -> bool:
+	if _focus_t < 1.0:
+		return true
+	for k in units.keys():
+		if float(units[k].get("t", 1.0)) < 1.0 or not (units[k].get("fx", []) as Array).is_empty():
+			return true
+	return false
+
+# 跳過：所有移動直接到位、事件動畫停掉、鏡頭到目的地
+func finish_anims() -> void:
+	for k in units.keys():
+		var ent: Dictionary = units[k]
+		ent["t"] = 1.0
+		ent["fx"] = []
+		if ent.has("to"):
+			_place_unit(ent, ent["to"])
+		(ent["sprite"] as Sprite3D).modulate = ent.get("mod", Color.WHITE)
+	if _focus_t < 1.0:
+		_focus_t = 1.0
+		focus = _focus_to
+		_apply_camera()
+
 # 這個角色下一次換格子晚 sec 秒才動
 func delay_unit(key: String, sec: float) -> void:
 	_pending_delay[key] = sec
@@ -844,7 +868,10 @@ func _on_input(ev: InputEvent) -> void:
 			var was_drag := _left_drag
 			_left_down = false
 			_left_drag = false
-			if not was_drag:
+			# 動畫播放中點一下：直接跳到結果，不當成點格子
+			if not was_drag and is_animating():
+				finish_anims()
+			elif not was_drag:
 				var c2 := _pick_cell(ev.position)
 				if c2.x >= 0:
 					cell_clicked.emit(c2)

@@ -1586,6 +1586,10 @@ summary.year_entry,第 {n} 年（{age} 歲）：{headline}獵到 {kills} 隻。
 combat.anim.normal,動畫：一般（按一下切換；播放中按一下略過）
 combat.anim.fast,動畫：快（按一下切換；播放中按一下略過）
 combat.anim.off,動畫：略過（按一下切換）
+tactical.ui.anim.normal,動畫：一般
+tactical.ui.anim.fast,動畫：快
+tactical.ui.anim.off,動畫：關
+tactical.ui.anim.tip,按一下切換移動動畫的速度。動畫播放中點地圖可以直接跳到結果。
 combat.first.opp,牠搶先出手。
 combat.interrupted,你的攻擊被打斷了。
 factor.combat.first,先動的機會 {n}%
