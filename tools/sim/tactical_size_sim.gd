@@ -5,7 +5,7 @@ extends SceneTree
 #   成功率、逃掉（跑出邊緣、逃滿 10 回合、跟丟）、牠開始逃之後的回合（平均）、狼與鹿最遠距離（中位數）、撲咬次數（平均）、
 #   狼改變移動方向的次數（平均）、逃跑時繞路的比例、從哪一邊跑出去（W／E／N／S）、一場的回合（中位數）。
 # 用法：MAPS=檔案.json EXITS=all bash tools/run_sim.sh tactical_size_sim "" 300
-#   MAPS 不給就用 tactical_hunt.json 原本的地圖；EXITS=all 四邊都可以跑出去（預設照舊只有左右）；FAMS=open,dense 只跑一部分
+#   FLEE_ROUNDS=14 換逃跑回合的上限（預設 10）；MAPS 不給就用 tactical_hunt.json 原本的地圖；EXITS=all 四邊都可以跑出去（預設照舊只有左右）；FAMS=open,dense 只跑一部分
 var f := 0
 const WOLF := {"speed": 62, "skill": 58, "strength": 58, "perception": 55, "stamina": 80, "health": 100, "health_max": 100}
 const WINDS := ["headwind", "crosswind", "tailwind"]
@@ -30,7 +30,7 @@ func _process(_d) -> bool:
 	if not maps.is_empty():
 		var any: Dictionary = maps.values()[0]
 		size_txt = "%dx%d" % [String(any["map"][0]).length(), (any["map"] as Array).size()]
-	print("== tactical_size_sim：%s，%s，每格 %d 場" % [size_txt, "四邊都可以跑出去" if all_exits else "只有左右可以跑出去", runs])
+	print("== tactical_size_sim：%s，%s，逃跑上限 %s 回合，每格 %d 場" % [size_txt, "四邊都可以跑出去" if all_exits else "只有左右可以跑出去", OS.get_environment("FLEE_ROUNDS") if OS.get_environment("FLEE_ROUNDS") != "" else "10", runs])
 	print("   成功／逃掉（邊緣／10回合／跟丟）／逃跑回合／最遠距離／撲咬／轉向／繞路／出口 W E N S／回合")
 	for fam in fams:
 		var ok := 0
@@ -50,6 +50,8 @@ func _process(_d) -> bool:
 				h.t["maps"] = maps.duplicate(true)
 			if all_exits:
 				h.t["deer"]["exit_all_edges"] = true
+			if OS.get_environment("FLEE_ROUNDS") != "":
+				h.t["deer"]["max_flee_rounds"] = int(OS.get_environment("FLEE_ROUNDS"))
 			h.setup_from_game({"family": fam, "seed": i * 7919 + 31, "condition": _cond(i), "wolf": WOLF, "wind_relation": WINDS[i % 3]})
 			TacticalInstinct.pick_target(h)
 			var p: String = TacticalInstinct.pick_policy(h)
