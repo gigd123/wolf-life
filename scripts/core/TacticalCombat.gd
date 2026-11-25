@@ -1605,7 +1605,9 @@ func learn(species: String, action: String) -> void:
 	var e: Dictionary = knowledge.get(key, {"count": 0, "category": "experience", "source": "self"})
 	if int(e["count"]) < 3:
 		e["count"] = int(e["count"]) + 1
-		_ev("learned", {"key": key, "count": int(e["count"])})
+		# 會存進知識的動作才寫「更熟悉了」；示威不存，寫了每一場都從 1／3 重來（2026-11-25 使用者選 A）
+		if action in ATTACKS:
+			_ev("learned", {"key": key, "count": int(e["count"])})
 	knowledge[key] = e
 
 # 看到牠出手：距離內、視線沒被擋的你方單位記一次（假衝：衝到一半停下時才知道是假的）

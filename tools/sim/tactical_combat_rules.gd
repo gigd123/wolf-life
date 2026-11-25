@@ -529,6 +529,14 @@ func _step4() -> void:
 		tc.resolve()
 	var entry: Dictionary = tc.knowledge["grizzly_bear|swipe"]
 	_check(int(entry["count"]) == 3 and entry.has("category") and entry.has("source"), "看到揮掌就記一次、最多 3（預留 category、source）")
+	# 示威：單場內照記，但不寫「更熟悉了」（不存進知識，2026-11-25）
+	var tl := TacticalCombat.new()
+	tl.setup("grizzly_open", {"seed": 1})
+	tl.events.clear()
+	tl.learn("stranger_wolf", "threaten")
+	_check(_count(tl, "learned") == 0 and tl.know_count("stranger_wolf", "threaten") == 1, "看到示威：單場內記一次、不寫更熟悉了")
+	tl.learn("stranger_wolf", "bite")
+	_check(_count(tl, "learned") == 1, "看到咬：照寫更熟悉了")
 
 # 跑一場：你照 you_plan（Callable(tc) -> plan）做，伴侶照指令；回傳 tc
 func _play(sc: String, seed: int, you_plan: Callable, cmd := "auto", rounds := 30) -> TacticalCombat:
