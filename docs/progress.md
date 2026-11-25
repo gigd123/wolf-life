@@ -3,7 +3,7 @@
 最後更新：2026-11-13
 
 ## 目前階段
-（2026-11-25）黑狼一家的戰術戰鬥：伴侶、年輕的狼原本用灰狼調暗的褐灰色（`pack_wolf`），只有帶頭的是黑的，縮小後還像熊；改成每一隻都用黑狼的圖（對手的 `art_key` = `stranger_wolf`，`TacticalCombat` 單位帶 art_key，`CombatHD2D` 照 art_key 挑圖）。鄰群（灰狼）照舊褐灰色。錄影 `record_combat_demo.gd`（BLACK=1 黑狼一家）。待確認：鄰群的褐灰色在豎毛壓低的姿勢縮小後像熊，要不要換顏色或換姿勢圖。
+（2026-11-25）黑狼一家的戰術戰鬥：伴侶、年輕的狼原本用灰狼調暗的褐灰色（`pack_wolf`），只有帶頭的是黑的，縮小後還像熊；改成每一隻都用黑狼的圖（對手的 `art_key` = `stranger_wolf`，`TacticalCombat` 單位帶 art_key，`CombatHD2D` 照 art_key 挑圖）。鄰群（灰狼）照舊褐灰色。錄影 `record_combat_demo.gd`（BLACK=1 黑狼一家）。鄰群的顏色從深褐 [0.6, 0.56, 0.52] 調淺成 [0.8, 0.74, 0.66]；「豎毛壓低、準備撲」（hdwolf_ready）那張縮小後輪廓偏圓，還是有點像熊，之後可以重出那張。
 （2026-11-25）次成年灰狼的圖接進戰術畫面（試玩回報 Bug #1）：`prototypes/hd2d_tactical/prep_sub_wolf.py`（python3.12；綠色去背、照成狼第二輪走路的色盤調成冷灰、縮成 32／48）→ `hdwolf_sub_{stand,walk,stalk,lunge,hurt,submit}`；`HD2DBoard.player_wolf_texture`：未滿 2 歲時你這隻狼優先用 sub 的圖，沒有的姿勢用成狼的，walk_b 還沒有時用 sub 的 walk（不和成狼交錯）。狩獵、戰鬥（只有你，伴侶不套）、大火、河岸都接。咬住那張要重出（交了在 POSES 加回 hold）；選單畫面（`ArtLibrary.hd_wolf`）也換，未滿 2 歲時走路不和成狼的第二張配成動畫。測試 `sub_wolf_art_check`。
 （2026-11-25）戰鬥、大火、河岸畫面也加「動畫：一般／快／關」按鈕（`HD2DBoard.make_anim_button`，設定共用）：戰鬥放在右上角那一排（HD-2D 切換鈕旁邊）、大火放在 HD-2D 切換鈕左邊 (496, 334)、河岸放在 HD-2D 切換鈕下面 (568, 258)。待使用者確認位置有沒有蓋到別的東西。
 （2026-11-25）使用者同意的五項：(1) 撲咬時等著的鹿用兩張跑步圖原地換腳（`HD2DBoard` 延遲中 t ≤ 0 時輪流）；(2) 躲在草裡的幼鹿拿掉 HD-2D 的淡黃色底色（樹叢就是範圍）；(3) 盯上的那一隻逃出去時鏡頭往那邊移；(4) 戰術戰鬥的事件動畫（`CombatHD2D.refresh` 讀 `tc.events`：hit＝出手的衝一下、被打中的閃紅，同一回合好幾下照先後播；knocked／died＝閃暗）；(5) 離群母狼的氣味照探索地點寫（`she_wolf.sign.scent` 的「樹根旁」改成 `{location}`，沒有地點寫「地上」；SPEC Phase 3c 那一句同步改，使用者同意）。`she_scent_ui` 跟著改。
