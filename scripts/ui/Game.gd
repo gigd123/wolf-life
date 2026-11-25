@@ -830,6 +830,11 @@ func _build_debug_overlay() -> void:
 		_log(tr(str(r[0])).format(args))
 		_refresh()
 	)
+	# 40×40 試玩版的開關（2026-11-25）：按一下切換，紀錄寫現在是哪一種
+	_debug_button(event_row2, tr("debug.event.large_maps"), func():
+		GameState.large_tactical_maps = not GameState.large_tactical_maps
+		_log(tr("debug.large_maps.on" if GameState.large_tactical_maps else "debug.large_maps.off"))
+	)
 	_debug_button(event_row2, tr("debug.event.salmon"), func():
 		debug_overlay.visible = false
 		GameState.debug_salmon()

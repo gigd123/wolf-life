@@ -208,6 +208,9 @@ func paint() -> void:
 	# 狼與同伴
 	# 狼的面向（2026-11-08：原本只有 2D 畫面在算，HD-2D 一直面向右）：上一步移動的方向；沒動過時朝向獵物
 	if h.wolf_pos != _last_wolf_pos:
+		# 鏡頭跟著狼（2026-11-25，40×40 試玩版）：狼快走出畫面時移過去；開場的第一次照 focus_on
+		if _last_wolf_pos.x > -99:
+			keep_in_view(h.wolf_pos)
 		var mv: Vector2i = h.wolf_pos - _last_wolf_pos
 		_wolf_face = mv if _last_wolf_pos.x > -99 else h.deer_pos - h.wolf_pos
 		_last_wolf_pos = h.wolf_pos

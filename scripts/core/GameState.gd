@@ -4700,6 +4700,8 @@ func tactical_eligible(hunt: HuntSystem) -> bool:
 
 # 模擬校準用：覆寫 tactical_hunt.json 的部分設定（字典逐層合併；遊戲裡永遠是空的）
 var tactical_overrides: Dictionary = {}
+# 40×40 試玩版（2026-11-25 使用者選 A）：除錯開關。打開時開闊、林緣、密林、倒木的戰術狩獵改用 data/tactical_maps_large.json（四邊都可以跑出去）；不存檔
+var large_tactical_maps := false
 
 static func _merge_dict(dst: Dictionary, src: Dictionary) -> void:
 	for k in src.keys():
@@ -4723,6 +4725,7 @@ func start_tactical(hunt: HuntSystem) -> TacticalHunt:
 	ctx["season"] = GameTime.current_season()
 	ctx["life_stage"] = hunt.life_stage # 畫面用（白尾鹿雄鹿的圖）
 	ctx["world_map"] = current_map() # 畫面用（每張地圖的樹、地面，2026-11-08）
+	ctx["large_maps"] = large_tactical_maps
 	ctx["burn_stage"] = burn_stage(current_region) # 畫面用（燒過的區域的樹與地面，Phase 2n 第 6 步）
 	ctx["wolf_scale"] = wolf_display_scale() # 畫面用（小狼畫小一點）
 	# 鹿群的大小：生命階段另外設定的（公馬鹿的小群，Phase 2f）優先；公鹿的群沒有小鹿

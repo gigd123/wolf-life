@@ -91,6 +91,9 @@ var reason: String = ""
 var detect_cause: String = ""
 var kicks: int = 0
 var events: Array = [] # 發生的事（原型直接用中文）
+var map_exits_all := false # 這張地圖四邊都可以跑出去（40×40 試玩版的地圖 exit_all_edges，2026-11-25）
+var large_maps := false # 40×40 試玩版：開闊、林緣、密林、倒木改用 data/tactical_maps_large.json（setup_from_game 的 ctx.large_maps）
+const LARGE_MAPS_PATH := "res://data/tactical_maps_large.json"
 var track_pending := false # Phase 2m：目標在密林裡不見了，等你選「循著足跡追」或「放棄」
 var tracked := false # 這一場已經追過一次（第二次失去視線就是真的逃掉）
 var track_turns := 0 # 循著足跡追多花的遊戲回合
@@ -216,6 +219,7 @@ func setup(p_scenario: String, wolf_profile: String, seed: int, stamina_mult: fl
 func setup_from_game(ctx: Dictionary) -> void:
 	var scenario: String = str(ctx.get("map", "A"))
 	var herd_cfg: Dictionary = ctx.get("herd", {})
+	large_maps = bool(ctx.get("large_maps", false))
 	if ctx.has("family"):
 		# 物種固定用某一族地圖（河狸一律用水塘，2026-10-22）
 		var fam: String = str(t.get("species", {}).get(str(ctx.get("species", "deer")), {}).get("family", ctx["family"]))
@@ -312,12 +316,19 @@ func wind_for(relation: String) -> Vector2i:
 func _build_game_scenario(family: String, fawn: bool, seed: int, species: String = "deer", herd_cfg: Dictionary = {}) -> String:
 	var pick := RandomNumberGenerator.new()
 	pick.seed = seed + 99991
-	var ids: Array = (t.get("maps", {}) as Dictionary).keys().filter(func(k): return str(t["maps"][k].get("family", "")) == family)
+	var pool: Dictionary = t.get("maps", {})
+	# 40×40 試玩版：這一族有大地圖就用大地圖（2026-11-25 使用者選 A）
+	if large_maps and FileAccess.file_exists(LARGE_MAPS_PATH):
+		var lm: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LARGE_MAPS_PATH))
+		if lm.values().any(func(v): return str(v.get("family", "")) == family):
+			pool = lm
+	var ids: Array = pool.keys().filter(func(k): return str(pool[k].get("family", "")) == family)
 	if ids.is_empty():
-		ids = (t.get("maps", {}) as Dictionary).keys()
+		ids = pool.keys()
 	if ids.is_empty():
 		return "A"
-	var m: Dictionary = t["maps"][ids[pick.randi_range(0, ids.size() - 1)]]
+	var m: Dictionary = pool[ids[pick.randi_range(0, ids.size() - 1)]]
+	map_exits_all = bool(m.get("exit_all_edges", false))
 	var rows: Array = m["map"]
 	var open_at := func(c: Vector2i) -> bool:
 		return c.x >= 0 and c.y >= 0 and c.y < rows.size() and c.x < String(rows[0]).length() and String(rows[c.y])[c.x] == "."
@@ -2689,7 +2700,7 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		if not in_bounds(n):
 			# 左右兩端（長邊的方向）可以跑出場地＝逃脫；上下邊緣是擋住的（16 格高，往上下跑 2 回合就出去，2026-10-15）
 			# deer.exit_all_edges：四邊都可以跑出去（地圖尺寸的對照用，2026-11-25；預設照舊只有左右）
-			if n.x < 0 or n.x >= width or bool(t["deer"].get("exit_all_edges", false)):
+			if n.x < 0 or n.x >= width or map_exits_all or bool(t["deer"].get("exit_all_edges", false)):
 				return {"end": n, "out": true, "wall": false, "logs": logs, "blocked": blocked, "moved": moved + 1.0, "seek": seek}
 			return {"end": pos, "out": false, "wall": true, "logs": logs, "blocked": blocked + 1, "moved": moved, "seek": seek}
 		if _wolf_at(n):

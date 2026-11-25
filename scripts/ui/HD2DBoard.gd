@@ -646,6 +646,26 @@ func _apply_camera() -> void:
 		_load_trees()
 		refresh()
 
+# 鏡頭跟著某一格（2026-11-25，40×40 試玩版）：那一格離畫面中心超過看得到範圍的 keep 比例時，鏡頭移到讓牠回到中間一帶；
+# 整張地圖都在畫面裡時 _apply_camera 會限制住，等於不動
+func keep_in_view(c: Vector2i, keep: float = 0.6) -> void:
+	if cam == null or sub.size.y <= 0:
+		return
+	var aspect := float(sub.size.x) / float(maxi(1, sub.size.y))
+	var pitch := deg_to_rad(-float(cfg["camera_pitch"]))
+	var half_w: float = cam.size * aspect * 0.5
+	var half_d: float = cam.size * 0.5 / sin(pitch)
+	var p := Vector2(c.x + 0.5, c.y + 0.5)
+	var moved := false
+	if absf(p.x - focus.x) > half_w * keep:
+		focus.x = p.x - signf(p.x - focus.x) * half_w * keep * 0.5
+		moved = true
+	if absf(p.y - focus.y) > half_d * keep:
+		focus.y = p.y - signf(p.y - focus.y) * half_d * keep * 0.5
+		moved = true
+	if moved:
+		_apply_camera()
+
 # 畫面上的一點對到地面（高度 0）的位置 (x, z)
 func _ground_at(p: Vector2) -> Vector2:
 	var cp := p / size * Vector2(sub.size)

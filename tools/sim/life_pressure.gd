@@ -126,6 +126,9 @@ func _process(_d):
 		GS.get_node("/root/GameData").balance["salmon"]["find"] = {}
 		GS.get_node("/root/GameData").balance["salmon"]["fishing_enabled"] = false
 	# TACTICAL_SET='{"allies": {"game": {...}}}'：覆寫 tactical_hunt.json 的部分設定（Phase 2i 校準用）
+	# LARGE_MAPS=1：戰術狩獵用 40×40 試玩版的地圖（2026-11-25）
+	if OS.get_environment("LARGE_MAPS") != "":
+		GS.large_tactical_maps = true
 	if OS.get_environment("TACTICAL_SET") != "":
 		GS.tactical_overrides = JSON.parse_string(OS.get_environment("TACTICAL_SET"))
 	# STYLE=cautious 之類：自動玩家的打法（預設 average；2026-11-05 食物太充足：比較會打獵的打法）

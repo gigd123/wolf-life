@@ -16,6 +16,7 @@ b 洞口（旱獺，Phase 2g：旱獺一鑽進去就算逃掉；狼可以站在�
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
 尺寸對照：python3 tools/make_tactical_maps.py --size 40x40 out.json（只有開闊、林緣、密林、倒木四族，給 tactical_size_sim 用）
+40×40 試玩版：python3 tools/make_tactical_maps.py --size 40x40 data/tactical_maps_large.json（除錯開關「大地圖」打開時，這四族改用這裡的地圖）
 """
 import json
 import math
@@ -497,6 +498,8 @@ def sized_maps():
     out["logs_4"] = {"name": "倒木密集區（右側一整片風倒木）", "family": "logs", "map": g}
     for key in out:
         out[key]["map"] = ["".join(r) for r in out[key]["map"]]
+        if H > 16:
+            out[key]["exit_all_edges"] = True  # 夠高的地圖四邊都可以跑出去（TacticalHunt.map_exits_all）
     return out
 
 
