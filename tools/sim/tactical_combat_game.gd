@@ -338,6 +338,14 @@ func _run() -> void:
 	tc = gs.start_pack_tactical()
 	_check(tc.enemies().size() == 3 and str(tc.units[tc.enemy_index()]["species"]) == "pack_wolf", "牠們帶頭的＋2 隻進場（%d）" % tc.enemies().size())
 	_check(_no_overlap(tc), "鄰群的位置不重疊")
+	# 2026-11-25：畫面上分得出是哪一隻（帶頭的、年輕的狼 1、2）
+	var tg: Array = []
+	for k in tc.enemies():
+		tg.append(str(tc.units[k].get("tag", "")) + str(int(tc.units[k].get("tag_n", 0))))
+	var uniq := {}
+	for x in tg:
+		uniq[x] = true
+	_check(tg.has("tcombat.tag.leader0") and not tg.has("0") and uniq.size() == tg.size(), "鄰群每一隻有名稱標記、都不一樣 %s" % str(tg))
 	for k in tc.enemies():
 		tc.units[k]["out"] = true
 		tc.units[k]["out_reason"] = "submit"

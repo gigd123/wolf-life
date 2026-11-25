@@ -3,6 +3,7 @@
 最後更新：2026-11-13
 
 ## 目前階段
+（2026-11-25）試玩回報兩項：(1) 移動像在跑：移動中身體上下彈（每格一步，`move_anim.bob` 0.12、`steps_per_cell`），有兩張圖的（狼的走 walk／walk_b、有 flee_b 的鹿）移動中輪流（`art.alt_tex`）。(2) 戰術戰鬥裡分不出是狼群的哪一隻：頭上加名稱（`tcombat.tag.*`：黑狼一家的帶頭是「黑狼」、鄰群是「帶頭的狼」、「牠的伴侶」、「年輕的狼 1、2」；`_tc_extra_foes` 帶 tag、`TacticalCombat` 單位存 tag／tag_n、`CombatHD2D` 畫）。命名使用者說不確定，先用這組，文字鍵可以改。`tactical_combat_game` 加檢查。
 （2026-11-25）移動動畫第三步：速度照設定（`user://settings.cfg` [combat] anim，和選單式戰鬥共用：一般 0.5、快 0.25、關 0 秒；`HD2DBoard.build` 讀），戰術狩獵右欄加「動畫：一般／快／關」按鈕（`tactical.ui.anim.*`，HD-2D 切換鈕下面）；動畫播放中點地圖直接跳到結果（`is_animating`、`finish_anims`，那一下不當成點格子）。`move_anim_check` 加 2 項。待確認：新按鈕的位置（568, 258）在本機會不會蓋到其他按鈕。
 （2026-11-25）移動動畫第二步（事件動畫，戰術狩獵）：`TacticalHunt.anim_events`（pounce：撲向哪、咬到沒、有沒有被踢；kick：站定衝撞、前截被踢、護幼等），`HuntHD2D.refresh` 讀新的事件：狼先移動到撲出去的位置，再往獵物衝一下（0.3 秒），咬到時獵物閃紅、被踢時狼閃紅，撲咬那一回合獵物等撲完才移動；`HD2DBoard.delay_unit`、`add_fx`（bump、flash）。只是畫面。測試 `move_anim_check` 加 5 項。還沒做：戰術戰鬥的揮掌、倒地等事件（戰術戰鬥的事件本來就是結構化的，可以照樣接）、跳過動畫與快／一般／關的設定。
 （2026-11-25）戰術畫面的移動動畫第一步（pre-2.0-plan 六之三第 5 項；Phase 3 做完，前提成立，使用者選 0.5 秒）：`HD2DBoard.unit()` 換格子時從原本畫的位置滑到新格子（`_set_unit_target`、`_animate_units`，smoothstep），同一次 refresh 的角色同時動；第一次出現、從隱藏變回來、一次跳超過 8 格直接到位；`cfg.move_anim.time`（預設 0.5，0＝關）。鏡頭跟著狼一起平滑移動（`keep_in_view` 改成內插，玩家自己捲動時停掉）。狩獵、戰鬥、大火、河岸畫面都共用。跑出邊緣、逃滿回合的鹿滑到地圖外再消失（`TacticalHunt` 的 `herd[i].exit_to`、`HuntHD2D._exit_until`）。只是畫面，不影響數值。撲咬、受傷等事件動畫、可以跳過與快／一般／關的設定是之後的步驟。測試 `move_anim_check`；順便修 `tactical_combat_game` 照 11-24 的規則（戰術戰鬥沒咬死就不少成員）。

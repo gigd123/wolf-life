@@ -146,8 +146,15 @@ func _art_for(key: String, state: String = "", idx: int = 0) -> Dictionary:
 		if winter and hd.has("winter"):
 			return hd_wolf_texture(str(hd["winter"]))
 		# 跑的第二張（2026-11-12）：逃跑時每回合和「跑」輪流；鹿群裡每一隻錯開一格，不會整群同一個步伐
-		if state == "flee" and hd.has("flee_b") and (h.rounds + idx) % 2 == 1:
-			return hd_wolf_texture(str(hd["flee_b"]))
+		if state == "flee" and hd.has("flee_b"):
+			var fa := hd_wolf_texture(str(hd["flee"] if hd.has("flee") else hd["name"]))
+			var fb := hd_wolf_texture(str(hd["flee_b"]))
+			if (h.rounds + idx) % 2 == 1:
+				var tmp := fa
+				fa = fb
+				fb = tmp
+			fa["alt_tex"] = fb["tex"] # 移動中兩張輪流（2026-11-25）
+			return fa
 		return hd_wolf_texture(str(hd.get(state, hd["name"])))
 	var a := HD2DBoard.animal_texture(str(e[0]), str(e[1]), float(e[2]), winter)
 	if a.is_empty():
@@ -278,6 +285,10 @@ func paint() -> void:
 		_last_wolf_pos = h.wolf_pos
 	var wf: Vector2i = _wolf_face
 	var wart := hd_wolf_texture(_wolf_pose())
+	# 走、跑的兩張輪流（移動動畫，2026-11-25）
+	var wpz: Dictionary = cfg.get("wolf_poses", {})
+	if _wolf_pose() in [str(wpz.get("walk", "")), str(wpz.get("walk_b", ""))]:
+		wart["alt_tex"] = hd_wolf_texture(str(wpz.get("walk_b" if _wolf_pose() == str(wpz.get("walk", "")) else "walk", ""))).get("tex")
 	wart["ps"] = float(wart["ps"]) * float(h.game_mods.get("wolf_scale", 1.0))
 	unit("wolf", wart, h.wolf_pos, _flip(wf))
 	for k in range(1, h.wolves.size()):

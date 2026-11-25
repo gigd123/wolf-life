@@ -517,6 +517,9 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	s2.pixel_size = float(art["ps"])
 	s2.modulate = modulate
 	ent["mod"] = modulate
+	# 跑步的兩張圖（2026-11-25）：art.alt_tex 有給時，移動中兩張輪流
+	ent["main_tex"] = art["tex"]
+	ent["alt_tex"] = art.get("alt_tex", null)
 	# 角色不接受別的樹、物件投下的影子（2026-11-08：樹影打在灰熊前半身，看起來像一塊黑色）；光線、時段的顏色照常
 	var um: StandardMaterial3D = ent.get("mat", null)
 	if um == null:
@@ -617,6 +620,17 @@ func _animate_units(delta: float) -> void:
 				ent["t"] = 1.0 if mt <= 0.0 else float(ent["t"]) + delta / mt
 			_place_unit(ent, _unit_pos(ent))
 			var s: Sprite3D = ent["sprite"]
+			# 跑起來的樣子（2026-11-25）：移動中身體上下彈、兩張跑步的圖輪流；停下來回到原本的圖
+			var tt: float = float(ent.get("t", 1.0))
+			if tt > 0.0 and tt < 1.0:
+				var dist: float = Vector2((ent["to"] as Vector3).x - (ent["from"] as Vector3).x, (ent["to"] as Vector3).z - (ent["from"] as Vector3).z).length()
+				var steps: float = maxf(1.0, roundf(dist * float(cfg.get("move_anim", {}).get("steps_per_cell", 1.0))))
+				var ph: float = tt * steps
+				s.position.y += absf(sin(ph * PI)) * float(cfg.get("move_anim", {}).get("bob", 0.12))
+				if ent.get("alt_tex", null) != null:
+					s.texture = ent["alt_tex"] if int(floor(ph * 2.0)) % 2 == 1 else ent["main_tex"]
+			elif ent.has("main_tex") and s.texture != ent["main_tex"]:
+				s.texture = ent["main_tex"]
 			var mod: Color = ent.get("mod", Color.WHITE)
 			for fx in fxs.duplicate():
 				fx["el"] = float(fx["el"]) + delta

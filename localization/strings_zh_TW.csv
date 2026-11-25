@@ -2646,6 +2646,10 @@ tcombat.mode.alternate,預告後輪流
 tcombat.new,新局
 tcombat.view.hd,畫面：HD-2D
 tcombat.view.2d,畫面：2D
+tcombat.tag.leader.black,黑狼
+tcombat.tag.leader,帶頭的狼
+tcombat.tag.mate,牠的伴侶
+tcombat.tag.young,年輕的狼 {n}
 tcombat.hd.eating,在吃
 tcombat.hd.carrying,叼著肉
 tcombat.replay,重來

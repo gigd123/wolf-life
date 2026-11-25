@@ -5657,14 +5657,19 @@ func _tc_extra_foes(c: Combat) -> Array:
 		var ref := {"strength": base.strength if base != null else 75.0, "speed": base.speed if base != null else 65.0,
 			"skill": base.skill if base != null else 60.0, "perception": base.perception if base != null else 60.0, "health_max": base.health_max if base != null else 105.0}
 		var ratios: Array = []
+		var tags: Array = [] # 畫面上的名稱（2026-11-25 試玩回報：分不出打的是哪一隻）
 		if p.has_mate():
 			ratios.append(float(pm.get("mate", 0.88)))
+			tags.append(["tcombat.tag.mate", 0])
+		var yn := 0
 		for a in p.young:
 			if float(a) >= 1.0:
 				ratios.append(float(pm.get("adult" if float(a) >= 2.0 else "young", 0.8 if float(a) >= 2.0 else 0.72)))
+				yn += 1
+				tags.append(["tcombat.tag.young", yn])
 		for k in mini(ratios.size(), int(_tc_game_cfg().get("side_max", 4)) - 2):
 			var r: float = ratios[k]
-			out.append({"npc": null, "stats": {"strength": ref["strength"] * r, "speed": ref["speed"], "skill": ref["skill"] * r, "perception": ref["perception"],
+			out.append({"npc": null, "tag": tags[k][0], "tag_n": tags[k][1], "stats": {"strength": ref["strength"] * r, "speed": ref["speed"], "skill": ref["skill"] * r, "perception": ref["perception"],
 				"health": ref["health_max"] * (0.6 + 0.4 * r), "health_max": ref["health_max"] * (0.6 + 0.4 * r)}})
 	return out
 
@@ -5788,6 +5793,9 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 	var foe_ids: Dictionary = {}
 	var foe_species: String = "pack_wolf" if c.has_meta("tc_pack") else c.animal_id
 	sc["opponent"]["id"] = foe_species
+	if c.has_meta("tc_pack"):
+		var tp = pack_by_id(str(c.get_meta("tc_pack")))
+		sc["opponent"]["tag"] = "tcombat.tag.leader.black" if tp == black_pack or tp == null else "tcombat.tag.leader"
 	for k in mini(extra_npcs.size(), foe_spots.size()):
 		var x: Dictionary = extra_npcs[k]
 		var uid2 := "%s_%d" % [foe_species, k + 2]
@@ -5797,7 +5805,7 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 			xp = Vector2i(rng.randi_range(9, 14), 0 if rng.randf() < 0.5 else 9)
 			while sc["map"][xp.y][xp.x] in ["T", "t", "B", "c", "l", "r"] or xp == opos:
 				xp.x = (xp.x + 1) % 16
-		extras.append({"id": foe_species, "uid": uid2, "pos": [xp.x, xp.y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"]})
+		extras.append({"id": foe_species, "uid": uid2, "pos": [xp.x, xp.y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"], "tag": str(x.get("tag", "")), "tag_n": int(x.get("tag_n", 0))})
 		if x["npc"] != null:
 			foe_ids[uid2] = (x["npc"] as NpcWolf).id
 	sc["extra_enemies"] = extras

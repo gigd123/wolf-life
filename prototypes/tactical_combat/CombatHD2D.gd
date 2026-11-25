@@ -150,6 +150,9 @@ func paint() -> void:
 		var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
 		var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 		var tags: Array = []
+		# 狼群裡的哪一隻（黑狼、牠的伴侶、年輕的狼 1、2……；2026-11-25）
+		if str(u.get("tag", "")) != "":
+			tags.append(tr(str(u["tag"])).replace("{n}", str(int(u.get("tag_n", 0)))))
 		if bool(u.get("eating", false)):
 			tags.append(tr("tcombat.hd.eating"))
 		if str(u["carrying"]) != "":
