@@ -1944,6 +1944,7 @@ tactical.factor.refuge_near,牠就在洞口邊
 tactical.burrow,{animal}一溜煙鑽進岩縫下的洞，洞裡傳出一聲尖叫。
 tactical.escape.breath,你喘不過氣，追不上了。
 tactical.escape.open,開闊地上，你追不上牠。
+tactical.escape.rounds,你追了好一陣子，終於停下來喘氣，看著{animal}越跑越遠。
 tactical.ran_far,{animal}跑遠了。
 tactical.ran_far.another,另一隻{animal}也跑遠了。
 tactical.ran_far.others,另外{n}隻{animal}也跑遠了。

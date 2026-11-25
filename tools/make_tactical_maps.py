@@ -15,6 +15,7 @@ b 洞口（旱獺，Phase 2g：旱獺一鑽進去就算逃掉；狼可以站在�
   salmon（鮭魚溪：深潭與淺灘相間，fish 層標出每個淺灘的魚量 3 好／2 普通／1 差；Phase 2h）。
 
 用法：python3 tools/make_tactical_maps.py（會改寫 tactical_hunt.json 的 maps 一項，其他不動）
+尺寸對照：python3 tools/make_tactical_maps.py --size 40x40 out.json（只有開闊、林緣、密林、倒木四族，給 tactical_size_sim 用）
 """
 import json
 import math
@@ -393,6 +394,123 @@ def maps():
     return out
 
 
+# --- 地圖尺寸的對照（2026-11-25，docs/proposals/hunt-escape-edge.md「40×16 是否擴大」）---
+# 開闊、林緣、密林、倒木四族照原本的形狀，高度換成 H：縱向的位置照比例拉開（Y），
+# 大片的地形（密林的空地、上方的林子、倒木區）跟著拉高，零星的灌木、倒木大小不變、數量照面積加（掩蔽帶 n × SY）。
+# 只給模擬用（--size 40x24 --out 檔案），不改 tactical_hunt.json。
+SY = 1.0
+
+
+def Y(y):
+    return int(round(y * SY))
+
+
+def sized_maps():
+    out = {}
+    k = max(1, int(round(SY)))
+    # --- 開闊地 ---
+    g = blank()
+    blob(g, 21, Y(2), 3, 2, rough=0.6, seed=1)
+    blob(g, 12, Y(13), 3, 2, rough=0.6, seed=2)
+    blob(g, 1, Y(1), 2, 2, seed=3); blob(g, 38, Y(14), 2, 2, seed=4)
+    if SY > 1.2:
+        blob(g, 30, Y(8), 2.5, 2, rough=0.6, seed=5); blob(g, 6, Y(9), 2, 1.5, rough=0.6, seed=7)
+    cover_strips(g, 1, int(round(3 * SY)))
+    out["open_1"] = {"name": "空地、兩叢灌木", "family": "open", "map": g}
+    g = blank()
+    pts = [(8, 4), (15, 11), (26, 3), (31, 12), (20, 8)]
+    if SY > 1.2:
+        pts += [(5, 13), (35, 7), (12, 1), (24, 14)]
+    for x, y in pts:
+        blob(g, x, Y(y), 1.3, 1.1, seed=x * 7 + y)
+    cover_strips(g, 2, int(round(3 * SY)))
+    out["open_2"] = {"name": "空地、零星樹叢", "family": "open", "map": g}
+    g = blank()
+    edge_top(g, Y(2), 1, 5)
+    blob(g, 30, Y(10), 2.5, 2, rough=0.5, seed=6)
+    if SY > 1.2:
+        blob(g, 10, Y(13), 2.5, 2, rough=0.5, seed=8)
+    cover_strips(g, 3, int(round(3 * SY)))
+    out["open_3"] = {"name": "草原、遠處一排樹", "family": "open", "map": g}
+    # --- 林緣 ---
+    g = blank()
+    edge_left(g, 9, 1, 11)
+    blob(g, 12, Y(3), 2, 1.5, seed=12)
+    if SY > 1.2:
+        blob(g, 13, Y(12), 2, 1.5, seed=18)
+    cover_strips(g, 4, int(round(2 * SY)))
+    out["edge_1"] = {"name": "林緣（樹林在一側）", "family": "edge", "map": g}
+    g = blank()
+    edge_top(g, Y(5), 1, 13)
+    blob(g, 18, Y(6), 3, 2 * SY, rough=0.5, seed=14)
+    cover_strips(g, 5, int(round(2 * SY)))
+    out["edge_2"] = {"name": "林緣（樹林在上方，伸出一角）", "family": "edge", "map": g}
+    g = blank()
+    edge_left(g, 6, 1, 15)
+    edge_top(g, Y(3), 1, 16)
+    blob(g, 30, Y(12), 3, 2, rough=0.6, seed=17)
+    cover_strips(g, 6, int(round(2 * SY)))
+    out["edge_3"] = {"name": "林緣（林子轉角）", "family": "edge", "map": g}
+    # --- 密林 ---
+    g = blank("f")
+    blob(g, 20, Y(8), 9, 4.5 * SY, ".", rough=0.4, seed=21)
+    blob(g, 34, Y(8), 4, 3 * SY, ".", rough=0.4, seed=22)
+    blob(g, 5, Y(8), 4, 3 * SY, ".", rough=0.4, seed=23)
+    out["dense_1"] = {"name": "密林中的空地", "family": "dense", "map": g}
+    g = blank("f")
+    band(g, [(0, Y(4)), (12, Y(6)), (22, Y(11)), (39, Y(10))], int(round(2 * SY)), ".")
+    blob(g, 16, Y(8), 3, 2 * SY, ".", seed=24)
+    out["dense_2"] = {"name": "密林中蜿蜒的林間空地", "family": "dense", "map": g}
+    # --- 倒木、岩堆 ---
+    g = blank()
+    line(g, 12, Y(2), 15, Y(8)); line(g, 24, Y(9), 28, Y(14)); line(g, 20, Y(3), 26, Y(2))
+    if SY > 1.2:
+        line(g, 6, Y(11), 10, Y(14)); line(g, 31, Y(5), 35, Y(7))
+    blob(g, 37, Y(2), 2, 2, seed=41)
+    out["logs_1"] = {"name": "倒木散在空地上", "family": "logs", "map": g}
+    g = blank()
+    edge_left(g, 7, 1, 42)
+    for y0, x0 in [(2, 10), (6, 11), (10, 10), (13, 12)]:
+        line(g, x0, Y(y0), x0 + 5, Y(y0) + 1)
+    if SY > 1.2:
+        for y0, x0 in [(4, 22), (12, 26)]:
+            line(g, x0, Y(y0), x0 + 5, Y(y0) + 1)
+    out["logs_2"] = {"name": "林緣的倒木堆", "family": "logs", "map": g}
+    g = blank()
+    pts = [(10, 4), (16, 11), (24, 6), (30, 12), (33, 3)]
+    if SY > 1.2:
+        pts += [(6, 13), (20, 1), (36, 9)]
+    for x, y in pts:
+        blob(g, x, Y(y), 1.6, 1.2, "l", rough=0.5, seed=x + y * 3)
+    out["logs_3"] = {"name": "岩堆", "family": "logs", "map": g}
+    g = blank()
+    rnd = random.Random(404)
+    for y in range(H):
+        edge = 23 + int(y / SY * 0.8) + rnd.randint(-1, 1)
+        for x in range(W):
+            if x >= edge:
+                r = rnd.random()
+                g[y][x] = "l" if r < 0.72 else ("f" if r < 0.82 else ".")
+            elif x >= edge - 2 and rnd.random() < 0.3:
+                g[y][x] = "l"
+    cover_strips(g, 10, int(round(2 * SY)))
+    out["logs_4"] = {"name": "倒木密集區（右側一整片風倒木）", "family": "logs", "map": g}
+    for key in out:
+        out[key]["map"] = ["".join(r) for r in out[key]["map"]]
+    return out
+
+
+def main_sized(size, path):
+    global H, SY
+    w, h = [int(v) for v in size.lower().split("x")]
+    assert w == W, "目前只拉高（寬維持 40）"
+    H = h
+    SY = h / 16.0
+    m = sized_maps()
+    json.dump(m, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print("寫入 %s：%d 張（%dx%d）" % (path, len(m), W, H))
+
+
 def main():
     p = "data/tactical_hunt.json"
     s = open(p, encoding="utf-8").read()
@@ -412,4 +530,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) >= 4 and sys.argv[1] == "--size":
+        main_sized(sys.argv[2], sys.argv[3])  # python3 tools/make_tactical_maps.py --size 40x40 檔案.json
+    else:
+        main()

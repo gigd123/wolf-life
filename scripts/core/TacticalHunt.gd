@@ -2688,7 +2688,8 @@ func _run_line(start: Vector2i, d: Vector2i, budget: float) -> Dictionary:
 		var n: Vector2i = pos + dir
 		if not in_bounds(n):
 			# 左右兩端（長邊的方向）可以跑出場地＝逃脫；上下邊緣是擋住的（16 格高，往上下跑 2 回合就出去，2026-10-15）
-			if n.x < 0 or n.x >= width:
+			# deer.exit_all_edges：四邊都可以跑出去（地圖尺寸的對照用，2026-11-25；預設照舊只有左右）
+			if n.x < 0 or n.x >= width or bool(t["deer"].get("exit_all_edges", false)):
 				return {"end": n, "out": true, "wall": false, "logs": logs, "blocked": blocked, "moved": moved + 1.0, "seek": seek}
 			return {"end": pos, "out": false, "wall": true, "logs": logs, "blocked": blocked + 1, "moved": moved, "seek": seek}
 		if _wolf_at(n):
@@ -2817,6 +2818,13 @@ func _deer_flee() -> void:
 	flee_round += 1
 	deer_facing = d
 	if sim["out"]:
+		# 量測用（地圖尺寸的對照，2026-11-25）：盯上的那一隻從哪一邊跑出去
+		if di == target:
+			var ex: Vector2i = sim["end"]
+			var dl: Array = [[ex.x, "W"], [width - 1 - ex.x, "E"], [ex.y, "N"], [height - 1 - ex.y, "S"]]
+			dl.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
+			stats["exit_side"] = str(dl[0][1])
+			stats["end_why"] = "lost_edge" if deer_unseen(di) else "edge"
 		# 跑出地圖邊緣：從密林裡、被樹擋住的地方跑出去是「穿過密林跑遠，不見了」（盯上的那一隻第一次可以循著足跡追），否則是逃掉
 		if deer_unseen(di):
 			_lost_at_edge()
@@ -2833,7 +2841,10 @@ func _deer_flee() -> void:
 	# 拉開距離（escape_dist）不再算逃掉（2026-11-25 使用者選方案 2：還在地圖中間就「跑遠了」很怪，要跑出地圖邊緣才算；
 	# 鑽進深水、洞、上峭壁照舊）
 	if flee_round >= int(t["deer"]["max_flee_rounds"]):
-		_deer_gone("escaped", _escape_reason())
+		if di == target:
+			stats["end_why"] = "rounds"
+		# 寫成你停下來、不是牠消失（2026-11-25 使用者：牠可能還在畫面上）
+		_deer_gone("escaped", _tx("tactical.escape.rounds").replace("{animal}", label()))
 		return
 	if dist(deer_pos, wolf_pos) < before - 0.01:
 		stats["toward_wolf"] += 1
