@@ -311,7 +311,7 @@ func _on_click(c: Vector2i) -> void:
 		else:
 			# 點到鹿：換目標（不算一回合）
 			for i in h.active_deer():
-				if h.herd[i]["pos"] == c and i != h.target:
+				if h.herd[i]["pos"] == c and i != h.target and not h.deer_unseen(i):
 					h.set_target(i)
 					_build_buttons()
 					_refresh()
@@ -564,7 +564,7 @@ func _hover_text() -> String:
 				.replace("{what}", tr("tactical.ally.intent_tip." + str(h.wolves[k].get("intent", "following"))))
 	# 滑鼠停在一隻鹿上：寫出牠是誰（母鹿、幼鹿分得出來，2026-10-22 試玩回報）
 	for i in h.active_deer():
-		if Vector2i(h.herd[i]["pos"]) == hover and h.herd.size() > 1:
+		if Vector2i(h.herd[i]["pos"]) == hover and h.herd.size() > 1 and not h.deer_unseen(i):
 			return h.label(i) + ("（" + tr("tactical.ui.target_mark") + "）" if i == h.target else "")
 	var r: Dictionary = h.reachable()
 	if r.has(hover):
@@ -617,7 +617,7 @@ func _draw_map() -> void:
 		for x in h.width:
 			_draw_tile(Vector2i(x, y))
 	# 鹿的目的地（沒察覺時）
-	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
+	var hid: bool = h.hidden_unfound() or h.track_pending or h.deer_unseen(h.target) # 密林裡不見了（Phase 2m）、密林裡看不到牠（2026-11-25）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		map.draw_rect(_cell_rect(h.deer_goal()).grow(-3), COLORS["goal"], false, 1.0)
 	# 躲在草裡、還沒找到（Phase 2i 第 6 步）：只畫大概在哪的範圍
@@ -635,10 +635,10 @@ func _draw_map() -> void:
 	# 鹿群：母子之間的細線（跑散了就不畫）、其他的鹿（幼鹿小一號）
 	for i in h.active_deer():
 		var m: int = int(h.herd[i]["mother"])
-		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]):
+		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]) and not h.deer_unseen(i) and not h.deer_unseen(m):
 			map.draw_line(Vector2(h.herd[i]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5, Vector2(h.herd[m]["pos"]) * CELL + Vector2(CELL, CELL) * 0.5, COLORS["bond"], 1.0)
 	for i in h.active_deer():
-		if i == h.target:
+		if i == h.target or h.deer_unseen(i):
 			continue
 		if not _draw_animal(_deer_kind(i), h.herd[i]["pos"], h.herd[i]["facing"], Color.WHITE, h.is_fawn(i)):
 			var r := _cell_rect(h.herd[i]["pos"]).grow(-3 if h.is_fawn(i) else -1)
@@ -657,11 +657,11 @@ func _draw_map() -> void:
 	elif not _draw_animal(_deer_kind(h.target), h.deer_pos, h.deer_facing, Color(1.0, 0.55, 0.5) if h.held else Color.WHITE, fawn_t):
 		map.draw_rect(_cell_rect(h.deer_pos).grow(-3 if fawn_t else -1), COLORS["deer_held"] if h.held else (COLORS["fawn"] if fawn_t else COLORS["deer"]))
 		map.draw_line(dc, dc + Vector2(h.deer_facing) * CELL * 0.6, Color.WHITE, 2.0)
-	if h.herd.size() > 1:
+	if h.herd.size() > 1 and not hid:
 		map.draw_rect(_cell_rect(h.deer_pos), COLORS["picked"], false, 1.0)
 	# 觀察後看出的最弱的那一隻（Phase 2d 第 2 步）：格子左上角的橘點
 	for i in h.active_deer():
-		if bool(h.herd[i].get("weakest", false)):
+		if bool(h.herd[i].get("weakest", false)) and not h.deer_unseen(i):
 			map.draw_circle(Vector2(h.herd[i]["pos"]) * CELL + Vector2(3, 3), 2.5, Color("#ff8a3d"))
 	# 狼
 	# 狼的面向：上一步移動的方向；沒動過時朝向鹿

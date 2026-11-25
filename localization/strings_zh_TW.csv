@@ -1916,9 +1916,10 @@ tactical.label.caribou_calf,小馴鹿
 tactical.factor.terrain_w,牠在水裡，你使不上力
 tactical.factor.terrain_s,牠在淺水裡，你踩不穩
 tactical.cornered,牠被逼到角落，轉身站定。
-tactical.lost,{animal}鑽進密林，不見了。
-tactical.lost.another,另一隻{animal}也鑽進密林了。
-tactical.lost.others,另外{n}隻{animal}也鑽進密林了。
+tactical.lost,{animal}穿過密林跑遠了，不見了。
+tactical.lost.another,另一隻{animal}也穿過密林跑遠了。
+tactical.lost.others,另外{n}隻{animal}也穿過密林跑遠了。
+tactical.unseen,{animal}鑽進密林，你看不到牠了，只聽得到枝葉被撞開的聲音。
 tactical.known,你認出牠了——就是上次從你面前逃掉的那一隻。
 tactical.known.wounded,你認出牠了——就是上次從你面前逃掉的那一隻，身上還帶著你留下的傷。
 tactical.known.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻。
@@ -1935,7 +1936,7 @@ tactical.track.f.tired,牠跑了很久
 tactical.track.f.breath,你快喘不過氣
 tactical.ui.track_follow,循著足跡追 {p}%
 tactical.ui.track_give_up,放棄
-tactical.ui.track_prompt,牠鑽進密林不見了。要循著足跡追進去嗎？
+tactical.ui.track_prompt,牠穿過密林跑遠了。要循著足跡追下去嗎？
 tactical.escape.scent,牠從上風聞到你，早早就跑了。
 tactical.escape.missed,撲空之後，牠跑掉了。
 tactical.dive,{animal}一頭鑽進深水，水面只剩一圈波紋。

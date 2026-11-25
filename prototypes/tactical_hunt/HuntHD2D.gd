@@ -139,7 +139,7 @@ func paint() -> void:
 	if h == null:
 		return
 	var col: Dictionary = cfg["colors"]
-	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
+	var hid: bool = h.hidden_unfound() or h.track_pending or h.deer_unseen(h.target) # 密林裡不見了（Phase 2m）、密林裡看不到牠（2026-11-25）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		frame(h.deer_goal(), _col(col["goal"]), 0.02, 0.05)
 	if hid:
@@ -160,8 +160,10 @@ func paint() -> void:
 				frame(c, _col(col["lock"]), 0.035)
 	# 鹿群
 	for i in h.active_deer():
+		if h.deer_unseen(i):
+			continue
 		var m: int = int(h.herd[i]["mother"])
-		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]):
+		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]) and not h.deer_unseen(m):
 			line(cell_center(h.herd[i]["pos"]) + Vector3(0, 0.15, 0), cell_center(h.herd[m]["pos"]) + Vector3(0, 0.15, 0), _col(col["bond"]))
 		if i == h.target:
 			continue

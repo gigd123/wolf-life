@@ -1,5 +1,5 @@
 extends SceneTree
-# Phase 2m 第 1 步的規則檢查：目標在密林裡不見 → 停下來（track_pending）；追上（出現在密林外、看得到、帶傷與疲勞照舊）、
+# Phase 2m 第 1 步的規則檢查：目標在密林裡看不到（畫面不畫）、看不到時跑出地圖邊緣 → 停下來（track_pending；2026-11-25 改）；追上（出現在密林外、看得到、帶傷與疲勞照舊）、
 # 沒追上（照地形寫足跡斷在哪、結束）、放棄（不重寫「不見了」）、一場一次、花喘與遊戲回合、因素、本能的判斷、關掉時照舊。
 # 用法：bash tools/run_sim.sh tactical_track_rules
 var f := 0
@@ -29,6 +29,9 @@ func _lose(h) -> bool:
 				h.deer_state = "flee"
 				h.lost_turns = int(h.t["deer"]["lost_sight_turns"]) - 1
 				h._check_lost()
+				# 2026-11-25：看不到時不再當場停下來，牠還在地圖上（畫面不畫）；跑出邊緣時才停下來
+				_ok(not h.track_pending and not h.done and h.deer_unseen(h.di), "看不到：還沒結束、還沒問，只是看不到")
+				h._lost_at_edge()
 				return h.track_pending
 	return false
 
@@ -43,7 +46,7 @@ func _process(_d) -> bool:
 		if not _lose(h):
 			continue
 		_ok(not h.done, "停下來時還沒結束")
-		_ok(h.events.size() == 1 and str(h.events[0]).contains("不見了"), "寫一次「不見了」")
+		_ok(h.events.size() == 2 and str(h.events[0]).contains("看不到牠") and str(h.events[1]).contains("不見了"), "先寫看不到、跑出邊緣才寫一次「不見了」（%s）" % str(h.events))
 		var tc: Dictionary = h.track_chance()
 		_ok(float(tc["chance"]) >= 0.1 and float(tc["chance"]) <= 0.8, "機率夾在 10%～80%")
 		h.wounds = 1
