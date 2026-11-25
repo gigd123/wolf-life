@@ -1721,7 +1721,7 @@ func eat_grizzly_cache() -> Dictionary:
 		life_log["grizzly_cache_charges"] = int(life_log.get("grizzly_cache_charges", 0)) + 1
 		if RNGService.chance(float(cfg.get("charge_hit_chance", 0.3))):
 			var dr: Array = cfg.get("charge_damage", [10, 22])
-			var hit := FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(dr[0]), int(dr[1]))), FightRules.opponent_profile("grizzly_bear", "adult").get("parts", {}), "grizzly_cache.charge", false)
+			var hit := FightRules.hurt_wolf(wolf, float(RNGService.randi_range(int(dr[0]), int(dr[1]))), FightRules.opponent_profile("grizzly_bear", "adult").get("parts", {}), "grizzly_bear.cache", false)
 			res["damage"] = float(hit["damage"])
 	state_changed.emit()
 	return res

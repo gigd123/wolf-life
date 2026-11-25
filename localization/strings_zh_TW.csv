@@ -821,6 +821,7 @@ death_bio.combat.white_tailed_deer.hunt,在和雄鹿的搏鬥中倒下
 summary.old_injury,{part}的舊傷，是 {age} 歲那年{source}時留下的
 injury_source.grizzly_bear.carcass,和灰熊搶食
 injury_source.grizzly_bear.encounter,和灰熊衝突
+injury_source.grizzly_bear.cache,偷吃灰熊藏的肉
 injury_source.white_tailed_deer.hunt,獵鹿
 injury_source.red_fox.carcass,驅趕狐狸
 injury_source.stranger_wolf.encounter,被黑狼驅趕
@@ -1607,6 +1608,7 @@ territory.yield,讓出這一帶
 territory.yielded,你不再在這一帶留下記號。
 ui.region_info.territory,你的地盤（標記還能撐 {n} 天）
 animal.challenger,年輕的狼
+animal.pack_wolf,鄰群的狼
 action.lie_down,找一個安靜的地方躺下
 lie_down.prompt,你的腿已經不太聽使喚，牙也鈍了。也許是時候了——找一個安靜的地方躺下，不再起來。
 lie_down.confirm,躺下
@@ -2770,6 +2772,7 @@ tcombat.enemy_act.bite,咬
 tcombat.enemy_act.guard,護食
 tcombat.enemy_act.pin,壓制
 tcombat.enemy_act.steal,偷肉
+tcombat.enemy_act.threaten,示威
 tcombat.ev.blocked,{who}被擋住了，沒走過去。
 tcombat.ev.changed,{who}臨時改變主意，往後退。
 tcombat.ev.hit,{who}打中了{target}（血量 −{dmg}）。

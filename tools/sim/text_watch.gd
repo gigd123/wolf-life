@@ -41,6 +41,30 @@ func _process(_d) -> bool:
 	game.add_child(lab)
 	game.text_watch.scan(game, game.debug_overlay)
 	_check(gs.metrics()["text_issues"].has("season_card.fake.key"), "畫面掃描")
+	# 用 id 組出來的鍵（2026-11-25 試玩紀錄：enemy_act.threaten、animal.grizzly_cache 露出鍵名）：
+	# 看了會記住的出手動作、戰術戰鬥的每一種對手、挨灰熊藏食那一下的傷勢來源
+	# -s 腳本編譯時還沒有 autoload，用到 GameState 的類別執行時再 load
+	var text_format = load("res://scripts/ui/TextFormat.gd")
+	var tactical = load("res://scripts/core/TacticalCombat.gd")
+	for act in tactical.ATTACKS + ["threaten"]:
+		_check(tr("tcombat.enemy_act." + act) != "tcombat.enemy_act." + act, "對手動作的名稱：" + act)
+	var tcfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(tactical.CFG_PATH))
+	for sp in tcfg["opponents"]:
+		if str(sp).begins_with("_"):
+			continue
+		_check(tr("tcombat.name." + sp) != "tcombat.name." + sp, "戰術戰鬥的名稱：" + sp)
+		_check(not text_format.source_name(sp).contains("animal"), "動物名稱：" + text_format.source_name(sp))
+	var hit_once := false
+	for i in 60:
+		gs.wolf.health = gs.wolf.health_max
+		gs.wolf.last_injury_source = ""
+		gs.current_discovery = {"kind": "grizzly_cache", "animal_id": "elk", "location": "", "present": true}
+		gs.eat_grizzly_cache()
+		if gs.wolf.last_injury_source != "":
+			hit_once = true
+			break
+	var src: String = text_format.injury_source(gs.wolf.last_injury_source)
+	_check(hit_once and not src.contains("animal.") and src.contains("灰熊"), "偷吃灰熊藏食受傷的來源：" + src)
 	print("試玩紀錄摘要：", gs.metrics_summary()["text_issues"])
 	print("失敗 %d 項" % fails if fails > 0 else "全部通過")
 	return true
