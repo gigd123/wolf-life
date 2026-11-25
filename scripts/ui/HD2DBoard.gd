@@ -578,6 +578,21 @@ func _place_unit(ent: Dictionary, p: Vector3) -> void:
 	(ent["shadow"] as MeshInstance3D).position = p + Vector3(0, 0.02, 0)
 	(ent["label"] as Label3D).position = p + Vector3(0, float(ent.get("h", 1.0)) + 0.25, 0)
 
+# 「動畫：一般／快／關」按鈕（2026-11-25）：戰鬥、大火、河岸畫面共用；設定和戰術狩獵、選單式戰鬥是同一個
+static func make_anim_button(board: HD2DBoard) -> Button:
+	var b := Button.new()
+	b.theme_type_variation = &"SmallButton"
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(68, 22)
+	b.text = TranslationServer.translate("tactical.ui.anim." + CombatAnimator.mode())
+	b.tooltip_text = TranslationServer.translate("tactical.ui.anim.tip")
+	b.pressed.connect(func():
+		b.text = TranslationServer.translate("tactical.ui.anim." + CombatAnimator.next_mode())
+		if board != null:
+			board.move_time = {"normal": 0.5, "fast": 0.25, "off": 0.0}.get(CombatAnimator.mode(), 0.5)
+	)
+	return b
+
 func is_animating() -> bool:
 	if _focus_t < 1.0:
 		return true

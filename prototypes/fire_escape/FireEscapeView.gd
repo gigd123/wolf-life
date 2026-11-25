@@ -65,6 +65,9 @@ func _ready() -> void:
 	hd_btn.custom_minimum_size = Vector2(68, 22)
 	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
 	add_child(hd_btn)
+	var anim_btn := HD2DBoard.make_anim_button(hd) # 動畫速度（2026-11-25）
+	anim_btn.position = Vector2(496, 334)
+	add_child(anim_btn)
 	info = RichTextLabel.new()
 	info.position = Vector2(332, 4)
 	info.size = Vector2(304, 130)

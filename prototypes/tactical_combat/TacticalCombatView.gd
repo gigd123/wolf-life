@@ -95,6 +95,7 @@ func _ready() -> void:
 	top_row.add_theme_constant_override("separation", 3)
 	add_child(top_row)
 	top_row.add_child(hd_btn)
+	top_row.add_child(HD2DBoard.make_anim_button(hd)) # 動畫速度（2026-11-25）
 	for pair in [["tcombat.new", func(): _new_game(true)], ["tcombat.replay", func(): _new_game(false)],
 			["tcombat.back", func(): get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")]]:
 		var b := Button.new()
