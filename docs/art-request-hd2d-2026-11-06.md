@@ -77,6 +77,14 @@ Pose: hurt. Limping, one front leg lifted off the ground, back slightly hunched,
 Pose: submissive. Crouching low, ears flat against the head, head turned slightly down and away, tail tucked between the hind legs, looking up from below.
 ```
 
+## 走路、跑步的連續動作（2026-11-25，移動動畫）
+
+戰術畫面的角色現在會滑到新格子，移動中只能用現有的兩張圖輪流（狼的走路兩張、三種母鹿的跑兩張），其他動物只有一張，看起來是「滑過去」。使用者想要像走路、跑步的動畫，需要每個動作 4 格的循環：
+- **灰狼**：小跑 4 格、衝刺 4 格（腿的四個位置：前腳伸出、收、後腳推、騰空）。
+- **獵物**：白尾鹿、馬鹿、馴鹿、騾鹿、駝鹿、野牛的成年與幼體，跑 4 格；之後再補走 4 格。
+- **戰鬥對手**：灰熊、美洲獅、黑熊、黑狼、苔原狼、郊狼、狼獾、猞猁，走 4 格。
+共通：同一隻、同樣大小、同樣位置，只有腳和身體的起伏不同；檔名 `<原本的名字>_run_1～4`／`_walk_1～4`。程式接法：`art.alt_tex` 改成一串圖，移動中照順序播。先出灰狼小跑 4 格試效果。
+
 ## 森林大火的佔位圖（2026-11-13，Phase 2n 第 5 步）
 
 現在是程式畫的（`prototypes/fire_escape/prep_fire_art.py`），之後想換成正式素材時照同樣的檔名（`_32`、`_48` 兩套，透明背景）放進 `prototypes/hd2d_tactical/assets/` 就好：

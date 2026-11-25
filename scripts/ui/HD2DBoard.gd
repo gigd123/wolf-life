@@ -620,15 +620,16 @@ func _animate_units(delta: float) -> void:
 				ent["t"] = 1.0 if mt <= 0.0 else float(ent["t"]) + delta / mt
 			_place_unit(ent, _unit_pos(ent))
 			var s: Sprite3D = ent["sprite"]
-			# 跑起來的樣子（2026-11-25）：移動中身體上下彈、兩張跑步的圖輪流；停下來回到原本的圖
+			# 跑起來的樣子（2026-11-25）：移動中兩張走路／跑步的圖輪流；停下來回到原本的圖
 			var tt: float = float(ent.get("t", 1.0))
 			if tt > 0.0 and tt < 1.0:
 				var dist: float = Vector2((ent["to"] as Vector3).x - (ent["from"] as Vector3).x, (ent["to"] as Vector3).z - (ent["from"] as Vector3).z).length()
 				var steps: float = maxf(1.0, roundf(dist * float(cfg.get("move_anim", {}).get("steps_per_cell", 1.0))))
 				var ph: float = tt * steps
-				s.position.y += absf(sin(ph * PI)) * float(cfg.get("move_anim", {}).get("bob", 0.12))
+				# 上下彈預設關掉（2026-11-25 使用者：彈跳怪怪的，要的是走路、跑步的動畫）；兩張圖每格換 swaps_per_cell 次
+				s.position.y += absf(sin(ph * PI)) * float(cfg.get("move_anim", {}).get("bob", 0.0))
 				if ent.get("alt_tex", null) != null:
-					s.texture = ent["alt_tex"] if int(floor(ph * 2.0)) % 2 == 1 else ent["main_tex"]
+					s.texture = ent["alt_tex"] if int(floor(ph * float(cfg.get("move_anim", {}).get("swaps_per_cell", 3.0)))) % 2 == 1 else ent["main_tex"]
 			elif ent.has("main_tex") and s.texture != ent["main_tex"]:
 				s.texture = ent["main_tex"]
 			var mod: Color = ent.get("mod", Color.WHITE)
