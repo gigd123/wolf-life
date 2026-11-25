@@ -1,5 +1,5 @@
 extends SceneTree
-# 錄一場戰術戰鬥的示範影片（2026-11-25）：山地鄰群（帶頭的狼＋伴侶＋年輕的狼），本能自動打，每 1.1 秒一回合。
+# 錄一場戰術戰鬥的示範影片（2026-11-25）：山地鄰群（BLACK=1 換成黑狼一家）（帶頭的狼＋伴侶＋年輕的狼），本能自動打，每 1.1 秒一回合。
 # 用法：xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi -s res://tools/sim/record_combat_demo.gd
 var hd
 var tc
@@ -21,10 +21,21 @@ func _setup_game() -> void:
 	gs.wolf.strength = 78.0
 	gs.wolf.skill = 70.0
 	gs.debug_force_transition("adult")
-	gs.current_region = "mountain_canyon"
-	gs.meet_pack_id = "mountain"
-	var mp = gs.pack_by_id("mountain")
-	mp.young = [1.5, 2.0]
+	if OS.get_environment("BLACK") != "":
+		# 黑狼一家（BLACK=1）：森林，帶頭的黑狼＋伴侶＋年輕的
+		gs.new_game("forest_east")
+		gs.wolf.age_years = 4.0
+		gs.debug_force_transition("adult")
+		var bp = gs.black_pack
+		bp.stage = "pack"
+		bp.regions = [gs.current_region]
+		bp.young = [1.5, 2.0]
+		gs.meet_pack_id = "black"
+	else:
+		gs.current_region = "mountain_canyon"
+		gs.meet_pack_id = "mountain"
+		var mp = gs.pack_by_id("mountain")
+		mp.young = [1.5, 2.0]
 	tc = gs.start_pack_tactical()
 	# 示範用：你這隻血量多一點，不會一開打就判斷太危險而撤退
 	tc.units[0]["hp_max"] = 260.0

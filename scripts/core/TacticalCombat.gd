@@ -155,6 +155,8 @@ func _add_enemy(o: Dictionary, os: Dictionary, stake: float) -> void:
 		"eating": bool(o.get("eating", false)), "ambush": bool(o.get("ambush", false)),
 		"stamina": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)), "stamina_max": float(cfg["enemy_stamina"].get(str(o["id"]), 80.0)),
 		"attention": -1, "bitten_by": -1, "tag": str(o.get("tag", "")), "tag_n": int(o.get("tag_n", 0))})
+	if str(o.get("art_key", "")) != "":
+		units.back()["art_key"] = str(o["art_key"]) # 畫面用：換一套圖（黑狼一家用黑狼的圖）
 	var eu: Dictionary = units.back()
 	var br: Array = cfg["ai"]["bold"].get(str(o["id"]), [0.0, 0.0])
 	eu["bold"] = rng.randf_range(float(br[0]), float(br[1]))

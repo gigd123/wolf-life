@@ -5796,6 +5796,9 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 	if c.has_meta("tc_pack"):
 		var tp = pack_by_id(str(c.get_meta("tc_pack")))
 		sc["opponent"]["tag"] = "tcombat.tag.leader.black" if tp == black_pack or tp == null else "tcombat.tag.leader"
+		# 黑狼一家每一隻都用黑狼的圖（2026-11-25：原本伴侶、年輕的用灰狼調暗的褐灰色，看起來像另一群、甚至像熊）
+		if tp == black_pack or tp == null:
+			sc["opponent"]["art_key"] = "stranger_wolf"
 	for k in mini(extra_npcs.size(), foe_spots.size()):
 		var x: Dictionary = extra_npcs[k]
 		var uid2 := "%s_%d" % [foe_species, k + 2]
@@ -5805,7 +5808,7 @@ func start_tactical_combat(c: Combat) -> TacticalCombat:
 			xp = Vector2i(rng.randi_range(9, 14), 0 if rng.randf() < 0.5 else 9)
 			while sc["map"][xp.y][xp.x] in ["T", "t", "B", "c", "l", "r"] or xp == opos:
 				xp.x = (xp.x + 1) % 16
-		extras.append({"id": foe_species, "uid": uid2, "pos": [xp.x, xp.y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"], "tag": str(x.get("tag", "")), "tag_n": int(x.get("tag_n", 0))})
+		extras.append({"id": foe_species, "uid": uid2, "pos": [xp.x, xp.y], "facing": op.get("facing", [-1, 0]), "stats": x["stats"], "tag": str(x.get("tag", "")), "tag_n": int(x.get("tag_n", 0)), "art_key": str(sc["opponent"].get("art_key", ""))})
 		if x["npc"] != null:
 			foe_ids[uid2] = (x["npc"] as NpcWolf).id
 	sc["extra_enemies"] = extras

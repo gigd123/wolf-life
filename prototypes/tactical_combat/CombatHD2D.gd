@@ -59,7 +59,7 @@ func setup(combat: TacticalCombat) -> void:
 
 func _unit_art(i: int) -> Dictionary:
 	var u: Dictionary = tc.units[i]
-	var key: String = str(u.get("art_key", u["id"])) if str(u["species"]) == "wolf" else str(u["species"])
+	var key: String = str(u.get("art_key", u["id"])) if str(u["species"]) == "wolf" else str(u.get("art_key", u["species"]))
 	var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 	if str(uc.get("art", "")) == "hd2d_wolf":
 		var wp := _wolf_pose(i)
@@ -186,7 +186,7 @@ func paint() -> void:
 		if not _show_unit(i):
 			continue
 		var u: Dictionary = tc.units[i]
-		var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u["species"])
+		var key: String = str(u["id"]) if str(u["species"]) == "wolf" else str(u.get("art_key", u["species"]))
 		var uc: Dictionary = cfg["units"].get(key, cfg["units"]["wolf"])
 		var tags: Array = []
 		# 狼群裡的哪一隻（黑狼、牠的伴侶、年輕的狼 1、2……；2026-11-25）
