@@ -30,6 +30,7 @@
   "autumn_swap": { "_comment": "秋天時把樹換成這張（HD2DBoard._add_tree）", "birch": "birch_autumn", "shrub": "shrub_autumn", "shrub_b": "shrub_autumn" },
   "pan": { "_comment": "捲動（2026-11-08）：左鍵拖曳超過 drag_px 像素算捲動；滑鼠在邊緣 edge_px 內、方向鍵捲動，speed 每秒幾格（÷ 放大倍數）", "drag_px": 8, "edge_px": 24, "speed": 10 },
   "tundra_poses": { "_comment": "跟著你狩獵的苔原狼（2026-11-11）：沒有潛行、咬住的圖 → 用準備撲、撲咬", "stand": "tundrawolf_stand", "stalk": "tundrawolf_ready", "walk": "tundrawolf_walk", "walk_b": "tundrawolf_walk", "hold": "tundrawolf_lunge" },
+  "hidden_cover": {"_comment": "躲在草裡的幼鹿那 3×3 格放的樹叢（HuntHD2D._hidden_cover，2026-11-25）：照主遊戲的地圖挑，沒寫的用 default；冬天用 <地圖>_winter，沒有就用 winter。front：往格子前緣放，蓋住躲著的幼鹿", "front": 0.22, "default": ["shrub", "shrub_b", "shrub"], "winter": ["shrub_winter"], "grassland": ["tallgrass", "tallgrass", "shrub"], "grassland_winter": ["tallgrass_winter", "tallgrass_winter", "shrub_winter"], "tundra": ["shrub", "shrub_b", "tallgrass"], "tundra_winter": ["shrub_winter", "shrub_winter", "tallgrass_winter"]},
   "fixed_scale": { "_comment": "灌木一叢約 0.9 格寬、倒木一格長（素材一格 48 像素時灌木寬 83、倒木寬 60），不跟著大樹、小樹的格子縮放；大片灌木叢用好幾格的灌木組成", "shrub": 0.52, "shrub_winter": 0.52, "shrub_b": 0.4, "shrub_autumn": 0.4, "log": 0.8, "log_winter": 0.8, "tallgrass": 0.95, "tallgrass_winter": 0.95 },
   "winter_tree_mix": ["pine_snow", "pine_snow", "pine_snow", "pine_snow", "pine_snow", "shrub_winter", "shrub_winter", "dead_tree"],
   "start_zoom": 2.0,

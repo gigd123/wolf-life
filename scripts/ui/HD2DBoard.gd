@@ -313,6 +313,11 @@ func _build_terrain() -> void:
 		# 外圍的其他物件（牧場的小木屋）
 		for ex in ep.get("extra", []):
 			_add_tree(Vector3(float(ex.get("x", 1.0)), 0, float(ex.get("z", -1.5))), str(ex["art"]), float(ex.get("scale", 1.0)))
+	# extra_props：這一場額外放的物件（躲在草裡的幼鹿那一塊的樹叢，HuntHD2D 照地圖放），只是畫面、不擋路
+	for ex in cfg.get("extra_props", []):
+		var xc := Vector2i(int(ex["cell"][0]), int(ex["cell"][1]))
+		var jx := Vector3((_hash01(xc.x, xc.y, 31) - 0.5) * 0.25, 0, float(ex.get("front", 0.2)) + (_hash01(xc.x, xc.y, 33) - 0.5) * 0.1)
+		_add_tree(cell_center(xc) + jx, str(ex["art"]), float(ex.get("scale", 1.0)))
 	_build_border(bottom)
 	overlay = Node3D.new()
 	world.add_child(overlay)

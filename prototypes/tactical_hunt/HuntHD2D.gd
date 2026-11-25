@@ -46,9 +46,31 @@ func setup(th) -> void:
 		var bst: String = str(h.game_mods.get("burn_stage", ""))
 		if bst in ["burning", "ash", "herb"]:
 			cfg["tree_mix"] = (cfg.get("map_sets", {}).get("burn_" + bst, {}) as Dictionary).get("tree_mix", cfg["tree_mix"]).duplicate()
+	_hidden_cover(winter)
 	build(h.width, h.height, func(c: Vector2i) -> String: return h.terrain(c))
 	focus_on(h.wolf_pos, float(cfg.get("start_zoom", 1.0)))
 	refresh()
+
+# 躲在草裡的幼鹿（Phase 2i 第 6 步）：牠大概在的那 3×3 格放上樹叢，照地圖換（hunt_hd2d.json 的 hidden_cover；2026-11-25 使用者）
+func _hidden_cover(winter: bool) -> void:
+	cfg.erase("extra_props")
+	var ha: Rect2i = h.hidden_area
+	if ha.size.x <= 0:
+		return
+	var hc: Dictionary = cfg.get("hidden_cover", {})
+	var wm: String = str(h.game_mods.get("world_map", ""))
+	var key: String = wm if hc.has(wm) else "default"
+	if winter:
+		key = (key + "_winter") if hc.has(key + "_winter") else "winter"
+	var arts: Array = hc.get(key, hc.get("default", ["shrub"]))
+	if arts.is_empty():
+		return
+	var extra: Array = []
+	for y in range(ha.position.y, ha.end.y):
+		for x in range(ha.position.x, ha.end.x):
+			if x >= 0 and y >= 0 and x < h.width and y < h.height:
+				extra.append({"cell": [x, y], "art": str(arts[(x * 7 + y * 3) % arts.size()]), "front": float(hc.get("front", 0.2))})
+	cfg["extra_props"] = extra
 
 # 狼的姿勢（2026-11-08）：咬住獵物（或獵到了）咬住不放、潛行、小跑或衝刺時走路兩格輪流、沒動站著
 func _wolf_pose() -> String:
@@ -139,7 +161,7 @@ func paint() -> void:
 	if h == null:
 		return
 	var col: Dictionary = cfg["colors"]
-	var hid: bool = h.hidden_unfound() or h.track_pending or h.deer_unseen(h.target) # 密林裡不見了（Phase 2m）、密林裡看不到牠（2026-11-25）：不畫出牠在哪
+	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		frame(h.deer_goal(), _col(col["goal"]), 0.02, 0.05)
 	if hid:
@@ -160,10 +182,8 @@ func paint() -> void:
 				frame(c, _col(col["lock"]), 0.035)
 	# 鹿群
 	for i in h.active_deer():
-		if h.deer_unseen(i):
-			continue
 		var m: int = int(h.herd[i]["mother"])
-		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]) and not h.deer_unseen(m):
+		if m >= 0 and not bool(h.herd[m]["gone"]) and not bool(h.herd[i]["separated"]):
 			line(cell_center(h.herd[i]["pos"]) + Vector3(0, 0.15, 0), cell_center(h.herd[m]["pos"]) + Vector3(0, 0.15, 0), _col(col["bond"]))
 		if i == h.target:
 			continue

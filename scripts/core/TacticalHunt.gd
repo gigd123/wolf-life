@@ -2817,7 +2817,7 @@ func _deer_flee() -> void:
 	flee_round += 1
 	deer_facing = d
 	if sim["out"]:
-		# 跑出地圖邊緣：在密林裡、你已經看不到牠時是「不見了」（盯上的那一隻第一次可以循著足跡追），否則是逃掉
+		# 跑出地圖邊緣：從密林裡、被樹擋住的地方跑出去是「穿過密林跑遠，不見了」（盯上的那一隻第一次可以循著足跡追），否則是逃掉
 		if deer_unseen(di):
 			_lost_at_edge()
 		else:
@@ -2848,22 +2848,21 @@ func _check_lost() -> void:
 		lost_turns = 0
 		return
 	# 離你很近（lost_min_dist 格內）不會跟丟：小樹叢就在旁邊，聽得到也聞得到（2026-11-19 試玩回報：兩格外的小樹叢裡「不見了」，地圖上卻還在）
-	# 2026-11-25（使用者選方案 2）：看不到牠不再當場「不見了」；牠還在地圖上、只是畫面不畫出來（deer_unseen），
-	# 要跑出地圖邊緣時還看不到才算跟丟（_lost_at_edge）；中途又看到就照常顯示
+	# 2026-11-25（使用者選方案 2）：在密林裡被樹擋住不再當場「不見了」，牠還在地圖上、照常畫出來
+	# （使用者：還在地圖上就要顯示，只有跑出邊緣、鑽進水或洞、躲在草裡的幼鹿看不到）。
+	# 這裡只記牠在密林裡被擋住幾回合：跑出邊緣時用來分「穿過密林跑遠、不見了」（可以循著足跡追）和一般的逃掉
 	if terrain(deer_pos) == "f" and not has_sight() and dist(wolf_pos, deer_pos) > float(t["deer"].get("lost_min_dist", 0.0)):
 		lost_turns += 1
-		if lost_turns == int(t["deer"]["lost_sight_turns"]) and di == target:
-			events.append(_tx("tactical.unseen").replace("{animal}", label()))
 	else:
 		lost_turns = 0
 
-# 這一隻在密林裡、你已經 lost_sight_turns 回合看不到牠：畫面不畫出牠在哪
+# 這一隻在密林裡、被樹擋住 lost_sight_turns 回合以上（只用來判斷跑出邊緣時算不算跟丟，畫面照常畫）
 func deer_unseen(i: int) -> bool:
 	if i < 0 or i >= herd.size() or bool(herd[i]["gone"]) or str(herd[i]["state"]) != "flee":
 		return false
 	return int(herd[i]["lost_turns"]) >= int(t["deer"]["lost_sight_turns"])
 
-# 看不到的時候跑出地圖邊緣：Phase 2m 你盯上的那一隻第一次 → 停下來，讓你選要不要循著足跡追；否則跟丟
+# 在密林裡被擋住時跑出地圖邊緣：Phase 2m 你盯上的那一隻第一次 → 停下來，讓你選要不要循著足跡追；否則跟丟
 func _lost_at_edge() -> void:
 	if di == target and not tracked and bool(_track_cfg().get("enabled", false)):
 		track_pending = true

@@ -1919,7 +1919,6 @@ tactical.cornered,牠被逼到角落，轉身站定。
 tactical.lost,{animal}穿過密林跑遠了，不見了。
 tactical.lost.another,另一隻{animal}也穿過密林跑遠了。
 tactical.lost.others,另外{n}隻{animal}也穿過密林跑遠了。
-tactical.unseen,{animal}鑽進密林，你看不到牠了，只聽得到枝葉被撞開的聲音。
 tactical.known,你認出牠了——就是上次從你面前逃掉的那一隻。
 tactical.known.wounded,你認出牠了——就是上次從你面前逃掉的那一隻，身上還帶著你留下的傷。
 tactical.known.herd,你在群裡認出了那隻{animal}——就是上次從你面前逃掉的那一隻。
