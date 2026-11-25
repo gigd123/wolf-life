@@ -9,10 +9,13 @@ func _ok(c: bool, msg: String) -> void:
 		fails += 1
 	print(("  ✓ " if c else "  ✗ ") + msg)
 
+var AL
+
 func _process(_d) -> bool:
 	f += 1
 	if f != 3:
 		return f > 8
+	AL = load("res://scripts/ui/ArtLibrary.gd")
 	var gs = root.get_node("GameState")
 	gs.new_game("forest_east")
 	var hd = load("res://prototypes/tactical_hunt/HuntHD2D.gd").new()
@@ -25,8 +28,16 @@ func _process(_d) -> bool:
 	_ok(tb.resource_path.contains("hdwolf_sub_walk_"), "走路第二張還沒有：用年輕的狼第一張，不和成狼交錯（%s）" % tb.resource_path.get_file())
 	var th: Texture2D = hd.player_wolf_texture("hdwolf_hold")["tex"]
 	_ok(not th.resource_path.contains("_sub_"), "還沒有的姿勢用成狼的（%s）" % th.resource_path.get_file())
+	# 選單畫面（art.json hd_menu）
+	if AL.hd_menu_on():
+		var mi: Texture2D = AL.hd_wolf("idle")
+		_ok(mi != null and mi.resource_path.contains("hdwolf_sub_"), "選單畫面 1.5 歲站著用年輕的狼（%s）" % (mi.resource_path.get_file() if mi != null else "null"))
+		var md: Texture2D = AL.hd_wolf("down")
+		_ok(md != null and not md.resource_path.contains("_sub_"), "選單畫面沒有的姿勢用成狼的（%s）" % (md.resource_path.get_file() if md != null else "null"))
 	gs.wolf.age_years = 3.0
 	var ta: Texture2D = hd.player_wolf_texture("hdwolf_stand")["tex"]
+	if AL.hd_menu_on():
+		_ok(not AL.hd_wolf("idle").resource_path.contains("_sub_"), "選單畫面 3 歲用成狼的")
 	_ok(not ta.resource_path.contains("_sub_"), "3 歲用成狼的（%s）" % ta.resource_path.get_file())
 	print("全部通過" if fails == 0 else "有失敗 %d" % fails)
 	quit(1 if fails > 0 else 0)

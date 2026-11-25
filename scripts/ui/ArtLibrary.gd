@@ -109,7 +109,17 @@ static func _hd_walk(icon: AnimatedIcon, first: Texture2D, who: String, action: 
 static func hd_wolf(pose: String) -> Texture2D:
 	if not hd_menu_on():
 		return null
-	return _hd_tex(str(_hd().get("wolf", {}).get(pose, "")))
+	var name: String = str(_hd().get("wolf", {}).get(pose, ""))
+	# 未滿 2 歲（次成年）：有 hdwolf_sub_<姿勢> 就用那張（2026-11-25；沒有的姿勢用成狼的）
+	if young_wolf() and name.begins_with("hdwolf_"):
+		var sub := _hd_tex("hdwolf_sub_" + name.substr(7))
+		if sub != null:
+			return sub
+	return _hd_tex(name)
+
+static func young_wolf() -> bool:
+	var gs = Engine.get_main_loop().root.get_node_or_null("GameState") if Engine.get_main_loop() is SceneTree else null
+	return gs != null and gs.wolf != null and gs.wolf.life_stage() == Wolf.LifeStage.SUBADULT
 
 static func frame_size() -> Vector2i:
 	var fs: Array = _cfg().get("frame_size", [48, 32])
@@ -203,7 +213,8 @@ static func event_image(key: String) -> Texture2D:
 static func setup_wolf(icon: AnimatedIcon, action: String = "idle", fps: float = 5.0, stage: String = "") -> bool:
 	var hw := hd_wolf(action)
 	if hw != null:
-		if not (action == "walk" and _hd_walk(icon, hw, "wolf")):
+		# 年輕的狼還沒有走路第二張：不和成狼的第二張配成走路動畫
+		if not (action == "walk" and not young_wolf() and _hd_walk(icon, hw, "wolf")):
 			icon.show_static(hw)
 		return true
 	var wolf: Dictionary = _cfg().get("wolf", {})
