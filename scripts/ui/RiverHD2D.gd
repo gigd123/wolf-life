@@ -119,7 +119,7 @@ func paint() -> void:
 	# 狼
 	_update_pose()
 	var wp: Dictionary = rcfg.get("wolf_poses", {})
-	var wart := hd_wolf_texture(str(wp.get(_pose, wp.get("stand", "hdwolf_stand"))))
+	var wart := player_wolf_texture(str(wp.get(_pose, wp.get("stand", "hdwolf_stand"))))
 	# 次成年、老年的體型（主遊戲的縮放，同戰術狩獵）
 	wart["ps"] = float(wart["ps"]) * float(GameState.wolf_display_scale())
 	unit("wolf", wart, rf.wolf_pos, _flip(_wolf_face))

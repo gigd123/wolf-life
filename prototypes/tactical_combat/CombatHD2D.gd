@@ -69,7 +69,8 @@ func _unit_art(i: int) -> Dictionary:
 			var t := hd_wolf_texture(str(own[wp]))
 			t["mod"] = uc.get("poses_modulate", [1, 1, 1])
 			return t
-		return hd_wolf_texture(str(cfg["wolf_poses"].get(wp, cfg["wolf_poses"]["stand"])))
+		var wpose: String = str(cfg["wolf_poses"].get(wp, cfg["wolf_poses"]["stand"]))
+		return player_wolf_texture(wpose) if i == 0 else hd_wolf_texture(wpose)
 	# HD-2D 的新圖（Gemini，2026-11-06）：依姿勢挑一張——在吃 eat、預告看起來是揮掌或咬 swipe、撲擊 crouch、衝撞 charge、守食物 rear、上一回合有移動 walk／walk_b 輪流、沒動 stand
 	var poses: Dictionary = uc.get("hd2d_poses", {})
 	if not poses.is_empty():

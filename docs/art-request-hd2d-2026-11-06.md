@@ -19,7 +19,7 @@
 **還缺**：
 1. 走（第二格）`sub_walk_b`：附成狼走路圖＋`sub_stand`＋`sub_walk`。
 2. 咬住 `sub_hold`（重出）：現在那張姿勢跟站幾乎一樣，嘴前多一塊被切掉的粉紅色。文案最後加：「The jaws are clamped shut on nothing visible — do NOT draw any prey, meat or object at the mouth. Make the pose clearly different from standing: hind legs braced far back, body angled backward, head pulled down and back as if dragging something heavy.」
-毛色偏黃褐（成狼是冷灰），接進遊戲時用程式調向成狼的色調。手機版的文案頁：https://claude.ai/artifact/UgozvFvjt7hX8CJeTjALbJ
+毛色偏黃褐（成狼是冷灰），接進遊戲時用程式調向成狼的色調。2026-11-25 已接進戰術畫面（`prep_sub_wolf.py`），交新圖後重跑那支腳本就好。手機版的文案頁：https://claude.ai/artifact/UgozvFvjt7hX8CJeTjALbJ
 
 
 

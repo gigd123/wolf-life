@@ -567,7 +567,7 @@ func paint() -> void:
 			pose = "hdwolf_hurt"
 		elif _moved_round == fe.rounds:
 			pose = str(wp.get("walk_b" if fe.rounds % 2 == 1 else "walk", "hdwolf_walk"))
-		unit("wolf", hd_wolf_texture(pose), fe.wolf_pos, (_face.x < 0) if _face.x != 0 else null)
+		unit("wolf", player_wolf_texture(pose), fe.wolf_pos, (_face.x < 0) if _face.x != 0 else null)
 	if view != null:
 		var hv: Vector2i = view.hover
 		if hv.x >= 0 and in_map(hv):

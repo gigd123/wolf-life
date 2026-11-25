@@ -410,6 +410,19 @@ func hd_wolf_texture(pose: String = "wolf_stand") -> Dictionary:
 	var px: int = art_px if art_px > 0 else 32
 	return {"tex": load(HD_DIR + "assets/%s_%d.png" % [pose, px]), "ps": 1.0 / float(px)}
 
+# 你這隻狼的圖（2026-11-25）：未滿 2 歲（次成年）時有 hdwolf_sub_<姿勢> 就用那張（年輕的狼：腿長、身體瘦、沒有頸部鬃毛），
+# 沒有的姿勢用成狼的；伴侶、同伴、其他狼不套用
+func player_wolf_texture(pose: String) -> Dictionary:
+	if pose.begins_with("hdwolf_") and not pose.begins_with("hdwolf_sub_") and GameState.wolf != null and GameState.wolf.life_stage() == Wolf.LifeStage.SUBADULT:
+		var px: int = art_px if art_px > 0 else 32
+		var sub := "hdwolf_sub_" + pose.substr(7)
+		if ResourceLoader.exists(HD_DIR + "assets/%s_%d.png" % [sub, px]):
+			return hd_wolf_texture(sub)
+		# 第二張（walk_b）還沒有時用第一張，不要年輕的狼和成狼的圖交錯
+		if sub.ends_with("_b") and ResourceLoader.exists(HD_DIR + "assets/%s_%d.png" % [sub.trim_suffix("_b"), px]):
+			return hd_wolf_texture(sub.trim_suffix("_b"))
+	return hd_wolf_texture(pose)
+
 # 遊戲的動物圖（data/art.json 的 animals）：single 一張圖、sheet 取第一格（沒寫 frame 用 frame_size）、strips.walk 取第一格；winter 時有 @winter 的用冬季的圖。
 # 寬度縮放到 width_cells 格。找不到時回傳空的字典。
 static func animal_texture(species: String, stage: String, width_cells: float, winter: bool = false) -> Dictionary:
