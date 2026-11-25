@@ -32,6 +32,8 @@ var move_time := 0.5
 var _focus_to := Vector2(-1, -1)
 var _focus_from := Vector2.ZERO
 var _focus_t := 1.0
+# 事件動畫（2026-11-25，第二步）：下一次 refresh 裡這個角色晚幾秒才開始移動（撲咬先播、牠才逃）
+var _pending_delay := {}
 var mats := {}
 var art_px := 32
 var _blob: ImageTexture
@@ -512,6 +514,7 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	s2.texture = art["tex"]
 	s2.pixel_size = float(art["ps"])
 	s2.modulate = modulate
+	ent["mod"] = modulate
 	# 角色不接受別的樹、物件投下的影子（2026-11-08：樹影打在灰熊前半身，看起來像一塊黑色）；光線、時段的顏色照常
 	var um: StandardMaterial3D = ent.get("mat", null)
 	if um == null:
@@ -538,6 +541,7 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	lb2.visible = tag != ""
 	lb2.text = tag
 	lb2.modulate = tag_color
+	ent["key"] = key
 	_set_unit_target(ent, cell_center(c), s2.texture.get_height() * s2.pixel_size)
 
 # 設定角色要去的位置：第一次出現、剛從隱藏變回來、跳太遠時直接到位；否則從現在畫的位置滑過去
@@ -552,7 +556,8 @@ func _set_unit_target(ent: Dictionary, p: Vector3, h: float) -> void:
 	elif p != ent["to"]:
 		ent["from"] = _unit_pos(ent)
 		ent["to"] = p
-		ent["t"] = 0.0
+		ent["t"] = -float(_pending_delay.get(ent.get("key", ""), 0.0)) / mt
+	_pending_delay.erase(ent.get("key", ""))
 	_place_unit(ent, _unit_pos(ent))
 
 func _unit_pos(ent: Dictionary) -> Vector3:
@@ -565,14 +570,45 @@ func _place_unit(ent: Dictionary, p: Vector3) -> void:
 	(ent["shadow"] as MeshInstance3D).position = p + Vector3(0, 0.02, 0)
 	(ent["label"] as Label3D).position = p + Vector3(0, float(ent.get("h", 1.0)) + 0.25, 0)
 
-# 每一幀把還在移動的角色往前推；鏡頭的平滑移動也在這裡
+# 這個角色下一次換格子晚 sec 秒才動
+func delay_unit(key: String, sec: float) -> void:
+	_pending_delay[key] = sec
+
+# 事件動畫：bump 往 dir（地面上的方向）衝出去再回來，flash 閃一下顏色；start 秒後開始、播 dur 秒
+func add_fx(key: String, fx: Dictionary) -> void:
+	if not units.has(key):
+		return
+	var fx2 := fx.duplicate()
+	fx2["el"] = 0.0
+	(units[key].get_or_add("fx", []) as Array).append(fx2)
+
+# 每一幀把還在移動的角色往前推、播事件動畫；鏡頭的平滑移動也在這裡
 func _animate_units(delta: float) -> void:
 	var mt: float = float(cfg.get("move_anim", {}).get("time", move_time))
 	for k in units.keys():
 		var ent: Dictionary = units[k]
-		if float(ent.get("t", 1.0)) < 1.0:
-			ent["t"] = 1.0 if mt <= 0.0 else float(ent["t"]) + delta / mt
+		var fxs: Array = ent.get("fx", [])
+		if float(ent.get("t", 1.0)) < 1.0 or not fxs.is_empty():
+			if float(ent.get("t", 1.0)) < 1.0:
+				ent["t"] = 1.0 if mt <= 0.0 else float(ent["t"]) + delta / mt
 			_place_unit(ent, _unit_pos(ent))
+			var s: Sprite3D = ent["sprite"]
+			var mod: Color = ent.get("mod", Color.WHITE)
+			for fx in fxs.duplicate():
+				fx["el"] = float(fx["el"]) + delta
+				var u: float = (float(fx["el"]) - float(fx.get("start", 0.0))) / maxf(0.01, float(fx.get("dur", 0.25)))
+				if u >= 1.0 or mt <= 0.0:
+					fxs.erase(fx)
+					continue
+				if u < 0.0:
+					continue
+				var w: float = sin(u * PI)
+				match str(fx.get("type", "")):
+					"bump":
+						s.position += (fx["dir"] as Vector3) * float(fx.get("amp", 0.4)) * w
+					"flash":
+						mod = mod.lerp(fx["color"], w)
+			s.modulate = mod
 	if _focus_t < 1.0:
 		_focus_t = 1.0 if mt <= 0.0 else _focus_t + delta / mt
 		var e: float = clampf(_focus_t, 0.0, 1.0)

@@ -40,6 +40,23 @@ func _process(_d) -> bool:
 	h.wolf_pos = c0 + Vector2i(14, 0) if c0.x < 20 else c0 - Vector2i(14, 0)
 	hd.refresh()
 	_ok(s.position.distance_to(hd.cell_center(h.wolf_pos) + Vector3(0, 0, 0.05)) < 0.01, "跳太遠：直接到位")
+	# 撲咬（第二步）：狼往獵物衝一下、咬到時獵物閃紅；撲空的回合獵物等撲完才動
+	var dkey := "deer%d" % h.target
+	var dsp: Sprite3D = hd.units[dkey]["sprite"]
+	h.anim_events.append({"kind": "pounce", "to": h.deer_pos, "hit": true, "kicked": false, "who": h.target})
+	var d_before: Vector3 = dsp.position
+	h.deer_pos = h.deer_pos + Vector2i(0, 2)
+	h.herd[h.target]["pos"] = h.deer_pos
+	var w_before: Vector3 = s.position
+	hd.refresh()
+	hd._animate_units(0.15)
+	_ok(dsp.position.distance_to(d_before) < 0.05, "撲咬的回合：獵物先不動（等撲完）")
+	_ok(s.position.distance_to(w_before) > 0.1, "狼往獵物衝出去（%.2f）" % s.position.distance_to(w_before))
+	_ok(dsp.modulate.g < 0.95, "咬到：獵物閃紅（%s）" % str(dsp.modulate))
+	hd._animate_units(0.4)
+	_ok(s.position.distance_to(w_before) < 0.02, "衝完回到原位")
+	hd._animate_units(0.6)
+	_ok(dsp.position.distance_to(hd.cell_center(h.deer_pos) + Vector3(0, 0, 0.05)) < 0.02 and dsp.modulate == Color.WHITE, "撲完獵物才移動到新位置、顏色恢復")
 	# 逃出邊緣
 	h.herd[h.target]["exit_to"] = Vector2i(-3, h.deer_pos.y)
 	h.done = true

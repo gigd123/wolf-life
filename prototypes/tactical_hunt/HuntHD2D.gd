@@ -20,6 +20,7 @@ var _exit_until := {} # 鹿的序號 -> 滑出地圖的動畫播到什麼時候�
 func setup(th) -> void:
 	h = th
 	_exit_until.clear()
+	_anim_seen = h.anim_events.size()
 	_last_wolf_pos = Vector2i(-999, -999)
 	# 每一場從設定檔的原樣開始（地圖、季節的覆蓋不會留到下一場）
 	if _base_cfg.is_empty():
@@ -159,6 +160,51 @@ var _wolf_face := Vector2i(1, 0)
 
 func _flip(f: Vector2i):
 	return (f.x < 0) if f.x != 0 else null
+
+# --- 事件動畫（2026-11-25，移動動畫第二步）---
+# 撲咬：狼先移動到撲出去的位置，再往獵物衝一下；咬到時獵物閃紅、被踢時狼閃紅；撲空的回合獵物等撲完才逃。
+# 只是畫面，結果早就算好了。
+var _anim_seen := 0
+
+func refresh() -> void:
+	if h == null or world == null:
+		super.refresh()
+		return
+	var new_ev: Array = h.anim_events.slice(_anim_seen)
+	_anim_seen = h.anim_events.size()
+	var mt: float = float(cfg.get("move_anim", {}).get("time", move_time))
+	var wolf_moved: bool = units.has("wolf") and units["wolf"].has("to") and cell_center(h.wolf_pos).distance_to(units["wolf"]["to"]) > 0.1
+	var t0: float = mt if wolf_moved else 0.0
+	var lunge: float = 0.3
+	for e in new_ev:
+		if str(e.get("kind", "")) == "pounce":
+			# 獵物這一回合的移動等撲咬播完
+			for i in h.herd.size():
+				delay_unit("deer%d" % i, t0 + lunge)
+	super.refresh()
+	_pending_delay.clear()
+	if mt <= 0.0:
+		return
+	for e in new_ev:
+		match str(e.get("kind", "")):
+			"pounce":
+				var to: Vector2i = e["to"]
+				var dv := Vector3(to.x - h.wolf_pos.x, 0, to.y - h.wolf_pos.y)
+				if dv.length() > 0.0:
+					add_fx("wolf", {"type": "bump", "dir": dv.normalized(), "amp": 0.45, "start": t0, "dur": lunge})
+				var dk := "deer%d" % int(e.get("who", h.target))
+				if bool(e.get("hit", false)):
+					add_fx(dk, {"type": "flash", "color": Color(1.0, 0.35, 0.3), "start": t0 + lunge * 0.4, "dur": 0.35})
+				if bool(e.get("kicked", false)):
+					add_fx("wolf", {"type": "flash", "color": Color(1.0, 0.3, 0.25), "start": t0 + lunge * 0.5, "dur": 0.35})
+			"kick":
+				var i: int = int(e.get("from", h.target))
+				if i >= 0 and i < h.herd.size():
+					var dp: Vector2i = h.wolf_pos - Vector2i(h.herd[i]["pos"])
+					var dv2 := Vector3(dp.x, 0, dp.y)
+					if dv2.length() > 0.0:
+						add_fx("deer%d" % i, {"type": "bump", "dir": dv2.normalized(), "amp": 0.35, "start": t0, "dur": 0.3})
+				add_fx("wolf", {"type": "flash", "color": Color(1.0, 0.3, 0.25), "start": t0 + 0.12, "dur": 0.35})
 
 func paint() -> void:
 	if h == null:

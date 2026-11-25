@@ -91,6 +91,8 @@ var reason: String = ""
 var detect_cause: String = ""
 var kicks: int = 0
 var events: Array = [] # 發生的事（原型直接用中文）
+# 畫面的事件動畫（2026-11-25，移動動畫第二步）：{kind: pounce／kick, ...}，只是畫面用、不影響結果；畫面記得看到第幾筆
+var anim_events: Array = []
 var map_exits_all := false # 這張地圖四邊都可以跑出去（40×40 試玩版的地圖 exit_all_edges，2026-11-25）
 var large_maps := false # 40×40 試玩版：開闊、林緣、密林、倒木改用 data/tactical_maps_large.json（setup_from_game 的 ctx.large_maps）
 const LARGE_MAPS_PATH := "res://data/tactical_maps_large.json"
@@ -965,6 +967,7 @@ func _deer_stand() -> void:
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
+		anim_events.append({"kind": "kick", "from": di})
 		events.append(_tx("tactical.stand.charge").replace("{animal}", label()).replace("{n}", str(dmg)))
 
 # 轉身面向狼，每回合最多轉 45°（DIRS 相鄰的一格）
@@ -1106,6 +1109,7 @@ func pounce_at(cell: Vector2i) -> void:
 	_spend("breath_pounce")
 	last_mode = str(info["mode"])
 	var side: String = info["side"]
+	var kicks_before := kicks
 	if rng.randf() < float(info["kick"]):
 		var k: Array = sp().get("kick_damage", t["pounce"]["kick_damage"])
 		var dmg: int = _prey_dmg(rng.randi_range(int(k[0]), int(k[1])))
@@ -1117,6 +1121,7 @@ func pounce_at(cell: Vector2i) -> void:
 		# 會咬回來的小獸（species.kick_text：河狸、旱獺）不是用蹄踢
 		events.append(_tx(str(sp().get("kick_text", "tactical.kick.rear" if side == "rear" else "tactical.kick.hoof"))).replace("{n}", str(dmg)))
 	var hit: bool = rng.randf() < float(info["chance"])
+	anim_events.append({"kind": "pounce", "to": deer_pos, "hit": hit, "kicked": kicks > kicks_before, "who": di})
 	_practice("skill", hit)
 	if wolves.size() > 1:
 		var tag: String = "ambush" if _ambush_bonus(str(info["mode"])) > 0.0 else ("on_held" if _ally_holding() > 0 else "plain")
@@ -1228,6 +1233,7 @@ func front_lock_at(cell: Vector2i) -> void:
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
 		kicks += 1
+		anim_events.append({"kind": "kick", "from": di})
 		events.append(_tx("tactical.lock.hit").replace("{animal}", label()).replace("{n}", str(dmg)))
 	else:
 		events.append(_tx("tactical.lock.miss").replace("{animal}", label()))
@@ -1431,6 +1437,7 @@ func _deer_struggle(after_throat_miss: bool, hanging: bool = false) -> void:
 		var dmg: int = _prey_dmg(rng.randi_range(int(k[0]), int(k[1])))
 		wolf["health"] = float(wolf["health"]) - dmg
 		kicks += 1
+		anim_events.append({"kind": "kick", "from": di})
 		damage_taken += dmg
 		hits_taken.append(dmg)
 		damage_by["prey"] = float(damage_by.get("prey", 0.0)) + dmg
@@ -2236,6 +2243,7 @@ func _mother_defend() -> bool:
 		hits_taken.append(dmg)
 		damage_by["mother"] = float(damage_by.get("mother", 0.0)) + dmg
 		kicks += 1
+		anim_events.append({"kind": "kick", "from": di})
 		if fawn_held:
 			mother_hit_fawn_held = true
 		events.append(_tx("tactical.defend.hit").replace("{n}", str(dmg)).replace("{animal}", label(di)))
