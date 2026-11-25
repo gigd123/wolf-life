@@ -13,6 +13,62 @@
 - 尺寸：和成狼同一個畫布比例（程式再乘 0.85～0.9 的大小）。
 程式會在你的狼 1～2 歲時改用這一套（沒有的姿勢退回成狼的圖）。
 
+### 次成年灰狼的出圖文案（2026-11-25）
+
+一次一張：每次貼「共通要求」＋那一張的描述，並附上同一個姿勢的成狼圖當參考（`arts/hd2d_2026-11-06/` 裡的檔案，列在每張後面）。
+交圖存成 `sub_<姿勢>.jpg`（例如 `sub_stand.jpg`），放進 `arts/` 新的資料夾，跟我說一聲就好。
+
+**共通要求（每次都貼）**
+
+```
+Pixel art sprite of a YOUNG North American gray wolf, about 1.5 years old (a lanky yearling, NOT a puppy).
+Same art style, palette, outline and lighting as the attached reference image of the adult wolf.
+- 1024x1024 canvas, solid pure green background (#00FF00), no ground, no shadow.
+- Side view, facing RIGHT. Only one wolf. The wolf fills the full width of the canvas; feet touch the bottom edge.
+- Realistic pixel art with a thick black outline (3-4 px or more, still visible when scaled down 20x). Light from the upper left.
+Body differences from the adult reference (very important):
+- Legs proportionally longer, body slimmer and shallower: narrow chest, thin waist, little muscle mass.
+- Neck thinner; head slightly large for the body; ears and paws look a bit oversized.
+- Shorter, less fluffy coat; thin tail with less bushy fur.
+- Fur: same gray wolf colors as the adult, but slightly lighter and with lower contrast.
+- Face is adult-shaped (long muzzle, narrow eyes) — do NOT give it a round puppy face or big eyes.
+```
+
+**各姿勢**
+
+1. **站 `sub_stand`**（參考 `wolf_r5_stand.jpg`）
+```
+Pose: standing still, alert and relaxed. All four legs straight and visible, head held level, ears up, tail hanging low.
+```
+2. **走 第一格 `sub_walk`**（參考 `wolf_r2_walk.jpg`）
+```
+Pose: walking, frame 1 of 2. Right front leg and left hind leg stepping forward, the other two pushing back. Head level, tail low and relaxed.
+```
+3. **走 第二格 `sub_walk_b`**（參考 `wolf_r2_walk.jpg` 和剛出的 `sub_walk`）
+```
+Pose: walking, frame 2 of 2 — the opposite step of the attached first frame: left front leg and right hind leg forward. Same wolf, same size and position on the canvas.
+```
+4. **潛行 `sub_stalk`**（參考 `wolf_r2_stalk.jpg`）
+```
+Pose: stalking prey. Body low to the ground, legs bent, head lowered and stretched forward in line with the back, ears pointed forward, eyes fixed ahead, tail held low and straight.
+```
+5. **撲 `sub_pounce`**（參考 `wolf_r5_lunge.jpg`）
+```
+Pose: lunging / pouncing forward. Body fully stretched in mid-air, front legs reaching forward, hind legs extended back, mouth open showing teeth, ears back.
+```
+6. **咬住 `sub_hold`**（參考 `wolf_r4_hold.png`）
+```
+Pose: biting and holding on. Legs braced wide, body leaning back, head turned slightly down and forward with jaws clamped shut as if gripping something just off the right edge (do not draw the prey). Tense neck and shoulders.
+```
+7. **受傷 `sub_hurt`**（參考 `wolf_r2_hurt.jpg`）
+```
+Pose: hurt. Limping, one front leg lifted off the ground, back slightly hunched, head low, ears flattened, tail tucked. A few small red wounds on the shoulder and flank.
+```
+8. **示弱 `sub_submit`**（參考 `wolf_r3_submit.jpg`）
+```
+Pose: submissive. Crouching low, ears flat against the head, head turned slightly down and away, tail tucked between the hind legs, looking up from below.
+```
+
 ## 森林大火的佔位圖（2026-11-13，Phase 2n 第 5 步）
 
 現在是程式畫的（`prototypes/fire_escape/prep_fire_art.py`），之後想換成正式素材時照同樣的檔名（`_32`、`_48` 兩套，透明背景）放進 `prototypes/hd2d_tactical/assets/` 就好：
