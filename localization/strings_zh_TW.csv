@@ -1915,6 +1915,7 @@ tactical.separated,{young}和{mother}跑散了！
 tactical.regroup,跑散的鹿又聚到了一起。
 tactical.herd.weakest,你看出那隻{animal}步伐有點拖，是群裡最弱的一隻。
 tactical.hd.weakest,最弱
+tactical.hd.hurt,受傷
 tactical.herd.all_healthy,你把整群看了一遍，每一隻都很健壯，看不出破綻。
 tactical.label.elk_calf,小馬鹿
 tactical.label.mule_deer,騾鹿

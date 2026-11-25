@@ -20,6 +20,8 @@ var _exit_until := {} # 鹿的序號 -> 滑出地圖的動畫播到什麼時候�
 func setup(th) -> void:
 	h = th
 	_exit_until.clear()
+	_blood.clear()
+	_blood_last.clear()
 	_anim_seen = h.anim_events.size()
 	_last_wolf_pos = Vector2i(-999, -999)
 	# 每一場從設定檔的原樣開始（地圖、季節的覆蓋不會留到下一場）
@@ -213,7 +215,36 @@ func refresh() -> void:
 						add_fx("deer%d" % i, {"type": "bump", "dir": dv2.normalized(), "amp": 0.35, "start": t0, "dur": 0.3})
 				add_fx("wolf", {"type": "flash", "color": Color(1.0, 0.3, 0.25), "start": t0 + 0.12, "dur": 0.35})
 
+# 受傷的獵物（2026-11-25 試玩回報：看不出哪隻受傷、跑不快）：頭上寫「受傷」，跑過的格子留下血跡。
+# 受傷＝主遊戲的受傷個體（injured），或這一場被咬過、掙脫的（wounds > 0）。「最弱」優先顯示
+func _deer_hurt(i: int) -> bool:
+	return i >= 0 and i < h.herd.size() and (bool(h.herd[i].get("injured", false)) or int(h.herd[i].get("wounds", 0)) > 0)
+
+func _deer_tag(i: int, weakest: bool) -> String:
+	if weakest:
+		return tr("tactical.hd.weakest")
+	return tr("tactical.hd.hurt") if _deer_hurt(i) else ""
+
+func _deer_tag_color(i: int, weakest: bool, col: Dictionary) -> Color:
+	if not weakest and _deer_hurt(i):
+		return _col(col.get("hurt_tag", [1.0, 0.45, 0.4]))
+	return _col(col["weakest"])
+
+var _blood := {} # 格子 -> true：受傷的獵物跑過的地方
+var _blood_last := {} # 鹿的序號 -> 上次的位置
+
+func _track_blood() -> void:
+	for i in h.herd.size():
+		var p: Vector2i = h.herd[i]["pos"] if i != h.target else h.deer_pos
+		if _blood_last.has(i) and _blood_last[i] != p and _deer_hurt(i):
+			_blood[_blood_last[i]] = true
+		_blood_last[i] = p
+
 func paint() -> void:
+	_track_blood()
+	for bc in _blood.keys():
+		if in_map(bc):
+			quad(bc, Color(0.55, 0.08, 0.06, 0.75), 0.22, 0.012)
 	if h == null:
 		return
 	var col: Dictionary = cfg["colors"]
@@ -239,7 +270,7 @@ func paint() -> void:
 		if i == h.target:
 			continue
 		var wk: bool = bool(h.herd[i].get("weakest", false))
-		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", "")), i), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, tr("tactical.hd.weakest") if wk else "", _col(col["weakest"]))
+		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", "")), i), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, _deer_tag(i, wk), _deer_tag_color(i, wk, col))
 		if wk:
 			frame(h.herd[i]["pos"], _col(col["weakest"]), 0.05, 0.05)
 	# 跑出邊緣、逃滿回合的鹿：從最後的位置滑到地圖外再消失（2026-11-25，移動動畫）
@@ -270,7 +301,7 @@ func paint() -> void:
 		var tint: Color = _col(col["held"]) if h.held else Color.WHITE
 		# 觀察後看出的最弱的那一隻（2026-11-08：原本只在腳下畫一小塊，被圖蓋住看不到）→ 頭上寫「最弱」、橘色框
 		var wkt: bool = bool(h.herd[h.target].get("weakest", false))
-		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", "")), h.target), h.deer_pos, _flip(h.deer_facing), tint, tr("tactical.hd.weakest") if wkt else "", _col(col["weakest"]))
+		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", "")), h.target), h.deer_pos, _flip(h.deer_facing), tint, _deer_tag(h.target, wkt), _deer_tag_color(h.target, wkt, col))
 		if wkt:
 			frame(h.deer_pos, _col(col["weakest"]), 0.05, 0.06)
 		elif h.herd.size() > 1:
