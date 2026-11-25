@@ -343,7 +343,8 @@ func _run() -> void:
 		tc.units[k]["out_reason"] = "submit"
 	tc._check_end()
 	var r9: Dictionary = gs.finish_pack_tactical(tc)
-	_check(r9["won"] and mp.young.size() == 2 and gs.pack_attitude_of(mp) == "wary", "牠們都退走＝打贏：少一隻年輕的、之後戒備你")
+	# 2026-11-24：戰術戰鬥照實際咬死的數量；都是示弱退走、沒有死的 → 成員不少
+	_check(r9["won"] and mp.young.size() == 3 and int(r9.get("killed", -1)) == 0 and gs.pack_attitude_of(mp) == "wary", "牠們都退走＝打贏：沒有咬死就不少成員、之後戒備你")
 	gs.current_region = "mountain_canyon"
 	tc = gs.start_pack_tactical()
 	tc.plan(0, {"action": "submit"})

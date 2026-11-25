@@ -2829,6 +2829,8 @@ func _deer_flee() -> void:
 	flee_round += 1
 	deer_facing = d
 	if sim["out"]:
+		# 畫面用：牠跑出去的那一格（地圖外），畫面讓牠滑出邊緣再消失（2026-11-25）
+		herd[di]["exit_to"] = sim["end"] + d * 2
 		# 量測用（地圖尺寸的對照，2026-11-25）：盯上的那一隻從哪一邊跑出去
 		if di == target:
 			var ex: Vector2i = sim["end"]
@@ -2852,6 +2854,8 @@ func _deer_flee() -> void:
 	# 拉開距離（escape_dist）不再算逃掉（2026-11-25 使用者選方案 2：還在地圖中間就「跑遠了」很怪，要跑出地圖邊緣才算；
 	# 鑽進深水、洞、上峭壁照舊）
 	if flee_round >= int(t["deer"]["max_flee_rounds"]):
+		# 畫面用：逃滿回合結束時，牠在畫面上繼續往逃的方向跑遠（2026-11-25）
+		herd[di]["exit_to"] = deer_pos + deer_facing * 6
 		if di == target:
 			stats["end_why"] = "rounds"
 		# 寫成你停下來、不是牠消失（2026-11-25 使用者：牠可能還在畫面上）

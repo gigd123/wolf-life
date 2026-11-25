@@ -15,8 +15,11 @@ func _init() -> void:
 
 var _base_cfg: Dictionary = {}
 
+var _exit_until := {} # 鹿的序號 -> 滑出地圖的動畫播到什麼時候（毫秒）
+
 func setup(th) -> void:
 	h = th
+	_exit_until.clear()
 	_last_wolf_pos = Vector2i(-999, -999)
 	# 每一場從設定檔的原樣開始（地圖、季節的覆蓋不會留到下一場）
 	if _base_cfg.is_empty():
@@ -191,7 +194,20 @@ func paint() -> void:
 		unit("deer%d" % i, _art_for(_species_key(i), str(h.herd[i].get("state", "")), i), h.herd[i]["pos"], _flip(h.herd[i]["facing"]), Color.WHITE, tr("tactical.hd.weakest") if wk else "", _col(col["weakest"]))
 		if wk:
 			frame(h.herd[i]["pos"], _col(col["weakest"]), 0.05, 0.05)
-	if not hid:
+	# 跑出邊緣、逃滿回合的鹿：從最後的位置滑到地圖外再消失（2026-11-25，移動動畫）
+	for i in h.herd.size():
+		var ex = h.herd[i].get("exit_to", null)
+		if ex == null or not (bool(h.herd[i]["gone"]) or (h.done and i == h.target)):
+			continue
+		var now := Time.get_ticks_msec()
+		if not _exit_until.has(i):
+			var ms: int = int(float(cfg.get("move_anim", {}).get("time", move_time)) * 1000.0) + 150
+			_exit_until[i] = now + ms
+			get_tree().create_timer(float(ms) / 1000.0 + 0.05).timeout.connect(refresh)
+		if now < int(_exit_until[i]):
+			var fc: Vector2i = Vector2i(ex) - Vector2i(h.herd[i]["pos"])
+			unit("deer%d" % i, _art_for(_species_key(i), "flee", i), ex, _flip(Vector2i(signi(fc.x), signi(fc.y))))
+	if not hid and not (h.done and h.herd[h.target].has("exit_to")):
 		if not h.done and not h.held:
 			var dc := cell_center(h.deer_pos) + Vector3(0, 0.1, 0)
 			for d in h.deer_intent():

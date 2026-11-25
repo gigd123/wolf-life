@@ -26,6 +26,12 @@ var world: Node3D
 var overlay: Node3D
 var tree_sprites: Array = [] # [{sprite, kind}]
 var units := {} # 鍵 -> {sprite, shadow, label, used}
+# 移動動畫（2026-11-25，pre-2.0-plan 六之三第 5 項第一步：只做移動）：角色換格子時從原本的位置滑過去，同一次 refresh 裡的角色同時動。
+# 只是畫面，不影響任何數值與判斷。cfg.move_anim.time 秒（預設 move_time，0 = 關）；一次跳超過 snap_dist 格（追足跡重新出現之類）直接到位
+var move_time := 0.5
+var _focus_to := Vector2(-1, -1)
+var _focus_from := Vector2.ZERO
+var _focus_t := 1.0
 var mats := {}
 var art_px := 32
 var _blob: ImageTexture
@@ -87,6 +93,7 @@ func build(w: int, h: int, terrain_fn: Callable) -> void:
 
 # 鏡頭移到某一格、放大到 z 倍（開場拉近到狼附近用）
 func focus_on(c: Vector2i, z: float) -> void:
+	_focus_t = 1.0
 	zoom = clampf(z, 1.0, float(cfg.get("zoom", {}).get("max", 3.0)))
 	focus = Vector2(c.x + 0.5, c.y + 0.5)
 	if cam != null and sub.size.x > 1:
@@ -144,7 +151,9 @@ func top_y(c: Vector2i) -> float:
 	return float(level_of(c)) * float(cfg["level_height"])
 
 func cell_center(c: Vector2i) -> Vector3:
-	return Vector3(c.x + 0.5, top_y(c), c.y + 0.5)
+	# 地圖外（逃出邊緣的動畫，2026-11-25）：高度照最近的地圖內格子
+	var hc := c if in_map(c) else Vector2i(clampi(c.x, 0, maxi(0, map_w - 1)), clampi(c.y, 0, maxi(0, map_h - 1)))
+	return Vector3(c.x + 0.5, top_y(hc), c.y + 0.5)
 
 func in_map(c: Vector2i) -> bool:
 	return c.x >= 0 and c.y >= 0 and c.x < map_w and c.y < map_h
@@ -437,11 +446,12 @@ func refresh() -> void:
 	var occupied: Array = []
 	for k in units.keys():
 		if not bool(units[k]["used"]):
+			units[k].erase("to")
 			(units[k]["sprite"] as Sprite3D).visible = false
 			(units[k]["shadow"] as MeshInstance3D).visible = false
 			(units[k]["label"] as Label3D).visible = false
 		else:
-			var sp: Vector3 = (units[k]["sprite"] as Sprite3D).position
+			var sp: Vector3 = units[k].get("to", (units[k]["sprite"] as Sprite3D).position)
 			occupied.append(Vector2i(int(floor(sp.x)), int(floor(sp.z))))
 	_fade_trees(occupied)
 
@@ -520,18 +530,54 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	s2.offset = Vector2(0, s2.texture.get_height() * 0.5 - 1)
 	if flip != null:
 		s2.flip_h = bool(flip)
-	var p := cell_center(c)
-	s2.position = p + Vector3(0, 0, 0.05)
 	var sh2: MeshInstance3D = ent["shadow"]
 	sh2.visible = true
-	sh2.position = p + Vector3(0, 0.02, 0)
 	var w: float = s2.texture.get_width() * s2.pixel_size
 	sh2.scale = Vector3(clampf(w, 0.4, 2.2), 1, clampf(w, 0.4, 2.2))
 	var lb2: Label3D = ent["label"]
 	lb2.visible = tag != ""
 	lb2.text = tag
 	lb2.modulate = tag_color
-	lb2.position = p + Vector3(0, s2.texture.get_height() * s2.pixel_size + 0.25, 0)
+	_set_unit_target(ent, cell_center(c), s2.texture.get_height() * s2.pixel_size)
+
+# 設定角色要去的位置：第一次出現、剛從隱藏變回來、跳太遠時直接到位；否則從現在畫的位置滑過去
+func _set_unit_target(ent: Dictionary, p: Vector3, h: float) -> void:
+	ent["h"] = h
+	var snap: float = float(cfg.get("move_anim", {}).get("snap_dist", 8.0))
+	var mt: float = float(cfg.get("move_anim", {}).get("time", move_time))
+	if not ent.has("to") or mt <= 0.0 or Vector2(p.x, p.z).distance_to(Vector2(ent["to"].x, ent["to"].z)) > snap:
+		ent["from"] = p
+		ent["to"] = p
+		ent["t"] = 1.0
+	elif p != ent["to"]:
+		ent["from"] = _unit_pos(ent)
+		ent["to"] = p
+		ent["t"] = 0.0
+	_place_unit(ent, _unit_pos(ent))
+
+func _unit_pos(ent: Dictionary) -> Vector3:
+	var t: float = clampf(float(ent.get("t", 1.0)), 0.0, 1.0)
+	var e: float = t * t * (3.0 - 2.0 * t) # 起步、停下比較柔和
+	return (ent["from"] as Vector3).lerp(ent["to"], e)
+
+func _place_unit(ent: Dictionary, p: Vector3) -> void:
+	(ent["sprite"] as Sprite3D).position = p + Vector3(0, 0, 0.05)
+	(ent["shadow"] as MeshInstance3D).position = p + Vector3(0, 0.02, 0)
+	(ent["label"] as Label3D).position = p + Vector3(0, float(ent.get("h", 1.0)) + 0.25, 0)
+
+# 每一幀把還在移動的角色往前推；鏡頭的平滑移動也在這裡
+func _animate_units(delta: float) -> void:
+	var mt: float = float(cfg.get("move_anim", {}).get("time", move_time))
+	for k in units.keys():
+		var ent: Dictionary = units[k]
+		if float(ent.get("t", 1.0)) < 1.0:
+			ent["t"] = 1.0 if mt <= 0.0 else float(ent["t"]) + delta / mt
+			_place_unit(ent, _unit_pos(ent))
+	if _focus_t < 1.0:
+		_focus_t = 1.0 if mt <= 0.0 else _focus_t + delta / mt
+		var e: float = clampf(_focus_t, 0.0, 1.0)
+		focus = _focus_from.lerp(_focus_to, e * e * (3.0 - 2.0 * e))
+		_apply_camera()
 
 func quad(c: Vector2i, color: Color, size: float, lift: float) -> void:
 	var mi := MeshInstance3D.new()
@@ -656,15 +702,23 @@ func keep_in_view(c: Vector2i, keep: float = 0.6) -> void:
 	var half_w: float = cam.size * aspect * 0.5
 	var half_d: float = cam.size * 0.5 / sin(pitch)
 	var p := Vector2(c.x + 0.5, c.y + 0.5)
+	var goal := focus
 	var moved := false
 	if absf(p.x - focus.x) > half_w * keep:
-		focus.x = p.x - signf(p.x - focus.x) * half_w * keep * 0.5
+		goal.x = p.x - signf(p.x - focus.x) * half_w * keep * 0.5
 		moved = true
 	if absf(p.y - focus.y) > half_d * keep:
-		focus.y = p.y - signf(p.y - focus.y) * half_d * keep * 0.5
+		goal.y = p.y - signf(p.y - focus.y) * half_d * keep * 0.5
 		moved = true
 	if moved:
-		_apply_camera()
+		# 跟著角色一起平滑移動（同 move_anim.time）
+		_focus_from = focus
+		_focus_to = goal
+		_focus_t = 0.0
+		if float(cfg.get("move_anim", {}).get("time", move_time)) <= 0.0:
+			focus = goal
+			_focus_t = 1.0
+			_apply_camera()
 
 # 畫面上的一點對到地面（高度 0）的位置 (x, z)
 func _ground_at(p: Vector2) -> Vector2:
@@ -696,6 +750,7 @@ func _pick_cell(p: Vector2) -> Vector2i:
 func _process(delta: float) -> void:
 	if cam == null or map_w == 0 or not is_visible_in_tree():
 		return
+	_animate_units(delta)
 	var pc: Dictionary = cfg.get("pan", {})
 	var d := Vector2.ZERO
 	if Input.is_key_pressed(KEY_LEFT):
@@ -720,6 +775,7 @@ func _process(delta: float) -> void:
 	if d == Vector2.ZERO or zoom <= 1.001:
 		return
 	var before := focus
+	_focus_t = 1.0 # 玩家自己捲動時停掉鏡頭的平滑移動
 	focus += d.normalized() * float(pc.get("speed", 10.0)) * delta / zoom
 	_apply_camera()
 	if focus != before:
@@ -733,6 +789,7 @@ func _on_input(ev: InputEvent) -> void:
 		_apply_camera()
 		# 以滑鼠所在的位置為中心縮放
 		var after := _ground_at(ev.position)
+		_focus_t = 1.0 # 玩家自己捲動時停掉鏡頭的平滑移動
 		focus += before - after
 		_apply_camera()
 		accept_event()
@@ -762,6 +819,7 @@ func _on_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseMotion and (_dragging or _left_drag):
 		var a := _ground_at(ev.position - ev.relative)
 		var b := _ground_at(ev.position)
+		_focus_t = 1.0 # 玩家自己捲動時停掉鏡頭的平滑移動
 		focus += a - b
 		_apply_camera()
 		return

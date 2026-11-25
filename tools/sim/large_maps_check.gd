@@ -72,6 +72,7 @@ func _process(_d) -> bool:
 	var f0: Vector2 = hd.focus
 	th2.wolf_pos = Vector2i(th2.wolf_pos.x, 2 if th2.wolf_pos.y > 20 else 37)
 	hd.refresh()
+	hd._animate_units(1.0) # 鏡頭的平滑移動播完
 	_ok(th2.height == 40 and hd.focus.distance_to(f0) > 1.0, "狼走遠時鏡頭跟過去（%s → %s）" % [str(f0), str(hd.focus)])
 	print("全部通過" if fails == 0 else "有失敗 %d" % fails)
 	quit(1 if fails > 0 else 0)
