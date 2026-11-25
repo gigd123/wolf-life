@@ -3,6 +3,7 @@
 最後更新：2026-11-13
 
 ## 目前階段
+（2026-11-25）使用者同意的五項：(1) 撲咬時等著的鹿用兩張跑步圖原地換腳（`HD2DBoard` 延遲中 t ≤ 0 時輪流）；(2) 躲在草裡的幼鹿拿掉 HD-2D 的淡黃色底色（樹叢就是範圍）；(3) 盯上的那一隻逃出去時鏡頭往那邊移；(4) 戰術戰鬥的事件動畫（`CombatHD2D.refresh` 讀 `tc.events`：hit＝出手的衝一下、被打中的閃紅，同一回合好幾下照先後播；knocked／died＝閃暗）；(5) 離群母狼的氣味照探索地點寫（`she_wolf.sign.scent` 的「樹根旁」改成 `{location}`，沒有地點寫「地上」；SPEC Phase 3c 那一句同步改，使用者同意）。`she_scent_ui` 跟著改。
 （2026-11-25）試玩紀錄 `wolf_2026-11-25T23-32-14` 抓到的露出鍵名：(1) 戰術戰鬥學到對手的示威（`tcombat.enemy_act.threaten` 漏寫，補「示威」）；(2) 偷吃灰熊藏食挨一下的傷勢來源寫成 `grizzly_cache.charge`，被當成動物名稱，改成 `grizzly_bear.cache`「偷吃灰熊藏的肉」；(3) 順便檢查同類：和鄰群打戰術戰鬥戰死，死亡卡片露出 `animal.pack_wolf`，補「鄰群的狼」。`text_watch` 加檢查（修之前失敗 3 項）。本機沒有 Python，`check_keys.py`、`check_text.py` 還沒跑，雲端 session 要補跑。看到示威原本會寫「你更熟悉〇〇的「示威」了（n／3）」，但 `_tc_store_knowledge` 只存 `ATTACKS`（沒有 threaten），每一場都從 1／3 重來 → 使用者選 A：不寫這一句（`TacticalCombat.learn`，只有 `ATTACKS` 才記事件；單場內的判讀照舊），`tactical_combat_rules` 加 2 項。
 （2026-11-25）試玩回報兩項：(1) 移動像在跑：一度加了上下彈，使用者覺得怪，預設關掉（`move_anim.bob` 0）；有兩張圖的（狼的走 walk／walk_b、有 flee_b 的鹿）移動中輪流（`art.alt_tex`）。(2) 戰術戰鬥裡分不出是狼群的哪一隻：頭上加名稱（`tcombat.tag.*`：黑狼一家的帶頭是「黑狼」、鄰群是「帶頭的狼」、「牠的伴侶」、「年輕的狼 1、2」；`_tc_extra_foes` 帶 tag、`TacticalCombat` 單位存 tag／tag_n、`CombatHD2D` 畫）。命名使用者說不確定，先用這組，文字鍵可以改。`tactical_combat_game` 加檢查。
 （2026-11-25）移動動畫第三步：速度照設定（`user://settings.cfg` [combat] anim，和選單式戰鬥共用：一般 0.5、快 0.25、關 0 秒；`HD2DBoard.build` 讀），戰術狩獵右欄加「動畫：一般／快／關」按鈕（`tactical.ui.anim.*`，HD-2D 切換鈕下面）；動畫播放中點地圖直接跳到結果（`is_animating`、`finish_anims`，那一下不當成點格子）。`move_anim_check` 加 2 項。待確認：新按鈕的位置（568, 258）在本機會不會蓋到其他按鈕。

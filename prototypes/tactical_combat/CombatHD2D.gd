@@ -12,8 +12,46 @@ var tc: TacticalCombat
 func _init() -> void:
 	_init_board(CFG_PATH)
 
+# 事件動畫（2026-11-25，比照戰術狩獵的撲咬）：出手的往目標衝一下、被打中的閃紅、被打倒的閃暗；移動播完才播。只是畫面
+var _ev_seen := 0
+
+func refresh() -> void:
+	if tc == null or world == null:
+		super.refresh()
+		return
+	var new_ev: Array = tc.events.slice(_ev_seen)
+	_ev_seen = tc.events.size()
+	var mt: float = float(cfg.get("move_anim", {}).get("time", move_time))
+	var moved := false
+	for k in units.keys():
+		var ent: Dictionary = units[k]
+		var i: int = int(str(k).trim_prefix("u")) if str(k).begins_with("u") and str(k).trim_prefix("u").is_valid_int() else -1
+		if i >= 0 and i < tc.units.size() and ent.has("to") and cell_center(tc.units[i]["pos"]).distance_to(ent["to"]) > 0.1:
+			moved = true
+	super.refresh()
+	if mt <= 0.0:
+		return
+	var t0: float = mt if moved else 0.0
+	var n := 0
+	for e in new_ev:
+		var kind: String = str(e.get("kind", ""))
+		if kind == "hit" and e.has("who") and e.has("target"):
+			var a: int = int(e["who"])
+			var b: int = int(e["target"])
+			if a < 0 or b < 0 or a >= tc.units.size() or b >= tc.units.size():
+				continue
+			var st: float = t0 + 0.28 * n # 同一回合好幾下：照先後一下一下播
+			var dp: Vector2i = Vector2i(tc.units[b]["pos"]) - Vector2i(tc.units[a]["pos"])
+			if dp != Vector2i.ZERO:
+				add_fx("u%d" % a, {"type": "bump", "dir": Vector3(dp.x, 0, dp.y).normalized(), "amp": 0.4, "start": st, "dur": 0.28})
+			add_fx("u%d" % b, {"type": "flash", "color": Color(1.0, 0.3, 0.25), "start": st + 0.1, "dur": 0.32})
+			n += 1
+		elif kind in ["knocked", "died"] and e.has("who"):
+			add_fx("u%d" % int(e["who"]), {"type": "flash", "color": Color(0.35, 0.3, 0.3), "start": t0 + 0.28 * maxi(0, n - 1) + 0.2, "dur": 0.5})
+
 func setup(combat: TacticalCombat) -> void:
 	tc = combat
+	_ev_seen = combat.events.size()
 	_out_seen.clear()
 	_apply_season_period()
 	build(tc.map.width, tc.map.height, func(c: Vector2i) -> String: return tc.map.terrain(c))

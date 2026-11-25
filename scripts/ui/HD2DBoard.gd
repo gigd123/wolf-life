@@ -634,6 +634,10 @@ func _animate_units(delta: float) -> void:
 				s.position.y += absf(sin(ph * PI)) * float(cfg.get("move_anim", {}).get("bob", 0.0))
 				if ent.get("alt_tex", null) != null:
 					s.texture = ent["alt_tex"] if int(floor(ph * float(cfg.get("move_anim", {}).get("swaps_per_cell", 3.0)))) % 2 == 1 else ent["main_tex"]
+			elif tt <= 0.0 and ent.get("alt_tex", null) != null:
+				# 等撲咬播完才動的那段（2026-11-25）：用兩張跑步的圖原地換腳，看起來還在跑
+				ent["wait_el"] = float(ent.get("wait_el", 0.0)) + delta
+				s.texture = ent["alt_tex"] if int(floor(float(ent["wait_el"]) / 0.12)) % 2 == 1 else ent["main_tex"]
 			elif ent.has("main_tex") and s.texture != ent["main_tex"]:
 				s.texture = ent["main_tex"]
 			var mod: Color = ent.get("mod", Color.WHITE)

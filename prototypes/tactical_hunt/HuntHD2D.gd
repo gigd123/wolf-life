@@ -220,12 +220,7 @@ func paint() -> void:
 	var hid: bool = h.hidden_unfound() or h.track_pending # 密林裡不見了（Phase 2m）：不畫出牠在哪
 	if h.deer_state == "unaware" and not hid:
 		frame(h.deer_goal(), _col(col["goal"]), 0.02, 0.05)
-	if hid:
-		var ar: Rect2i = h.hidden_area
-		for y in range(ar.position.y, ar.end.y):
-			for x in range(ar.position.x, ar.end.x):
-				if in_map(Vector2i(x, y)):
-					quad(Vector2i(x, y), _col(col["hidden"]), 0.96, 0.015)
+	# 躲在草裡的幼鹿那一塊：原本畫淡黃色底色，2026-11-25 起那 3×3 格放了樹叢（_hidden_cover），使用者同意拿掉底色
 	# 能走的格子：點自己的狼才顯示（2026-11-08）
 	if not h.done and (view == null or bool(view.range_shown)):
 		var reach: Dictionary = h.reachable()
@@ -259,6 +254,10 @@ func paint() -> void:
 			var ms: int = int((float(cfg.get("move_anim", {}).get("time", move_time)) + wait) * 1000.0) + 150
 			_exit_until[i] = now + ms
 			get_tree().create_timer(float(ms) / 1000.0 + 0.05).timeout.connect(refresh)
+			# 盯上的那一隻逃出去時鏡頭往那邊移，看得到牠跑出邊緣（2026-11-25）
+			if i == h.target:
+				var exc: Vector2i = Vector2i(ex)
+				keep_in_view(Vector2i(clampi(exc.x, 0, h.width - 1), clampi(exc.y, 0, h.height - 1)), 0.3)
 		if now < int(_exit_until[i]):
 			var fc: Vector2i = Vector2i(ex) - Vector2i(h.herd[i]["pos"])
 			unit("deer%d" % i, _art_for(_species_key(i), "flee", i), ex, _flip(Vector2i(signi(fc.x), signi(fc.y))))

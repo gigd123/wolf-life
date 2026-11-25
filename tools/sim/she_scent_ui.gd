@@ -26,9 +26,9 @@ func _run() -> void:
 	var game = current_scene
 	game.text_watch_timer = 0.0
 	for c in [
-		[false, "forest_east", _t("she_wolf.sign.scent") + _t("she_wolf.sign.here")],
-		[false, "forest_south", _t("she_wolf.sign.scent") + _t("she_wolf.sign.near").replace("{region}", _t("region.forest_south"))],
-		[true, "forest_east", _t("she_wolf.sign.scent.known") + _t("she_wolf.sign.here")],
+		[false, "forest_east", _t("she_wolf.sign.scent").replace("{location}", _t("explore.location.clearing")) + _t("she_wolf.sign.here")],
+		[false, "forest_south", _t("she_wolf.sign.scent").replace("{location}", _t("explore.location.clearing")) + _t("she_wolf.sign.near").replace("{region}", _t("region.forest_south"))],
+		[true, "forest_east", _t("she_wolf.sign.scent.known").replace("{location}", _t("explore.location.clearing")) + _t("she_wolf.sign.here")],
 	]:
 		gs.life_log["she_met"] = c[0]
 		gs.current_region = "forest_east"

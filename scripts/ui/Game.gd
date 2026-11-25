@@ -2343,6 +2343,9 @@ func _discovery_text(d: Dictionary) -> String:
 func _she_scent_text(d: Dictionary) -> String:
 	var toward: String = str(d.get("toward", ""))
 	var text: String = tr("she_wolf.sign.scent" + (".known" if bool(GameState.life_log.get("she_met", false)) else ""))
+	# 照探索的地點寫（2026-11-25 使用者同意：苔原、草原不一定有樹）
+	var loc: String = str(d.get("location", ""))
+	text = text.replace("{location}", tr("explore.location." + loc) if loc != "" else tr("she_wolf.sign.loc_none"))
 	if toward == GameState.current_region:
 		return text + tr("she_wolf.sign.here")
 	if toward != "":

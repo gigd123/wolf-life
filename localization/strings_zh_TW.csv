@@ -2245,8 +2245,9 @@ howl.reply.few.remote,遠遠的，{region}那一帶再過去，有幾個聲音�
 howl.reply.many.near,{region}那一帶響起好幾個聲音，此起彼落，又低又急，就在不遠處。
 howl.reply.many.far,{region}那一帶傳來好幾個聲音的合聲，低沉、連續，離這裡有一段路。
 howl.reply.many.remote,遠遠的，{region}那一帶再過去，好幾個聲音混在一起，像一陣低低的風。
-she_wolf.sign.scent,樹根旁有一處新鮮的尿跡，是一隻陌生的母狼留下的。附近沒有別的狼的味道，牠是獨自一隻。
-she_wolf.sign.scent.known,樹根旁有一處新鮮的尿跡，是那隻母狼留下的。附近沒有別的狼的味道，牠還是獨自一隻。
+she_wolf.sign.loc_none,地上
+she_wolf.sign.scent,{location}有一處新鮮的尿跡，是一隻陌生的母狼留下的。附近沒有別的狼的味道，牠是獨自一隻。
+she_wolf.sign.scent.known,{location}有一處新鮮的尿跡，是那隻母狼留下的。附近沒有別的狼的味道，牠還是獨自一隻。
 she_wolf.sign.sight,遠處有一隻陌生的母狼獨自走著。牠停下來朝你這邊看了一會兒，才轉身走遠。
 she_wolf.sign.here,氣味很新，牠就在這一帶走動。
 she_wolf.sign.near,氣味往{region}那頭去了。
