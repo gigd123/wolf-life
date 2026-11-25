@@ -1,7 +1,7 @@
 extends SceneTree
 # 錄一場戰術狩獵的示範影片（2026-11-25，給使用者看移動動畫）：本能自動打，每 0.9 秒走一步。
 # 用法（要有畫面：xvfb）：xvfb-run -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi -s res://tools/sim/record_hunt_demo.gd
-# 環境變數：LARGE=1 用 40×40 地圖；SEED、FAMILY（open／edge／dense／logs）
+# 環境變數：LARGE=1 用 40×40 地圖；SEED、FAMILY（open／edge／dense／logs）；AGE 你這隻狼的年齡
 var hd
 var h
 var t := 0.0
@@ -10,6 +10,12 @@ var end_at := -1.0
 var steps := 0
 
 func _initialize() -> void:
+	# AGE=1.5：你這隻狼的年齡（次成年的圖，2026-11-25）
+	if OS.get_environment("AGE") != "":
+		var gs = root.get_node_or_null("GameState")
+		if gs != null:
+			gs.new_game("forest_east")
+			gs.wolf.age_years = float(OS.get_environment("AGE"))
 	var HD = load("res://prototypes/tactical_hunt/HuntHD2D.gd")
 	h = TacticalHunt.new()
 	h.setup_from_game({"family": OS.get_environment("FAMILY") if OS.get_environment("FAMILY") != "" else "edge",
