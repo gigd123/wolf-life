@@ -266,6 +266,7 @@
 | R-144 | 雲端錄戰術狩獵的示範影片（2026-11-25） | `LARGE=1 FAMILY=open SEED=47 xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi -s res://tools/sim/record_hunt_demo.gd`，再 `ffmpeg -i out.avi -vf scale=960:540 -c:v libx264 -pix_fmt yuv420p -crf 26 out.mp4` | 雲端沒有螢幕也能用 xvfb＋軟體繪圖錄 HD-2D 畫面（約實際速度的四分之一）；HD2DBoard 要在進場景樹之後才 setup，不然鏡頭沒設好、畫面是空的 |
 | R-145 | 戰術戰鬥的事件動畫（2026-11-25） | `bash tools/run_sim.sh combat_fx_check` | hit 事件：出手的衝出去、被打中的閃紅、播完回到原位與原本的顏色 |
 | R-146 | 次成年灰狼的圖（2026-11-25） | `bash tools/run_sim.sh sub_wolf_art_check`；換圖：`python3.12 -I prototypes/hd2d_tactical/prep_sub_wolf.py` | 1.5 歲用 hdwolf_sub_*、還沒有的姿勢用成狼的、walk_b 缺時用 sub 的 walk、3 歲用成狼的 |
+| R-147 | 測試本身的隨機誤判（2026-11-25） | `bash tools/run_sim.sh all_tactical_rules` | 「受傷的叉角羚逃跑格數 × 0.55」原本拿兩場不同地圖的狩獵比（開闊地的 +1 格兩邊不一定都有），三次裡錯兩次；改成同一場只切換受傷。寫比較型的檢查時，兩邊要是同一場、同一個位置 |
 | R-139 | 2026-11-24 試玩回報：聞到離群母狼的氣味時當掉 | `bash tools/run_sim.sh she_scent_ui` | 開主畫面：牠在這一區、在別區、見過牠三種文字正確，離開後清掉探索結果；`GameState`、`ExploreSystem` 的每一種探索結果（kind）在 `_show_discovery`／`_discovery_text` 都有處理。新增探索結果時要跑這個 |
 | R-140 | 存檔的保護（2026-11-24：本機的規則測試蓋掉使用者的存檔） | `bash tools/run_sim.sh save_backup_rules` | 腳本跑的測試寫 `save_test.json`、不碰 `save.json`；存檔前留 `save.json.bak`；`save.json` 壞掉時讀上一份，兩份都壞才讀檔失敗；印出的資料夾是暫存資料夾 |
 | R-77 | 戰術狩獵讀主遊戲的狀態、結果接回 | `bash tools/run_sim.sh tactical_game_ctx` | 能力值、體況照主遊戲；吃撐喘 ×0.6、不能衝刺；年齡扣撲咬並寫「你老了」；晨昏警覺漲得慢；深雪鹿少跑一格；下風／上風正確；地形 → 地圖、地圖族（鹿在開闊處、狼夠遠、下風、幼鹿跟著母鹿）；白尾鹿用戰術地圖、幼鹿的目標是幼鹿；40 場打完：時間前進、體力有扣、被踢扣血、狩獵紀錄 +1、獵到進食、放棄記為放棄、逃走留足跡 |

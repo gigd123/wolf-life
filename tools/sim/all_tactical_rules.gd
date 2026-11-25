@@ -67,13 +67,13 @@ func _process(_d) -> bool:
 	_check(all_ok, "受傷的個體：所有物種走戰術地圖、單隻、帶 injured")
 	_check(wounds_ok, "受傷的個體：傷數照 injured_wounds_by（馴鹿 0、其他 1）")
 	# 2. 逃得比較慢
-	var hs = gs.start_hunt("pronghorn", "adult", -1, false, "prairie", false)
-	var ths = gs.start_tactical(hs)
+	# 同一場、同一個位置，只切換「受傷」（原本拿兩場不同地圖的狩獵比，開闊地的 +1 格兩邊不一定都有，結果時對時錯；2026-11-25）
 	var hi = gs.start_hunt("pronghorn", "adult", -1, false, "prairie", true)
 	var thi = gs.start_tactical(hi)
-	thi.herd[thi.target]["condition"] = ths.herd[ths.target]["condition"]
 	thi.herd[thi.target]["wounds"] = 0
-	var b0: float = ths._flee_budget(ths.target)
+	thi.herd[thi.target]["injured"] = false
+	var b0: float = thi._flee_budget(thi.target)
+	thi.herd[thi.target]["injured"] = true
 	var b1: float = thi._flee_budget(thi.target)
 	var pm: float = float(thi.t["game"]["injured_speed_by"]["pronghorn"])
 	_check(absf(b1 - maxf(1.0, b0 * pm)) < 0.01, "受傷的叉角羚每回合逃跑格數 × %s（%.2f → %.2f）" % [pm, b0, b1])
