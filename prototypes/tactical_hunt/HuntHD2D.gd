@@ -254,7 +254,9 @@ func paint() -> void:
 			continue
 		var now := Time.get_ticks_msec()
 		if not _exit_until.has(i):
-			var ms: int = int(float(cfg.get("move_anim", {}).get("time", move_time)) * 1000.0) + 150
+			# 撲空的回合要等撲完才開始滑，等的時間也算進去
+			var wait: float = float(_pending_delay.get("deer%d" % i, 0.0))
+			var ms: int = int((float(cfg.get("move_anim", {}).get("time", move_time)) + wait) * 1000.0) + 150
 			_exit_until[i] = now + ms
 			get_tree().create_timer(float(ms) / 1000.0 + 0.05).timeout.connect(refresh)
 		if now < int(_exit_until[i]):

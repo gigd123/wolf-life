@@ -71,6 +71,32 @@ func _process(_d) -> bool:
 	hd._animate_units(0.6)
 	var ds: Sprite3D = hd.units["deer%d" % h.target]["sprite"]
 	_ok(ds.visible and ds.position.x < 0.0, "逃出邊緣：鹿滑到地圖外（x %.2f）" % ds.position.x)
+	# 撲空後馬上跑出邊緣：獵物要等撲完才開始滑，滑出去的時間要把等的時間也算進去（不會還沒動就消失）
+	var h2 = TacticalHunt.new()
+	h2.setup_from_game({"family": "open", "seed": 5, "condition": "average", "season": "summer",
+		"wolf": {"speed": 62, "skill": 58, "strength": 58, "perception": 55, "stamina": 80, "health": 100, "health_max": 100}})
+	hd.setup(h2)
+	hd.refresh()
+	var k2 := "deer%d" % h2.target
+	h2.wolf_pos += Vector2i(1, 0)
+	h2.anim_events.append({"kind": "pounce", "to": h2.deer_pos, "hit": false, "kicked": false, "who": h2.target})
+	h2.herd[h2.target]["exit_to"] = Vector2i(h2.deer_pos) + Vector2i(3, 0)
+	h2.done = true
+	h2.result = "escaped"
+	var now: int = Time.get_ticks_msec()
+	hd.refresh()
+	var left: int = int(hd._exit_until[h2.target]) - now
+	_ok(left >= 1300, "撲空後跑出邊緣：等撲完（0.8 秒）再滑 0.5 秒才消失（%d 毫秒）" % left)
+	# 移動、事件動畫播到一半時角色被藏起來（2026-11-25 試玩回報：_unit_pos 找不到 to 而當掉）
+	var ent: Dictionary = hd.units[k2]
+	hd.add_fx(k2, {"type": "flash", "color": Color.RED, "start": 0.0, "dur": 0.35})
+	_ok(float(ent["t"]) < 1.0, "藏起來之前還在等著移動（t %.2f）" % float(ent["t"]))
+	hd._exit_until[h2.target] = 0
+	hd.refresh()
+	hd.add_fx(k2, {"type": "flash", "color": Color.RED, "start": 0.0, "dur": 0.35}) # 藏著的時候來的事件不播
+	hd._animate_units(0.1)
+	var stopped: bool = float(ent["t"]) >= 1.0 and (ent.get("fx", []) as Array).is_empty()
+	_ok(not (ent["sprite"] as Sprite3D).visible and stopped, "播到一半被藏起來：動畫停掉、不會當掉")
 	print("全部通過" if fails == 0 else "有失敗 %d" % fails)
 	quit(1 if fails > 0 else 0)
 	return true

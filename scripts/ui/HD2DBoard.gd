@@ -450,7 +450,10 @@ func refresh() -> void:
 	var occupied: Array = []
 	for k in units.keys():
 		if not bool(units[k]["used"]):
+			# 藏起來：沒播完的移動、事件動畫一起停掉（下次出現直接到位）
 			units[k].erase("to")
+			units[k]["t"] = 1.0
+			units[k].erase("fx")
 			(units[k]["sprite"] as Sprite3D).visible = false
 			(units[k]["shadow"] as MeshInstance3D).visible = false
 			(units[k]["label"] as Label3D).visible = false
@@ -603,7 +606,8 @@ func delay_unit(key: String, sec: float) -> void:
 
 # 事件動畫：bump 往 dir（地面上的方向）衝出去再回來，flash 閃一下顏色；start 秒後開始、播 dur 秒
 func add_fx(key: String, fx: Dictionary) -> void:
-	if not units.has(key):
+	# 沒有 to＝現在藏著，不播
+	if not units.has(key) or not units[key].has("to"):
 		return
 	var fx2 := fx.duplicate()
 	fx2["el"] = 0.0
@@ -906,4 +910,3 @@ func _on_input(ev: InputEvent) -> void:
 		if c != _last_hover:
 			_last_hover = c
 			cell_hovered.emit(c)
-
