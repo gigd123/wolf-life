@@ -104,17 +104,8 @@ func _ready() -> void:
 	hd_btn.pressed.connect(func(): hd_on = not hd_on; _apply_hd(); _refresh())
 	add_child(hd_btn)
 	# 移動動畫的速度（2026-11-25）：一般／快／關，和選單式戰鬥的動畫設定共用；下一場狩獵起生效。動畫播放中點地圖可以略過
-	var anim_btn := Button.new()
-	anim_btn.theme_type_variation = &"SmallButton"
-	anim_btn.focus_mode = Control.FOCUS_NONE
+	var anim_btn := HD2DBoard.make_anim_button(hd)
 	anim_btn.position = Vector2(568, 258)
-	anim_btn.custom_minimum_size = Vector2(68, 22)
-	anim_btn.text = tr("tactical.ui.anim." + CombatAnimator.mode())
-	anim_btn.tooltip_text = tr("tactical.ui.anim.tip")
-	anim_btn.pressed.connect(func():
-		anim_btn.text = tr("tactical.ui.anim." + CombatAnimator.next_mode())
-		hd.move_time = {"normal": 0.5, "fast": 0.25, "off": 0.0}.get(CombatAnimator.mode(), 0.5)
-	)
 	add_child(anim_btn)
 	info = RichTextLabel.new()
 	info.position = Vector2(568, 2)
