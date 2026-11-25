@@ -15,6 +15,14 @@
 
 ### 次成年灰狼的出圖文案（2026-11-25）
 
+**交圖進度（2026-11-25）**：存在 `arts/sub_wolf_2026-11-25/`。已有：站、走（第一格）、潛行、撲、受傷、示弱（受傷那張用程式去掉傷口，之後想要整隻趴低、尾巴夾著的典型示弱可以再出一張換掉）。
+**還缺**：
+1. 走（第二格）`sub_walk_b`：附成狼走路圖＋`sub_stand`＋`sub_walk`。
+2. 咬住 `sub_hold`（重出）：現在那張姿勢跟站幾乎一樣，嘴前多一塊被切掉的粉紅色。文案最後加：「The jaws are clamped shut on nothing visible — do NOT draw any prey, meat or object at the mouth. Make the pose clearly different from standing: hind legs braced far back, body angled backward, head pulled down and back as if dragging something heavy.」
+毛色偏黃褐（成狼是冷灰），接進遊戲時用程式調向成狼的色調。手機版的文案頁：https://claude.ai/artifact/UgozvFvjt7hX8CJeTjALbJ
+
+
+
 一次一張：每次貼「共通要求」＋那一張的描述，並附上同一個姿勢的成狼圖當參考（`arts/hd2d_2026-11-06/` 裡的檔案，列在每張後面）。
 交圖存成 `sub_<姿勢>.jpg`（例如 `sub_stand.jpg`），放進 `arts/` 新的資料夾，跟我說一聲就好。
 
