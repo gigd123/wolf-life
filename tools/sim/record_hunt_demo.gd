@@ -1,7 +1,7 @@
 extends SceneTree
 # 錄一場戰術狩獵的示範影片（2026-11-25，給使用者看移動動畫）：本能自動打，每 0.9 秒走一步。
 # 用法（要有畫面：xvfb）：xvfb-run -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi -s res://tools/sim/record_hunt_demo.gd
-# 環境變數：LARGE=1 用 40×40 地圖；SEED、FAMILY（open／edge／dense／logs）；AGE 你這隻狼的年齡
+# 環境變數：LARGE=1 用 40×40 地圖；SEED、FAMILY（open／edge／dense／logs）；AGE 你這隻狼的年齡；SPECIES 獵物（例如 beaver，地圖族照物種）
 var hd
 var h
 var t := 0.0
@@ -20,7 +20,7 @@ func _initialize() -> void:
 	h = TacticalHunt.new()
 	h.setup_from_game({"family": OS.get_environment("FAMILY") if OS.get_environment("FAMILY") != "" else "edge",
 		"seed": int(OS.get_environment("SEED")) if OS.get_environment("SEED") != "" else 7, "condition": "average", "season": "summer",
-		"large_maps": OS.get_environment("LARGE") != "", "world_map": "forest",
+		"large_maps": OS.get_environment("LARGE") != "", "world_map": "forest", "species": OS.get_environment("SPECIES") if OS.get_environment("SPECIES") != "" else "deer",
 		"wolf": {"speed": 66, "skill": 62, "strength": 62, "perception": 60, "stamina": 80, "health": 100, "health_max": 100}})
 	h.game_mods["season"] = "summer"
 	TacticalInstinct.pick_target(h)

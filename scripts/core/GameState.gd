@@ -7011,7 +7011,7 @@ func _update_black_pack() -> void:
 	if not news.is_empty():
 		life_log["pack_news"] = news
 
-const PACK_NEWS := ["paired", "pups", "expanded", "succession", "dissolved"]
+const PACK_NEWS := ["paired", "pups", "expanded", "succession", "dissolved", "mate_died"] # mate_died：2026-11-25 試玩回報（伴侶死了你不知道）
 
 # --- Phase 3 第 1 步：鄰群（黑狼一家以外，同一套 WolfPack）、生命事件 ---
 

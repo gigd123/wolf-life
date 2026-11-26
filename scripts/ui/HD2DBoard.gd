@@ -563,7 +563,17 @@ func unit(key: String, art: Dictionary, c: Vector2i, flip, modulate: Color = Col
 	lb2.text = tag
 	lb2.modulate = tag_color
 	ent["key"] = key
-	_set_unit_target(ent, cell_center(c), s2.texture.get_height() * s2.pixel_size)
+	_set_unit_target(ent, cell_center(c) + Vector3(0, _water_float(c), 0), s2.texture.get_height() * s2.pixel_size)
+
+# 站在水裡的角色浮到水面附近（2026-11-25 試玩回報：河狸在水裡看不到——水的格子地面往下挖、水面浮在上面，
+# 角色原本站在水底，小動物整隻被水面蓋住）：抬到水面再沉 cfg.water_sink（預設 0.12）
+func _water_float(c: Vector2i) -> float:
+	if not in_map(c):
+		return 0.0
+	var w: Dictionary = cfg.get("water", {}).get(str(terrain_of.call(c)), {})
+	if w.is_empty():
+		return 0.0
+	return maxf(0.0, float(w.get("lift", 0.0)) - float(cfg.get("water_sink", 0.12)))
 
 # 設定角色要去的位置：第一次出現、剛從隱藏變回來、跳太遠時直接到位；否則從現在畫的位置滑過去
 func _set_unit_target(ent: Dictionary, p: Vector3, h: float) -> void:

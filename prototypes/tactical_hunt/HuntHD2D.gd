@@ -304,8 +304,9 @@ func paint() -> void:
 		unit("deer%d" % h.target, _art_for(_species_key(h.target), str(h.herd[h.target].get("state", "")), h.target), h.deer_pos, _flip(h.deer_facing), tint, _deer_tag(h.target, wkt), _deer_tag_color(h.target, wkt, col))
 		if wkt:
 			frame(h.deer_pos, _col(col["weakest"]), 0.05, 0.06)
-		elif h.herd.size() > 1:
-			frame(h.deer_pos, _col(col["picked"]), 0.04, 0.05)
+		else:
+			# 單獨一隻也畫框（2026-11-25 試玩回報：河狸這類小獵物看不出在哪）
+			frame(h.deer_pos, _col(col["picked"]), 0.04, 0.05 + _water_float(h.deer_pos))
 	# 狼與同伴
 	# 狼的面向（2026-11-08：原本只有 2D 畫面在算，HD-2D 一直面向右）：上一步移動的方向；沒動過時朝向獵物
 	if h.wolf_pos != _last_wolf_pos:

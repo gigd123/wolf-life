@@ -332,6 +332,8 @@ pack.news.succession.known,{region}的狼群還在，帶頭的換成了一隻年
 pack.news.succession.unknown,{region}那一帶的狼嚎還在，只是聲音年輕了些。
 pack.news.dissolved.known,{region}安靜了下來。黑狼一家，散了。
 pack.news.dissolved.unknown,{region}那一帶，好一陣子沒聽見狼嚎了。
+pack.news.mate_died.known,{region}夜裡的嚎叫少了一個聲音。那隻黑狼身邊的母狼，不在了。
+pack.news.mate_died.unknown,{region}那一帶的狼嚎，少了一個聲音。
 encounter.mother,一頭帶著幼熊的母灰熊擋在前面，牠非常激動。
 encounter.direct,你撞見了一頭{animal}，牠沒有示威，直接朝你衝了過來。
 scavenger.bear_unknown,遠處出現一頭陌生的大型動物，正朝你的獵物走來。
