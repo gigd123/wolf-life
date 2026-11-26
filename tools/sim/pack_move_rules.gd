@@ -4,6 +4,7 @@ extends SceneTree
 #   2. 邊界區贏不算；換季重新算
 #   3. 搬家的消息記著原本的地圖，回到那張地圖的季節卡片才寫；黑狼一家換季的消息照牠住的地圖
 #   4. 鄰群（山地）也一樣會搬
+#   5. 第 3 步：同一張地圖兩群 → 換季衝突，輸的搬走、贏的損失比輸的少、消息記在那張地圖；一次最多一場；開局沒有衝突
 # 用法：bash tools/run_sim.sh pack_move_rules
 var f := 0
 var fails := 0
@@ -67,6 +68,50 @@ func _process(_d) -> bool:
 	gs.life_log["days_lived"] = int(gs.life_log.get("days_lived", 1)) + 1
 	gs._standoff_won_here(mp)
 	_ok(mp.map_id != "mountain" and root.get_node("GameData").map_of(str(mp.regions[0])) == mp.map_id, "山地的鄰群也會搬（%s %s）" % [mp.map_id, str(mp.regions)])
+	# 第 3 步：狼群之間的衝突
+	gs.new_game("forest_east")
+	gs.wolf.age_years = 4.0
+	bp = gs.black_pack
+	bp.stage = "pack"
+	bp.mate_age = 4.0
+	bp.young = [1.5, 2.0, 2.5]
+	var mtn = gs.pack_by_id("mountain")
+	mtn.young = [1.5]
+	bp.map_id = "mountain"
+	var mcore: String = str(mtn.regions[0])
+	var other: Array = root.get_node("GameData").map_regions("mountain").filter(func(r): return str(r) != mcore)
+	bp.regions = [str(other[0])]
+	gs.stranger_territory = str(other[0])
+	var gl = gs.pack_by_id("grassland")
+	var before_sizes := {"black": bp.young.size(), "mountain": mtn.young.size()}
+	var cr: Dictionary = gs._pack_conflicts()
+	_ok(not cr.is_empty() and str(cr["map"]) == "mountain", "同一張地圖兩群：換季時起衝突（%s）" % str(cr))
+	var loser = gs.pack_by_id(str(cr.get("loser", "")))
+	var winner = gs.pack_by_id(str(cr.get("winner", "")))
+	_ok(loser != null and loser.map_id != "mountain" and winner.map_id == "mountain", "輸的搬走（到 %s）、贏的留下" % (loser.map_id if loser != null else "?"))
+	_ok(int(cr.get("winner_loss", 0)) < int(cr.get("loser_loss", 0)), "贏的損失比輸的少（贏 %d、輸 %d）" % [int(cr.get("winner_loss", 0)), int(cr.get("loser_loss", 0))])
+	var nw: Array = gs.life_log.get("pack_news", [])
+	_ok(not nw.is_empty() and str(nw.back().get("event", "")) == "conflict" and str(nw.back().get("map", "")) == "mountain", "消息記在衝突的那張地圖（山地）")
+	_ok(gs.life_events("pack.conflict").size() == 1, "寫進生命事件")
+	# 每季最多一場：兩張地圖都有兩群時，一次只處理一張
+	gs.new_game("forest_east")
+	bp = gs.black_pack
+	bp.stage = "pack"
+	bp.mate_age = 4.0
+	bp.young = [1.5]
+	mtn = gs.pack_by_id("mountain")
+	gl = gs.pack_by_id("grassland")
+	bp.map_id = "mountain"
+	bp.regions = [str(root.get_node("GameData").map_regions("mountain").filter(func(r): return str(r) != str(mtn.regions[0]))[0])]
+	var fo = gs.pack_by_id("forest_outer")
+	var n_conf := 0
+	gs._pack_conflicts()
+	for e in gs.life_events("pack.conflict"):
+		n_conf += 1
+	_ok(n_conf == 1, "一次換季最多一場衝突（%d）" % n_conf)
+	# 沒有共住的地圖：沒有衝突
+	gs.new_game("forest_east")
+	_ok(gs._pack_conflicts().is_empty(), "開局的配置（每張地圖一群）：沒有衝突")
 	print("全部通過" if fails == 0 else "有失敗 %d" % fails)
 	quit(1 if fails > 0 else 0)
 	return true

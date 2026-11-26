@@ -260,6 +260,7 @@ func _on_season_changed(_season_index: int) -> void:
 		_age_npcs()
 		_update_black_pack()
 		_update_neighbor_packs()
+		_pack_conflicts()
 		_settle_pack_claims()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
@@ -405,6 +406,9 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 				later.append(n)
 				continue
 			var kind: String = known if str(n.get("pack", "black")) == "black" else "neighbor"
+			# 狼群之間的衝突：黑狼一家贏了／輸了（認識那隻黑狼時才寫牠），其他寫一般的
+			if str(n["event"]) == "conflict":
+				kind = ("black_" + str(n.get("black", ""))) if str(n.get("black", "")) != "" and known == "known" else "neighbor"
 			lines.append({"key": "pack.news.%s.%s" % [n["event"], kind], "region": str(n.get("region", "")), "map": str(n.get("to_map", ""))})
 		if later.is_empty():
 			life_log.erase("pack_news")
@@ -4578,7 +4582,7 @@ func _core_win(p: WolfPack) -> void:
 		last_relocation = _pack_relocate(p)
 
 # 這一群搬到另一張地圖：核心放在離你的巢穴最遠、不和別群的核心重疊的那一區；回傳搬去的地圖
-func _pack_relocate(p: WolfPack) -> String:
+func _pack_relocate(p: WolfPack, announce: bool = true) -> String:
 	var c: Dictionary = GameData.balance.get("black_pack", {})
 	var from_map: String = p.map_id
 	var old_core: String = str(p.regions[0]) if not p.regions.is_empty() else ""
@@ -4610,10 +4614,71 @@ func _pack_relocate(p: WolfPack) -> String:
 	life_log[_probe_key(p)] = {}
 	add_life_event("pack.moved", {"pack": p.id, "from": old_core, "to_map": to})
 	_stat_inc("pack_meet", "moved")
-	var news: Array = life_log.get("pack_news", [])
-	news.append({"event": "moved", "region": old_core, "map": from_map, "to_map": to, "pack": p.id})
-	life_log["pack_news"] = news
+	if announce:
+		var news: Array = life_log.get("pack_news", [])
+		news.append({"event": "moved", "region": old_core, "map": from_map, "to_map": to, "pack": p.id})
+		life_log["pack_news"] = news
 	return to
+
+# --- 狼群之間的衝突（Phase 3d 第 3 步）---
+# 強弱：數量（不算幼狼）＋ 老的帶頭的、伴侶加一點 ＋ 隨機
+func _pack_strength(p: WolfPack) -> float:
+	var cc: Dictionary = GameData.balance.get("black_pack", {}).get("conflict", {})
+	var leader := pack_leader_of(p)
+	var alive: bool = leader != null and leader.alive
+	var v: float = float(p.counted_size(alive))
+	if alive and leader.age_years >= float(cc.get("old_age", 6.0)):
+		v += float(cc.get("old_bonus", 0.5))
+	if p.has_mate() and p.mate_age >= float(cc.get("old_age", 6.0)):
+		v += float(cc.get("old_bonus", 0.5))
+	return v + RNGService.randf_range(0.0, float(cc.get("luck", 1.5)))
+
+# 換季：住在同一張地圖的兩群狼衝突，每季全世界最多一場；輸的少成員、搬到另一張地圖（之後可能再起衝突）。回傳 {map, winner, loser, ...}（沒有衝突回傳空的）
+func _pack_conflicts() -> Dictionary:
+	var cc: Dictionary = GameData.balance.get("black_pack", {}).get("conflict", {})
+	var by_map := {}
+	for p in all_packs():
+		if p.off_map or not pack_is_active(p) or p.regions.is_empty():
+			continue
+		(by_map.get_or_add(p.map_id, []) as Array).append(p)
+	var maps: Array = by_map.keys().filter(func(m): return (by_map[m] as Array).size() >= 2)
+	if maps.is_empty():
+		return {}
+	var m: String = str(maps[RNGService.randi_range(0, maps.size() - 1)])
+	var a: WolfPack = by_map[m][0]
+	var b: WolfPack = by_map[m][1]
+	var a_wins: bool = _pack_strength(a) >= _pack_strength(b)
+	var winner: WolfPack = a if a_wins else b
+	var loser: WolfPack = b if a_wins else a
+	var lr: Array = cc.get("loser_loss", [1, 2])
+	var loser_loss: int = RNGService.randi_range(int(lr[0]), int(lr[1]))
+	var winner_loss: int = RNGService.randi_range(0, maxi(0, loser_loss - 1)) if RNGService.chance(float(cc.get("winner_loss_chance", 0.4))) else 0
+	_pack_take_losses(loser, loser_loss, float(cc.get("leader_hurt", 0.3)))
+	_pack_take_losses(winner, winner_loss, float(cc.get("leader_hurt", 0.3)))
+	var region: String = str(winner.regions[0])
+	var to: String = _pack_relocate(loser, false)
+	var black_side := ""
+	if winner == black_pack:
+		black_side = "won"
+	elif loser == black_pack:
+		black_side = "lost"
+	var news: Array = life_log.get("pack_news", [])
+	news.append({"event": "conflict", "region": region, "map": m, "to_map": to, "pack": "black" if black_side != "" else winner.id, "black": black_side})
+	life_log["pack_news"] = news
+	add_life_event("pack.conflict", {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to})
+	_stat_inc("pack_meet", "conflict")
+	return {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to, "loser_loss": loser_loss, "winner_loss": winner_loss}
+
+# 衝突的損失：少 n 隻年輕的；沒有年輕的可以少時，帶頭的受傷
+func _pack_take_losses(p: WolfPack, n: int, hurt: float) -> void:
+	for i in n:
+		var grown: Array = p.young.filter(func(x): return float(x) >= 1.0)
+		if not p.young.is_empty():
+			p._remove_oldest_young() if not grown.is_empty() else p.young.pop_back()
+		else:
+			var leader := pack_leader_of(p)
+			if leader != null and leader.alive:
+				leader.health = maxf(1.0, leader.health - leader.health_max * hurt)
 
 func _standoff_won_here(p: WolfPack) -> void:
 	_core_win(p)

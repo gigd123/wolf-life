@@ -336,6 +336,9 @@ pack.moved_now,牠們在{region}一再讓步，不再守著這裡了，往{map}�
 pack.news.moved.known,{region}安靜了。那隻黑狼帶著家人離開，牠們的嚎叫從{map}那頭傳來。
 pack.news.moved.unknown,{region}那一帶的狼走了，嚎叫往{map}的方向遠去。
 pack.news.moved.neighbor,{region}那一帶的狼群離開了，往{map}的方向。
+pack.news.conflict.neighbor,{region}那一帶傳來兩群狼的混戰聲。後來，其中一群往{map}的方向離開了。
+pack.news.conflict.black_won,{region}傳來兩群狼的混戰聲。那隻黑狼一家守住了這裡，另一群往{map}的方向離開。
+pack.news.conflict.black_lost,{region}傳來兩群狼的混戰聲。那隻黑狼一家輸了，往{map}的方向離開。
 pack.news.mate_died.known,{region}夜裡的嚎叫少了一個聲音。那隻黑狼身邊的母狼，不在了。
 pack.news.mate_died.unknown,{region}那一帶的狼嚎，少了一個聲音。
 encounter.mother,一頭帶著幼熊的母灰熊擋在前面，牠非常激動。
