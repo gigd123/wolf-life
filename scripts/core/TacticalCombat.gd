@@ -1,7 +1,7 @@
 class_name TacticalCombat
 extends RefCounted
 
-# 戰術戰鬥的邏輯（原型規格 docs/proposals/tactical-combat-prototype.md，2026-11-04 使用者確認）。
+# 戰術戰鬥的邏輯（原型規格 docs/proposals/archive/tactical-combat-prototype.md，2026-11-04 使用者確認）。
 # 純邏輯、不碰 GameState，可以 headless 測試；畫面層與模擬只呼叫這裡的公開函式。數值在 data/tactical_combat.json，
 # 移動成本與喘沿用 data/tactical_hunt.json 的 move、breath。
 #

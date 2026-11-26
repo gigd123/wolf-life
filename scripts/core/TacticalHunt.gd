@@ -1,7 +1,7 @@
 class_name TacticalHunt
 extends RefCounted
 
-# 戰術狩獵的邏輯（原型規格 docs/proposals/tactical-hunt-prototype.md、tactical-hunt-herd.md；
+# 戰術狩獵的邏輯（原型規格 docs/proposals/archive/tactical-hunt-prototype.md、tactical-hunt-herd.md；
 # Phase 2c 接進主遊戲，2026-10-20 從 prototypes/ 搬來）。純邏輯、不碰 GameState，可以 headless 測試；
 # 畫面層與模擬都只呼叫這裡的公開函式。數值在 data/tactical_hunt.json。
 # 主遊戲用 setup_from_game() 開局（狼的能力、喘、體況、吃撐、年齡、晨昏、雪況），原型畫面與模擬照舊用 setup()。
@@ -28,7 +28,7 @@ var herd: Array = [] # {pos, facing, state(unaware/suspicious/flee/stand), alert
 	# kind(adult/fawn), mother（幼鹿的生母索引，-1 沒有）, gone（逃掉了）, defend_rounds（生母連續護幼幾回合）, separated（幼鹿和生母跑散）}
 var wi: int = 0
 var di: int = 0 # 目前處理的那一隻（鹿的回合裡會輪流）；平常等於 target
-var target: int = 0 # 狼選定的目標（鹿群版，docs/proposals/tactical-hunt-herd.md）
+var target: int = 0 # 狼選定的目標（鹿群版，docs/proposals/archive/tactical-hunt-herd.md）
 var observed: int = 0 # 觀察過幾次（意圖範圍縮小）
 var hold_side: String = "" # 咬住的位置（rear / side / front）
 var wolf_pos: Vector2i:
@@ -1490,7 +1490,7 @@ func _end_wolf_turn(mode: String) -> void:
 	if not done and rounds >= int(t["max_rounds"]):
 		_finish("timeout", _tx("tactical.timeout.far"))
 
-# --- 同伴（苔原狼的群體狩獵實驗，docs/proposals/tundra-joint-tactical.md；只在原型場景）---
+# --- 同伴（苔原狼的群體狩獵實驗，docs/proposals/archive/tundra-joint-tactical.md；只在原型場景）---
 # wolves[0] 是你，1 之後是同伴（{pos, stats, breath, breath_max, breath_used, ally, role, mode}）。只有一隻狼時下面這些都等於原本的寫法。
 
 func _allies_cfg() -> Dictionary:

@@ -4237,7 +4237,7 @@ func _show_cougar(d: Dictionary) -> void:
 			_refresh())
 	encounter_overlay.visible = true
 
-# 灰熊藏的獵物（2026-11-04，提案 docs/proposals/grizzly-cache.md B）：看跡象 → 觀察、偷吃、離開。
+# 灰熊藏的獵物（2026-11-04，提案 docs/proposals/archive/grizzly-cache.md B）：看跡象 → 觀察、偷吃、離開。
 func _show_grizzly_cache(d: Dictionary) -> void:
 	var known: String = "known" if d.get("known", false) else "unknown"
 	var lines: Array[String] = [tr("grizzly_cache.found." + known).replace("{animal}", _prey_name(str(d.get("animal_id", "elk")), "adult")),

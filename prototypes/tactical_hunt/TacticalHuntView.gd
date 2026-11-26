@@ -1,13 +1,13 @@
 extends Control
 
-# 戰術狩獵原型的畫面（docs/proposals/tactical-hunt-prototype.md 第九節，畫面甲：整張地圖）。
+# 戰術狩獵原型的畫面（docs/proposals/archive/tactical-hunt-prototype.md 第九節，畫面甲：整張地圖）。
 # 邏輯全在 TacticalHunt.gd；這裡只畫格子、處理點選、顯示資訊。主遊戲看得到的文字用翻譯鍵（tactical.*，Phase 2c 第 4 步）；
 # 只有原型的設定列（情境、狼、體力、招式、新局、重來、返回）與給開發看的數字直接寫中文。
 #
 # 操作：點綠／黃／橘的格子移動（潛行／小跑／衝刺），點紅框的格子撲上去咬；咬住之後用下方的按鈕。
-# 鹿群版（E～H，docs/proposals/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是有白點的小鹿，細線連到生母。
+# 鹿群版（E～H，docs/proposals/archive/tactical-hunt-herd.md）：點一隻鹿設為目標（黃框）；幼鹿是有白點的小鹿，細線連到生母。
 # 動物與地塊用 data/art.json 的 tactical（Phase 2c，程式畫的佔位圖，tools/make_tactical_art.py）；沒有圖時退回色塊。
-# 苔原狼同伴（群體狩獵實驗，docs/proposals/tundra-joint-tactical.md）：設定列選同伴；K～N 是用主遊戲地圖的群體狩獵情境。
+# 苔原狼同伴（群體狩獵實驗，docs/proposals/archive/tundra-joint-tactical.md）：設定列選同伴；K～N 是用主遊戲地圖的群體狩獵情境。
 # 同伴畫成偏淡的狼，角落的點是角色（藍：驅趕、橘：追擊），虛線指向牠要去的地方；滑鼠停在同伴上看牠在做什麼。
 
 const TH := preload("res://scripts/core/TacticalHunt.gd")

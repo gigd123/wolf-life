@@ -379,7 +379,7 @@
     "challenger": { "first_days": [5, 15], "return_days": [10, 16], "yield_return_mult": 0.6, "grow": 3, "explore_chance": 0.5 },
     "lie_down": { "min_elder_years": 3.0, "max_health_below": 70 }
   },
-  "_grizzly_cache_comment": "灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/grizzly-cache.md）：探索時 cache_chance × 這一區這一季灰熊的權重（competitor_weights，÷ weight_norm、最多 1）× season_mult 發現一堆被土蓋住的屍體（cache_animals）。present 是熊還睡在附近的機率（依季節）。跡象：sign_truth 的機率照實際（熊在／不在）給跡象，否則給相反的。觀察：花 observe_turns 回合，看對的機率 = observe.base + (感知 − 50) ÷ observe.divisor，夾在 min～max。偷吃：熊在 → 牠衝出來，charge_hit_chance 先挨一下（charge_damage），接著戰鬥（可以撤退）；熊不在 → 牠已經吃掉一段，每吃一段 return_chance 回來，直接戰鬥（不先挨打）。",
+  "_grizzly_cache_comment": "灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/archive/grizzly-cache.md）：探索時 cache_chance × 這一區這一季灰熊的權重（competitor_weights，÷ weight_norm、最多 1）× season_mult 發現一堆被土蓋住的屍體（cache_animals）。present 是熊還睡在附近的機率（依季節）。跡象：sign_truth 的機率照實際（熊在／不在）給跡象，否則給相反的。觀察：花 observe_turns 回合，看對的機率 = observe.base + (感知 − 50) ÷ observe.divisor，夾在 min～max。偷吃：熊在 → 牠衝出來，charge_hit_chance 先挨一下（charge_damage），接著戰鬥（可以撤退）；熊不在 → 牠已經吃掉一段，每吃一段 return_chance 回來，直接戰鬥（不先挨打）。",
   "grizzly_cache": { "cache_chance": 0.05, "weight_norm": 2.0, "season_mult": { "spring": 1.0, "summer": 0.3, "autumn": 0.6, "winter": 0.0 },
     "cache_animals": { "elk": 2, "mule_deer": 2, "white_tailed_deer": 1, "moose": 1, "bison": 1, "caribou": 1 },
     "present": { "spring": 0.5, "summer": 0.3, "autumn": 0.3 }, "sign_truth": 0.75,
@@ -396,7 +396,7 @@
   "coyote": { "regions": { "grassland_hills": 1.0, "grassland_plains": 1.0, "grassland_riverwoods": 0.8, "grassland_river": 0.8, "mountain_foothills": 0.5, "mountain_meadow": 0.4, "forest_south": 0.3 },
     "feed_chance": 0.1, "return_chance": 0.18, "frequent_mult": 0.5 },
   "_lynx_comment": "加拿大猞猁（Phase 2 第 6 步）：北方森林、山腳、林線的獨行貓科，主食雪兔，很少和狼衝突、多半退讓。探索時 chance × 區域倍率 × 這一年的雪兔倍率（雪兔低谷年猞猁變少）看到牠；kill_chance 的機率牠剛抓到一隻雪兔，可以把牠趕走、搶下雪兔（hare_value）。",
-  "_salmon_comment": "鮭魚洄流季（Phase 2h，SPEC「Phase 2h」、docs/proposals/salmon-run.md；第 5 步一生模擬校準：洄流 13 → 9 天、高峰期的熊 1～2 → 2～3 頭、後到 3% → 5%、線索的機率 ×0.3——住在森林東部的狼秋季食物 77% → 29% 來自鮭魚）。regions：有洄流的區域。stages：依季節與天數的強度（early 初期、peak 高峰、decline 衰退；沒列到的日子沒有）。發現：在這些區域探索時，依強度 × 探索方式擲 find（守在水邊多），取代這次的一般探索結果（是值得停下的發現）；線索依強度挑 clues 的權重。fishing_enabled：河岸的捕魚做好前（第 2 步）不顯示「到河邊捕魚」，線索的機率 × find_mult_disabled（只能看、不能捕的線索會取代一般的探索結果，先少一點）。",
+  "_salmon_comment": "鮭魚洄流季（Phase 2h，SPEC「Phase 2h」、docs/proposals/archive/salmon-run.md；第 5 步一生模擬校準：洄流 13 → 9 天、高峰期的熊 1～2 → 2～3 頭、後到 3% → 5%、線索的機率 ×0.3——住在森林東部的狼秋季食物 77% → 29% 來自鮭魚）。regions：有洄流的區域。stages：依季節與天數的強度（early 初期、peak 高峰、decline 衰退；沒列到的日子沒有）。發現：在這些區域探索時，依強度 × 探索方式擲 find（守在水邊多），取代這次的一般探索結果（是值得停下的發現）；線索依強度挑 clues 的權重。fishing_enabled：河岸的捕魚做好前（第 2 步）不顯示「到河邊捕魚」，線索的機率 × find_mult_disabled（只能看、不能捕的線索會取代一般的探索結果，先少一點）。",
   "salmon": {
     "regions": ["forest_north", "forest_east", "mountain_headwaters"],
     "stages": [

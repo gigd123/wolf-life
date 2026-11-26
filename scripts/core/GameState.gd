@@ -1660,7 +1660,7 @@ func eat_cougar_cache() -> void:
 	life_log["cougar_caches"] = int(life_log.get("cougar_caches", 0)) + 1
 	state_changed.emit()
 
-# --- 灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/grizzly-cache.md）---
+# --- 灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/archive/grizzly-cache.md）---
 func _grizzly_cache_cfg() -> Dictionary:
 	return GameData.balance.get("grizzly_cache", {})
 

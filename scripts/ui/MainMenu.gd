@@ -69,7 +69,7 @@ func _ready() -> void:
 	art_test_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tests.add_child(art_test_btn)
 
-	# 戰術狩獵原型（prototypes/tactical_hunt/；和遊戲進度無關，docs/proposals/tactical-hunt-prototype.md）
+	# 戰術狩獵原型（prototypes/tactical_hunt/；和遊戲進度無關，docs/proposals/archive/tactical-hunt-prototype.md）
 	var tactical_btn := Button.new()
 	tactical_btn.text = tr("menu.tactical_hunt")
 	tactical_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_hunt/TacticalHunt.tscn"))
@@ -77,7 +77,7 @@ func _ready() -> void:
 	tactical_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tests.add_child(tactical_btn)
 
-	# 戰術戰鬥原型（prototypes/tactical_combat/，docs/proposals/tactical-combat-prototype.md；和遊戲進度無關）
+	# 戰術戰鬥原型（prototypes/tactical_combat/，docs/proposals/archive/tactical-combat-prototype.md；和遊戲進度無關）
 	var tcombat_btn := Button.new()
 	tcombat_btn.text = tr("menu.tactical_combat")
 	tcombat_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://prototypes/tactical_combat/TacticalCombat.tscn"))

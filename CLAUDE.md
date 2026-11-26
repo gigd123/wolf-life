@@ -40,19 +40,19 @@
 4. **Phase 1.9 戰鬥演出**。
 5. **Phase 1.9b 地盤與老年**。
 6. **Phase 2 季節與地圖**：依 `SPEC.md` 的實作順序做（共 7 步，從山地地圖＋騾鹿開始）。生態資料在 `docs/ecology-reference.md`「Phase 2 的新地圖與動物」。1.7～1.9b 的試玩回饋優先處理。
-7. **Phase 2b 狩獵的節奏與難度**：依 `SPEC.md` 的實作順序做（共 5 步，從吃撐與殘骸開始）。提案與討論在 `docs/proposals/hunt-rhythm-difficulty.md`，生態資料在 `docs/ecology-reference.md`「休息、活動時段與狩獵效率」。
-8. **Phase 3a 黑狼的一生**（Phase 3 最小可玩版本，只做森林）：依 `SPEC.md` 的實作順序做（共 6 步，從黑狼家族的狀態與換季更新開始）。提案在 `docs/proposals/black-wolf-life.md`。
-9. **Phase 2c 戰術狩獵接進主遊戲**（先接白尾鹿）：依 `SPEC.md` 的實作順序做（共 5 步，從原型邏輯搬進主遊戲開始）。提案在 `docs/proposals/tactical-hunt-integration.md`，原型規格在 `docs/proposals/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。
-10. **Phase 2d 馬鹿、騾鹿、馴鹿接進戰術地圖**：依 `SPEC.md` 的實作順序做（共 5 步，從鹿群的逃跑改成整群一個方向開始）。提案在 `docs/proposals/tactical-hunt-more-deer.md`，生態資料在 `docs/ecology-reference.md`。
-11. **Phase 2e 藏食物**：依 `SPEC.md` 的實作順序做（共 3 步，從藏肉的狀態與規則開始）。提案在 `docs/proposals/hunt-rhythm-stage2.md`。一季的天數維持 10 天，等試玩數據。
-12. **Phase 2f 會站定的大型獵物**（公馬鹿、駝鹿、野牛）：依 `SPEC.md` 的實作順序做（共 4 步，從共用的站定規則與公馬鹿開始）。提案在 `docs/proposals/standing-prey-tactical.md`。
-13. **Phase 2g 旱獺、小撲、悄悄叼走猞猁的雪兔**：依 `SPEC.md` 的實作順序做（共 4 步，從旱獺開始）。提案在 `docs/proposals/small-prey-marmot-lynx.md`；之前的「全部改成戰術場景、肉量」在 `docs/proposals/all-tactical-and-meat.md`。
-14. **Phase 2h 鮭魚洄流季**：依 `SPEC.md` 的實作順序做（共 6 步，從資料、強度、區域、線索與鮭魚溪地圖開始）。提案與收益的驗算在 `docs/proposals/salmon-run.md`，生態資料在 `docs/ecology-reference.md`「鮭魚洄流」。之後：苔原狼的群體狩獵實驗（只在原型，`docs/proposals/tundra-joint-tactical.md`；難度的討論在 `docs/proposals/pack-hunt-difficulty-data.md`）。
-15. **Phase 4a 牧場（人類第一階段）**：依 `SPEC.md` 的實作順序做（共 7 步，從牧場地圖、候選位置與出現時機開始）。評估與討論在 `docs/proposals/human-settlement-eval.md`，拓荒時代的資料在 `docs/ecology-reference.md`「拓荒時代的牧場、獵狼人與獵犬」。家畜的肉量與難度在第 3 步先驗算、模擬。
-16. **Phase 2i 苔原狼一起狩獵接進主遊戲、所有狩獵改成戰術場景**：依 `SPEC.md` 的實作順序做（共 7 步，從主遊戲開場帶苔原狼開始）。提案在 `docs/proposals/tundra-joint-in-game.md`、`docs/proposals/all-hunts-tactical.md`；原型與難度資料在 `docs/proposals/tundra-joint-tactical.md`、`pack-hunt-difficulty-data.md`。
-17. **Phase 2j 一天的節奏**（晨昏出獵、白天休息）：依 `SPEC.md` 的實作順序做（共 2 步）。提案在 `docs/proposals/rest-and-daytime.md`。
-18. **Phase 3 成年期與社會**：依 `SPEC.md` 的實作順序做（共 9 步，從狼群通用化、狼的資料與生命事件紀錄開始；第 2、3 步合成可以獨立試玩的伴侶循環）。提案在 `docs/spec-update-proposal-14.md`，修訂後的草稿 `docs/spec-phase3-draft.md`，生態資料在 `docs/ecology-reference.md`「Phase 3：配對、領域、育幼與狼群」。
-19. **Phase 2k 戰術戰鬥接進主遊戲**：依 `SPEC.md` 的實作順序做（共 6 步，從灰熊、美洲獅接進主遊戲開始）。提案在 `docs/proposals/tactical-combat-integration.md`，原型規格在 `docs/proposals/tactical-combat-prototype.md`。HD-2D 畫面共用 `scripts/ui/HD2DBoard.gd`；出圖清單 `docs/art-request-hd2d-2026-11-06.md`。
+7. **Phase 2b 狩獵的節奏與難度**：依 `SPEC.md` 的實作順序做（共 5 步，從吃撐與殘骸開始）。提案與討論在 `docs/proposals/archive/hunt-rhythm-difficulty.md`，生態資料在 `docs/ecology-reference.md`「休息、活動時段與狩獵效率」。
+8. **Phase 3a 黑狼的一生**（Phase 3 最小可玩版本，只做森林）：依 `SPEC.md` 的實作順序做（共 6 步，從黑狼家族的狀態與換季更新開始）。提案在 `docs/proposals/archive/black-wolf-life.md`。
+9. **Phase 2c 戰術狩獵接進主遊戲**（先接白尾鹿）：依 `SPEC.md` 的實作順序做（共 5 步，從原型邏輯搬進主遊戲開始）。提案在 `docs/proposals/archive/tactical-hunt-integration.md`，原型規格在 `docs/proposals/archive/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。
+10. **Phase 2d 馬鹿、騾鹿、馴鹿接進戰術地圖**：依 `SPEC.md` 的實作順序做（共 5 步，從鹿群的逃跑改成整群一個方向開始）。提案在 `docs/proposals/archive/tactical-hunt-more-deer.md`，生態資料在 `docs/ecology-reference.md`。
+11. **Phase 2e 藏食物**：依 `SPEC.md` 的實作順序做（共 3 步，從藏肉的狀態與規則開始）。提案在 `docs/proposals/archive/hunt-rhythm-stage2.md`。一季的天數維持 10 天，等試玩數據。
+12. **Phase 2f 會站定的大型獵物**（公馬鹿、駝鹿、野牛）：依 `SPEC.md` 的實作順序做（共 4 步，從共用的站定規則與公馬鹿開始）。提案在 `docs/proposals/archive/standing-prey-tactical.md`。
+13. **Phase 2g 旱獺、小撲、悄悄叼走猞猁的雪兔**：依 `SPEC.md` 的實作順序做（共 4 步，從旱獺開始）。提案在 `docs/proposals/archive/small-prey-marmot-lynx.md`；之前的「全部改成戰術場景、肉量」在 `docs/proposals/archive/all-tactical-and-meat.md`。
+14. **Phase 2h 鮭魚洄流季**：依 `SPEC.md` 的實作順序做（共 6 步，從資料、強度、區域、線索與鮭魚溪地圖開始）。提案與收益的驗算在 `docs/proposals/archive/salmon-run.md`，生態資料在 `docs/ecology-reference.md`「鮭魚洄流」。之後：苔原狼的群體狩獵實驗（只在原型，`docs/proposals/archive/tundra-joint-tactical.md`；難度的討論在 `docs/proposals/archive/pack-hunt-difficulty-data.md`）。
+15. **Phase 4a 牧場（人類第一階段）**：依 `SPEC.md` 的實作順序做（共 7 步，從牧場地圖、候選位置與出現時機開始）。評估與討論在 `docs/proposals/archive/human-settlement-eval.md`，拓荒時代的資料在 `docs/ecology-reference.md`「拓荒時代的牧場、獵狼人與獵犬」。家畜的肉量與難度在第 3 步先驗算、模擬。
+16. **Phase 2i 苔原狼一起狩獵接進主遊戲、所有狩獵改成戰術場景**：依 `SPEC.md` 的實作順序做（共 7 步，從主遊戲開場帶苔原狼開始）。提案在 `docs/proposals/archive/tundra-joint-in-game.md`、`docs/proposals/archive/all-hunts-tactical.md`；原型與難度資料在 `docs/proposals/archive/tundra-joint-tactical.md`、`pack-hunt-difficulty-data.md`。
+17. **Phase 2j 一天的節奏**（晨昏出獵、白天休息）：依 `SPEC.md` 的實作順序做（共 2 步）。提案在 `docs/proposals/archive/rest-and-daytime.md`。
+18. **Phase 3 成年期與社會**：依 `SPEC.md` 的實作順序做（共 9 步，從狼群通用化、狼的資料與生命事件紀錄開始；第 2、3 步合成可以獨立試玩的伴侶循環）。提案在 `docs/archive/spec-update-proposal-14.md`，修訂後的草稿 `docs/archive/spec-phase3-draft.md`，生態資料在 `docs/ecology-reference.md`「Phase 3：配對、領域、育幼與狼群」。
+19. **Phase 2k 戰術戰鬥接進主遊戲**：依 `SPEC.md` 的實作順序做（共 6 步，從灰熊、美洲獅接進主遊戲開始）。提案在 `docs/proposals/archive/tactical-combat-integration.md`，原型規格在 `docs/proposals/archive/tactical-combat-prototype.md`。HD-2D 畫面共用 `scripts/ui/HD2DBoard.gd`；出圖清單 `docs/art-request-hd2d-2026-11-06.md`。
 20. **Phase 2l 小型搶食者的戰術戰鬥**（郊狼、狼獾、猞猁；紅狐維持選單式）：依 `SPEC.md` 的實作順序做（共 4 步，從共用的搶食者行為與郊狼一對開始）。
 21. **Phase 2m 追蹤與記憶**（循著足跡追、同一隻獵物的足跡、狼對自己體型的認識）：依 `SPEC.md` 的實作順序做（共 4 步，從戰術地圖內的循著足跡追開始）。
 22. **Phase 2n 森林大火的逃生地圖**：依 `SPEC.md` 的實作順序做（共 6 步，從核心火場原型開始）。提案、生態資料與 ChatGPT 的回饋在 `docs/proposals/forest-fire-tactical.md`。不趕時間，數值是待驗證的假設，不為了湊死亡率硬調。

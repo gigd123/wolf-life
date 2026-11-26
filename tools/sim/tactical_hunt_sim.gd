@@ -1,5 +1,5 @@
 extends SceneTree
-# 戰術狩獵原型的模擬（docs/proposals/tactical-hunt-prototype.md 第十節）。
+# 戰術狩獵原型的模擬（docs/proposals/archive/tactical-hunt-prototype.md 第十節）。
 # 固定策略的自動玩家 × 4 個情境 × 3 種狼，各 RUNS 個種子；驗證測試 1～5、7、8、10。
 # 用法：bash tools/run_sim.sh tactical_hunt_sim 0 300
 const TH := preload("res://scripts/core/TacticalHunt.gd")

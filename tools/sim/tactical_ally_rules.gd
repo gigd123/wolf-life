@@ -1,5 +1,5 @@
 extends SceneTree
-# 苔原狼一起狩獵實驗（docs/proposals/tundra-joint-tactical.md，使用者選方案 A ＋ 互相圍攻）的回歸測試：
+# 苔原狼一起狩獵實驗（docs/proposals/archive/tundra-joint-tactical.md，使用者選方案 A ＋ 互相圍攻）的回歸測試：
 #   1. 只有你一隻狼時，新的規則都不作用（逃跑方向、距離、埋伏、同伴咬住）
 #   2. 驅趕：你和驅趕的同伴隔著獵物相對（空地）時，牠往你這邊逃，你藏著時撲有埋伏加成
 #   3. 同伴咬住：獵物不動（除非掙脫）；你撲牠有「苔原狼拖住了牠」加成、被踢的機率減半；撲中就換你咬住

@@ -1,5 +1,5 @@
 extends "res://tools/sim/tactical_hunt_sim.gd"
-# 苔原狼的群體狩獵實驗（docs/proposals/tundra-joint-tactical.md）：同一場面比較
+# 苔原狼的群體狩獵實驗（docs/proposals/archive/tundra-joint-tactical.md）：同一場面比較
 #   單狼（四種打法最好的、本能）／有同伴但照單狼的打法（stalk、chase）／有同伴、配合同伴（hold：潛近後等同伴趕過來）
 # 同伴：ALLIES=drive,chase（預設一隻驅趕、一隻追擊）。一般的狼。
 # 通過標準（初始值）：配合同伴明顯比照單狼打好（+15 個百分點以上）；照單狼打也比單狼好一點；

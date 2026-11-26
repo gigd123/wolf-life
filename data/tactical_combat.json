@@ -1,5 +1,5 @@
 {
-  "_comment": "戰術戰鬥原型（docs/proposals/tactical-combat-prototype.md，2026-11-04）的數值。移動成本、喘沿用 tactical_hunt.json 的 move、breath。標 assume 的是待模擬調整的初始值。",
+  "_comment": "戰術戰鬥原型（docs/proposals/archive/tactical-combat-prototype.md，2026-11-04）的數值。移動成本、喘沿用 tactical_hunt.json 的 move、breath。標 assume 的是待模擬調整的初始值。",
   "_terrain_comment": "地形字元：. 開闊、f 密林、l 倒木、r 岩坡、s 淺水、c 峭壁（走不進去，可以背靠）、T 大樹、t 小樹（走不進去；美洲獅、黑熊可以爬）、B 大石頭（狼、美洲獅跳得上去，額外代價 terrain_extra.B）。",
   "terrain_extra": { "B": 2.0, "T": 0.0, "t": 0.0, "c": 0.0 },
   "impassable": "cTt",

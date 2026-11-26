@@ -121,7 +121,7 @@ Phase 2b 要求「看出不是弱者就放棄」被理解成聰明的判斷。
 ```
 ## Phase 2c：戰術狩獵接進主遊戲（白尾鹿）
 
-（2026-10-20 新增，提案 `docs/proposals/tactical-hunt-integration.md`，使用者選 1B、2A、3A、先接白尾鹿。原型規格 `docs/proposals/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。）
+（2026-10-20 新增，提案 `docs/proposals/archive/tactical-hunt-integration.md`，使用者選 1B、2A、3A、先接白尾鹿。原型規格 `docs/proposals/archive/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。）
 
 ### 目標與驗收
 - 白尾鹿的狩獵從選單換成戰術地圖：讀風向、地形、鹿的動向，自己決定潛近、衝刺、撲咬的時機與角度。

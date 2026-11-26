@@ -155,7 +155,7 @@
 ```
 ## Phase 4a：牧場（人類第一階段）
 
-（2026-10-22 新增，評估 docs/proposals/human-settlement-eval.md 第 3 版；拓荒時代的資料在 docs/ecology-reference.md「拓荒時代的牧場、獵狼人與獵犬」。）
+（2026-10-22 新增，評估 docs/proposals/archive/human-settlement-eval.md 第 3 版；拓荒時代的資料在 docs/ecology-reference.md「拓荒時代的牧場、獵狼人與獵犬」。）
 
 原則：人類讓世界在狼的一生中改變；牧場是高收益、高風險的選擇，不是禁區；危險一定先有線索，讓玩家看得懂因果、來得及應對；不會讓玩家無處可去。
 

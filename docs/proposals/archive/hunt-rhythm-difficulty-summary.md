@@ -1,6 +1,6 @@
 # 《狼之一生》提案摘要：狩獵的節奏與難度（2026-10-19）
 
-給外部討論用的整理版。完整版（含程式與資料檔的對應）在 `docs/proposals/hunt-rhythm-difficulty.md`。
+給外部討論用的整理版。完整版（含程式與資料檔的對應）在 `docs/proposals/archive/hunt-rhythm-difficulty.md`。
 
 ## 遊戲簡介
 

@@ -190,7 +190,7 @@
 ```
 ## Phase 2h：鮭魚洄流季（河岸的覓食競爭）
 
-（2026-10-22 新增，提案 docs/proposals/salmon-run.md 第 2 版；生態：Darimont 等 2003、2008，Gende & Quinn 2003，Lincoln & Quinn 2019。）
+（2026-10-22 新增，提案 docs/proposals/archive/salmon-run.md 第 2 版；生態：Darimont 等 2003、2008，Gende & Quinn 2003，Lincoln & Quinn 2019。）
 
 原則：洄流是一年裡短暫的大量食物；灰熊主要是佔位置的競爭者，不是隨機的傷害來源；位置與時機比成功率重要。
 

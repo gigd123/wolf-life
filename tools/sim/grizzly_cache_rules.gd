@@ -1,5 +1,5 @@
 extends SceneTree
-# 灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/grizzly-cache.md）的回歸測試：
+# 灰熊藏的獵物（2026-11-04，使用者選 B，提案 docs/proposals/archive/grizzly-cache.md）的回歸測試：
 #   1. 出現：春天灰熊多的區域會有、冬天沒有、牧場沒有
 #   2. 跡象大約四分之三照實際
 #   3. 觀察：花一個時段、感知越高越準

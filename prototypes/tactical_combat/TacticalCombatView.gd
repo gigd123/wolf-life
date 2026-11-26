@@ -1,6 +1,6 @@
 extends Control
 
-# 戰術戰鬥原型的畫面（docs/proposals/tactical-combat-prototype.md 第十節，2026-11-04）。邏輯全在 TacticalCombat.gd。
+# 戰術戰鬥原型的畫面（docs/proposals/archive/tactical-combat-prototype.md 第十節，2026-11-04）。邏輯全在 TacticalCombat.gd。
 # 操作：點綠／黃／橘的格子選這回合要走到哪（再點自己取消），再按一個動作按鈕（按下去才結算）；伴侶用右邊的指令按鈕。
 # 對手：箭頭是面向；粉紅的格子是看得到的預告範圍（實色＝明確，淡色＝部分，模糊時不畫）；虛線是牠盯著誰；右欄寫預告。
 # 上一回合被打中的格子畫 ×；殘骸是褐色方塊、數字是剩幾段；叼著肉的狼有橘點。

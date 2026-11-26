@@ -1386,7 +1386,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
   - **整個叼走**：小的殘骸（野兔、狐狸、幼鹿、小馴鹿、小馬鹿）整個叼了就跑；大的殘骸（成鹿、馬鹿、駝鹿）沒辦法整個帶走，改成撕下一整條後腿拖走（2～3 段）。熊會追上來，獨狼很危險：重傷的機率高，自己已經帶傷時可能致命。苔原狼一起時（提案之六）牠們會分散熊的注意，風險降低。
   - 帶幼熊的母熊很少佔住殘骸；大公熊最難搶，失手的後果也最重。
   - 這些都不算「擊退灰熊」。
-- 灰熊藏的獵物（2026-11-04 使用者選 B，提案 `docs/proposals/grizzly-cache.md`）：灰熊會把大型屍體用土和枝葉蓋起來分幾天吃，常常就睡在附近。
+- 灰熊藏的獵物（2026-11-04 使用者選 B，提案 `docs/proposals/archive/grizzly-cache.md`）：灰熊會把大型屍體用土和枝葉蓋起來分幾天吃，常常就睡在附近。
   - 出現：春、秋在有灰熊的區域探索時偶爾發現（春天在灰熊多的區域約每 20 次探索一次；夏天少、冬天沒有、牧場沒有）。
   - 熊在不在：春天約一半熊還睡在附近，夏、秋約三成。畫面只給一個跡象，約四分之三照實際：熊可能在＝渡鴉不敢落地、剛壓出來的大窩、新鮮的糞；大概不在＝渡鴉落在土堆上啄肉、腳印乾了、糞乾硬。
   - 選擇：**觀察**（花一個時段，感知越高越準，按鈕寫機率）、**偷吃**、**離開**。
@@ -1720,7 +1720,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2b：狩獵的節奏與難度
 
-（2026-10-19 新增，提案 `docs/proposals/hunt-rhythm-difficulty.md`，使用者同意。生態依據見 `ecology-reference.md`「休息、活動時段與狩獵效率」。）
+（2026-10-19 新增，提案 `docs/proposals/archive/hunt-rhythm-difficulty.md`，使用者同意。生態依據見 `ecology-reference.md`「休息、活動時段與狩獵效率」。）
 
 ### 目標與驗收
 
@@ -1796,7 +1796,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2c：戰術狩獵接進主遊戲（白尾鹿）
 
-（2026-10-20 新增，提案 `docs/proposals/tactical-hunt-integration.md`，使用者選 1B、2A、3A、先接白尾鹿。原型規格 `docs/proposals/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。）
+（2026-10-20 新增，提案 `docs/proposals/archive/tactical-hunt-integration.md`，使用者選 1B、2A、3A、先接白尾鹿。原型規格 `docs/proposals/archive/tactical-hunt-prototype.md`、`tactical-hunt-herd.md`。）
 
 ### 目標與驗收
 - 白尾鹿的狩獵從選單換成戰術地圖：讀風向、地形、鹿的動向，自己決定潛近、衝刺、撲咬的時機與角度。
@@ -1840,7 +1840,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2d：馬鹿、騾鹿、馴鹿接進戰術地圖
 
-（2026-10-20 新增，提案 `docs/proposals/tactical-hunt-more-deer.md`，使用者選 1A、鹿群逃跑 A、2A、3A、4A。）
+（2026-10-20 新增，提案 `docs/proposals/archive/tactical-hunt-more-deer.md`，使用者選 1A、鹿群逃跑 A、2A、3A、4A。）
 
 ### 目標與驗收
 - 白尾鹿以外的鹿類也用戰術地圖，三種打起來不一樣：馬鹿大、常踢，要靠拖垮；騾鹿平地好追，上了岩坡就追不到；馴鹿在開闊的苔原很難潛近、比狼快，靠鹿群裡掉隊的那一隻，會涉水甩掉狼。
@@ -1883,7 +1883,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2e：藏食物
 
-（2026-10-20 新增，提案 `docs/proposals/hunt-rhythm-stage2.md`，使用者選藏食物 A、一季維持 10 天。原始草案在 `docs/proposals/hunt-rhythm-difficulty.md` 第十一節。）
+（2026-10-20 新增，提案 `docs/proposals/archive/hunt-rhythm-stage2.md`，使用者選藏食物 A、一季維持 10 天。原始草案在 `docs/proposals/archive/hunt-rhythm-difficulty.md` 第十一節。）
 
 ### 目標與驗收
 - 吃不完的大型獵物可以叼一段去藏，之後回來吃。吃撐時多一個選擇：守著殘骸、藏起來先走、放棄剩下的；荒年、冬季可以先存起來。
@@ -1923,7 +1923,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2f：會站定的大型獵物（公馬鹿、駝鹿、野牛）
 
-（2026-10-21 新增，提案 `docs/proposals/standing-prey-tactical.md`，使用者選 1B（只用現有的角度規則）、2B（三種一起做）、3A（健康的站定獵物照生態，幾乎打不下來）。生態依據見 `ecology-reference.md`「駝鹿」「Phase 2 的新地圖與動物」。）
+（2026-10-21 新增，提案 `docs/proposals/archive/standing-prey-tactical.md`，使用者選 1B（只用現有的角度規則）、2B（三種一起做）、3A（健康的站定獵物照生態，幾乎打不下來）。生態依據見 `ecology-reference.md`「駝鹿」「Phase 2 的新地圖與動物」。）
 
 ### 目標與驗收
 - 公馬鹿、駝鹿、野牛也走戰術地圖，打起來的重點是「讓牠跑起來才有機會」；健康、站定的獵物幾乎打不下來，最好的決定常常是放棄。
@@ -1982,7 +1982,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2g：旱獺、田鼠與地松鼠的小撲、悄悄叼走猞猁的雪兔
 
-（2026-10-22 新增，提案 `docs/proposals/small-prey-marmot-lynx.md` 第 3 版，使用者與 ChatGPT 討論後同意。生態依據：黃石國家公園管理局的資料。前情：所有可以獵的動物都已改走戰術地圖、肉量兩次往生態靠近，見 `docs/proposals/all-tactical-and-meat.md`。）
+（2026-10-22 新增，提案 `docs/proposals/archive/small-prey-marmot-lynx.md` 第 3 版，使用者與 ChatGPT 討論後同意。生態依據：黃石國家公園管理局的資料。前情：所有可以獵的動物都已改走戰術地圖、肉量兩次往生態靠近，見 `docs/proposals/archive/all-tactical-and-meat.md`。）
 
 原則：讓小狼比較容易活下來，不是讓小狼變強；牠還是一隻弱小的狼，只是世界裡有更多可以利用的機會。這三項都不能變成「大型獵物失敗後按一下就補滿」的保底。
 
@@ -2025,7 +2025,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2h：鮭魚洄流季（河岸的覓食競爭）
 
-（2026-10-22 新增，提案 docs/proposals/salmon-run.md 第 2 版；生態：Darimont 等 2003、2008，Gende & Quinn 2003，Lincoln & Quinn 2019。）
+（2026-10-22 新增，提案 docs/proposals/archive/salmon-run.md 第 2 版；生態：Darimont 等 2003、2008，Gende & Quinn 2003，Lincoln & Quinn 2019。）
 
 原則：洄流是一年裡短暫的大量食物；灰熊主要是佔位置的競爭者，不是隨機的傷害來源；位置與時機比成功率重要。
 
@@ -2071,7 +2071,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2i：苔原狼一起狩獵接進主遊戲、所有狩獵改成戰術場景
 
-（2026-10-24 新增，提案 docs/proposals/tundra-joint-in-game.md、docs/proposals/all-hunts-tactical.md，使用者同意：苔原狼選 B、三個假設照建議；獵物靠近 a、躲在草裡的幼鹿 a、家畜 a。原型與難度的資料見 docs/proposals/tundra-joint-tactical.md、pack-hunt-difficulty-data.md。）
+（2026-10-24 新增，提案 docs/proposals/archive/tundra-joint-in-game.md、docs/proposals/archive/all-hunts-tactical.md，使用者同意：苔原狼選 B、三個假設照建議；獵物靠近 a、躲在草裡的幼鹿 a、家畜 a。原型與難度的資料見 docs/proposals/archive/tundra-joint-tactical.md、pack-hunt-difficulty-data.md。）
 
 原則：除了小撲，看到「狩獵」都進戰術地圖，不再有時候戰術、有時候選單。選單式的程式不刪，只隱藏入口（模擬的對照、田鼠與地松鼠照用）。
 
@@ -2114,7 +2114,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2j：一天的節奏（晨昏出獵、白天休息）
 
-（2026-10-26 新增，提案 docs/proposals/rest-and-daytime.md，使用者與 ChatGPT 討論後同意：以 B2 為主、B3 為輔，數值比原提案溫和。）
+（2026-10-26 新增，提案 docs/proposals/archive/rest-and-daytime.md，使用者與 ChatGPT 討論後同意：以 B2 為主、B3 為輔，數值比原提案溫和。）
 
 目標：讓玩家逐漸發現「清晨、黃昏適合找大型獵物，白天適合休息」是划算的策略，而不是強制作息。白天仍然可以探索、找白天活動的獵物（兔子、旱獺、大角羊）、追已經發現的足跡。不追求休息比例剛好等於生態（約 55%）。
 
@@ -2141,7 +2141,7 @@ Phase 1.6 驗證兩件事：這隻狼的成長是否「看得見、是自己養�
 
 ## Phase 2k：戰術戰鬥接進主遊戲
 
-（2026-11-06 使用者同意寫入。提案與選擇在 `docs/proposals/tactical-combat-integration.md`，原型規格在 `docs/proposals/tactical-combat-prototype.md`；同步結算是正式方向。範圍 B、被打倒 C、時機 A、你這邊進場 B。標【假設】的是初始值，試玩或模擬後調。）
+（2026-11-06 使用者同意寫入。提案與選擇在 `docs/proposals/archive/tactical-combat-integration.md`，原型規格在 `docs/proposals/archive/tactical-combat-prototype.md`；同步結算是正式方向。範圍 B、被打倒 C、時機 A、你這邊進場 B。標【假設】的是初始值，試玩或模擬後調。）
 
 ### 目標
 
@@ -2532,7 +2532,7 @@ HD-2D，每種 5 張：郊狼（站、走、咬、叼肉、逃跑）、狼獾（
 - 通過標準另外：健康的大型獵物「先咬後腿再壓倒」比直接壓倒高 5 個百分點以上；累的獵物咬喉最好；小獵物直接壓倒最好；喘低時拖住的受傷比例最低。
 - 3B（壓倒、咬喉兩段）保留：程式上咬住後的流程寫成可以插一段「壓在地上」的狀態，3A 試玩後再評估。
 
-**第 3 步：地形與逃跑路線（2B）**（2026-11-20 使用者同意改寫；量測與討論在 `docs/proposals/hunt-flee-terrain-maps.md`）
+**第 3 步：地形與逃跑路線（2B）**（2026-11-20 使用者同意改寫；量測與討論在 `docs/proposals/archive/hunt-flee-terrain-maps.md`）
 - 已做的規則（保留）：開闊的平地（這一格與周圍一格都是平地）、狼在 4 格以外時，逃跑 +1 格；逃跑方向偏好開闊、好跑的地方；你盯上的那一隻在開闊地拉開距離時，本能放棄，右欄寫「牠跑進開闊地了，追不上」。
 - 難走的地形：獵物穿過倒木、淺水、岩坡、密林，付和狼相同的地形代價；物種可以覆寫（減免、免除或特殊移動能力，例如騾鹿在岩坡不減速）。
 - 現有地圖不改。量測發現現有地圖的障礙是散開的細帶，從哪一側逼近都跑得掉；改成新增「逃跑路線受限」的地圖：地形改變獵物能選的逃跑方向，讓玩家可以預判，不是保證獵到的陷阱。
@@ -2552,7 +2552,7 @@ HD-2D，每種 5 張：郊狼（站、走、咬、叼肉、逃跑）、狼獾（
 
 ## Phase 3a：黑狼的一生（最小可玩版本）
 
-（2026-10-19 新增，提案 `docs/proposals/black-wolf-life.md`，使用者選 1A、2B、3C、4B。只做森林。）
+（2026-10-19 新增，提案 `docs/proposals/archive/black-wolf-life.md`，使用者選 1A、2B、3C、4B。只做森林。）
 
 ### 目標與驗收
 - 黑狼從獨居、成家、生幼狼、擴張到老去、換代，讓壯年（3～6 歲）的森林每一季都有新局勢。
@@ -2896,7 +2896,7 @@ HD-2D，每種 5 張：郊狼（站、走、咬、叼肉、逃跑）、狼獾（
 
 ## Phase 4a：牧場（人類第一階段）
 
-（2026-10-22 新增，評估 docs/proposals/human-settlement-eval.md 第 4 版（含 ChatGPT 審閱的補充），使用者同意；拓荒時代的資料在 docs/ecology-reference.md「拓荒時代的牧場、獵狼人與獵犬」。）
+（2026-10-22 新增，評估 docs/proposals/archive/human-settlement-eval.md 第 4 版（含 ChatGPT 審閱的補充），使用者同意；拓荒時代的資料在 docs/ecology-reference.md「拓荒時代的牧場、獵狼人與獵犬」。）
 
 原則：人類讓世界在狼的一生中改變；牧場是高收益、高風險的選擇，不是禁區；危險一定先有線索，讓玩家看得懂因果、來得及應對；不會讓玩家無處可去。
 

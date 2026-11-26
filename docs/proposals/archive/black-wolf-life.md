@@ -1,6 +1,6 @@
 # 提案：黑狼的一生（Phase 3 最小可玩版本，2026-10-19）
 
-方向見 `docs/proposals/wolf-society-direction.md`（使用者選 A：先做「別的狼會自己發展」，只做森林）。這份是最小可玩版本的提案：先把要決定的規則列成方案，使用者選定後才寫 SPEC。標【假設】的是 Claude Code 的推測，還沒用試玩或模擬驗證。
+方向見 `docs/proposals/archive/wolf-society-direction.md`（使用者選 A：先做「別的狼會自己發展」，只做森林）。這份是最小可玩版本的提案：先把要決定的規則列成方案，使用者選定後才寫 SPEC。標【假設】的是 Claude Code 的推測，還沒用試玩或模擬驗證。
 
 ## 一、要解決的問題
 
@@ -154,7 +154,7 @@
 ```
 ## Phase 3a：黑狼的一生（最小可玩版本）
 
-（2026-10-19 新增，提案 `docs/proposals/black-wolf-life.md`，使用者選 1A、2B、3C、4B。只做森林。）
+（2026-10-19 新增，提案 `docs/proposals/archive/black-wolf-life.md`，使用者選 1A、2B、3C、4B。只做森林。）
 
 ### 目標與驗收
 - 黑狼從獨居、成家、生幼狼、擴張到老去、換代，讓壯年（3～6 歲）的森林每一季都有新局勢。
