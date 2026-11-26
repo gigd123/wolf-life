@@ -17,7 +17,7 @@
 | `docs/design-pillars.md` | 設計支柱：核心樂趣、玩家應面對的決策、不想變成的樣子、新系統的檢驗問題、決策分工 | 提案、寫規格、驗證玩法前 |
 | `docs/project-overview.md` | 給其他人或 AI 看的總覽：目前的遊戲內容與後續規劃 | 第一次接觸專案、或要對外說明時 |
 | `docs/pre-2.0-plan.md` | Phase 2 之前的工作清單：順序、待寫的提案、要補的圖、待決定的建議 | 規劃接下來要做什麼時 |
-| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 2g（旱獺、小撲、悄悄叼走猞猁的雪兔）、Phase 2h（鮭魚洄流季）、Phase 2i（苔原狼一起狩獵進戰術地圖、所有狩獵改成戰術場景）、Phase 2j（一天的節奏）、Phase 2k（戰術戰鬥接進主遊戲）、Phase 2l（小型搶食者的戰術戰鬥）、Phase 2m（追蹤與記憶）、Phase 2n（森林大火的逃生地圖）、Phase 2o（狩獵的地形與招式）、Phase 3a（黑狼的一生）、Phase 3c（用嚎叫感知周圍）、Phase 4a（牧場） | 每次開發前 |
+| `docs/SPEC.md` | 目前的開發規格：Phase 1 收尾、Phase 1.5（完成）、Phase 1.6、1.7（實作完成，待試玩驗收）、Phase 1.7b（成長與探索的節奏）、Phase 1.8（獵物生態與季節）、Phase 1.9（戰鬥演出）、Phase 1.9b（地盤與老年）、Phase 2（季節與地圖）、Phase 2b（狩獵的節奏與難度）、Phase 2c（戰術狩獵接進主遊戲）、Phase 2d（馬鹿、騾鹿、馴鹿接進戰術地圖）、Phase 2e（藏食物）、Phase 2f（會站定的大型獵物）、Phase 2g（旱獺、小撲、悄悄叼走猞猁的雪兔）、Phase 2h（鮭魚洄流季）、Phase 2i（苔原狼一起狩獵進戰術地圖、所有狩獵改成戰術場景）、Phase 2j（一天的節奏）、Phase 2k（戰術戰鬥接進主遊戲）、Phase 2l（小型搶食者的戰術戰鬥）、Phase 2m（追蹤與記憶）、Phase 2n（森林大火的逃生地圖）、Phase 2o（狩獵的地形與招式）、Phase 3a（黑狼的一生）、Phase 3c（用嚎叫感知周圍）、Phase 3d（狼群的流動）、Phase 4a（牧場） | 每次開發前 |
 | `docs/DESIGN.md` | 長期設計、開發原則與架構、Phase 1 原始規格 | 需要整體脈絡或架構規則時 |
 | `docs/ecology-reference.md` | 狼的生態資料與系統對應 | 需要生態細節時 |
 | `docs/writing-guide.md` | 遊戲文案的風格指引 | 撰寫或修改遊戲文案時 |
@@ -58,6 +58,7 @@
 22. **Phase 2n 森林大火的逃生地圖**：依 `SPEC.md` 的實作順序做（共 6 步，從核心火場原型開始）。提案、生態資料與 ChatGPT 的回饋在 `docs/proposals/forest-fire-tactical.md`。不趕時間，數值是待驗證的假設，不為了湊死亡率硬調。
 23. **Phase 2o 狩獵的地形與招式**（掩蔽與接近路線、咬住後的招式各有用途、地形與逃跑路線）：依 `SPEC.md` 的實作順序做（共 4 步，順序 2A → 3A → 2B → 驗證）。量測與提案在 `docs/proposals/hunt-terrain-and-hold.md`，改動前的基準 `docs/proposals/hunt-terrain-baseline-2026-11-17.txt`（`tools/sim/tactical_feel_sim.gd`，每格 1000 場）。驗收看「玩家是否因情境不同採取不同打法」，不只是成功率。
 24. **Phase 3c 用嚎叫感知周圍**（嚎叫回應與循聲，第一階段：離群母狼、鄰近狼群、黑狼一家）：依 `SPEC.md` 的實作順序做（共 4 步，從離群母狼的出現與去留開始）。提案與三輪討論在 `docs/proposals/mate-howl-reply.md`。
+25. **Phase 3d 狼群的流動**（撞上整群時的追擊、首領死亡可能散掉、核心區連贏 2 次就搬到別張地圖、狼群之間的衝突）：依 `SPEC.md` 的實作順序做（共 3 步，從首領死亡與追擊開始）。
 
 ## 工作規則
 
