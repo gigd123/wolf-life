@@ -4703,7 +4703,10 @@ func _show_pack_meet(event: Dictionary) -> void:
 		)
 	_add_encounter_button(tr("pack.option.standoff").replace("{p}", str(roundi(GameState.pack_standoff_chance() * 100.0))), func():
 		var r: Dictionary = GameState.pack_standoff()
-		after.call(tr("pack.standoff." + ("won" if r["won"] else "lost") + (".neighbor" if neighbor and r["won"] else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"]))))
+		var smsg: String = tr("pack.standoff." + ("won" if r["won"] else "lost") + (".neighbor" if neighbor and r["won"] else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
+		if str(r.get("moved_to", "")) != "":
+			smsg += tr("pack.moved_now").replace("{region}", tr("region." + str(r["region"]))).replace("{map}", tr("map." + str(r["moved_to"])))
+		after.call(smsg)
 	)
 	# 挑戰牠們帶頭的公狼（Phase 3 第 8 步）：牠老了或受傷、你沒有伴侶
 	if GameState.can_challenge_pack(GameState.meet_pack()):
@@ -4721,6 +4724,8 @@ func _show_pack_meet(event: Dictionary) -> void:
 		var msg: String = tr("pack.fight." + res_key + (".alone" if alone else "")).replace("{who}", who).replace("{region}", tr("region." + str(r["region"])))
 		if str(r.get("member_lost", "")) != "":
 			msg += tr("pack.fight.member_lost")
+		if str(r.get("moved_to", "")) != "":
+			msg += tr("pack.moved_now").replace("{region}", tr("region." + str(r["region"]))).replace("{map}", tr("map." + str(r["moved_to"])))
 		if GameState.wolf != null and not GameState.wolf.alive:
 			_log(msg)
 			encounter_overlay.visible = false
@@ -5040,6 +5045,8 @@ func _notice_lines(lines: Array) -> String:
 		var region: String = str(line.get("region", ""))
 		if region != "":
 			text = text.replace("{region}", tr("region." + region))
+		if str(line.get("map", "")) != "":
+			text = text.replace("{map}", tr("map." + str(line["map"])))
 		texts.append(text)
 	return "".join(texts)
 

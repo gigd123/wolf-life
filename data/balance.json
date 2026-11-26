@@ -576,6 +576,8 @@
     "_leader_death_comment": "Phase 3d 第 1 步：帶頭的死了（被咬死、老死、病死），leader_death_disperse 的機率整群散掉，即使有子女可以接手（之後照鄰群的重組規則可能再組成一對）。",
     "leader_death_disperse": 0.35,
     "_pursuit_comment": "Phase 3d 第 1 步：撞上整群打贏時追擊帶頭的（SPEC Phase 3d「撞上整群時的追擊」）。家人每隻 block_each 擋你（挨一口 bite、帶頭的逃掉）；沒被擋到時追上 = base + 速度差 × speed_per + 牠的傷勢（(1 − 血量比例) × hurt_max）；追上就咬死。",
+    "_relocate_comment": "Phase 3d 第 2 步：一季內在一群狼的核心區打贏或對峙贏 core_wins_to_move 次（同一天只算一次），這一群搬到 relocate_maps 裡另一張地圖（核心放在離你的巢穴最遠、不和別群的核心重疊的那一區）。",
+    "core_wins_to_move": 2, "relocate_maps": ["forest", "mountain", "grassland", "tundra"],
     "pursuit": { "block_each": 0.25, "base": 0.5, "speed_per": 0.01, "hurt_max": 0.3, "bite": [8, 16] },
     "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10, "_over_cap_comment": "Phase 3：未滿 1 歲的幼狼不算進 max_size；超過時秋冬換季每多一隻有 over_cap_disperse 的機率最年長的年輕成員離開（不會立刻離開）。", "over_cap_disperse": 0.6,
     "_meet_comment": "第 3 步「撞上狼群」：在牠們的領域每個時段 core_chance、相鄰區 border_chance；先擲落單的黑狼（第一代、可以互動時 lone_leader_chance，走現有的單挑）、落單的年輕狼（lone_young_chance）。對峙勝算 = base ÷ 數量 + (你的力量值 − 帶頭的) ÷ power_divisor + 態度加減，限制在 min～max；輸了 standoff_damage 並離開。逃：caught 被追上（吃撐或有傷 + slow_bonus），flee_damage。attitude：wary（打贏過牠）、scorn（向牠示弱、被趕過）、neutral；換代後效果減半。charge ≥ 0.5：牠們直接逼過來，不能從容退開。",

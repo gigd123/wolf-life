@@ -87,7 +87,11 @@ func _run() -> void:
 	_check(pr["result"] == "blocked" and gs.wolf.health < hp0 and gs.pack_leader_of(mp).alive, "被家人擋住：挨一口、帶頭的逃掉（%s，傷 %.0f）" % [pr["result"], float(pr["dmg"])])
 	pc["block_each"] = 0.0
 	pc["base"] = 1.0
-	pr = gs.pack_pursue(rr)
+	# 追上的機率上限 95%：最多追 20 次（沒追上帶頭的還活著，可以再追）
+	for k in 20:
+		pr = gs.pack_pursue(rr)
+		if pr["result"] == "caught":
+			break
 	_check(pr["result"] == "caught" and not gs.pack_leader_of(mp).alive, "沒被擋、追上：咬死帶頭的（%s）" % pr["result"])
 	for k in keep:
 		pc[k] = keep[k]

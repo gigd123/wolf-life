@@ -396,11 +396,20 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 			if rc == "open" and ranch_linked_regions().has(current_region):
 				ranch["seen"] = true
 	# 黑狼家族的變化（Phase 3a 第 2 步）：人在森林才寫，不在就留到回森林的那一季
-	if current_map() == "forest" and life_log.has("pack_news"):
+	# Phase 3d：消息記著發生在哪張地圖（沒寫的是森林），人在那張地圖才寫；搬家的消息分黑狼一家和一般鄰群
+	if life_log.has("pack_news"):
 		var known: String = "known" if is_identified("stranger_wolf") else "unknown"
+		var later: Array = []
 		for n in life_log["pack_news"]:
-			lines.append({"key": "pack.news.%s.%s" % [n["event"], known], "region": str(n.get("region", ""))})
-		life_log.erase("pack_news")
+			if str(n.get("map", "forest")) != current_map():
+				later.append(n)
+				continue
+			var kind: String = known if str(n.get("pack", "black")) == "black" else "neighbor"
+			lines.append({"key": "pack.news.%s.%s" % [n["event"], kind], "region": str(n.get("region", "")), "map": str(n.get("to_map", ""))})
+		if later.is_empty():
+			life_log.erase("pack_news")
+		else:
+			life_log["pack_news"] = later
 	_queue_notice({"type": "season_card", "season": season, "first": first, "lines": lines, "map": current_map(), "region": current_region, "review": review})
 
 # 第一次在這個季節來到有自己季節卡片的地圖（苔原）：補一張卡片。
@@ -4338,7 +4347,10 @@ func pack_standoff() -> Dictionary:
 		_set_pack_rel(mp, "wary")
 		_standoff_won_here(mp)
 		state_changed.emit()
-		return {"won": true, "region": current_region}
+		var sr := {"won": true, "region": current_region}
+		if last_relocation != "":
+			sr["moved_to"] = last_relocation # Phase 3d：這次的勝利讓牠們搬走了
+		return sr
 	_set_pack_rel(mp, "scorn")
 	_pack_bite("standoff_damage")
 	return {"won": false, "region": _pack_leave(true)}
@@ -4443,6 +4455,8 @@ func _pack_fight_after(mp: WolfPack, won: bool, lost_id: String, killed: int = -
 	if won:
 		_set_pack_rel(mp, "wary")
 		_standoff_won_here(mp)
+		if last_relocation != "":
+			res["moved_to"] = last_relocation # Phase 3d：這次的勝利讓牠們搬走了
 		var can: int = mp.young.filter(func(a): return float(a) >= 1.0).size()
 		var n_kill: int = mini(can, 1 if killed < 0 else killed)
 		for i in n_kill:
@@ -4542,7 +4556,67 @@ func auto_pack_tactical() -> Dictionary:
 	return finish_pack_tactical(tc)
 
 # 對峙贏了（SPEC Phase 3「領域與鄰群」）：在你的地盤上 → 清掉這一區被試探的紀錄；在牠們的領域（不是核心）→ 你標記了的話，換季時變成你的
+# --- 核心區連贏就搬家（Phase 3d 第 2 步）---
+var last_relocation := "" # 這一次的勝利讓牠們搬到哪張地圖（畫面寫結果用；沒有＝空字串）
+
+func _core_win(p: WolfPack) -> void:
+	last_relocation = ""
+	if p == null or p.off_map or p.regions.is_empty() or str(p.regions[0]) != current_region:
+		return
+	var c: Dictionary = GameData.balance.get("black_pack", {})
+	var all: Dictionary = life_log.get_or_add("core_wins", {})
+	var e: Dictionary = all.get(p.id, {})
+	var season_len: int = int(GameData.balance.get("season_day_count", {}).get(GameTime.time_mode, 10))
+	if int(e.get("season", -1)) != GameTime.season_index or _today() - int(e.get("day0", -999)) >= season_len:
+		e = {"season": GameTime.season_index, "day0": _today(), "days": []}
+	var days: Array = e["days"]
+	if not days.has(_today()):
+		days.append(_today())
+	all[p.id] = e
+	if days.size() >= int(c.get("core_wins_to_move", 2)):
+		all.erase(p.id)
+		last_relocation = _pack_relocate(p)
+
+# 這一群搬到另一張地圖：核心放在離你的巢穴最遠、不和別群的核心重疊的那一區；回傳搬去的地圖
+func _pack_relocate(p: WolfPack) -> String:
+	var c: Dictionary = GameData.balance.get("black_pack", {})
+	var from_map: String = p.map_id
+	var old_core: String = str(p.regions[0]) if not p.regions.is_empty() else ""
+	var maps: Array = (c.get("relocate_maps", ["forest", "mountain", "grassland", "tundra"]) as Array).filter(func(m): return str(m) != from_map and not GameData.map_regions(str(m)).is_empty())
+	if maps.is_empty():
+		return ""
+	var to: String = str(maps[RNGService.randi_range(0, maps.size() - 1)])
+	var taken: Array = []
+	for q in all_packs():
+		if q != p and q.map_id == to and not q.regions.is_empty():
+			taken.append(str(q.regions[0]))
+	var core := _pack_core_far_from_den(to)
+	if taken.has(core):
+		var free: Array = GameData.map_regions(to).filter(func(r): return not taken.has(str(r)) and str(r) != den_region)
+		if not free.is_empty():
+			core = str(free[RNGService.randi_range(0, free.size() - 1)])
+	p.map_id = to
+	p.regions = [core]
+	var leader := pack_leader_of(p)
+	if leader != null:
+		leader.territory = core
+	if p == black_pack:
+		stranger_territory = core
+	# 你在原本那一帶的試探、佔走紀錄清掉：那一區空出來了
+	var claims: Dictionary = life_log.get("pack_claims", {})
+	for r in claims.keys():
+		if str(claims[r]) == p.id:
+			claims.erase(r)
+	life_log[_probe_key(p)] = {}
+	add_life_event("pack.moved", {"pack": p.id, "from": old_core, "to_map": to})
+	_stat_inc("pack_meet", "moved")
+	var news: Array = life_log.get("pack_news", [])
+	news.append({"event": "moved", "region": old_core, "map": from_map, "to_map": to, "pack": p.id})
+	life_log["pack_news"] = news
+	return to
+
 func _standoff_won_here(p: WolfPack) -> void:
+	_core_win(p)
 	if is_own_territory():
 		for q in all_packs():
 			var probe: Dictionary = life_log.get(_probe_key(q), {})
@@ -7036,7 +7110,8 @@ func _update_black_pack() -> void:
 	var core_before: String = str(black_pack.regions[0]) if not black_pack.regions.is_empty() else stranger_territory
 	var beaten: bool = stranger() != null and (stranger().yielded_to_player or stranger().death_cause == "killed_by_player")
 	var adjacent: Dictionary = {}
-	for r in GameData.map_regions("forest"):
+	# Phase 3d：黑狼一家可能搬到別張地圖，領域照牠住的那張擴張
+	for r in GameData.map_regions(black_pack.map_id if black_pack.map_id != "" else "forest"):
 		adjacent[r] = EncounterSystem.region_data(r).get("adjacent", [])
 	var events: Array = black_pack.on_season_passed({"season": GameTime.current_season(), "leader": leader,
 		"player_age": wolf.age_years, "beaten": beaten, "den": den_region, "own": own_territories(), "adjacent": adjacent})
@@ -7044,7 +7119,7 @@ func _update_black_pack() -> void:
 		_pack_note("took")
 		events.append("took")
 		var tl: Array = life_log.get("pack_news", [])
-		tl.append({"event": "took", "region": r})
+		tl.append({"event": "took", "region": r, "map": GameData.map_of(r)})
 		life_log["pack_news"] = tl
 	if events.has("succession"):
 		var core: String = str(black_pack.regions[0]) if not black_pack.regions.is_empty() else ""
@@ -7062,7 +7137,7 @@ func _update_black_pack() -> void:
 	for e in events:
 		if e in PACK_NEWS:
 			var region: String = str(black_pack.regions.back()) if e == "expanded" else (str(black_pack.regions[0]) if not black_pack.regions.is_empty() else core_before)
-			news.append({"event": e, "region": region})
+			news.append({"event": e, "region": region, "map": black_pack.map_id if black_pack.map_id != "" else "forest"})
 	if not news.is_empty():
 		life_log["pack_news"] = news
 
