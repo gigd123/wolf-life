@@ -4365,6 +4365,50 @@ func pack_fight_chance() -> float:
 	var f: Dictionary = _pack_meet_cfg().get("fight", {})
 	return clamp(pack_standoff_chance() * float(f.get("mult", 1.2)) + float(f.get("bonus", 0.0)), float(f.get("min", 0.02)), float(f.get("max", 0.8)))
 
+# --- 撞上整群時的追擊（Phase 3d 第 1 步）---
+# 打贏時帶頭的示弱了（戰術戰鬥：牠的結局是示弱；選單式：打贏就算），可以選放牠走或追擊。
+# blockers：還在的家人（沒死的成員），每隻 block_each 擋你。回傳 {block, catch}（顯示用）
+func pack_pursuit_odds(r: Dictionary) -> Dictionary:
+	var pc: Dictionary = _pup_cfg_pack().get("pursuit", {})
+	var mp := meet_pack()
+	var leader := pack_leader_of(mp) if mp != null else null
+	var n: int = int(r.get("blockers", 0))
+	var block: float = 1.0 - pow(1.0 - float(pc.get("block_each", 0.25)), n)
+	var catch_p: float = float(pc.get("base", 0.5))
+	if leader != null:
+		catch_p += (wolf.effective_speed() - leader.speed) * float(pc.get("speed_per", 0.01))
+		catch_p += (1.0 - clampf(leader.health / maxf(1.0, leader.health_max), 0.0, 1.0)) * float(pc.get("hurt_max", 0.3))
+	return {"block": clampf(block, 0.0, 1.0), "catch": clampf(catch_p, 0.05, 0.95)}
+
+func _pup_cfg_pack() -> Dictionary:
+	return GameData.balance.get("black_pack", {})
+
+func can_pursue_pack(r: Dictionary) -> bool:
+	var mp := meet_pack()
+	var leader := pack_leader_of(mp) if mp != null else null
+	return bool(r.get("won", false)) and bool(r.get("leader_submitted", false)) and leader != null and leader.alive and wolf.alive
+
+# 追擊：回傳 {"result": blocked／caught／escaped, "dmg"}；咬死時帶頭的死掉（換季時照首領死亡的規則：35% 散掉，否則換代）
+func pack_pursue(r: Dictionary) -> Dictionary:
+	var odds := pack_pursuit_odds(r)
+	var mp := meet_pack()
+	var leader := pack_leader_of(mp)
+	record_decision("pack.pursue")
+	var out := {"result": "escaped", "dmg": 0.0}
+	if RNGService.chance(float(odds["block"])):
+		var bite: Array = _pup_cfg_pack().get("pursuit", {}).get("bite", [8, 16])
+		var dmg: float = RNGService.randf_range(float(bite[0]), float(bite[1]))
+		wolf.health = maxf(1.0, wolf.health - dmg)
+		out = {"result": "blocked", "dmg": dmg}
+	elif RNGService.chance(float(odds["catch"])):
+		leader.die("killed_by_player")
+		_on_npc_died(leader)
+		add_life_event("pack.leader_killed", {"pack": mp.id})
+		out["result"] = "caught"
+	_pack_record("meet", "pursue_" + str(out["result"]))
+	_stat_inc("pack_meet", "pursue." + str(out["result"]))
+	return out
+
 func pack_fight() -> Dictionary:
 	var mp := meet_pack()
 	if mp == black_pack:
@@ -4384,7 +4428,11 @@ func pack_fight() -> Dictionary:
 			v.die("pack_fight")
 			_on_npc_died(v)
 			lost_id = v.id
-	return _pack_fight_after(mp, won, lost_id)
+	var res := _pack_fight_after(mp, won, lost_id)
+	# 選單式：打贏就當作帶頭的示弱了；還在的家人＝伴侶＋滿 1 歲的年輕成員
+	res["leader_submitted"] = won
+	res["blockers"] = (1 if mp.has_mate() else 0) + mp.young.filter(func(a): return float(a) >= 1.0).size()
+	return res
 
 # 撲上去打的後果（選單式與戰術戰鬥共用）：贏了牠們少一隻年輕的、照對峙贏了佔區域；輸了被趕走、這一帶的食物沒了
 # killed：打贏時牠們被咬死幾隻（2026-11-24 試玩回報：原本寫「丟下一隻受傷的同伴」看不出那隻怎麼了）。
@@ -4471,6 +4519,13 @@ func finish_pack_tactical(tc: TacticalCombat) -> Dictionary:
 		if i != li and str(tc.units[i]["side"]) == "enemy" and (str(tc.units[i].get("out_reason", "")) == "died" or float(tc.units[i]["hp"]) <= 0.0):
 			killed += 1
 	var res := _pack_fight_after(mp, won, lost_id, killed)
+	# Phase 3d：帶頭的在戰鬥裡示弱了才能追擊；還在的家人＝沒被咬死的成員
+	res["leader_submitted"] = won and li >= 0 and str(tc.units[li].get("out_reason", "")) == "submit"
+	var alive_n := 0
+	for i in tc.units.size():
+		if i != li and str(tc.units[i]["side"]) == "enemy" and str(tc.units[i].get("out_reason", "")) != "died":
+			alive_n += 1
+	res["blockers"] = alive_n
 	return res
 
 # 自動玩家、模擬：照「交給本能」打完

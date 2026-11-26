@@ -575,6 +575,8 @@
     "disperse_per_season": { "autumn": 0.15, "winter": 0.15 }, "heir_min_age": 1.5,
     "_leader_death_comment": "Phase 3d 第 1 步：帶頭的死了（被咬死、老死、病死），leader_death_disperse 的機率整群散掉，即使有子女可以接手（之後照鄰群的重組規則可能再組成一對）。",
     "leader_death_disperse": 0.35,
+    "_pursuit_comment": "Phase 3d 第 1 步：撞上整群打贏時追擊帶頭的（SPEC Phase 3d「撞上整群時的追擊」）。家人每隻 block_each 擋你（挨一口 bite、帶頭的逃掉）；沒被擋到時追上 = base + 速度差 × speed_per + 牠的傷勢（(1 − 血量比例) × hurt_max）；追上就咬死。",
+    "pursuit": { "block_each": 0.25, "base": 0.5, "speed_per": 0.01, "hurt_max": 0.3, "bite": [8, 16] },
     "expand_min_size": 5, "expand_chance": 0.5, "max_regions": 2, "max_size": 10, "_over_cap_comment": "Phase 3：未滿 1 歲的幼狼不算進 max_size；超過時秋冬換季每多一隻有 over_cap_disperse 的機率最年長的年輕成員離開（不會立刻離開）。", "over_cap_disperse": 0.6,
     "_meet_comment": "第 3 步「撞上狼群」：在牠們的領域每個時段 core_chance、相鄰區 border_chance；先擲落單的黑狼（第一代、可以互動時 lone_leader_chance，走現有的單挑）、落單的年輕狼（lone_young_chance）。對峙勝算 = base ÷ 數量 + (你的力量值 − 帶頭的) ÷ power_divisor + 態度加減，限制在 min～max；輸了 standoff_damage 並離開。逃：caught 被追上（吃撐或有傷 + slow_bonus），flee_damage。attitude：wary（打贏過牠）、scorn（向牠示弱、被趕過）、neutral；換代後效果減半。charge ≥ 0.5：牠們直接逼過來，不能從容退開。",
     "_survival_comment": "第 4 步「對生存的影響」：prey 牠們的領域（core）、相鄰區（border）的中、大型獵物倍率。remains：在 core／border 探索時發現牠們吃剩的殘骸（segments 段，每段 hunger 飽食度），每吃一段被發現的機會 *_risk（× 態度的 meet_mult）。probe：和牠們相鄰的你的地盤，標記還在時每天 overmark_chance 被蓋過，淡掉時 faded_chance 被試探（× 態度的 probe_mult）；下一次換季時你還沒補，變成牠們的（最多 max_regions 區）。",

@@ -1,6 +1,7 @@
 extends SceneTree
 # 2026-11-24 試玩回報的回歸測試：
 #   A. 黑狼已經有家人時，單獨打贏帶頭的黑狼不會拿到牠們那一帶（own_territory、marks 不變，c 帶 family_kept）；還沒有家人時照舊拿到
+#   C. 撞上整群打贏後追擊帶頭的（Phase 3d）：可不可以追、被擋住的機率、被擋挨一口、追上咬死
 #   B. 撞上整群打贏：選單式有年輕成員時咬死一隻（killed=1、少一隻）、沒有年輕成員時 killed=0；戰術戰鬥照傳進來的實際死亡數
 # 用法：bash tools/run_sim.sh pack_fight_result_rules
 var gs
@@ -64,5 +65,31 @@ func _run() -> void:
 	mp.young = [1.5]
 	r = gs._pack_fight_after(mp, false, "")
 	_check(int(r.get("killed", -1)) == 0 and mp.young.size() == 1, "打輸：沒有咬死")
+	print("== C. 撞上整群打贏後追擊帶頭的（Phase 3d 第 1 步）")
+	var pc: Dictionary = root.get_node("GameData").balance["black_pack"]["pursuit"]
+	var keep := pc.duplicate()
+	gs.new_game("forest_east")
+	gs.wolf.age_years = 4.0
+	mp = gs.black_pack
+	mp.stage = "pack"
+	mp.regions = [gs.stranger_territory]
+	mp.mate_age = 4.0
+	mp.young = [1.5]
+	gs.meet_pack_id = "black"
+	var rr := {"won": true, "leader_submitted": true, "blockers": 2}
+	_check(gs.can_pursue_pack(rr), "打贏、帶頭的示弱：可以追擊")
+	_check(not gs.can_pursue_pack({"won": true, "leader_submitted": false}), "帶頭的沒示弱：不能追擊")
+	var od: Dictionary = gs.pack_pursuit_odds(rr)
+	_check(absf(float(od["block"]) - 0.4375) < 0.001, "兩隻家人：被擋住 1 − 0.75² = 44%%（%.3f）" % float(od["block"]))
+	pc["block_each"] = 1.0
+	var hp0: float = gs.wolf.health
+	var pr: Dictionary = gs.pack_pursue(rr)
+	_check(pr["result"] == "blocked" and gs.wolf.health < hp0 and gs.pack_leader_of(mp).alive, "被家人擋住：挨一口、帶頭的逃掉（%s，傷 %.0f）" % [pr["result"], float(pr["dmg"])])
+	pc["block_each"] = 0.0
+	pc["base"] = 1.0
+	pr = gs.pack_pursue(rr)
+	_check(pr["result"] == "caught" and not gs.pack_leader_of(mp).alive, "沒被擋、追上：咬死帶頭的（%s）" % pr["result"])
+	for k in keep:
+		pc[k] = keep[k]
 	print("結果：%s（失敗 %d）" % ["全部通過" if fails == 0 else "有失敗", fails])
 	quit(1 if fails > 0 else 0)

@@ -2432,6 +2432,14 @@ pack.option.fight,撲上去打（勝算 {p}%）
 pack.option.fight.tactical,撲上去打
 pack.fight.parted,你們和牠們咬了幾口、互相逼視，誰也沒有退。最後雙方各自散開，你們退到{region}。
 pack.fight.parted.alone,你和牠們咬了幾口、互相逼視，誰也沒有退。最後你退到{region}。
+pack.pursue.prompt,{who}夾著尾巴轉身要逃。要放牠走，還是追上去？
+pack.pursue.leader.black,那隻黑狼
+pack.pursue.leader.neighbor,牠們帶頭的狼
+pack.pursue.let_go,放牠走
+pack.pursue.go,追上去（家人擋住 {b}%、追上 {c}%）
+pack.pursue.result.blocked,你追上去，一隻牠的家人從旁邊撲出來咬了你一口（傷 {n}），{who}趁機逃遠了。
+pack.pursue.result.caught,你追上{who}，從後面撲倒牠，咬住喉嚨不放。{who}不再動了。
+pack.pursue.result.escaped,你追了一段，{who}鑽進林子，逃遠了。
 pack.fight.won,你們撲了上去，咬成一團。{who}身上都帶了傷，退走了。
 pack.fight.won_killed,你們撲了上去，咬成一團。你們咬死了牠們一隻年輕的狼，{who}丟下牠的屍體，退走了。
 pack.fight.lost,你們撲了上去，卻被牠們的數量壓了回來。你們帶著傷逃到{region}。

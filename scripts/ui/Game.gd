@@ -4726,6 +4726,18 @@ func _show_pack_meet(event: Dictionary) -> void:
 			encounter_overlay.visible = false
 			_on_wolf_died(GameState.wolf.death_cause)
 			return
+		# Phase 3d：帶頭的示弱了，可以放牠走或追擊
+		if GameState.can_pursue_pack(r):
+			var odds: Dictionary = GameState.pack_pursuit_odds(r)
+			encounter_message.text = msg + "\n\n" + tr("pack.pursue.prompt").replace("{who}", tr("pack.pursue.leader." + ("black" if GameState.meet_pack() == GameState.black_pack else "neighbor")))
+			_clear_children(encounter_buttons_box)
+			_add_encounter_button(tr("pack.pursue.let_go"), func(): after.call(msg))
+			_add_encounter_button(tr("pack.pursue.go").replace("{b}", str(roundi(float(odds["block"]) * 100.0))).replace("{c}", str(roundi(float(odds["catch"]) * 100.0))), func():
+				var pr: Dictionary = GameState.pack_pursue(r)
+				var who_l: String = tr("pack.pursue.leader." + ("black" if GameState.meet_pack() == GameState.black_pack else "neighbor"))
+				after.call(msg + tr("pack.pursue.result." + str(pr["result"])).replace("{who}", who_l).replace("{n}", str(roundi(float(pr["dmg"]))))))
+			encounter_overlay.visible = true
+			return
 		after.call(msg)
 	_add_encounter_button(fight_label, func():
 		var alone: bool = GameState.team_size() <= 1

@@ -69,6 +69,8 @@ func _process(delta: float) -> bool:
 		tc.units[0]["command"] = "duel"
 		tc.plan(0, tc.ally_plan(0))
 		tc.resolve()
+		if not tc.done:
+			tc.begin_round() # 對手決定下一回合（同戰鬥畫面的 _resolve_and_next）
 		hd.refresh()
 		print("step %d done %s %s" % [steps, str(tc.done), str(tc.outcome)])
 		if tc.done or steps > 14:
