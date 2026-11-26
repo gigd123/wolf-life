@@ -89,6 +89,12 @@ func on_season_passed(ctx: Dictionary) -> Array:
 		if young.size() < before:
 			events.append("young_left")
 	# 帶頭的死了：有伴侶和成年子女就由子女接手（換代），否則解散
+	# Phase 3d 第 1 步：剛死的那一季，leader_death_disperse 的機率整群散掉（即使有子女可以接手）
+	if not leader_alive and stage != "gone" and not vacant and RNGService.chance(float(c.get("leader_death_disperse", 0.0))):
+		stage = "gone"
+		regions = []
+		events.append("dissolved")
+		return _log(events, ctx)
 	if not leader_alive and stage != "gone":
 		var allow_vacancy: bool = bool(ctx.get("allow_vacancy", false))
 		if allow_vacancy and has_mate() and not vacant:

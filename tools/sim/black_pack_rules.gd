@@ -20,6 +20,7 @@ func _process(_d) -> bool:
 	var data = root.get_node("GameData")
 	var cfg: Dictionary = data.balance["black_pack"]
 	cfg["pair_chance"] = 1.0 # 測規則，不測機率
+	cfg["leader_death_disperse"] = 0.0 # Phase 3d：下面先測換代；散掉另外測
 	var adjacent := {}
 	for r in data.map_regions("forest"):
 		adjacent[r] = data.regions()[r].get("adjacent", [])
@@ -65,6 +66,27 @@ func _process(_d) -> bool:
 	var ev: Array = p5.on_season_passed({"season": "summer", "leader": dead, "player_age": 5.0, "beaten": false, "adjacent": adjacent})
 	_check(ev.has("succession") and p5.generation == 2 and absf(p5.heir_age - 3.25) < 0.01, "有伴侶與夠大的子女：最年長的接手（%s，第 %d 代，%.2f 歲）" % [ev, p5.generation, p5.heir_age])
 	_check(p5.regions == ["forest_north"], "換代後領域不變")
+	# Phase 3d 第 1 步：帶頭的死了，leader_death_disperse 的機率整群散掉（即使有子女可以接手）
+	cfg["leader_death_disperse"] = 1.0
+	var p5b = WP.new()
+	p5b.regions = ["forest_north"]
+	p5b.stage = "pack"
+	p5b.mate_age = 4.0
+	p5b.young = [1.75, 3.0]
+	var evb: Array = p5b.on_season_passed({"season": "summer", "leader": dead, "player_age": 5.0, "beaten": false, "adjacent": adjacent})
+	_check(evb.has("dissolved") and not evb.has("succession") and p5b.stage == "gone" and p5b.regions.is_empty(), "Phase 3d：帶頭的死了、擲到散掉：即使有子女也散了（%s）" % str(evb))
+	cfg["leader_death_disperse"] = 0.35
+	var gone := 0
+	for k in 400:
+		var pk = WP.new()
+		pk.regions = ["forest_north"]
+		pk.stage = "pack"
+		pk.mate_age = 4.0
+		pk.young = [1.75, 3.0]
+		if pk.on_season_passed({"season": "summer", "leader": dead, "player_age": 5.0, "beaten": false, "adjacent": adjacent}).has("dissolved"):
+			gone += 1
+	_check(gone > 110 and gone < 170, "Phase 3d：散掉的比例約 35%%（%d／400）" % gone)
+	cfg["leader_death_disperse"] = 0.0
 	var p6 = WP.new()
 	p6.regions = ["forest_north"]
 	p6.stage = "pack"
