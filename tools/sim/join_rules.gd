@@ -33,6 +33,7 @@ func _vacant_setup():
 	p.mate_age = 4.0
 	root.get_node("GameData").balance["black_pack"]["pup_survival_per_season"] = 1.0
 	root.get_node("GameData").balance["black_pack"]["leader_death_disperse"] = 0.0 # Phase 3d：這裡測換代與空缺，不擲散掉
+	root.get_node("GameData").balance["black_pack"]["self_move_chance"] = 0.0 # Phase 3d：換季時不自己搬家
 	gs.npcs[p.leader_id].die("old_age")
 	gt.season_index = 1
 	gs._update_neighbor_packs()

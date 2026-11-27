@@ -66,6 +66,7 @@ func _run() -> void:
 	var keep_survival = cfg["pup_survival_per_season"]
 	cfg["pup_survival_per_season"] = 1.0
 	cfg["leader_death_disperse"] = 0.0 # Phase 3d：這裡測換代，不擲散掉
+	cfg["self_move_chance"] = 0.0 # Phase 3d：換季時不自己搬家
 	p.on_season_passed({"season": "spring", "leader": leader, "player_age": 3.0})
 	_check(p.pups() >= 3, "滿了也照樣生幼狼（%d 隻）" % p.pups())
 	cfg["disperse_per_season"] = keep_disperse
