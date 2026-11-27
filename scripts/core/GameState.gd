@@ -261,6 +261,8 @@ func _on_season_changed(_season_index: int) -> void:
 		_update_black_pack()
 		_update_neighbor_packs()
 		_pack_conflicts()
+		_pack_wander()
+		_pack_recolonize()
 		_settle_pack_claims()
 		_maybe_schedule_fire()
 		_maybe_schedule_blizzard()
@@ -4580,6 +4582,7 @@ func _core_win(p: WolfPack) -> void:
 	if days.size() >= int(c.get("core_wins_to_move", 2)):
 		all.erase(p.id)
 		last_relocation = _pack_relocate(p)
+		_stat_inc("pack_meet", "player_moves") # 你在核心區連贏造成的搬家（模擬統計用）
 
 # 這一群搬到另一張地圖：核心放在離你的巢穴最遠、不和別群的核心重疊的那一區；回傳搬去的地圖
 func _pack_relocate(p: WolfPack, announce: bool = true) -> String:
@@ -4668,6 +4671,64 @@ func _pack_conflicts() -> Dictionary:
 	add_life_event("pack.conflict", {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to})
 	_stat_inc("pack_meet", "conflict")
 	return {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to, "loser_loss": loser_loss, "winner_loss": winner_loss}
+
+# --- 狼群自己的流動（Phase 3d，2026-11-27 使用者同意 A＋B）---
+# A. 每季 self_move_chance 的機率，隨機一群（住在地圖上、還在的）自己搬到別張地圖
+func _pack_wander() -> String:
+	var c: Dictionary = GameData.balance.get("black_pack", {})
+	if not RNGService.chance(float(c.get("self_move_chance", 0.0))):
+		return ""
+	var cands: Array = all_packs().filter(func(p): return not p.off_map and pack_is_active(p) and not p.regions.is_empty())
+	if cands.is_empty():
+		return ""
+	var p: WolfPack = cands[RNGService.randi_range(0, cands.size() - 1)]
+	return _pack_relocate(p)
+
+# B. 開局有狼群的地圖空了 recolonize_days 天以上：搬進來一對新的狼（一般鄰群）
+func _pack_recolonize() -> String:
+	var c: Dictionary = GameData.balance.get("black_pack", {})
+	var since: Dictionary = life_log.get_or_add("map_empty_since", {})
+	var made := ""
+	for m in c.get("recolonize_maps", []):
+		var mid: String = str(m)
+		var occupied := false
+		for p in all_packs():
+			if p.map_id == mid and not p.off_map and pack_is_active(p):
+				occupied = true
+		if occupied:
+			since.erase(mid)
+			continue
+		if not since.has(mid):
+			since[mid] = _today()
+		elif made == "" and _today() - int(since[mid]) >= int(c.get("recolonize_days", 40)):
+			_spawn_pack(mid)
+			since.erase(mid)
+			made = mid
+	return made
+
+func _spawn_pack(map_id: String) -> WolfPack:
+	var n: int = int(life_log.get("new_pack_count", 0)) + 1
+	life_log["new_pack_count"] = n
+	var p := WolfPack.new()
+	p.id = "new_%d" % n
+	p.kind = "neighbor"
+	p.map_id = map_id
+	var core := _pack_core_far_from_den(map_id)
+	p.regions = [core]
+	p.leader_id = "pack_" + p.id
+	var leader := NpcWolf.create(p.leader_id, core, "pack_breeder")
+	leader.pack_id = p.id
+	leader.age_years = snapped(RNGService.randf_range(2.0, 4.0), 0.25)
+	npcs[p.leader_id] = leader
+	p.mate_age = snapped(RNGService.randf_range(2.0, 4.0), 0.25)
+	p.stage = "pair"
+	neighbor_packs.append(p)
+	add_life_event("pack.arrived", {"pack": p.id, "map": map_id})
+	_stat_inc("pack_meet", "arrived")
+	var news: Array = life_log.get("pack_news", [])
+	news.append({"event": "arrived", "region": core, "map": map_id, "pack": p.id})
+	life_log["pack_news"] = news
+	return p
 
 # 衝突的損失：少 n 隻年輕的；沒有年輕的可以少時，帶頭的受傷
 func _pack_take_losses(p: WolfPack, n: int, hurt: float) -> void:

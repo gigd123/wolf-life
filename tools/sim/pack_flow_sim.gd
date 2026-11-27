@@ -4,7 +4,7 @@ extends SceneTree
 #   搬家（pack.moved：被你在核心區連贏、或衝突輸了）、狼群之間的衝突（pack.conflict）、你在核心區連贏造成的搬家、
 #   狼群散掉（黑狼一家 dissolved、鄰群 gone）、死時每張地圖住著幾群、活著的狼群總數、壽命。
 # 通過標準：一生平均 2～6 次搬家或衝突；狼群不會在一兩年內全部散光；強的玩家一生至少一次在核心區連贏 2 次。
-# 用法：bash tools/run_sim.sh pack_flow_sim "" 20（第三個參數是隻數）；STYLE=average
+# 用法：bash tools/run_sim.sh pack_flow_sim "" 20（第三個參數是隻數）；STYLE=average；SEEK=1 會去核心區找狼群（SEEK_CHANCE 每天的機會，預設 0.3）
 var f := 0
 const DENS := ["forest_east", "tundra_south", "mountain_canyon", "grassland_riverwoods"]
 
@@ -16,6 +16,8 @@ func _process(_d) -> bool:
 	var AP = load("res://scripts/core/AutoPlayer.gd")
 	var runs: int = int(OS.get_environment("RUNS")) if OS.get_environment("RUNS") != "" else 20
 	var style: String = OS.get_environment("STYLE") if OS.get_environment("STYLE") != "" else "assault"
+	var seek: bool = OS.get_environment("SEEK") != ""
+	var seek_chance: float = float(OS.get_environment("SEEK_CHANCE")) if OS.get_environment("SEEK_CHANCE") != "" else 0.3
 	var tot := {"moved": 0, "conflict": 0, "player_moves": 0, "dissolved": 0, "lifespan": 0.0, "lives_with_player_move": 0, "empty_all_2y": 0}
 	var end_maps := {}
 	var lines: Array = []
@@ -24,9 +26,21 @@ func _process(_d) -> bool:
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
 		var all_gone_by := -1.0
+		var last_day := -1
 		while not ap.done() and guard < 4000:
 			guard += 1
 			ap.step(1)
+			# SEEK=1：會去核心區找狼群的玩家（只在模擬裡）：3 歲以上、血量七成以上時，每天 SEEK_CHANCE 的機會走到這張地圖某一群的核心區
+			var today: int = int(GS.life_log.get("days_lived", 0))
+			if seek and today != last_day:
+				last_day = today
+				if GS.wolf.age_years >= 3.0 and GS.wolf.health >= GS.wolf.health_max * 0.7 and randf() < seek_chance:
+					var cores: Array = []
+					for p in GS.all_packs():
+						if GS.pack_is_active(p) and not p.off_map and not p.regions.is_empty() and p.map_id == GS.current_map():
+							cores.append(str(p.regions[0]))
+					if not cores.is_empty():
+						GS.current_region = str(cores[randi() % cores.size()])
 			if all_gone_by < 0.0 and GS.wolf.age_years < 2.7:
 				var any := false
 				for p in GS.all_packs():
@@ -36,8 +50,10 @@ func _process(_d) -> bool:
 					all_gone_by = GS.wolf.age_years
 		var moved: int = GS.life_events("pack.moved").size()
 		var conf: int = GS.life_events("pack.conflict").size()
-		var pm: int = moved - conf
+		var pm: int = int(GS.life_log.get("stats", {}).get("pack_meet", {}).get("player_moves", 0))
 		var dis: int = GS.life_events("pack.dissolved").size()
+		var arrived: int = GS.life_events("pack.arrived").size()
+		tot["arrived"] = int(tot.get("arrived", 0)) + arrived
 		for p in GS.all_packs():
 			if p.stage == "gone":
 				dis += 0
@@ -56,14 +72,14 @@ func _process(_d) -> bool:
 				occ[p.map_id] = int(occ.get(p.map_id, 0)) + 1
 		for m in occ:
 			end_maps[m] = int(end_maps.get(m, 0)) + int(occ[m])
-		lines.append("  #%d %.1f 歲：搬家 %d（你造成 %d、衝突 %d）散掉 %d；死時 %s" % [r, GS.wolf.age_years, moved, pm, conf, dis, str(occ)])
+		lines.append("  #%d %.1f 歲：搬家 %d（衝突輸的 %d）散掉 %d、新來 %d；死時 %s" % [r, GS.wolf.age_years, moved, conf, dis, arrived, str(occ)])
 		ap.finish()
 	var n: float = float(maxi(1, runs))
-	print("== pack_flow_sim：%s，%d 隻" % [style, runs])
+	print("== pack_flow_sim：%s%s，%d 隻" % [style, "＋去核心區找狼群（每天 %d%%）" % roundi(seek_chance * 100.0) if seek else "", runs])
 	for l in lines:
 		print(l)
-	print("  平均：搬家＋衝突 %.1f 次（你造成的搬家 %.1f、衝突 %.1f）、黑狼一家散掉 %.1f、壽命 %.1f；一生至少一次你造成搬家 %d%%；2.7 歲前狼群全部散光 %d%%" % [
-		(tot["moved"]) / n, tot["player_moves"] / n, tot["conflict"] / n, tot["dissolved"] / n, tot["lifespan"] / n, roundi(100.0 * tot["lives_with_player_move"] / n), roundi(100.0 * tot["empty_all_2y"] / n)])
+	print("  平均：搬家＋衝突 %.1f 次（你造成的搬家 %.1f、衝突 %.1f）、黑狼一家散掉 %.1f、新來的狼群 %.1f、壽命 %.1f；一生至少一次你造成搬家 %d%%；2.7 歲前狼群全部散光 %d%%" % [
+		(tot["moved"]) / n, tot["player_moves"] / n, tot["conflict"] / n, tot["dissolved"] / n, int(tot.get("arrived", 0)) / n, tot["lifespan"] / n, roundi(100.0 * tot["lives_with_player_move"] / n), roundi(100.0 * tot["empty_all_2y"] / n)])
 	print("  死時各地圖住的狼群（合計）：%s" % str(end_maps))
 	quit()
 	return true

@@ -112,6 +112,40 @@ func _process(_d) -> bool:
 	# 沒有共住的地圖：沒有衝突
 	gs.new_game("forest_east")
 	_ok(gs._pack_conflicts().is_empty(), "開局的配置（每張地圖一群）：沒有衝突")
+	# A＋B（2026-11-27）：自己搬家、空地圖被重新佔領
+	var bcfg: Dictionary = root.get_node("GameData").balance["black_pack"]
+	var keep_move: float = float(bcfg["self_move_chance"])
+	gs.new_game("forest_east")
+	var maps_before := {}
+	for q in gs.all_packs():
+		maps_before[q.id] = q.map_id
+	bcfg["self_move_chance"] = 1.0
+	var wm: String = gs._pack_wander()
+	var moved_n := 0
+	for q in gs.all_packs():
+		if q.map_id != str(maps_before[q.id]):
+			moved_n += 1
+	_ok(wm != "" and moved_n == 1, "自己搬家：機率 100%% 時一季剛好一群搬走（到 %s）" % wm)
+	bcfg["self_move_chance"] = 0.0
+	_ok(gs._pack_wander() == "", "機率 0：不搬")
+	bcfg["self_move_chance"] = keep_move
+	gs.new_game("forest_east")
+	gs.black_pack.stage = "gone"
+	gs.black_pack.regions = []
+	_ok(gs._pack_recolonize() == "", "森林剛空：先記下開始空的日子")
+	gs.life_log["days_lived"] = int(gs.life_log.get("days_lived", 1)) + 40
+	var made: String = gs._pack_recolonize()
+	var newp = null
+	for q in gs.neighbor_packs:
+		if q.map_id == "forest" and not q.off_map and gs.pack_is_active(q):
+			newp = q
+	_ok(made == "forest" and newp != null and newp.stage == "pair" and gs.pack_leader_of(newp) != null, "空了一年：搬進一對新的狼（%s）" % (newp.id if newp != null else "?"))
+	_ok(gs._pack_recolonize() == "", "有狼群了：不再搬進來")
+	var tundra_n := 0
+	for q in gs.all_packs():
+		if q.map_id == "tundra":
+			tundra_n += 1
+	_ok(tundra_n == 0, "苔原開局沒有灰狼的狼群，不會自己長出來")
 	print("全部通過" if fails == 0 else "有失敗 %d" % fails)
 	quit(1 if fails > 0 else 0)
 	return true
