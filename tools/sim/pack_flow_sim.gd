@@ -72,6 +72,11 @@ func _process(_d) -> bool:
 			var d: Dictionary = e
 			var bm: Dictionary = by_map.get_or_add(str(d.get("map", "?")), {})
 			bm["conflict"] = int(bm.get("conflict", 0)) + 1
+			if bool(d.get("leader_killed", false)):
+				bm["loser_leader_killed"] = int(bm.get("loser_leader_killed", 0)) + 1
+			if bool(d.get("dispersed", false)):
+				bm["loser_dispersed"] = int(bm.get("loser_dispersed", 0)) + 1
+				continue
 			bm["lost_moved_out"] = int(bm.get("lost_moved_out", 0)) + 1
 			var bt: Dictionary = by_map.get_or_add(str(d.get("to_map", "?")), {})
 			bt["moved_in"] = int(bt.get("moved_in", 0)) + 1
@@ -110,7 +115,7 @@ func _process(_d) -> bool:
 	print("  平均：搬家＋衝突 %.1f 次（你造成的搬家 %.1f、衝突 %.1f）、黑狼一家散掉 %.1f、新來的狼群 %.1f、壽命 %.1f；一生至少一次你造成搬家 %d%%；2.7 歲前狼群全部散光 %d%%" % [
 		(tot["moved"]) / n, tot["player_moves"] / n, tot["conflict"] / n, tot["dissolved"] / n, int(tot.get("arrived", 0)) / n, tot["lifespan"] / n, roundi(100.0 * tot["lives_with_player_move"] / n), roundi(100.0 * tot["empty_all_2y"] / n)])
 	print("  死時各地圖住的狼群（合計）：%s" % str(end_maps))
-	print("  依地圖（%d 隻合計）：conflict＝在這張地圖起衝突、lost_moved_out＝衝突輸的搬走、moved_in＝衝突輸的搬進來、gone＝整群散掉、inactive_*＝暫時不成群（剩一隻等），_after_conflict＝前 10 天內打過衝突" % runs)
+	print("  依地圖（%d 隻合計）：conflict＝在這張地圖起衝突、lost_moved_out＝衝突輸的搬走、loser_dispersed＝衝突輸到當場散掉、loser_leader_killed＝輸的帶頭的死在混戰裡、moved_in＝衝突輸的搬進來、gone＝整群散掉、inactive_*＝暫時不成群（剩一隻等），_after_conflict＝前 10 天內打過衝突" % runs)
 	for m in by_map:
 		print("    %s：%s" % [m, str(by_map[m])])
 	quit()
