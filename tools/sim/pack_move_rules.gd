@@ -76,7 +76,11 @@ func _process(_d) -> bool:
 	bp.mate_age = 4.0
 	bp.young = [1.5, 2.0, 2.5]
 	var mtn = gs.pack_by_id("mountain")
-	mtn.young = [1.5]
+	mtn.young = [1.5, 2.0, 2.5]
+	mtn.mate_age = 4.0
+	var ccfg: Dictionary = root.get_node("GameData").balance["black_pack"]["conflict"]
+	var keep_ld: float = float(ccfg["loser_leader_death"])
+	ccfg["loser_leader_death"] = 0.0
 	bp.map_id = "mountain"
 	var mcore: String = str(mtn.regions[0])
 	var other: Array = root.get_node("GameData").map_regions("mountain").filter(func(r): return str(r) != mcore)
@@ -93,6 +97,46 @@ func _process(_d) -> bool:
 	var nw: Array = gs.life_log.get("pack_news", [])
 	_ok(not nw.is_empty() and str(nw.back().get("event", "")) == "conflict" and str(nw.back().get("map", "")) == "mountain", "消息記在衝突的那張地圖（山地）")
 	_ok(gs.life_events("pack.conflict").size() == 1, "寫進生命事件")
+	# B＋C（2026-11-27）：輸到只剩帶頭的一隻 → 散掉、不搬家；輸的帶頭的可能死在混戰裡
+	for trial in 2:
+		gs.new_game("forest_east")
+		var mt = gs.pack_by_id("mountain")
+		var b2 = gs.black_pack
+		b2.stage = "pack"
+		b2.mate_age = 4.0
+		b2.young = [1.5, 2.0, 2.5, 3.0]
+		b2.map_id = "mountain"
+		b2.regions = [str(root.get_node("GameData").map_regions("mountain").filter(func(r): return str(r) != str(mt.regions[0]))[0])]
+		mt.stage = "pair"
+		mt.mate_age = -1.0
+		mt.young = [1.5] # 帶頭的＋一隻年輕的，必輸（強弱差 4）時少 1～2 隻 → 只剩帶頭的
+		ccfg["luck"] = 0.0
+		ccfg["loser_leader_death"] = 1.0 if trial == 1 else 0.0
+		var r2: Dictionary = gs._pack_conflicts()
+		if trial == 0:
+			_ok(str(r2.get("loser", "")) == "mountain" and bool(r2.get("dispersed", false)) and mt.stage == "gone" and mt.map_id == "mountain", "B：輸到只剩帶頭的一隻 → 整群散掉、不搬家（%s）" % str(r2))
+			var nn: Array = gs.life_log.get("pack_news", [])
+			_ok(bool(nn.back().get("dispersed", false)) and gs.life_events("pack.dissolved").size() == 1, "消息、生命事件寫散掉")
+		else:
+			var ml = gs.pack_leader_of(mt)
+			_ok(bool(r2.get("leader_killed", false)) and ml != null and not ml.alive and mt.stage == "gone", "C：輸的帶頭的死在混戰裡；沒有伴侶、年輕的 → 一隻不剩，散掉")
+	# C：帶頭的死了、還有伴侶和年輕的 → 照常搬走，換季時照帶頭的死了的規則
+	gs.new_game("forest_east")
+	var mt3 = gs.pack_by_id("mountain")
+	var b3 = gs.black_pack
+	b3.stage = "pack"
+	b3.mate_age = 4.0
+	b3.young = [1.5, 2.0, 2.5, 3.0, 3.5]
+	b3.map_id = "mountain"
+	b3.regions = [str(root.get_node("GameData").map_regions("mountain").filter(func(r): return str(r) != str(mt3.regions[0]))[0])]
+	mt3.stage = "pack"
+	mt3.mate_age = 4.0
+	mt3.young = [1.5, 2.0, 2.5]
+	ccfg["loser_leader_death"] = 1.0
+	var r3: Dictionary = gs._pack_conflicts()
+	_ok(str(r3.get("loser", "")) == "mountain" and bool(r3.get("leader_killed", false)) and not bool(r3.get("dispersed", true)) and mt3.map_id != "mountain", "C：帶頭的死了、還有伴侶和年輕的 → 照常搬走（到 %s）" % mt3.map_id)
+	ccfg["luck"] = 1.5
+	ccfg["loser_leader_death"] = keep_ld
 	# 每季最多一場：兩張地圖都有兩群時，一次只處理一張
 	gs.new_game("forest_east")
 	bp = gs.black_pack
@@ -133,13 +177,13 @@ func _process(_d) -> bool:
 	gs.black_pack.stage = "gone"
 	gs.black_pack.regions = []
 	_ok(gs._pack_recolonize() == "", "森林剛空：先記下開始空的日子")
-	gs.life_log["days_lived"] = int(gs.life_log.get("days_lived", 1)) + 40
+	gs.life_log["days_lived"] = int(gs.life_log.get("days_lived", 1)) + int(bcfg["recolonize_days"])
 	var made: String = gs._pack_recolonize()
 	var newp = null
 	for q in gs.neighbor_packs:
 		if q.map_id == "forest" and not q.off_map and gs.pack_is_active(q):
 			newp = q
-	_ok(made == "forest" and newp != null and newp.stage == "pair" and gs.pack_leader_of(newp) != null, "空了一年：搬進一對新的狼（%s）" % (newp.id if newp != null else "?"))
+	_ok(made == "forest" and newp != null and newp.stage == "pair" and gs.pack_leader_of(newp) != null, "空了 recolonize_days 天：搬進一對新的狼（%s）" % (newp.id if newp != null else "?"))
 	_ok(gs._pack_recolonize() == "", "有狼群了：不再搬進來")
 	var tundra_n := 0
 	for q in gs.all_packs():

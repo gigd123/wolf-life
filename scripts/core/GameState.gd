@@ -410,7 +410,7 @@ func _queue_season_card(review: Dictionary = {}) -> void:
 			var kind: String = known if str(n.get("pack", "black")) == "black" else "neighbor"
 			# 狼群之間的衝突：黑狼一家贏了／輸了（認識那隻黑狼時才寫牠），其他寫一般的
 			if str(n["event"]) == "conflict":
-				kind = ("black_" + str(n.get("black", ""))) if str(n.get("black", "")) != "" and known == "known" else "neighbor"
+				kind = ("black_" + str(n.get("black", ""))) if str(n.get("black", "")) != "" and known == "known" else ("neighbor_gone" if bool(n.get("dispersed", false)) else "neighbor")
 			lines.append({"key": "pack.news.%s.%s" % [n["event"], kind], "region": str(n.get("region", "")), "map": str(n.get("to_map", ""))})
 		if later.is_empty():
 			life_log.erase("pack_news")
@@ -4664,18 +4664,41 @@ func _pack_conflicts() -> Dictionary:
 	_pack_take_losses(loser, loser_loss, float(cc.get("leader_hurt", 0.3)))
 	_pack_take_losses(winner, winner_loss, float(cc.get("leader_hurt", 0.3)))
 	var region: String = str(winner.regions[0])
-	var to: String = _pack_relocate(loser, false, true)
+	# 2026-11-27 使用者選 B＋C：
+	# C. 輸的帶頭的有 loser_leader_death 的機率死在混戰裡（之後照「帶頭的死了」：換季時三成五散掉，否則子女接手）
+	var loser_leader := pack_leader_of(loser)
+	var leader_killed := false
+	if loser_leader != null and loser_leader.alive and RNGService.chance(float(cc.get("loser_leader_death", 0.15))):
+		loser_leader.die("pack_conflict")
+		_on_npc_died(loser_leader)
+		leader_killed = true
+		add_life_event("pack.leader_killed_conflict", {"pack": loser.id, "map": m})
+	# B. 輸到只剩帶頭的一隻（沒有伴侶、沒有滿 1 歲的年輕的），或帶頭的死了又一隻都不剩：整群散掉，不搬家
+	#    帶頭的死了、還有伴侶或年輕的：照常搬走，換季時照「帶頭的死了」的規則（散掉、子女接手或空缺）
+	var leader_alive: bool = loser_leader != null and loser_leader.alive
+	var dispersed: bool = loser.counted_size(leader_alive) <= (1 if leader_alive else 0)
+	var to := ""
+	if dispersed:
+		loser.stage = "gone"
+		loser.regions = []
+		loser.young = []
+		if loser != black_pack:
+			life_log["pack_gone_" + loser.id] = 0
+		add_life_event("pack.dissolved", {"pack": loser.id, "map": m, "cause": "conflict"})
+		_stat_inc("pack_meet", "conflict_dispersed")
+	else:
+		to = _pack_relocate(loser, false, true)
 	var black_side := ""
 	if winner == black_pack:
 		black_side = "won"
 	elif loser == black_pack:
-		black_side = "lost"
+		black_side = "gone" if dispersed else "lost"
 	var news: Array = life_log.get("pack_news", [])
-	news.append({"event": "conflict", "region": region, "map": m, "to_map": to, "pack": "black" if black_side != "" else winner.id, "black": black_side})
+	news.append({"event": "conflict", "region": region, "map": m, "to_map": to, "pack": "black" if black_side != "" else winner.id, "black": black_side, "dispersed": dispersed})
 	life_log["pack_news"] = news
-	add_life_event("pack.conflict", {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to})
+	add_life_event("pack.conflict", {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to, "dispersed": dispersed, "leader_killed": leader_killed})
 	_stat_inc("pack_meet", "conflict")
-	return {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to, "loser_loss": loser_loss, "winner_loss": winner_loss}
+	return {"map": m, "winner": winner.id, "loser": loser.id, "to_map": to, "loser_loss": loser_loss, "winner_loss": winner_loss, "dispersed": dispersed, "leader_killed": leader_killed}
 
 # --- 狼群自己的流動（Phase 3d，2026-11-27 使用者同意 A＋B）---
 # A. 每季 self_move_chance 的機率，隨機一群（住在地圖上、還在的）自己搬到別張地圖
