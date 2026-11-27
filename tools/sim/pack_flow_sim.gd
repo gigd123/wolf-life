@@ -22,12 +22,15 @@ func _process(_d) -> bool:
 	var tot := {"moved": 0, "conflict": 0, "player_moves": 0, "dissolved": 0, "lifespan": 0.0, "lives_with_player_move": 0, "empty_all_2y": 0}
 	var end_maps := {}
 	var lines: Array = []
+	# 依地圖拆開：衝突、搬出去（依原因）、散掉（依原因）
+	var by_map := {}
 	for r in runs:
 		var ap = AP.new("all", style)
 		ap.start(DENS[r % DENS.size()])
 		var guard := 0
 		var all_gone_by := -1.0
 		var last_day := -1
+		var prev := {} # pack.id → {map, active, conflicts}
 		while not ap.done() and guard < 4000:
 			guard += 1
 			ap.step(1)
@@ -44,6 +47,20 @@ func _process(_d) -> bool:
 						GS.current_region = str(cores[randi() % cores.size()])
 						# 在核心區嚎叫（試玩時使用者會循著嚎叫去找牠們）：核心區嚎叫有機率讓牠們直接循聲過來
 						GS.action_howl()
+			# 每步比對每一群：還在不在、住哪張地圖；散掉時看牠前 10 天（一季）內有沒有打過衝突
+			for p in GS.all_packs():
+				var act: bool = GS.pack_is_active(p)
+				var was: Dictionary = prev.get(p.id, {})
+				if not was.is_empty() and was["active"] and not act:
+					var bm: Dictionary = by_map.get_or_add(str(was["map"]), {})
+					var after_conf := false
+					for e in GS.life_events("pack.conflict"):
+						if today - int(e.get("day", 0)) <= 10 and (str(e.get("loser", "")) == p.id or str(e.get("winner", "")) == p.id):
+							after_conf = true
+					# gone＝整群散掉；其他（lone、vacant…）＝只剩一隻或帶頭的空著，之後可能再成群
+					var key := ("gone" if p.stage == "gone" else "inactive_" + p.stage) + ("_after_conflict" if after_conf else "")
+					bm[key] = int(bm.get(key, 0)) + 1
+				prev[p.id] = {"map": p.map_id, "active": act}
 			if all_gone_by < 0.0 and GS.wolf.age_years < 2.7:
 				var any := false
 				for p in GS.all_packs():
@@ -51,6 +68,13 @@ func _process(_d) -> bool:
 						any = true
 				if not any:
 					all_gone_by = GS.wolf.age_years
+		for e in GS.life_events("pack.conflict"):
+			var d: Dictionary = e
+			var bm: Dictionary = by_map.get_or_add(str(d.get("map", "?")), {})
+			bm["conflict"] = int(bm.get("conflict", 0)) + 1
+			bm["lost_moved_out"] = int(bm.get("lost_moved_out", 0)) + 1
+			var bt: Dictionary = by_map.get_or_add(str(d.get("to_map", "?")), {})
+			bt["moved_in"] = int(bt.get("moved_in", 0)) + 1
 		var moved: int = GS.life_events("pack.moved").size()
 		var conf: int = GS.life_events("pack.conflict").size()
 		var pm: int = int(GS.life_log.get("stats", {}).get("pack_meet", {}).get("player_moves", 0))
@@ -86,5 +110,9 @@ func _process(_d) -> bool:
 	print("  平均：搬家＋衝突 %.1f 次（你造成的搬家 %.1f、衝突 %.1f）、黑狼一家散掉 %.1f、新來的狼群 %.1f、壽命 %.1f；一生至少一次你造成搬家 %d%%；2.7 歲前狼群全部散光 %d%%" % [
 		(tot["moved"]) / n, tot["player_moves"] / n, tot["conflict"] / n, tot["dissolved"] / n, int(tot.get("arrived", 0)) / n, tot["lifespan"] / n, roundi(100.0 * tot["lives_with_player_move"] / n), roundi(100.0 * tot["empty_all_2y"] / n)])
 	print("  死時各地圖住的狼群（合計）：%s" % str(end_maps))
+	print("  依地圖（%d 隻合計）：conflict＝在這張地圖起衝突、lost_moved_out＝衝突輸的搬走、moved_in＝衝突輸的搬進來、gone＝整群散掉、inactive_*＝暫時不成群（剩一隻等），_after_conflict＝前 10 天內打過衝突" % runs)
+	for m in by_map:
+		print("    %s：%s" % [m, str(by_map[m])])
 	quit()
 	return true
+
