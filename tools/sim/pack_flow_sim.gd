@@ -72,6 +72,8 @@ func _process(_d) -> bool:
 				occ[p.map_id] = int(occ.get(p.map_id, 0)) + 1
 		for m in occ:
 			end_maps[m] = int(end_maps.get(m, 0)) + int(occ[m])
+		if OS.get_environment("DEBUG_MEET") != "":
+			print("    pack_meet ", GS.life_log.get("stats", {}).get("pack_meet", {}), " core_wins ", GS.life_log.get("core_wins", {}))
 		lines.append("  #%d %.1f 歲：搬家 %d（衝突輸的 %d）散掉 %d、新來 %d；死時 %s" % [r, GS.wolf.age_years, moved, conf, dis, arrived, str(occ)])
 		ap.finish()
 	var n: float = float(maxi(1, runs))

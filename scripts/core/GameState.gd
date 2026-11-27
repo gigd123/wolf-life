@@ -4585,13 +4585,18 @@ func _core_win(p: WolfPack) -> void:
 		_stat_inc("pack_meet", "player_moves") # 你在核心區連贏造成的搬家（模擬統計用）
 
 # 這一群搬到另一張地圖：核心放在離你的巢穴最遠、不和別群的核心重疊的那一區；回傳搬去的地圖
-func _pack_relocate(p: WolfPack, announce: bool = true) -> String:
+# prefer_empty：優先去沒有狼群住著的地圖（衝突輸的一方，2026-11-27：原本隨機挑，狼群比地圖多時每季都在打）
+func _pack_relocate(p: WolfPack, announce: bool = true, prefer_empty: bool = false) -> String:
 	var c: Dictionary = GameData.balance.get("black_pack", {})
 	var from_map: String = p.map_id
 	var old_core: String = str(p.regions[0]) if not p.regions.is_empty() else ""
 	var maps: Array = (c.get("relocate_maps", ["forest", "mountain", "grassland", "tundra"]) as Array).filter(func(m): return str(m) != from_map and not GameData.map_regions(str(m)).is_empty())
 	if maps.is_empty():
 		return ""
+	if prefer_empty:
+		var empty: Array = maps.filter(func(m): return not all_packs().any(func(q): return q != p and q.map_id == str(m) and not q.off_map and pack_is_active(q)))
+		if not empty.is_empty():
+			maps = empty
 	var to: String = str(maps[RNGService.randi_range(0, maps.size() - 1)])
 	var taken: Array = []
 	for q in all_packs():
@@ -4659,7 +4664,7 @@ func _pack_conflicts() -> Dictionary:
 	_pack_take_losses(loser, loser_loss, float(cc.get("leader_hurt", 0.3)))
 	_pack_take_losses(winner, winner_loss, float(cc.get("leader_hurt", 0.3)))
 	var region: String = str(winner.regions[0])
-	var to: String = _pack_relocate(loser, false)
+	var to: String = _pack_relocate(loser, false, true)
 	var black_side := ""
 	if winner == black_pack:
 		black_side = "won"
