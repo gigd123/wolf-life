@@ -58,7 +58,7 @@ func _process(_d) -> bool:
 						if today - int(e.get("day", 0)) <= 10 and (str(e.get("loser", "")) == p.id or str(e.get("winner", "")) == p.id):
 							after_conf = true
 					# gone＝整群散掉；其他（lone、vacant…）＝只剩一隻或帶頭的空著，之後可能再成群
-					var key := ("gone" if p.stage == "gone" else "inactive_" + p.stage) + ("_after_conflict" if after_conf else "")
+					var key: String = ("gone" if p.stage == "gone" else "inactive_" + p.stage) + ("_after_conflict" if after_conf else "")
 					bm[key] = int(bm.get(key, 0)) + 1
 				prev[p.id] = {"map": p.map_id, "active": act}
 			if all_gone_by < 0.0 and GS.wolf.age_years < 2.7:
