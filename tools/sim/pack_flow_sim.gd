@@ -4,6 +4,7 @@ extends SceneTree
 #   搬家（pack.moved：被你在核心區連贏、或衝突輸了）、狼群之間的衝突（pack.conflict）、你在核心區連贏造成的搬家、
 #   狼群散掉（黑狼一家 dissolved、鄰群 gone）、死時每張地圖住著幾群、活著的狼群總數、壽命。
 # 通過標準：一生平均 2～6 次搬家或衝突；狼群不會在一兩年內全部散光；強的玩家一生至少一次在核心區連贏 2 次。
+#   SEEK 的玩家走進核心區後會嚎叫（核心區嚎叫 30% 牠們直接循聲過來，撞上狼群）
 # 用法：bash tools/run_sim.sh pack_flow_sim "" 20（第三個參數是隻數）；STYLE=average；SEEK=1 會去核心區找狼群（SEEK_CHANCE 每天的機會，預設 0.3）
 var f := 0
 const DENS := ["forest_east", "tundra_south", "mountain_canyon", "grassland_riverwoods"]
@@ -41,6 +42,8 @@ func _process(_d) -> bool:
 							cores.append(str(p.regions[0]))
 					if not cores.is_empty():
 						GS.current_region = str(cores[randi() % cores.size()])
+						# 在核心區嚎叫（試玩時使用者會循著嚎叫去找牠們）：核心區嚎叫有機率讓牠們直接循聲過來
+						GS.action_howl()
 			if all_gone_by < 0.0 and GS.wolf.age_years < 2.7:
 				var any := false
 				for p in GS.all_packs():
